@@ -28,6 +28,76 @@
       },
       "group": "test",
       "problemMatcher": []
+    },
+    {
+      "label": "Reek",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "reek", "${workspaceFolder}/lib"],
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": ["-lc"]
+        }
+      },
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "Steep",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "steep", "check"],
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": ["-lc"]
+        }
+      },
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "TypeProf",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "typeprof", "lib/**/*.rb"],
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": ["-lc"]
+        }
+      },
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "Bundler Audit",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "bundler-audit", "check", "--update"],
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": ["-lc"]
+        }
+      },
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "RubyCritic",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "rubycritic", "lib"],
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": ["-lc"]
+        }
+      },
+      "group": "none",
+      "problemMatcher": []
     }
   ]
 }

@@ -217,5 +217,66 @@ module Ruby
       attr_reader column: Integer
       attr_reader offset: Integer
     end
+
+    module AST
+      class Base
+        attr_reader location: Location?
+
+        def initialize: (?location: Location?) -> void
+        def accept: (untyped visitor) -> untyped
+        def to_s: () -> String
+        def ==: (untyped other) -> bool
+        def eql?: (untyped other) -> bool
+        def hash: () -> Integer
+        def self.format_value: (untyped value) -> String
+      end
+
+      class Module < Base
+        attr_reader package: Package
+        attr_reader imports: Array[Import]
+        attr_reader rules: Array[Rule]
+
+        def initialize: (package: Package, imports: Array[Import], rules: Array[Rule], ?location: Location?) -> void
+      end
+
+      class Package < Base
+        attr_reader path: Array[String]
+
+        def initialize: (path: Array[String], ?location: Location?) -> void
+      end
+
+      class Import < Base
+        attr_reader path: untyped
+        attr_reader alias: String?
+
+        def initialize: (path: untyped, ?alias_name: String?, ?location: Location?) -> void
+        def alias_name: () -> String?
+      end
+
+      class Rule < Base
+        RULE_TYPE_LOOKUP: Array[Symbol]
+        Definition: untyped
+
+        attr_reader name: String
+        attr_reader head: untyped
+        attr_reader body: untyped
+        attr_reader default_value: untyped
+        attr_reader else_clause: untyped
+
+        def initialize: (name: String, ?head: untyped, ?body: untyped, ?default_value: untyped, ?else_clause: untyped, ?location: Location?) -> void
+        def complete?: () -> bool
+        def partial_set?: () -> bool
+        def partial_object?: () -> bool
+        def function?: () -> bool
+
+        private
+
+        def rule_type: () -> Symbol?
+        def resolve_rule_type: () -> (String | Symbol | nil)
+        def type_from_object: () -> untyped
+        def type_from_hash: () -> untyped
+        attr_reader definition: untyped
+      end
+    end
   end
 end
