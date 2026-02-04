@@ -6,6 +6,12 @@
       "type": "shell",
       "command": "bundle",
       "args": ["exec", "rspec", "${file}"],
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": ["-lc"]
+        }
+      },
       "group": "test",
       "problemMatcher": []
     },
@@ -14,6 +20,12 @@
       "type": "shell",
       "command": "bundle",
       "args": ["exec", "rspec"],
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": ["-lc"]
+        }
+      },
       "group": "test",
       "problemMatcher": []
     }
