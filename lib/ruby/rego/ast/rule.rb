@@ -19,7 +19,7 @@ module Ruby
         # @param else_clause [Object, nil]
         # @param location [Location, nil]
         # :reek:LongParameterList
-        def initialize(name:, head: nil, body: nil, default_value: nil, else_clause: nil, location: nil)
+        def initialize(name:, head: nil, body: nil, default_value: nil, else_clause: nil, location: nil) # rubocop:disable Metrics/ParameterLists
           super(location: location)
           @name = name
           @definition = Definition.new(

@@ -231,6 +231,140 @@ module Ruby
         def self.format_value: (untyped value) -> String
       end
 
+      type expression = Literal | Variable | Reference | BinaryOp | UnaryOp | ArrayLiteral | ObjectLiteral | SetLiteral | ArrayComprehension | ObjectComprehension | SetComprehension | Call
+      type call_name = String | Variable | Reference
+      type query = Array[expression]
+
+      class Literal < Base
+        attr_reader value: untyped
+
+        def initialize: (value: untyped, ?location: Location?) -> void
+      end
+
+      class StringLiteral < Literal
+        attr_reader value: String
+
+        def initialize: (value: String, ?location: Location?) -> void
+      end
+
+      class NumberLiteral < Literal
+        attr_reader value: Numeric
+
+        def initialize: (value: Numeric, ?location: Location?) -> void
+      end
+
+      class BooleanLiteral < Literal
+        attr_reader value: bool
+
+        def initialize: (value: bool, ?location: Location?) -> void
+      end
+
+      class NullLiteral < Literal
+        attr_reader value: nil
+
+        def initialize: (?location: Location?) -> void
+      end
+
+      class Variable < Base
+        attr_reader name: String
+
+        def initialize: (name: String, ?location: Location?) -> void
+      end
+
+      class Reference < Base
+        attr_reader base: expression
+        attr_reader path: Array[RefArg]
+
+        def initialize: (base: expression, path: Array[RefArg], ?location: Location?) -> void
+      end
+
+      class RefArg < Base
+        attr_reader value: untyped
+
+        def initialize: (value: untyped, ?location: Location?) -> void
+      end
+
+      class DotRefArg < RefArg
+        def initialize: (value: untyped, ?location: Location?) -> void
+      end
+
+      class BracketRefArg < RefArg
+        def initialize: (value: untyped, ?location: Location?) -> void
+      end
+
+      class BinaryOp < Base
+        OPERATORS: Array[Symbol]
+
+        attr_reader operator: Symbol
+        attr_reader left: expression
+        attr_reader right: expression
+
+        def initialize: (operator: Symbol, left: expression, right: expression, ?location: Location?) -> void
+
+        private
+
+        def validate_operator!: (Symbol operator) -> void
+      end
+
+      class UnaryOp < Base
+        OPERATORS: Array[Symbol]
+
+        attr_reader operator: Symbol
+        attr_reader operand: expression
+
+        def initialize: (operator: Symbol, operand: expression, ?location: Location?) -> void
+
+        private
+
+        def validate_operator!: (Symbol operator) -> void
+      end
+
+      class ArrayLiteral < Base
+        attr_reader elements: Array[expression]
+
+        def initialize: (elements: Array[expression], ?location: Location?) -> void
+      end
+
+      class ObjectLiteral < Base
+        attr_reader pairs: Array[[expression, expression]]
+
+        def initialize: (pairs: Array[[expression, expression]], ?location: Location?) -> void
+      end
+
+      class SetLiteral < Base
+        attr_reader elements: Array[expression]
+
+        def initialize: (elements: Array[expression], ?location: Location?) -> void
+      end
+
+      class ArrayComprehension < Base
+        attr_reader term: expression
+        attr_reader body: query
+
+        def initialize: (term: expression, body: query, ?location: Location?) -> void
+      end
+
+      class ObjectComprehension < Base
+        attr_reader term: expression
+        attr_reader body: query
+
+        def initialize: (term: expression, body: query, ?location: Location?) -> void
+      end
+
+      class SetComprehension < Base
+        attr_reader term: expression
+        attr_reader body: query
+
+        def initialize: (term: expression, body: query, ?location: Location?) -> void
+      end
+
+      class Call < Base
+        attr_reader name: call_name
+        attr_reader args: Array[expression]
+
+        def initialize: (name: call_name, args: Array[expression], ?location: Location?) -> void
+      end
+
       class Module < Base
         attr_reader package: Package
         attr_reader imports: Array[Import]

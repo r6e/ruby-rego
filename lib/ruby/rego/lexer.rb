@@ -195,7 +195,7 @@ module Ruby
       end
 
       # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
-      def read_number
+      def read_number # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
         start = capture_position
         buffer = +""
 

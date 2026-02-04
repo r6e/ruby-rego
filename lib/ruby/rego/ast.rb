@@ -1,6 +1,14 @@
 # frozen_string_literal: true
 
 require_relative "ast/base"
+require_relative "ast/literal"
+require_relative "ast/variable"
+require_relative "ast/reference"
+require_relative "ast/binary_op"
+require_relative "ast/unary_op"
+require_relative "ast/composite"
+require_relative "ast/comprehension"
+require_relative "ast/call"
 require_relative "ast/module"
 require_relative "ast/package"
 require_relative "ast/import"
