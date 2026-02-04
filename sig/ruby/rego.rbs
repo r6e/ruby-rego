@@ -1,7 +1,73 @@
 module Ruby
   module Rego
     VERSION: String
+
+    type position = {
+      line: Integer,
+      column: Integer,
+      offset: Integer?,
+      length: Integer?
+    }
+
+    module ErrorFormatting
+      def self.format_details: (Hash[Symbol, untyped]) -> String
+    end
+
+    class Location
+      attr_reader line: Integer
+      attr_reader column: Integer
+      attr_reader offset: Integer?
+      attr_reader length: Integer?
+
+      def initialize: (line: Integer, column: Integer, ?offset: Integer?, ?length: Integer?) -> void
+      def to_s: () -> String
+    end
+
     class Error < StandardError
+      attr_reader location: Location?
+
+      def initialize: (?String message, location: Location?) -> void
+
+      private
+
+      def compose_message: (String? message) -> String
+    end
+
+    class LexerError < Error
+      attr_reader line: Integer
+      attr_reader column: Integer
+
+      def initialize: (String message, line: Integer, column: Integer, offset: Integer?, length: Integer?) -> void
+    end
+
+    class ParserError < Error
+      attr_reader line: Integer
+      attr_reader column: Integer
+      attr_reader context: String?
+
+      def initialize: (String message, location: Location, context: String?) -> void
+      def self.from_position: (String message, line: Integer, column: Integer, offset: Integer?, length: Integer?, context: String?) -> ParserError
+    end
+
+    class EvaluationError < Error
+      attr_reader rule: untyped
+
+      def initialize: (String message, rule: untyped, location: Location?) -> void
+    end
+
+    class TypeError < Error
+      attr_reader expected: untyped
+      attr_reader actual: untyped
+      attr_reader context: String?
+
+      def initialize: (String message, expected: untyped, actual: untyped, context: String?, location: Location?) -> void
+    end
+
+    class UnificationError < Error
+      attr_reader pattern: untyped
+      attr_reader value: untyped
+
+      def initialize: (String message, pattern: untyped, value: untyped, location: Location?) -> void
     end
   end
 end

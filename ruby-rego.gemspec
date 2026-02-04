@@ -9,7 +9,8 @@ Gem::Specification.new do |spec|
   spec.email = ["me@r6e.dev"]
 
   spec.summary = "Pure Ruby implementation of the OPA Rego policy language."
-  spec.description = "Ruby::Rego provides a pure Ruby parser and evaluator for the Open Policy Agent Rego language, targeting a clean, idiomatic Ruby API and strong type safety."
+  spec.description = "Ruby::Rego provides a pure Ruby parser and evaluator for the Open Policy Agent " \
+                     "Rego language, targeting a clean, idiomatic Ruby API and strong type safety."
   spec.homepage = "https://github.com/r6e/ruby-rego"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.2.0"
