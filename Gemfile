@@ -8,6 +8,7 @@ group :development, :test do
   gem "bundler-audit", "~> 0.9"
   gem "factory_bot", "~> 6.2"
   gem "faker", "~> 3.4"
+  gem "ostruct", "~> 0.6"
   gem "rake", "~> 13.0"
   gem "reek", "~> 6.3"
   gem "rspec", "~> 3.13"

@@ -1,0 +1,37 @@
+# Reek configuration
+# The lexer is inherently complex and table-driven; exclude it from high-churn detectors.
+
+detectors:
+  TooManyMethods:
+    exclude:
+      - Ruby::Rego::Lexer
+  TooManyConstants:
+    exclude:
+      - Ruby::Rego::Lexer
+  TooManyInstanceVariables:
+    exclude:
+      - Ruby::Rego::Lexer
+  TooManyStatements:
+    exclude:
+      - Ruby::Rego::Lexer
+      - Ruby::Rego::ParserError#initialize
+      - Ruby::Rego::TypeError#initialize
+      - Ruby::Rego::UnificationError#initialize
+  DuplicateMethodCall:
+    exclude:
+      - Ruby::Rego::Lexer
+  UtilityFunction:
+    exclude:
+      - Ruby::Rego::Lexer
+  FeatureEnvy:
+    exclude:
+      - Ruby::Rego::Lexer
+  ControlParameter:
+    exclude:
+      - Ruby::Rego::Lexer
+  NilCheck:
+    exclude:
+      - Ruby::Rego::Lexer
+  RepeatedConditional:
+    exclude:
+      - Ruby::Rego::Lexer

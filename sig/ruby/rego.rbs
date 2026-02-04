@@ -149,5 +149,73 @@ module Ruby
       def literal?: () -> bool
       def to_s: () -> String
     end
+
+    class Lexer
+      KEYWORDS: Hash[String, Symbol]
+      SINGLE_CHAR_TOKENS: Hash[String, Symbol]
+      NEWLINE_CHARS: Array[String]
+      WHITESPACE_CHARS: Array[String]
+      EXPONENT_CHARS: Array[String]
+      SIGN_CHARS: Array[String]
+      IDENTIFIER_START: Regexp
+      IDENTIFIER_PART: Regexp
+      DIGIT: Regexp
+      HEX_DIGIT: Regexp
+
+      def initialize: (String source) -> void
+      def tokenize: () -> Array[Token]
+
+      private
+
+      def next_token: () -> Token
+      def eof_token: () -> Token
+      def simple_token_for: (String char) -> Token?
+      def read_colon_or_assign: () -> Token
+      def read_equal_or_unify: () -> Token
+      def read_not_equal: () -> Token
+      def read_lt_or_lte: () -> Token
+      def read_gt_or_gte: () -> Token
+      def skip_whitespace: () -> void
+      def skip_comment: () -> void
+      def read_number: () -> Token
+      def read_string: () -> Token
+      def read_raw_string: () -> Token
+      def read_identifier: () -> Token
+      def read_digits: () -> String
+      def read_escape_sequence: (position backslash_position) -> String
+      def read_unicode_escape: () -> String
+      def parse_number: (String buffer, position start) -> Numeric
+      def advance: () -> String
+      def advance_line_break: () -> String
+      def advance_newline: () -> String
+      def increment_line: (Integer count) -> void
+      def increment_position: (Integer count) -> void
+      def peek: (?Integer distance) -> String?
+      def match?: (String expected) -> bool
+      def current_char: () -> String?
+      def eof?: () -> bool
+      def capture_position: () -> position
+      def build_token: (Symbol type, untyped value, position start) -> Token
+      def identifier_start?: (String? char) -> bool
+      def identifier_part?: (String? char) -> bool
+      def digit?: (String? char) -> bool
+      def hex_digit?: (String? char) -> bool
+      def whitespace?: (String? char) -> bool
+      def newline?: (String? char) -> bool
+      def exponent_start?: () -> bool
+      def span_length_from: (position start) -> Integer
+      def raise_unterminated_string: (position start) -> bot
+      def raise_unterminated_raw_string: (position start) -> bot
+      def raise_unexpected_eof: () -> bot
+      def raise_error: (String message, position position, length: Integer?) -> bot
+
+      private
+
+      attr_reader source: String
+      attr_reader position: Integer
+      attr_reader line: Integer
+      attr_reader column: Integer
+      attr_reader offset: Integer
+    end
   end
 end
