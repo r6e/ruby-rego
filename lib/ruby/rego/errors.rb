@@ -77,14 +77,11 @@ module Ruby
       end
 
       # @param message [String]
-      # @param line [Integer]
-      # @param column [Integer]
-      # @param offset [Integer, nil]
-      # @param length [Integer, nil]
+      # @param position [Hash, Location]
       # @param context [String, nil]
       # @return [ParserError]
-      def self.from_position(message, line:, column:, offset: nil, length: nil, context: nil)
-        location = Location.new(line: line, column: column, offset: offset, length: length)
+      def self.from_position(message, position:, context: nil)
+        location = Location.from(position)
         new(message, location: location, context: context)
       end
     end

@@ -31,8 +31,7 @@ RSpec.describe Ruby::Rego::ParserError do
   it "includes context in the message" do
     error = described_class.from_position(
       "Unexpected token",
-      line: 4,
-      column: 1,
+      position: { line: 4, column: 1 },
       context: "rule body"
     )
 

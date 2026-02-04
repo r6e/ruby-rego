@@ -19,6 +19,7 @@ module Ruby
       attr_reader offset: Integer?
       attr_reader length: Integer?
 
+      def self.from: (Location | position) -> Location
       def initialize: (line: Integer, column: Integer, ?offset: Integer?, ?length: Integer?) -> void
       def to_s: () -> String
     end
@@ -46,7 +47,7 @@ module Ruby
       attr_reader context: String?
 
       def initialize: (String message, location: Location, context: String?) -> void
-      def self.from_position: (String message, line: Integer, column: Integer, offset: Integer?, length: Integer?, context: String?) -> ParserError
+      def self.from_position: (String message, position: position | Location, context: String?) -> ParserError
     end
 
     class EvaluationError < Error
@@ -68,6 +69,85 @@ module Ruby
       attr_reader value: untyped
 
       def initialize: (String message, pattern: untyped, value: untyped, location: Location?) -> void
+    end
+
+    module TokenType
+      PACKAGE: Symbol
+      IMPORT: Symbol
+      AS: Symbol
+      DEFAULT: Symbol
+      IF: Symbol
+      CONTAINS: Symbol
+      SOME: Symbol
+      IN: Symbol
+      EVERY: Symbol
+      NOT: Symbol
+      WITH: Symbol
+      ELSE: Symbol
+      TRUE: Symbol
+      FALSE: Symbol
+      NULL: Symbol
+      DATA: Symbol
+      INPUT: Symbol
+
+      ASSIGN: Symbol
+      EQ: Symbol
+      NEQ: Symbol
+      LT: Symbol
+      LTE: Symbol
+      GT: Symbol
+      GTE: Symbol
+      PLUS: Symbol
+      MINUS: Symbol
+      STAR: Symbol
+      SLASH: Symbol
+      PERCENT: Symbol
+      PIPE: Symbol
+      AMPERSAND: Symbol
+      UNIFY: Symbol
+
+      LPAREN: Symbol
+      RPAREN: Symbol
+      LBRACKET: Symbol
+      RBRACKET: Symbol
+      LBRACE: Symbol
+      RBRACE: Symbol
+      DOT: Symbol
+      COMMA: Symbol
+      SEMICOLON: Symbol
+      COLON: Symbol
+      UNDERSCORE: Symbol
+
+      STRING: Symbol
+      NUMBER: Symbol
+      RAW_STRING: Symbol
+      IDENT: Symbol
+
+      EOF: Symbol
+      NEWLINE: Symbol
+      COMMENT: Symbol
+
+      KEYWORDS: Array[Symbol]
+      OPERATORS: Array[Symbol]
+      DELIMITERS: Array[Symbol]
+      LITERALS: Array[Symbol]
+      SPECIALS: Array[Symbol]
+
+      def self.keyword?: (Symbol type) -> bool
+      def self.operator?: (Symbol type) -> bool
+      def self.literal?: (Symbol type) -> bool
+    end
+
+    class Token
+      attr_reader type: Symbol
+      attr_reader value: untyped
+      attr_reader location: Location?
+
+      def initialize: (type: Symbol, ?value: untyped, ?location: Location?) -> void
+      def keyword?: () -> bool
+      def operator?: () -> bool
+      def literal?: () -> bool
+      def to_s: () -> String
     end
   end
 end

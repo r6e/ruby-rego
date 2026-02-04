@@ -9,6 +9,19 @@ module Ruby
     #   location.to_s # => "line 3, column 12, offset 42, length 5"
     #
     class Location
+      # @param position [Location, Hash]
+      # @return [Location]
+      def self.from(position)
+        return position if position.is_a?(Location)
+
+        new(
+          line: position.fetch(:line),
+          column: position.fetch(:column),
+          offset: position[:offset],
+          length: position[:length]
+        )
+      end
+
       # @param line [Integer] 1-based line number
       # @param column [Integer] 1-based column number
       # @param offset [Integer, nil] 0-based character offset

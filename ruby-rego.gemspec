@@ -36,18 +36,6 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_development_dependency "bundler-audit", "~> 0.9"
-  spec.add_development_dependency "factory_bot", "~> 6.2"
-  spec.add_development_dependency "faker", "~> 3.4"
-  spec.add_development_dependency "rake", "~> 13.0"
-  spec.add_development_dependency "reek", "~> 6.3"
-  spec.add_development_dependency "rspec", "~> 3.13"
-  spec.add_development_dependency "rubocop", "~> 1.60"
-  spec.add_development_dependency "rubycritic", "~> 4.9"
-  spec.add_development_dependency "simplecov", "~> 0.22"
-  spec.add_development_dependency "steep", "~> 1.7"
-  spec.add_development_dependency "typeprof", "~> 0.23"
-
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
 end

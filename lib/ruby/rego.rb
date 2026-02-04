@@ -3,6 +3,7 @@
 require_relative "rego/version"
 require_relative "rego/location"
 require_relative "rego/errors"
+require_relative "rego/token"
 
 module Ruby
   # Top-level namespace for the Ruby Rego gem.
