@@ -303,7 +303,8 @@ module Ruby
 
         private
 
-        def validate_operator!: (Symbol operator) -> void
+        def validate_operator: () -> bool
+        def validate_operator!: () -> void
       end
 
       class UnaryOp < Base
@@ -316,7 +317,8 @@ module Ruby
 
         private
 
-        def validate_operator!: (Symbol operator) -> void
+        def validate_operator: () -> bool
+        def validate_operator!: () -> void
       end
 
       class ArrayLiteral < Base

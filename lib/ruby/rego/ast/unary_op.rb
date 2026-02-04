@@ -13,9 +13,9 @@ module Ruby
         # @param operand [Object]
         # @param location [Location, nil]
         def initialize(operator:, operand:, location: nil)
-          validate_operator!(operator)
-          super(location: location)
           @operator = operator
+          validate_operator!
+          super(location: location)
           @operand = operand
         end
 
@@ -27,10 +27,14 @@ module Ruby
 
         private
 
-        def validate_operator!(operator)
-          return if OPERATORS.include?(operator)
+        def validate_operator # rubocop:disable Naming/PredicateMethod
+          OPERATORS.include?(@operator)
+        end
 
-          raise ArgumentError, "Unknown unary operator: #{operator.inspect}"
+        def validate_operator!
+          return if validate_operator
+
+          raise ArgumentError, "Unknown unary operator: #{@operator.inspect}"
         end
       end
     end
