@@ -30,9 +30,9 @@ module Ruby
         # @param right [Object]
         # @param location [Location, nil]
         def initialize(operator:, left:, right:, location: nil)
-          validate_operator!(operator)
-          super(location: location)
           @operator = operator
+          validate_operator!
+          super(location: location)
           @left = left
           @right = right
         end
@@ -48,10 +48,14 @@ module Ruby
 
         private
 
-        def validate_operator!(operator)
-          return if OPERATORS.include?(operator)
+        def validate_operator # rubocop:disable Naming/PredicateMethod
+          OPERATORS.include?(@operator)
+        end
 
-          raise ArgumentError, "Unknown binary operator: #{operator.inspect}"
+        def validate_operator!
+          return if validate_operator
+
+          raise ArgumentError, "Unknown binary operator: #{@operator.inspect}"
         end
       end
     end
