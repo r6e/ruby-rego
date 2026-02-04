@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "RSpec: current file",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "rspec", "${file}"],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "RSpec: suite",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "rspec"],
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}

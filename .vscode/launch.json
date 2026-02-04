@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "rdbg",
+      "name": "Debug RSpec file",
+      "request": "launch",
+      "command": "bundle",
+      "script": "exec",
+      "args": ["rspec", "${file}"],
+      "cwd": "${workspaceFolder}",
+      "useTerminal": true
+    },
+    {
+      "type": "rdbg",
+      "name": "Debug RSpec example",
+      "request": "launch",
+      "command": "bundle",
+      "script": "exec",
+      "args": ["rspec", "${file}:${lineNumber}"],
+      "cwd": "${workspaceFolder}",
+      "useTerminal": true
+    },
+    {
+      "type": "rdbg",
+      "name": "Debug RSpec suite",
+      "request": "launch",
+      "command": "bundle",
+      "script": "exec",
+      "args": ["rspec"],
+      "cwd": "${workspaceFolder}",
+      "useTerminal": true
+    }
+  ]
+}
