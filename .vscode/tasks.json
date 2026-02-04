@@ -98,6 +98,20 @@
       },
       "group": "none",
       "problemMatcher": []
+    },
+    {
+      "label": "Rubocop",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "rubocop"],
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": ["-lc"]
+        }
+      },
+      "group": "none",
+      "problemMatcher": []
     }
   ]
 }
