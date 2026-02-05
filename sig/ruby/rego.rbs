@@ -223,6 +223,9 @@ module Ruby
       IDENTIFIER_TOKEN_NAMES: Hash[Symbol, String]
       PACKAGE_PATH_TOKEN_TYPES: Array[Symbol]
       IMPORT_PATH_TOKEN_TYPES: Array[Symbol]
+      BINARY_OPERATOR_MAP: Hash[Symbol, Symbol]
+      UNARY_OPERATOR_MAP: Hash[Symbol, Symbol]
+      PRIMARY_PARSERS: Hash[Symbol, Symbol]
 
       @tokens: Array[Token]
       @current: Integer
@@ -248,10 +251,38 @@ module Ruby
       def parse_import: () -> AST::Import
       def parse_import_alias: () -> String?
       def parse_rule: () -> untyped
-      def parse_expression: () -> untyped
+      def parse_expression: (?Integer precedence) -> AST::expression
+      def parse_infix_expression: (AST::expression left, Integer precedence) -> AST::expression
+      def infix_operator?: (Integer precedence) -> bool
+      def parse_primary: () -> AST::expression
+      def parse_infix: (AST::expression left, Token operator_token) -> AST::BinaryOp
+      def parse_reference: (AST::expression base) -> AST::Reference
+      def parse_array: () -> AST::ArrayLiteral
+      def parse_object: (Token start_token, AST::expression first_key) -> AST::ObjectLiteral
+      def parse_set: (Token start_token, ?AST::expression first_element) -> AST::SetLiteral
+      def parse_call_args: () -> Array[AST::expression]
+      def parse_string_literal: () -> AST::StringLiteral
+      def parse_number_literal: () -> AST::NumberLiteral
+      def parse_boolean_literal: () -> AST::BooleanLiteral
+      def parse_null_literal: () -> AST::NullLiteral
+      def parse_unary_expression: () -> AST::UnaryOp
+      def parse_parenthesized_expression: () -> AST::expression
       def parse_path: (Parser::IdentifierContext identifier_context) -> Array[String]
       def parse_path_segment: (Parser::IdentifierContext identifier_context) -> String
       def parse_identifier: (Parser::IdentifierContext identifier_context) -> String
+      def parse_braced_literal: () -> AST::expression
+      def parse_identifier_expression: () -> AST::expression
+      def parse_variable: () -> AST::Variable
+      def parse_expression_list_until: (Symbol end_token) -> Array[AST::expression]
+      def parse_expression_list_until_with_first: (Symbol end_token, AST::expression first_element) -> Array[AST::expression]
+      def append_expression_list: (Array[AST::expression] elements, Symbol end_token) -> void
+      def parse_object_pair: (AST::expression key) -> [AST::expression, AST::expression]
+      def append_object_pairs: (Array[[AST::expression, AST::expression]] pairs) -> void
+      def empty_set?: (AST::expression?) -> bool
+      def empty_set_literal: (Token start_token) -> AST::SetLiteral
+      def parse_reference_path: (Array[AST::RefArg] path) -> void
+      def parse_dot_reference: (Array[AST::RefArg] path) -> void
+      def parse_bracket_reference: (Array[AST::RefArg] path) -> void
       def safe_token_at: (Integer index) -> Token
       def record_error: (ParserError error) -> void
 
@@ -279,6 +310,14 @@ module Ruby
         PRODUCT: Integer
         UNARY: Integer
         BINARY: Hash[Symbol, Integer]
+      end
+    end
+
+    class Parser
+      module Helpers
+        def self.precedence_of: (Symbol operator) -> Integer
+        def self.normalize_reference_base: (AST::expression base) -> [AST::expression, Array[AST::RefArg]]
+        def self.variable_name_for: (Token token) -> String
       end
     end
 
