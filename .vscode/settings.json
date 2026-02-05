@@ -18,5 +18,8 @@
   "steep.steepfile": "Steepfile",
   "steep.gemfile": "Gemfile",
   "steep.loglevel": "info",
-  "steep.hideDiagnostics": ""
+  "steep.hideDiagnostics": "",
+  "chat.tools.terminal.autoApprove": {
+    "bundle": true
+  }
 }

@@ -13,6 +13,10 @@ RSpec.describe Ruby::Rego::Parser do
     described_class.new(tokens).send(:parse_expression)
   end
 
+  def parse_rule(source)
+    parse("package example\n#{source}").rules.first
+  end
+
   describe "#parse" do
     it "parses package declarations" do
       module_node = parse("package example.policy")
@@ -38,13 +42,106 @@ RSpec.describe Ruby::Rego::Parser do
       expect(module_node.imports[1].alias_name).to be_nil
     end
 
-    it "raises when rule parsing is not implemented" do
+    it "parses multiple unbraced rules separated by newlines" do
       source = <<~REGO
-        package example.auth
+        package example
+        allow if input.x;
+        deny if input.y
+      REGO
+
+      module_node = parse(source)
+
+      expect(module_node.rules.map(&:name)).to eq(%w[allow deny])
+    end
+
+    it "raises when a rule has no body or value" do
+      source = <<~REGO
+        package example
         allow
       REGO
 
-      expect { parse(source) }.to raise_error(Ruby::Rego::ParserError, /Rule parsing not implemented/)
+      expect { parse(source) }.to raise_error(Ruby::Rego::ParserError, /Expected rule body or value/)
+    end
+
+    it "parses complete rules with constants" do
+      rule = parse_rule("allow := true")
+
+      expect(rule.name).to eq("allow")
+      expect(rule.head[:type]).to eq(:complete)
+      expect(rule.head[:value]).to be_a(Ruby::Rego::AST::BooleanLiteral)
+      expect(rule.body).to be_nil
+    end
+
+    it "parses conditional rules with bodies" do
+      rule = parse_rule("allow if input.user == \"admin\"; input.enabled")
+
+      expect(rule.body.length).to eq(2)
+      expect(rule.body[0]).to be_a(Ruby::Rego::AST::QueryLiteral)
+      expect(rule.body[0].expression).to be_a(Ruby::Rego::AST::BinaryOp)
+      expect(rule.body[1].expression).to be_a(Ruby::Rego::AST::Reference)
+    end
+
+    it "parses partial set rules" do
+      rule = parse_rule("roles contains \"admin\"")
+
+      expect(rule.head[:type]).to eq(:partial_set)
+      expect(rule.head[:term]).to be_a(Ruby::Rego::AST::StringLiteral)
+    end
+
+    it "parses partial object rules" do
+      rule = parse_rule("users[\"alice\"] := {\"role\": \"admin\"}")
+
+      expect(rule.head[:type]).to eq(:partial_object)
+      expect(rule.head[:key]).to be_a(Ruby::Rego::AST::StringLiteral)
+      expect(rule.head[:value]).to be_a(Ruby::Rego::AST::ObjectLiteral)
+    end
+
+    it "parses function rules with parameters" do
+      rule = parse_rule("sum(x, y) := x + y")
+
+      expect(rule.head[:type]).to eq(:function)
+      expect(rule.head[:args].length).to eq(2)
+      expect(rule.head[:value]).to be_a(Ruby::Rego::AST::BinaryOp)
+    end
+
+    it "parses default rules" do
+      rule = parse_rule("default allow := false")
+
+      expect(rule.default_value).to be_a(Ruby::Rego::AST::BooleanLiteral)
+      expect(rule.default_value.value).to be(false)
+    end
+
+    it "raises when default rules have else clauses" do
+      source = <<~REGO
+        package example
+        default allow := false else := true
+      REGO
+
+      expect { parse(source) }.to raise_error(Ruby::Rego::ParserError, /Default rules cannot have else clauses/)
+    end
+
+    it "parses else clauses" do
+      rule = parse_rule("allow := true else := false")
+
+      expect(rule.else_clause).to be_a(Hash)
+      expect(rule.else_clause[:value]).to be_a(Ruby::Rego::AST::BooleanLiteral)
+    end
+
+    it "parses else clauses after a newline" do
+      rule = parse_rule("allow { input.user == \"admin\" }\nelse := false")
+
+      expect(rule.else_clause).to be_a(Hash)
+      expect(rule.else_clause[:value]).to be_a(Ruby::Rego::AST::BooleanLiteral)
+      expect(rule.else_clause[:value].value).to be(false)
+    end
+
+    it "parses some, not, and with literals" do
+      rule = parse_rule("allow { some x; not input.blocked; input.user == \"admin\" with input.user as \"bob\" }")
+
+      expect(rule.body[0]).to be_a(Ruby::Rego::AST::SomeDecl)
+      expect(rule.body[1]).to be_a(Ruby::Rego::AST::QueryLiteral)
+      expect(rule.body[1].expression).to be_a(Ruby::Rego::AST::UnaryOp)
+      expect(rule.body[2].with_modifiers.length).to eq(1)
     end
   end
 
@@ -150,6 +247,43 @@ RSpec.describe Ruby::Rego::Parser do
       expect(expr.name.name).to eq("count")
       expect(expr.args.length).to eq(1)
       expect(expr.args.first).to be_a(Ruby::Rego::AST::ArrayLiteral)
+    end
+
+    it "parses comprehensions" do
+      array = parse_expression("[x | x > 1]")
+      object = parse_expression("{x: y | x > 1}")
+      set = parse_expression("{x | x > 1}")
+
+      expect(array).to be_a(Ruby::Rego::AST::ArrayComprehension)
+      expect(array.term).to be_a(Ruby::Rego::AST::Variable)
+      expect(array.body.length).to eq(1)
+
+      expect(object).to be_a(Ruby::Rego::AST::ObjectComprehension)
+      expect(object.term).to be_a(Array)
+
+      expect(set).to be_a(Ruby::Rego::AST::SetComprehension)
+      expect(set.term).to be_a(Ruby::Rego::AST::Variable)
+    end
+
+    it "parses multiline arrays and sets with trailing newlines" do
+      array = parse_expression("[1, 2\n]")
+      set = parse_expression("{1, 2\n}")
+
+      expect(array).to be_a(Ruby::Rego::AST::ArrayLiteral)
+      expect(array.elements.length).to eq(2)
+
+      expect(set).to be_a(Ruby::Rego::AST::SetLiteral)
+      expect(set.elements.length).to eq(2)
+    end
+
+    it "parses multiline calls and parenthesized expressions" do
+      call = parse_expression("count(\n  [1, 2]\n)")
+      wrapped = parse_expression("(\n  input.user\n)")
+      object = parse_expression("{\n  \"a\": 1\n}\n")
+
+      expect(call).to be_a(Ruby::Rego::AST::Call)
+      expect(wrapped).to be_a(Ruby::Rego::AST::Reference)
+      expect(object).to be_a(Ruby::Rego::AST::ObjectLiteral)
     end
   end
 end

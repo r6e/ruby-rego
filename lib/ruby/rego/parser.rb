@@ -11,6 +11,8 @@ module Ruby
     # rubocop:disable Metrics/ClassLength
     # :reek:TooManyMethods
     # :reek:TooManyConstants
+    # :reek:RepeatedConditional
+    # :reek:DataClump
     class Parser
       IDENTIFIER_TOKEN_TYPES = [TokenType::IDENT, TokenType::DATA, TokenType::INPUT].freeze
       IDENTIFIER_TOKEN_NAMES = {
@@ -104,6 +106,22 @@ module Ruby
         types.include?(current_token.type)
       end
 
+      def pipe_token?
+        match?(TokenType::PIPE)
+      end
+
+      def rbrace_token?
+        match?(TokenType::RBRACE)
+      end
+
+      def newline_token?
+        match?(TokenType::NEWLINE)
+      end
+
+      def consume_newlines
+        advance while newline_token?
+      end
+
       def at_end?
         current_token.type == TokenType::EOF
       end
@@ -118,25 +136,35 @@ module Ruby
         advance
 
         until at_end?
-          return if match?(TokenType::SEMICOLON)
+          return if match?(TokenType::SEMICOLON, TokenType::NEWLINE)
           return if match?(TokenType::PACKAGE, TokenType::IMPORT, TokenType::DEFAULT, TokenType::IDENT)
 
           advance
         end
       end
 
+      # :reek:TooManyStatements
       def parse_module
+        consume_newlines
         package = parse_package
         imports = [] # @type var imports: Array[AST::Import]
         rules = [] # @type var rules: Array[AST::Rule]
 
-        parse_statement(imports, rules) until at_end?
+        consume_newlines
+        until at_end?
+          parse_statement(imports, rules)
+          consume_newlines
+        end
 
         AST::Module.new(package: package, imports: imports, rules: rules, location: package.location)
       end
 
       # :reek:UncommunicativeVariableName
+      # :reek:TooManyStatements
       def parse_statement(imports, rules)
+        consume_newlines
+        return if at_end?
+
         if match?(TokenType::IMPORT)
           imports << parse_import
         else
@@ -168,8 +196,294 @@ module Ruby
         parse_identifier(IdentifierContext.new(name: "import alias", allowed_types: PACKAGE_PATH_TOKEN_TYPES))
       end
 
+      # :reek:TooManyStatements
       def parse_rule
-        parse_error("Rule parsing not implemented yet.")
+        default_token = consume_default_keyword
+        name_token = current_token
+        name = parse_rule_name
+        head = parse_rule_head(name, name_token)
+        head = mark_default_head(head) if default_token
+        definition = parse_rule_definition(default_token, head)
+        validate_rule_definition(default_token, head, definition)
+
+        build_rule_node(name: name, head: head, name_token: name_token, definition: definition)
+      end
+
+      def consume_default_keyword
+        match?(TokenType::DEFAULT) ? advance : nil
+      end
+
+      def parse_rule_name
+        parse_identifier(IdentifierContext.new(name: "rule", allowed_types: PACKAGE_PATH_TOKEN_TYPES))
+      end
+
+      # :reek:UtilityFunction
+      def mark_default_head(head)
+        head.merge(default: true)
+      end
+
+      # :reek:NilCheck
+      # :reek:ControlParameter
+      def parse_default_value(default_token, head)
+        return nil unless default_token
+
+        default_value = head[:value]
+        parse_error("Expected default rule value.") if default_value.nil?
+        default_value
+      end
+
+      # :reek:ControlParameter
+      def parse_non_default_body(default_token)
+        return nil if default_token
+        return nil unless match?(TokenType::IF, TokenType::LBRACE)
+
+        parse_rule_body
+      end
+
+      def parse_rule_definition(default_token, head)
+        default_value = parse_default_value(default_token, head)
+        body = parse_non_default_body(default_token)
+
+        consume_newlines
+        parse_error("Default rules cannot have else clauses.") if default_token && match?(TokenType::ELSE)
+        else_clause = parse_else_clause_if_present
+
+        {
+          default_value: default_value,
+          body: body,
+          else_clause: else_clause
+        }
+      end
+
+      # :reek:FeatureEnvy
+      # :reek:ControlParameter
+      def validate_rule_definition(default_token, head, definition)
+        return if default_token
+        return unless head[:type] == :complete
+        return if head[:value] || definition[:body]
+
+        parse_error("Expected rule body or value.")
+      end
+
+      def parse_else_clause_if_present
+        return nil unless match?(TokenType::ELSE)
+
+        parse_else_clause
+      end
+
+      # :reek:UtilityFunction
+      # :reek:LongParameterList
+      def build_rule_node(name:, head:, name_token:, definition:)
+        AST::Rule.new(
+          name: name,
+          head: head,
+          body: definition[:body],
+          default_value: definition[:default_value],
+          else_clause: definition[:else_clause],
+          location: name_token.location
+        )
+      end
+
+      def parse_rule_head(name, name_token)
+        return parse_contains_rule_head(name, name_token) if match?(TokenType::CONTAINS)
+        return parse_function_rule_head(name, name_token) if match?(TokenType::LPAREN)
+        return parse_bracket_rule_head(name, name_token) if match?(TokenType::LBRACKET)
+
+        build_rule_head(:complete, name, name_token, value: parse_rule_value)
+      end
+
+      def parse_contains_rule_head(name, name_token)
+        advance
+        term = parse_expression
+        build_rule_head(:partial_set, name, name_token, term: term)
+      end
+
+      def parse_function_rule_head(name, name_token)
+        args = parse_rule_head_args
+        value = parse_rule_value
+        build_rule_head(:function, name, name_token, args: args, value: value)
+      end
+
+      def parse_bracket_rule_head(name, name_token)
+        key = parse_rule_head_key
+        return parse_partial_object_rule_head(name, name_token, key) if match?(TokenType::ASSIGN, TokenType::UNIFY)
+
+        build_rule_head(:partial_set, name, name_token, term: key)
+      end
+
+      def parse_partial_object_rule_head(name, name_token, key)
+        advance
+        value = parse_expression
+        build_rule_head(:partial_object, name, name_token, key: key, value: value)
+      end
+
+      # :reek:UtilityFunction
+      # :reek:LongParameterList
+      def build_rule_head(type, name, name_token, **attrs)
+        { type: type, name: name, location: name_token.location }.merge(attrs)
+      end
+
+      # :reek:TooManyStatements
+      def parse_rule_head_args
+        consume(TokenType::LPAREN, "Expected '(' after rule name.")
+        consume_newlines
+        args = [] # @type var args: Array[AST::expression]
+        args = parse_expression_list_until(TokenType::RPAREN) unless match?(TokenType::RPAREN)
+        consume_newlines
+        consume(TokenType::RPAREN, "Expected ')' after rule arguments.")
+        args
+      end
+
+      # :reek:TooManyStatements
+      def parse_rule_head_key
+        consume(TokenType::LBRACKET, "Expected '[' after rule name.")
+        consume_newlines
+        key = parse_expression
+        consume_newlines
+        consume(TokenType::RBRACKET, "Expected ']' after rule key.")
+        key
+      end
+
+      def parse_rule_value
+        return nil unless match?(TokenType::ASSIGN, TokenType::UNIFY)
+
+        advance
+        parse_expression
+      end
+
+      def parse_rule_body
+        advance if match?(TokenType::IF)
+        return parse_braced_rule_body if match?(TokenType::LBRACE)
+
+        parse_query(TokenType::ELSE, TokenType::EOF, TokenType::NEWLINE, newline_delimiter: false)
+      end
+
+      # :reek:TooManyStatements
+      def parse_braced_rule_body
+        advance
+        consume_newlines
+        return parse_empty_rule_body if rbrace_token?
+
+        body = parse_query(TokenType::RBRACE, newline_delimiter: true)
+        consume(TokenType::RBRACE, "Expected '}' after rule body.")
+        body
+      end
+
+      def parse_empty_rule_body
+        advance
+        []
+      end
+
+      # :reek:TooManyStatements
+      # :reek:DuplicateMethodCall
+      # :reek:BooleanParameter
+      # rubocop:disable Metrics/MethodLength
+      def parse_query(*end_tokens, newline_delimiter: false)
+        terminators = end_tokens.flatten
+        literals = [] # @type var literals: Array[AST::query_literal]
+
+        loop do
+          consume_newlines if newline_delimiter
+          break if terminators.include?(current_token.type)
+
+          literals << parse_literal
+          consume_newlines if newline_delimiter
+          break if terminators.include?(current_token.type)
+
+          break unless consume_query_separators(newline_delimiter)
+        end
+
+        literals
+      end
+
+      # rubocop:enable Metrics/MethodLength
+
+      # rubocop:disable Metrics/MethodLength
+      # :reek:TooManyStatements
+      # :reek:ControlParameter
+      def consume_query_separators(newline_delimiter)
+        consumed = false
+
+        loop do
+          if match?(TokenType::SEMICOLON)
+            advance
+            consumed = true
+            next
+          end
+
+          if newline_delimiter && newline_token?
+            advance
+            consumed = true
+            next
+          end
+
+          break
+        end
+
+        consumed
+      end
+
+      # rubocop:enable Metrics/MethodLength
+
+      def parse_literal
+        return parse_some_decl if match?(TokenType::SOME)
+
+        expression = parse_expression
+        AST::QueryLiteral.new(
+          expression: expression,
+          with_modifiers: parse_with_modifiers,
+          location: expression.location
+        )
+      end
+
+      def parse_with_modifiers
+        modifiers = [] # @type var modifiers: Array[AST::WithModifier]
+        modifiers << parse_with_modifier while match?(TokenType::WITH)
+        modifiers
+      end
+
+      def parse_some_decl
+        keyword = consume(TokenType::SOME, "Expected 'some' declaration.")
+        variables = parse_some_variables
+        collection = parse_some_collection
+
+        AST::SomeDecl.new(variables: variables, collection: collection, location: keyword.location)
+      end
+
+      # :reek:TooManyStatements
+      def parse_some_variables
+        variables = [] # @type var variables: Array[AST::Variable]
+        loop do
+          variables << parse_variable
+          break unless match?(TokenType::COMMA)
+
+          advance
+        end
+        variables
+      end
+
+      def parse_some_collection
+        return nil unless match?(TokenType::IN)
+
+        advance
+        parse_expression
+      end
+
+      def parse_with_modifier
+        keyword = consume(TokenType::WITH, "Expected 'with' modifier.")
+        target = parse_expression
+        consume(TokenType::AS, "Expected 'as' after with target.")
+        value = parse_expression
+        AST::WithModifier.new(target: target, value: value, location: keyword.location)
+      end
+
+      def parse_else_clause
+        keyword = consume(TokenType::ELSE, "Expected 'else' clause.")
+        value = nil
+        value = parse_rule_value if match?(TokenType::ASSIGN, TokenType::UNIFY)
+        body = parse_rule_body if match?(TokenType::IF, TokenType::LBRACE)
+
+        { value: value, body: body, location: keyword.location }
       end
 
       def parse_expression(precedence = Precedence::LOWEST)
@@ -211,34 +525,53 @@ module Ruby
         AST::Reference.new(base: reference_base, path: path, location: base.location)
       end
 
+      # :reek:TooManyStatements
+      # :reek:DuplicateMethodCall
       def parse_array
         start = consume(TokenType::LBRACKET)
-        elements = [] # @type var elements: Array[AST::expression]
-        elements = parse_expression_list_until(TokenType::RBRACKET) unless match?(TokenType::RBRACKET)
+        location = start.location
+        consume_newlines
+        return AST::ArrayLiteral.new(elements: [], location: location) if match?(TokenType::RBRACKET)
+
+        term = parse_expression(Precedence::OR)
+        return parse_array_comprehension(start, term) if pipe_token?
+
+        elements = parse_expression_list_until_with_first(TokenType::RBRACKET, term)
+        consume_newlines
         consume(TokenType::RBRACKET, "Expected ']' after array literal.")
-        AST::ArrayLiteral.new(elements: elements, location: start.location)
+        AST::ArrayLiteral.new(elements: elements, location: location)
       end
 
-      def parse_object(start_token, first_key)
-        pairs = [] # @type var pairs: Array[[AST::expression, AST::expression]]
-        pairs << parse_object_pair(first_key)
-        append_object_pairs(pairs)
+      def parse_object(start_token, first_key, first_value)
+        pairs = build_object_pairs(first_key, first_value)
+        consume_newlines
         consume(TokenType::RBRACE, "Expected '}' after object literal.")
         AST::ObjectLiteral.new(pairs: pairs, location: start_token.location)
+      end
+
+      def build_object_pairs(first_key, first_value)
+        pairs = [] # @type var pairs: Array[[AST::expression, AST::expression]]
+        pairs << [first_key, first_value]
+        append_object_pairs(pairs)
+        pairs
       end
 
       def parse_set(start_token, first_element = nil)
         return empty_set_literal(start_token) if empty_set?(first_element)
 
         elements = parse_expression_list_until_with_first(TokenType::RBRACE, first_element)
+        consume_newlines
         consume(TokenType::RBRACE, "Expected '}' after set literal.")
         AST::SetLiteral.new(elements: elements, location: start_token.location)
       end
 
+      # :reek:TooManyStatements
       def parse_call_args
         consume(TokenType::LPAREN, "Expected '('.")
+        consume_newlines
         args = [] # @type var args: Array[AST::expression]
         args = parse_expression_list_until(TokenType::RPAREN) unless match?(TokenType::RPAREN)
+        consume_newlines
         consume(TokenType::RPAREN, "Expected ')' after arguments.")
         args
       end
@@ -286,8 +619,15 @@ module Ruby
 
       def parse_parenthesized_expression
         advance
-        expression = parse_expression
+        expression = parse_parenthesized_body
         consume(TokenType::RPAREN, "Expected ')' after expression.")
+        expression
+      end
+
+      def parse_parenthesized_body
+        consume_newlines
+        expression = parse_expression
+        consume_newlines
         expression
       end
 
@@ -331,16 +671,26 @@ module Ruby
         errors << error
       end
 
+      # :reek:TooManyStatements
       def parse_braced_literal
         start = consume(TokenType::LBRACE)
-        return parse_set(start) if match?(TokenType::RBRACE)
+        consume_newlines
+        return parse_set(start) if rbrace_token?
 
-        first = parse_expression
-        if match?(TokenType::COLON)
-          parse_object(start, first)
-        else
-          parse_set(start, first)
-        end
+        first = parse_expression(Precedence::OR)
+        return parse_set_comprehension(start, first) if pipe_token?
+        return parse_object_literal_or_comprehension(start, first) if match?(TokenType::COLON)
+
+        parse_set(start, first)
+      end
+
+      def parse_object_literal_or_comprehension(start, key)
+        advance
+        consume_newlines
+        value = parse_expression(Precedence::OR)
+        return parse_object_comprehension(start, key, value) if pipe_token?
+
+        parse_object(start, key, value)
       end
 
       def parse_identifier_expression
@@ -360,6 +710,7 @@ module Ruby
 
       def parse_expression_list_until(end_token)
         elements = [] # @type var elements: Array[AST::expression]
+        consume_newlines
         elements << parse_expression
         append_expression_list(elements, end_token)
         elements
@@ -368,12 +719,14 @@ module Ruby
       def parse_expression_list_until_with_first(end_token, first_element)
         elements = [] # @type var elements: Array[AST::expression]
         elements << first_element
+        consume_newlines
         append_expression_list(elements, end_token)
         elements
       end
 
       def parse_object_pair(key)
         consume(TokenType::COLON, "Expected ':' after object key.")
+        consume_newlines
         value = parse_expression
         [key, value]
       end
@@ -381,6 +734,7 @@ module Ruby
       def append_expression_list(elements, end_token)
         while match?(TokenType::COMMA)
           advance
+          consume_newlines
           break if match?(end_token)
 
           elements << parse_expression
@@ -390,10 +744,32 @@ module Ruby
       def append_object_pairs(pairs)
         while match?(TokenType::COMMA)
           advance
-          break if match?(TokenType::RBRACE)
+          consume_newlines
+          break if rbrace_token?
 
           pairs << parse_object_pair(parse_expression)
         end
+      end
+
+      def parse_array_comprehension(start_token, term)
+        consume(TokenType::PIPE, "Expected '|' after array term.")
+        body = parse_query(TokenType::RBRACKET, newline_delimiter: true)
+        consume(TokenType::RBRACKET, "Expected ']' after array comprehension.")
+        AST::ArrayComprehension.new(term: term, body: body, location: start_token.location)
+      end
+
+      def parse_object_comprehension(start_token, key, value)
+        consume(TokenType::PIPE, "Expected '|' after object term.")
+        body = parse_query(TokenType::RBRACE, newline_delimiter: true)
+        consume(TokenType::RBRACE, "Expected '}' after object comprehension.")
+        AST::ObjectComprehension.new(term: [key, value], body: body, location: start_token.location)
+      end
+
+      def parse_set_comprehension(start_token, term)
+        consume(TokenType::PIPE, "Expected '|' after set term.")
+        body = parse_query(TokenType::RBRACE, newline_delimiter: true)
+        consume(TokenType::RBRACE, "Expected '}' after set comprehension.")
+        AST::SetComprehension.new(term: term, body: body, location: start_token.location)
       end
 
       def parse_reference_path(path)
@@ -417,7 +793,7 @@ module Ruby
       end
 
       def empty_set?(first_element)
-        match?(TokenType::RBRACE) && !first_element
+        rbrace_token? && !first_element
       end
 
       def empty_set_literal(start_token)

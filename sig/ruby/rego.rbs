@@ -180,6 +180,7 @@ module Ruby
       def read_number: () -> Token
       def read_string: () -> Token
       def read_raw_string: () -> Token
+      def read_newline: () -> Token
       def read_identifier: () -> Token
       def read_digits: () -> String
       def read_escape_sequence: (position backslash_position) -> String
@@ -242,6 +243,10 @@ module Ruby
       def advance: () -> Token
       def consume: (Symbol type, ?String message) -> Token
       def match?: (*Symbol types) -> bool
+      def pipe_token?: () -> bool
+      def rbrace_token?: () -> bool
+      def newline_token?: () -> bool
+      def consume_newlines: () -> void
       def at_end?: () -> bool
       def parse_error: (String message) -> bot
       def synchronize: () -> void
@@ -250,16 +255,50 @@ module Ruby
       def parse_package: () -> AST::Package
       def parse_import: () -> AST::Import
       def parse_import_alias: () -> String?
-      def parse_rule: () -> untyped
+      def parse_rule: () -> AST::Rule
+      def consume_default_keyword: () -> Token?
+      def parse_rule_name: () -> String
+      def mark_default_head: (Hash[Symbol, untyped] head) -> Hash[Symbol, untyped]
+      def parse_default_value: (Token? default_token, Hash[Symbol, untyped] head) -> AST::expression?
+      def parse_non_default_body: (Token? default_token) -> Array[AST::query_literal]?
+      def parse_rule_definition: (Token? default_token, Hash[Symbol, untyped] head) -> Hash[Symbol, untyped]
+      def validate_rule_definition: (Token? default_token, Hash[Symbol, untyped] head, Hash[Symbol, untyped] definition) -> void
+      def parse_else_clause_if_present: () -> Hash[Symbol, untyped]?
+      def build_rule_node: (name: String, head: Hash[Symbol, untyped], name_token: Token, definition: Hash[Symbol, untyped]) -> AST::Rule
+      def parse_rule_head: (String name, Token name_token) -> Hash[Symbol, untyped]
+      def parse_contains_rule_head: (String name, Token name_token) -> Hash[Symbol, untyped]
+      def parse_function_rule_head: (String name, Token name_token) -> Hash[Symbol, untyped]
+      def parse_bracket_rule_head: (String name, Token name_token) -> Hash[Symbol, untyped]
+      def parse_partial_object_rule_head: (String name, Token name_token, AST::expression key) -> Hash[Symbol, untyped]
+      def build_rule_head: (Symbol type, String name, Token name_token, **untyped attrs) -> Hash[Symbol, untyped]
+      def parse_rule_head_args: () -> Array[AST::expression]
+      def parse_rule_head_key: () -> AST::expression
+      def parse_rule_value: () -> AST::expression?
+      def parse_rule_body: () -> Array[AST::query_literal]
+      def parse_braced_rule_body: () -> Array[AST::query_literal]
+      def parse_empty_rule_body: () -> Array[AST::query_literal]
+      def parse_query: (*Symbol end_tokens, ?newline_delimiter: bool) -> Array[AST::query_literal]
+      def consume_query_separators: (bool newline_delimiter) -> bool
+      def parse_literal: () -> AST::query_literal
+      def parse_some_decl: () -> AST::SomeDecl
+      def parse_some_variables: () -> Array[AST::Variable]
+      def parse_some_collection: () -> AST::expression?
+      def parse_with_modifier: () -> AST::WithModifier
+      def parse_with_modifiers: () -> Array[AST::WithModifier]
+      def parse_else_clause: () -> Hash[Symbol, untyped]
       def parse_expression: (?Integer precedence) -> AST::expression
       def parse_infix_expression: (AST::expression left, Integer precedence) -> AST::expression
       def infix_operator?: (Integer precedence) -> bool
       def parse_primary: () -> AST::expression
       def parse_infix: (AST::expression left, Token operator_token) -> AST::BinaryOp
       def parse_reference: (AST::expression base) -> AST::Reference
-      def parse_array: () -> AST::ArrayLiteral
-      def parse_object: (Token start_token, AST::expression first_key) -> AST::ObjectLiteral
+      def parse_array: () -> AST::expression
+      def parse_object: (Token start_token, AST::expression first_key, AST::expression first_value) -> AST::ObjectLiteral
+      def build_object_pairs: (AST::expression first_key, AST::expression first_value) -> Array[[AST::expression, AST::expression]]
       def parse_set: (Token start_token, ?AST::expression first_element) -> AST::SetLiteral
+      def parse_array_comprehension: (Token start_token, AST::expression term) -> AST::ArrayComprehension
+      def parse_object_comprehension: (Token start_token, AST::expression key, AST::expression value) -> AST::ObjectComprehension
+      def parse_set_comprehension: (Token start_token, AST::expression term) -> AST::SetComprehension
       def parse_call_args: () -> Array[AST::expression]
       def parse_string_literal: () -> AST::StringLiteral
       def parse_number_literal: () -> AST::NumberLiteral
@@ -267,10 +306,12 @@ module Ruby
       def parse_null_literal: () -> AST::NullLiteral
       def parse_unary_expression: () -> AST::UnaryOp
       def parse_parenthesized_expression: () -> AST::expression
+      def parse_parenthesized_body: () -> AST::expression
       def parse_path: (Parser::IdentifierContext identifier_context) -> Array[String]
       def parse_path_segment: (Parser::IdentifierContext identifier_context) -> String
       def parse_identifier: (Parser::IdentifierContext identifier_context) -> String
       def parse_braced_literal: () -> AST::expression
+      def parse_object_literal_or_comprehension: (Token start_token, AST::expression key) -> AST::expression
       def parse_identifier_expression: () -> AST::expression
       def parse_variable: () -> AST::Variable
       def parse_expression_list_until: (Symbol end_token) -> Array[AST::expression]
@@ -336,7 +377,9 @@ module Ruby
 
       type expression = Literal | Variable | Reference | BinaryOp | UnaryOp | ArrayLiteral | ObjectLiteral | SetLiteral | ArrayComprehension | ObjectComprehension | SetComprehension | Call
       type call_name = String | Variable | Reference
-      type query = Array[expression]
+      type query_literal = QueryLiteral | SomeDecl
+      type query = Array[query_literal]
+      type object_term = [expression, expression]
 
       class Literal < Base
         attr_reader value: untyped
@@ -450,10 +493,10 @@ module Ruby
       end
 
       class ObjectComprehension < Base
-        attr_reader term: expression
+        attr_reader term: object_term
         attr_reader body: query
 
-        def initialize: (term: expression, body: query, ?location: Location?) -> void
+        def initialize: (term: object_term, body: query, ?location: Location?) -> void
       end
 
       class SetComprehension < Base
@@ -461,6 +504,27 @@ module Ruby
         attr_reader body: query
 
         def initialize: (term: expression, body: query, ?location: Location?) -> void
+      end
+
+      class QueryLiteral < Base
+        attr_reader expression: expression
+        attr_reader with_modifiers: Array[WithModifier]
+
+        def initialize: (expression: expression, ?with_modifiers: Array[WithModifier], ?location: Location?) -> void
+      end
+
+      class SomeDecl < Base
+        attr_reader variables: Array[Variable]
+        attr_reader collection: expression?
+
+        def initialize: (variables: Array[Variable], ?collection: expression?, ?location: Location?) -> void
+      end
+
+      class WithModifier < Base
+        attr_reader target: expression
+        attr_reader value: expression
+
+        def initialize: (target: expression, value: expression, ?location: Location?) -> void
       end
 
       class Call < Base

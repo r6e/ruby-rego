@@ -152,20 +152,26 @@ RSpec.describe Ruby::Rego::Lexer do
 
       expect(tokens[0].type).to eq(Ruby::Rego::TokenType::IDENT)
       expect(tokens[0].value).to eq("allow")
-      expect(tokens[1].type).to eq(Ruby::Rego::TokenType::TRUE)
-      expect(tokens[2].type).to eq(Ruby::Rego::TokenType::EOF)
+      expect(tokens[1].type).to eq(Ruby::Rego::TokenType::NEWLINE)
+      expect(tokens[2].type).to eq(Ruby::Rego::TokenType::TRUE)
+      expect(tokens[3].type).to eq(Ruby::Rego::TokenType::EOF)
     end
 
     it "tracks token locations" do
       tokens = tokenize("a\n  b")
 
       first = tokens[0].location
-      second = tokens[1].location
+      newline = tokens[1].location
+      second = tokens[2].location
 
       expect(first.line).to eq(1)
       expect(first.column).to eq(1)
       expect(first.offset).to eq(0)
       expect(first.length).to eq(1)
+
+      expect(newline.line).to eq(1)
+      expect(newline.column).to eq(2)
+      expect(newline.offset).to eq(1)
 
       expect(second.line).to eq(2)
       expect(second.column).to eq(3)
@@ -182,7 +188,7 @@ RSpec.describe Ruby::Rego::Lexer do
     it "handles whitespace-only input" do
       tokens = tokenize(" \t\n  ")
 
-      expect(tokens.map(&:type)).to eq([Ruby::Rego::TokenType::EOF])
+      expect(tokens.map(&:type)).to eq([Ruby::Rego::TokenType::NEWLINE, Ruby::Rego::TokenType::EOF])
     end
 
     it "handles comment-only input" do

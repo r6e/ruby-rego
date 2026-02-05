@@ -92,6 +92,7 @@ module Ruby
         char = current_char
         return eof_token if char.nil?
 
+        return read_newline if newline?(char)
         return read_number if digit?(char)
         return read_identifier if identifier_start?(char)
         return read_string if char == "\""
@@ -268,6 +269,12 @@ module Ruby
       end
       # rubocop:enable Metrics/MethodLength
 
+      def read_newline
+        start = capture_position
+        advance
+        build_token(TokenType::NEWLINE, "\n", start)
+      end
+
       def read_identifier
         start = capture_position
         buffer = +""
@@ -426,7 +433,7 @@ module Ruby
       def whitespace?(char)
         return false if char.nil?
 
-        WHITESPACE_CHARS.include?(char) || newline?(char)
+        WHITESPACE_CHARS.include?(char)
       end
 
       def newline?(char)
