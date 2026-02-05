@@ -103,7 +103,7 @@
       "label": "Rubocop",
       "type": "shell",
       "command": "bundle",
-      "args": ["exec", "rubocop"],
+      "args": ["exec", "rubocop", "--format", "simple", "--no-color"],
       "options": {
         "shell": {
           "executable": "/bin/zsh",

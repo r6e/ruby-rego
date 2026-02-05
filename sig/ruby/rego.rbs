@@ -218,6 +218,70 @@ module Ruby
       attr_reader offset: Integer
     end
 
+    class Parser
+      IDENTIFIER_TOKEN_TYPES: Array[Symbol]
+      IDENTIFIER_TOKEN_NAMES: Hash[Symbol, String]
+      PACKAGE_PATH_TOKEN_TYPES: Array[Symbol]
+      IMPORT_PATH_TOKEN_TYPES: Array[Symbol]
+
+      @tokens: Array[Token]
+      @current: Integer
+      @errors: Array[ParserError]
+
+      def initialize: (Array[Token] tokens) -> void
+      def parse: () -> AST::Module
+
+      private
+
+      def tokens: () -> Array[Token]
+      def current_token: () -> Token
+      def peek: (?Integer distance) -> Token
+      def advance: () -> Token
+      def consume: (Symbol type, ?String message) -> Token
+      def match?: (*Symbol types) -> bool
+      def at_end?: () -> bool
+      def parse_error: (String message) -> bot
+      def synchronize: () -> void
+      def parse_module: () -> AST::Module
+      def parse_statement: (Array[AST::Import] imports, Array[AST::Rule] rules) -> void
+      def parse_package: () -> AST::Package
+      def parse_import: () -> AST::Import
+      def parse_import_alias: () -> String?
+      def parse_rule: () -> untyped
+      def parse_expression: () -> untyped
+      def parse_path: (Parser::IdentifierContext identifier_context) -> Array[String]
+      def parse_path_segment: (Parser::IdentifierContext identifier_context) -> String
+      def parse_identifier: (Parser::IdentifierContext identifier_context) -> String
+      def safe_token_at: (Integer index) -> Token
+      def record_error: (ParserError error) -> void
+
+      private
+
+      def errors: () -> Array[ParserError]
+    end
+
+    class Parser::IdentifierContext
+      attr_reader name: String
+      attr_reader allowed_types: Array[Symbol]
+
+      def initialize: (name: String, allowed_types: Array[Symbol]) -> void
+    end
+
+    class Parser
+      module Precedence
+        LOWEST: Integer
+        ASSIGNMENT: Integer
+        OR: Integer
+        AND: Integer
+        EQUALS: Integer
+        COMPARE: Integer
+        SUM: Integer
+        PRODUCT: Integer
+        UNARY: Integer
+        BINARY: Hash[Symbol, Integer]
+      end
+    end
+
     module AST
       class Base
         attr_reader location: Location?

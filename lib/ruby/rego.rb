@@ -6,6 +6,7 @@ require_relative "rego/errors"
 require_relative "rego/token"
 require_relative "rego/lexer"
 require_relative "rego/ast"
+require_relative "rego/parser"
 
 module Ruby
   # Top-level namespace for the Ruby Rego gem.
