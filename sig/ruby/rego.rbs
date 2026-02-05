@@ -71,6 +71,133 @@ module Ruby
       def initialize: (String message, pattern: untyped, value: untyped, location: Location?) -> void
     end
 
+    class Value
+      TYPE_NAME: String
+
+      def self.from_ruby: (untyped) -> Value
+      def initialize: (?untyped value) -> void
+      attr_reader value: untyped
+      def truthy?: () -> bool
+      def to_ruby: () -> untyped
+      def type_name: () -> String
+      def ==: (untyped) -> bool
+      def eql?: (untyped) -> bool
+      def hash: () -> Integer
+
+      private
+
+      def self.build_value: (untyped) -> Value?
+      def self.build_simple_value: (untyped) -> Value?
+      def self.build_composite_value: (untyped) -> Value?
+    end
+
+    class StringValue < Value
+      TYPE_NAME: String
+
+      def initialize: (String value) -> void
+    end
+
+    class NumberValue < Value
+      TYPE_NAME: String
+
+      def initialize: (Numeric value) -> void
+    end
+
+    class BooleanValue < Value
+      TYPE_NAME: String
+
+      def initialize: (bool value) -> void
+      def truthy?: () -> bool
+    end
+
+    class NullValue < Value
+      TYPE_NAME: String
+
+      def initialize: () -> void
+      def truthy?: () -> bool
+    end
+
+    class UndefinedValue < Value
+      TYPE_NAME: String
+      UNDEFINED: untyped
+
+      def initialize: () -> void
+      def truthy?: () -> bool
+      def to_ruby: () -> untyped
+    end
+
+    class ArrayValue < Value
+      TYPE_NAME: String
+
+      def initialize: (Array[untyped] elements) -> void
+      def fetch_index: (Integer index) -> Value
+      def to_ruby: () -> Array[untyped]
+    end
+
+    class ObjectValue < Value
+      TYPE_NAME: String
+
+      def initialize: (Hash[untyped, untyped] pairs) -> void
+      def fetch: (untyped key) -> Value
+      def to_ruby: () -> Hash[untyped, untyped]
+
+      private
+
+      def fetch_by_symbol_key: (Symbol key) -> Value
+      def normalize_pairs: (Hash[untyped, untyped] pairs) -> Hash[untyped, Value]
+      def ensure_unique_key: (untyped normalized_key, Hash[untyped, untyped] key_sources, untyped key) -> void
+    end
+
+    class SetValue < Value
+      TYPE_NAME: String
+
+      def initialize: (Set[untyped] | Array[untyped] elements) -> void
+      def include?: (untyped value) -> bool
+      def to_ruby: () -> Set[untyped]
+    end
+
+    class Environment
+      RESERVED_BINDINGS: Hash[String, Symbol]
+      RESERVED_NAMES: Array[String]
+
+      attr_reader input: Value
+      attr_reader data: Value
+      attr_reader rules: Hash[untyped, untyped]
+
+      def initialize: (input: untyped, data: untyped, rules: Hash[untyped, untyped]) -> void
+      def push_scope: () -> Environment
+      def pop_scope: () -> void
+      def bind: (String | Symbol name, untyped value) -> Value
+      def lookup: (String | Symbol name) -> Value
+      def resolve_reference: (untyped ref) -> Value
+      def with_bindings: (Hash[String | Symbol, untyped] bindings) { () -> untyped } -> untyped
+
+      private
+
+      attr_reader locals: Array[Hash[String, Value]]
+      def resolve_base: (untyped base) -> Value
+      def resolve_path_segment: (Value current, untyped segment) -> Value
+      def resolve_reference_path: (Value current, Array[untyped] path) -> Value
+      def extract_reference_key: (untyped segment) -> untyped
+      def resolve_reference_variable: (untyped value) -> untyped
+    end
+
+    class Result
+      attr_reader value: Value
+      attr_reader bindings: Hash[String, Value]
+      attr_reader success: bool
+      attr_reader errors: Array[untyped]
+
+      def initialize: (value: untyped, success: bool, bindings: Hash[String | Symbol, untyped], errors: Array[untyped]) -> void
+      def success?: () -> bool
+      def undefined?: () -> bool
+      def to_h: () -> Hash[Symbol, untyped]
+
+      private
+
+      def add_bindings: (Hash[String | Symbol, untyped] bindings) -> void
+    end
+
     module TokenType
       PACKAGE: Symbol
       IMPORT: Symbol
@@ -262,6 +389,7 @@ module Ruby
       def parse_default_value: (Token? default_token, Hash[Symbol, untyped] head) -> AST::expression?
       def parse_non_default_body: (Token? default_token) -> Array[AST::query_literal]?
       def parse_rule_definition: (Token? default_token, Hash[Symbol, untyped] head) -> Hash[Symbol, untyped]
+      def parse_else_clause_for_definition: (Token? default_token) -> Hash[Symbol, untyped]?
       def validate_rule_definition: (Token? default_token, Hash[Symbol, untyped] head, Hash[Symbol, untyped] definition) -> void
       def parse_else_clause_if_present: () -> Hash[Symbol, untyped]?
       def build_rule_node: (name: String, head: Hash[Symbol, untyped], name_token: Token, definition: Hash[Symbol, untyped]) -> AST::Rule

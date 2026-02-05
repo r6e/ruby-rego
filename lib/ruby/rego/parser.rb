@@ -243,16 +243,20 @@ module Ruby
       def parse_rule_definition(default_token, head)
         default_value = parse_default_value(default_token, head)
         body = parse_non_default_body(default_token)
-
-        consume_newlines
-        parse_error("Default rules cannot have else clauses.") if default_token && match?(TokenType::ELSE)
-        else_clause = parse_else_clause_if_present
+        else_clause = parse_else_clause_for_definition(default_token)
 
         {
           default_value: default_value,
           body: body,
           else_clause: else_clause
         }
+      end
+
+      # :reek:ControlParameter
+      def parse_else_clause_for_definition(default_token)
+        consume_newlines
+        parse_error("Default rules cannot have else clauses.") if default_token && match?(TokenType::ELSE)
+        parse_else_clause_if_present
       end
 
       # :reek:FeatureEnvy
