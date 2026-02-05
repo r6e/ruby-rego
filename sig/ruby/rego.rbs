@@ -53,7 +53,7 @@ module Ruby
     class EvaluationError < Error
       attr_reader rule: untyped
 
-      def initialize: (String message, rule: untyped, location: Location?) -> void
+      def initialize: (String message, rule: untyped, ?location: Location?) -> void
     end
 
     class TypeError < Error
@@ -80,6 +80,9 @@ module Ruby
       def truthy?: () -> bool
       def to_ruby: () -> untyped
       def type_name: () -> String
+      def undefined?: () -> bool
+      def object_key: () -> untyped
+      def fetch_reference: (untyped key) -> Value
       def ==: (untyped) -> bool
       def eql?: (untyped) -> bool
       def hash: () -> Integer
@@ -124,6 +127,7 @@ module Ruby
       def initialize: () -> void
       def truthy?: () -> bool
       def to_ruby: () -> untyped
+      def object_key: () -> UndefinedValue
     end
 
     class ArrayValue < Value
@@ -131,6 +135,7 @@ module Ruby
 
       def initialize: (Array[untyped] elements) -> void
       def fetch_index: (Integer index) -> Value
+      def fetch_reference: (untyped key) -> Value
       def to_ruby: () -> Array[untyped]
     end
 
@@ -139,6 +144,7 @@ module Ruby
 
       def initialize: (Hash[untyped, untyped] pairs) -> void
       def fetch: (untyped key) -> Value
+      def fetch_reference: (untyped key) -> Value
       def to_ruby: () -> Hash[untyped, untyped]
 
       private
@@ -170,6 +176,7 @@ module Ruby
       def bind: (String | Symbol name, untyped value) -> Value
       def lookup: (String | Symbol name) -> Value
       def resolve_reference: (untyped ref) -> Value
+      def reference_key_for: (AST::Variable variable) -> untyped
       def with_bindings: (Hash[String | Symbol, untyped] bindings) { () -> untyped } -> untyped
 
       private
@@ -188,7 +195,7 @@ module Ruby
       attr_reader success: bool
       attr_reader errors: Array[untyped]
 
-      def initialize: (value: untyped, success: bool, bindings: Hash[String | Symbol, untyped], errors: Array[untyped]) -> void
+      def initialize: (value: untyped, success: bool, ?bindings: Hash[String | Symbol, untyped], ?errors: Array[untyped]) -> void
       def success?: () -> bool
       def undefined?: () -> bool
       def to_h: () -> Hash[Symbol, untyped]
@@ -196,6 +203,190 @@ module Ruby
       private
 
       def add_bindings: (Hash[String | Symbol, untyped] bindings) -> void
+    end
+
+    class Evaluator
+      attr_reader module_node: AST::Module
+      attr_reader environment: Environment
+
+      def initialize: (AST::Module ast_module, input: untyped, data: untyped) -> void
+      def evaluate: (?untyped query) -> Result
+
+      private
+
+      attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
+      attr_reader rule_evaluator: Evaluator::RuleEvaluator
+
+      def evaluate_rules: () -> Hash[untyped, untyped]
+      def evaluate_query: (untyped query) -> Value
+      def build_evaluators: (Hash[String, Array[AST::Rule]] rules_by_name, Array[String] package_path) -> [Evaluator::ExpressionEvaluator, Evaluator::RuleEvaluator]
+      def build_expression_evaluator: (Evaluator::RuleValueProvider rule_value_provider, Array[String] package_path) -> Evaluator::ExpressionEvaluator
+      def build_rule_evaluator: (Evaluator::ExpressionEvaluator expression_evaluator, Evaluator::RuleValueProvider rule_value_provider) -> Evaluator::RuleEvaluator
+      def eval_node: (untyped node) -> Value
+    end
+
+    class Evaluator::QueryNodeBuilder
+      def initialize: (untyped query) -> void
+      def build: () -> untyped
+
+      private
+
+      attr_reader query: untyped
+      def reference_from_string: () -> AST::Reference
+    end
+
+    class Evaluator::RuleValueProvider
+      def initialize: (rules_by_name: Hash[String, Array[AST::Rule]]) -> void
+      def attach: (Evaluator::RuleEvaluator rule_evaluator) -> void
+      def value_for: (String name) -> Value
+      def rule_defined?: (String name) -> bool
+
+      private
+
+      attr_reader rule_evaluator: Evaluator::RuleEvaluator?
+      attr_reader rules_by_name: Hash[String, Array[AST::Rule]]
+    end
+
+    class Evaluator::ReferenceResolver
+      def initialize: (environment: Environment, package_path: Array[String], rule_value_provider: Evaluator::RuleValueProvider) -> void
+      def resolve: (untyped ref) -> Value
+
+      private
+
+      def resolve_rule_reference: (AST::Reference ref) -> Value?
+      def rule_reference: (Array[AST::RefArg] path) -> [String, Array[AST::RefArg]]?
+      def resolve_rule_value: (String rule_name, Array[AST::RefArg] remaining_path) -> Value
+      def package_rule_reference: (Array[untyped] keys, Array[AST::RefArg] path) -> [String, Array[AST::RefArg]]?
+      def direct_rule_reference: (Array[untyped] keys, Array[AST::RefArg] path) -> [String, Array[AST::RefArg]]?
+      def resolve_reference_path: (Value current, Array[AST::RefArg] path) -> Value
+      def resolve_path_segment: (Value current, AST::RefArg segment) -> Value
+      def valid_reference_keys: (Array[AST::RefArg] path) -> Array[untyped]?
+      def reference_keys: (Array[AST::RefArg] path) -> Array[untyped]
+      def package_match?: (Array[untyped] keys) -> bool
+
+      private
+
+      attr_reader environment: Environment
+      attr_reader key_resolver: Evaluator::ReferenceKeyResolver
+      attr_reader rules_by_name: Hash[String, Array[AST::Rule]]
+      attr_reader package_path: Array[String]
+      attr_reader rule_value_provider: Evaluator::RuleValueProvider
+    end
+
+    class Evaluator::ReferenceKeyResolver
+      def initialize: (environment: Environment) -> void
+      def resolve: (untyped segment) -> untyped
+
+      private
+
+      attr_reader environment: Environment
+      def resolve_segment: (untyped segment) -> untyped
+    end
+
+    class Evaluator::ExpressionEvaluator
+      PRIMITIVE_TYPES: Array[Class]
+      NODE_EVALUATORS: Array[[Class, ^(untyped, Evaluator::ExpressionEvaluator) -> Value]]
+
+      include Evaluator::AssignmentSupport
+
+      def initialize: (environment: Environment, reference_resolver: Evaluator::ReferenceResolver) -> void
+      def evaluate: (untyped node) -> Value
+
+      private
+
+      def evaluate_variable: (AST::Variable node) -> Value
+      def evaluate_reference: (AST::Reference node) -> Value
+      def evaluate_array_literal: (AST::ArrayLiteral node) -> Value
+      def evaluate_object_literal: (AST::ObjectLiteral node) -> Value
+      def evaluate_set_literal: (AST::SetLiteral node) -> Value
+      def evaluate_binary_op: (AST::BinaryOp node) -> Value
+      def evaluate_unary_op: (AST::UnaryOp node) -> Value
+      def raise_unknown_node: (untyped node) -> Value
+
+      attr_reader environment: Environment
+      attr_reader reference_resolver: Evaluator::ReferenceResolver
+      attr_reader object_literal_evaluator: Evaluator::ObjectLiteralEvaluator
+      attr_reader dispatch: Evaluator::ExpressionDispatch
+
+    end
+
+    class Evaluator::ObjectLiteralEvaluator
+      def initialize: (expression_evaluator: Evaluator::ExpressionEvaluator) -> void
+      def evaluate: (AST::ObjectLiteral node) -> Value
+
+      private
+
+      attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
+      def build_pairs: (AST::ObjectLiteral node) -> (Hash[Object, Value] | UndefinedValue)
+      def evaluate_key: (untyped key_node) -> untyped
+      def resolve_pair: (untyped key_node, untyped value_node) -> (Array[untyped] | UndefinedValue)
+    end
+
+    module Evaluator::AssignmentSupport
+      private
+
+      def evaluate: (untyped node) -> Value
+      def environment: () -> Environment
+      def evaluate_assignment: (AST::BinaryOp node) -> Value
+      def assignment_operand: (untyped node) -> Hash[Symbol, untyped]
+      def assignment_value: (Hash[Symbol, untyped] left, Hash[Symbol, untyped] right) -> Value
+      def bind_unassigned_variable: (untyped node, Value node_value, Value other_value) -> Value?
+    end
+
+    class Evaluator::ExpressionDispatch
+      def initialize: (primitive_types: Array[Class], node_evaluators: Array[[Class, ^(untyped, Evaluator::ExpressionEvaluator) -> Value]]) -> void
+      def primitive_value: (untyped node) -> Value?
+      def dispatch_node: (untyped node, Evaluator::ExpressionEvaluator evaluator) -> Value?
+
+      private
+
+      attr_reader primitive_types: Array[Class]
+      attr_reader node_evaluators: Array[[Class, ^(untyped, Evaluator::ExpressionEvaluator) -> Value]]
+      attr_reader handler_cache: Hash[Class, (^(untyped, Evaluator::ExpressionEvaluator) -> Value)?]
+      def handler_for: (untyped node) -> (^(untyped, Evaluator::ExpressionEvaluator) -> Value)?
+    end
+
+    class Evaluator::RuleEvaluator
+      def initialize: (environment: Environment, expression_evaluator: Evaluator::ExpressionEvaluator) -> void
+      def evaluate_group: (Array[AST::Rule] rules) -> Value
+      def evaluate_rule: (AST::Rule rule) -> untyped
+
+      private
+
+      def evaluate_partial_set_rules: (Array[AST::Rule] rules) -> Value
+      def evaluate_partial_object_rules: (Array[AST::Rule] rules) -> Value
+      def partial_object_pairs: (Array[AST::Rule] rules) -> Hash[Object, Value]
+      def evaluate_complete_rules: (Array[AST::Rule] rules) -> Value
+      def evaluate_non_default_rules: (Array[AST::Rule] rules) -> Value?
+      def evaluate_partial_object_value: (untyped head) -> untyped
+      def evaluate_complete_rule_value: (untyped head) -> Value
+      def body_succeeds?: (Array[untyped]? body) -> bool
+      def query_literal_truthy?: (untyped literal) -> bool
+      def query_expression_truthy?: (AST::QueryLiteral literal) -> bool
+      def some_decl_truthy?: (AST::SomeDecl literal) -> bool
+      def evaluate_rule_value: (untyped head) -> Value
+
+      attr_reader environment: Environment
+      attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
+    end
+
+    module Evaluator::OperatorEvaluator
+      EQUALITY_OPERATORS: Hash[Symbol, ^(untyped, untyped) -> Value]
+      LOGICAL_OPERATORS: Hash[Symbol, ^(Value, Value) -> Value]
+      COMPARISON_OPERATORS: Hash[Symbol, ^(untyped, untyped) -> bool]
+      ARITHMETIC_OPERATORS: Hash[Symbol, ^(untyped, untyped) -> untyped]
+      UNARY_OPERATORS: Hash[Symbol, ^(Value) -> Value]
+
+      def self.apply: (Symbol operator, Value left, Value right) -> Value
+      def self.apply_unary: (Symbol operator, Value operand) -> Value
+      def self.apply_logical: (Symbol operator, Value left, Value right) -> Value?
+      def self.apply_comparison: (Symbol operator, Value left, Value right) -> Value?
+      def self.apply_arithmetic: (Symbol operator, Value left, Value right) -> Value?
+      def self.compare_values: (Value left, Value right) { (untyped, untyped) -> bool } -> Value
+      def self.comparable?: (untyped left_value, untyped right_value) -> bool
+      def self.arithmetic_values: (Symbol operator, Value left, Value right) { (untyped, untyped) -> untyped } -> Value
+      def self.numeric_value: (Value value) -> Numeric?
+      def self.division_by_zero?: (Symbol operator, Numeric right_value) -> bool
     end
 
     module TokenType
@@ -496,11 +687,17 @@ module Ruby
 
         def initialize: (?location: Location?) -> void
         def accept: (untyped visitor) -> untyped
+        def deconstruct_keys: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
         def to_s: () -> String
         def ==: (untyped other) -> bool
         def eql?: (untyped other) -> bool
         def hash: () -> Integer
         def self.format_value: (untyped value) -> String
+
+        private
+
+        def deconstruct_attributes: () -> Hash[Symbol, untyped]
+        def deconstructable_keys: () -> Array[Symbol]
       end
 
       type expression = Literal | Variable | Reference | BinaryOp | UnaryOp | ArrayLiteral | ObjectLiteral | SetLiteral | ArrayComprehension | ObjectComprehension | SetComprehension | Call

@@ -87,6 +87,12 @@ module Ruby
         resolve_reference_path(resolve_base(base), path)
       end
 
+      # @param variable [AST::Variable]
+      # @return [Object]
+      def reference_key_for(variable)
+        resolve_reference_variable(variable)
+      end
+
       # @param bindings [Hash{String, Symbol => Object}]
       # @yieldreturn [Object]
       # @return [Object]

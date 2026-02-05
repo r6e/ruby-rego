@@ -34,6 +34,24 @@ module Ruby
         self.class::TYPE_NAME
       end
 
+      # @param _key [Object]
+      # @return [Value]
+      def fetch_reference(_key)
+        return self if undefined?
+
+        UndefinedValue.new
+      end
+
+      # @return [Boolean]
+      def undefined?
+        is_a?(UndefinedValue)
+      end
+
+      # @return [Object]
+      def object_key
+        to_ruby
+      end
+
       # @param other [Object]
       # @return [Boolean]
       def ==(other)
@@ -163,6 +181,11 @@ module Ruby
       def to_ruby
         UNDEFINED
       end
+
+      # @return [UndefinedValue]
+      def object_key
+        self
+      end
     end
 
     # Represents an array value.
@@ -181,6 +204,12 @@ module Ruby
         return UndefinedValue.new unless index.is_a?(Integer)
 
         @elements[index] || UndefinedValue.new
+      end
+
+      # @param key [Object]
+      # @return [Value]
+      def fetch_reference(key)
+        fetch_index(key)
       end
 
       # @return [Array<Object>]
@@ -234,6 +263,12 @@ module Ruby
         return fetch_by_symbol_key(key) if key.is_a?(Symbol)
 
         UndefinedValue.new
+      end
+
+      # @param key [Object]
+      # @return [Value]
+      def fetch_reference(key)
+        fetch(key)
       end
 
       def fetch_by_symbol_key(key)

@@ -10,6 +10,7 @@ require_relative "rego/parser"
 require_relative "rego/value"
 require_relative "rego/environment"
 require_relative "rego/result"
+require_relative "rego/evaluator"
 
 module Ruby
   # Top-level namespace for the Ruby Rego gem.

@@ -22,6 +22,30 @@ module Ruby
           visitor.visit(self)
         end
 
+        # @param keys [Array<Symbol>, nil]
+        # @return [Hash<Symbol, Object>]
+        def deconstruct_keys(keys)
+          attributes = deconstruct_attributes
+          allowed = deconstructable_keys
+          filtered = attributes.slice(*allowed)
+          keys ? filtered.slice(*keys) : filtered
+        end
+
+        def deconstruct_attributes
+          attributes = {} # @type var attributes: Hash[Symbol, Object]
+          instance_variables.each_with_object(attributes) do |variable, result|
+            key = variable.to_s.delete_prefix("@").to_sym
+            result[key] = instance_variable_get(variable)
+          end
+          attributes
+        end
+
+        def deconstructable_keys
+          instance_variables.map { |variable| variable.to_s.delete_prefix("@").to_sym }
+        end
+
+        private :deconstruct_attributes, :deconstructable_keys
+
         # @return [String]
         def to_s
           klass = self.class
