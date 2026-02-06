@@ -231,6 +231,52 @@ module Ruby
         def self.numeric_array: (Value array, name: String) -> Array[Numeric]
         def self.ensure_non_empty: (Array[Numeric] numbers, name: String) -> void
       end
+
+      module Strings
+        BASE_DIGITS: Array[String]
+        STRING_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.concat: (Value delimiter, Value array) -> StringValue
+        def self.contains: (Value haystack, Value needle) -> BooleanValue
+        def self.startswith: (Value string, Value prefix) -> BooleanValue
+        def self.endswith: (Value string, Value suffix) -> BooleanValue
+        def self.format_int: (Value number, Value base) -> StringValue
+        def self.indexof: (Value haystack, Value needle) -> NumberValue
+        def self.lower: (Value string) -> StringValue
+        def self.upper: (Value string) -> StringValue
+        def self.split: (Value string, Value delimiter) -> ArrayValue
+        def self.sprintf: (Value format, Value args) -> StringValue
+        def self.substring: (Value string, Value offset, Value length) -> StringValue
+        def self.trim: (Value string, Value cutset) -> StringValue
+        def self.trim_left: (Value string, Value cutset) -> StringValue
+        def self.trim_right: (Value string, Value cutset) -> StringValue
+        def self.trim_space: (Value string) -> StringValue
+
+        private
+
+        def self.register_function: (BuiltinRegistry registry, String name, Hash[Symbol, untyped] config) -> void
+        def self.string_value: (Value value, context: String) -> String
+        def self.array_values: (Value value, name: String) -> Array[Value]
+        def self.string_array: (Value value, name: String) -> Array[String]
+        def self.integer_value: (Value value, context: String) -> Integer
+        def self.non_negative_integer: (Value value, context: String) -> Integer
+        def self.ensure_base: (Integer base_value) -> void
+        def self.trim_with_cutset: (Value string, Value cutset, Hash[Symbol, untyped] context) -> StringValue
+        def self.base_encode: (Integer number_value, Integer base_value) -> String
+        def self.negative_prefix: (Integer number_value) -> String
+        def self.encode_digits: (Integer remaining, Integer base_value) -> String
+        def self.sprintf_values: (Value args) -> Array[untyped]
+        def self.raise_sprintf_error: (ArgumentError | ::TypeError error) -> bot
+        def self.trim_regex: (String cutset_text, mode: Symbol) -> Regexp
+        def self.trimmed_text: (Value string, Value cutset, Hash[Symbol, untyped] context) -> String
+        def self.trim_context: (Hash[Symbol, untyped] context) -> [String, Symbol]
+        def self.trim_inputs: (Value string, Value cutset, String name) -> [String, String]
+        def self.apply_trim_or_original: (String string_text, String cutset_text, Symbol mode) -> String
+        def self.apply_trim: (String string_text, String cutset_text, Symbol mode) -> String
+        def self.trim_patterns: (String escaped, Symbol mode) -> Array[String]
+        def self.raise_integer_error: (Numeric numeric, String context) -> bot
+      end
     end
 
     class Environment
