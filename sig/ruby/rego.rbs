@@ -165,6 +165,74 @@ module Ruby
       def to_ruby: () -> Set[untyped]
     end
 
+    module Builtins
+      module Base
+        def self.assert_arity: (Array[untyped] args, Integer expected, ?name: String?) -> void
+        def self.assert_type: (untyped value, expected: Class | Array[Class], ?context: String?) -> void
+        def self.to_ruby: (untyped value) -> untyped
+        def self.to_value: (untyped value) -> Value
+
+        private
+
+        def self.normalize_expected: (Class | Array[Class]) -> Array[Class]
+        def self.raise_type_error: (expected: String, actual: String, ?context: String?) -> void
+      end
+
+      class BuiltinRegistry
+        @builtins: Hash[String, untyped]
+        Entry: untyped
+
+        def initialize: () -> void
+        def self.instance: () -> BuiltinRegistry
+        def register: (String | Symbol name, Integer arity) { (*untyped) -> untyped } -> void
+        def call: (String | Symbol name, Array[untyped] args) -> Value
+        def registered?: (String | Symbol name) -> bool
+
+        private
+
+        def normalize_name: (String | Symbol name) -> String
+        def validate_arity: (Integer arity) -> void
+        def fetch_entry: (String builtin_name) -> untyped
+        def invoke: (untyped entry, untyped args) -> Value
+        def ensure_array_args: (untyped args, String builtin_name) -> Array[untyped]
+      end
+
+      module Types
+        TYPE_PREDICATES: Hash[String, Symbol]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.is_string: (Value value) -> BooleanValue
+        def self.is_number: (Value value) -> BooleanValue
+        def self.is_boolean: (Value value) -> BooleanValue
+        def self.is_array: (Value value) -> BooleanValue
+        def self.is_object: (Value value) -> BooleanValue
+        def self.is_set: (Value value) -> BooleanValue
+        def self.is_null: (Value value) -> BooleanValue
+
+        private
+
+        def self.register_predicate: (BuiltinRegistry registry, String name, Symbol handler) -> void
+      end
+
+      module Aggregates
+        AGGREGATE_FUNCTIONS: Hash[String, Symbol]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.count: (Value collection) -> NumberValue
+        def self.sum: (Value array) -> NumberValue
+        def self.max: (Value array) -> NumberValue
+        def self.min: (Value array) -> NumberValue
+        def self.all: (Value array) -> BooleanValue
+        def self.any: (Value array) -> BooleanValue
+
+        private
+
+        def self.register_function: (BuiltinRegistry registry, String name, Symbol handler) -> void
+        def self.numeric_array: (Value array, name: String) -> Array[Numeric]
+        def self.ensure_non_empty: (Array[Numeric] numbers, name: String) -> void
+      end
+    end
+
     class Environment
       RESERVED_BINDINGS: Hash[String, Symbol]
       RESERVED_NAMES: Array[String]
