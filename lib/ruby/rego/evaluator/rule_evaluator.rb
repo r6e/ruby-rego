@@ -38,6 +38,14 @@ module Ruby
           values.empty? ? UndefinedValue.new : values.first
         end
 
+        # @param literals [Array<Object>]
+        # @param env [Environment]
+        # @return [Enumerator]
+        # @api private
+        def query_solutions(literals, env = environment)
+          eval_query(literals, env)
+        end
+
         private
 
         attr_reader :environment, :expression_evaluator

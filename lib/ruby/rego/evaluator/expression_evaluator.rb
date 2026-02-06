@@ -6,6 +6,8 @@ module Ruby
       # Evaluates expressions to Rego values.
       # :reek:TooManyInstanceVariables
       # :reek:DataClump
+      # :reek:TooManyMethods
+      # rubocop:disable Metrics/ClassLength
       class ExpressionEvaluator
         PRIMITIVE_TYPES = [String, Numeric, TrueClass, FalseClass, Array, Hash, Set, NilClass].freeze
         NODE_EVALUATORS = [
@@ -17,6 +19,9 @@ module Ruby
           [AST::ArrayLiteral, ->(node, evaluator) { evaluator.send(:evaluate_array_literal, node) }],
           [AST::ObjectLiteral, ->(node, evaluator) { evaluator.send(:evaluate_object_literal, node) }],
           [AST::SetLiteral, ->(node, evaluator) { evaluator.send(:evaluate_set_literal, node) }],
+          [AST::ArrayComprehension, ->(node, evaluator) { evaluator.send(:eval_array_comprehension, node) }],
+          [AST::ObjectComprehension, ->(node, evaluator) { evaluator.send(:eval_object_comprehension, node) }],
+          [AST::SetComprehension, ->(node, evaluator) { evaluator.send(:eval_set_comprehension, node) }],
           [AST::Call, ->(_call, _evaluator) { UndefinedValue.new }]
         ].freeze
 
@@ -25,15 +30,24 @@ module Ruby
         # @param environment [Environment]
         # @param reference_resolver [ReferenceResolver]
         # @param unifier [Unifier]
+        # :reek:TooManyStatements
         def initialize(environment:, reference_resolver:, unifier: Unifier.new)
           @environment = environment
           @reference_resolver = reference_resolver
-          @dispatch = ExpressionDispatch.new(
-            primitive_types: PRIMITIVE_TYPES,
-            node_evaluators: NODE_EVALUATORS
-          )
+          @dispatch = build_dispatch
           @unifier = unifier
           @object_literal_evaluator = ObjectLiteralEvaluator.new(expression_evaluator: self)
+          @comprehension_evaluator = ComprehensionEvaluator.new(
+            expression_evaluator: self,
+            environment: environment
+          )
+        end
+
+        # @param query_evaluator [RuleEvaluator]
+        # @return [void]
+        def attach_query_evaluator(query_evaluator)
+          comprehension_evaluator.attach_query_evaluator(query_evaluator)
+          nil
         end
 
         # @param node [Object]
@@ -60,7 +74,16 @@ module Ruby
 
         private
 
-        attr_reader :environment, :reference_resolver, :object_literal_evaluator, :dispatch, :unifier
+        attr_reader :environment, :reference_resolver, :object_literal_evaluator,
+                    :dispatch, :unifier, :comprehension_evaluator
+
+        # :reek:UtilityFunction
+        def build_dispatch
+          ExpressionDispatch.new(
+            primitive_types: PRIMITIVE_TYPES,
+            node_evaluators: NODE_EVALUATORS
+          )
+        end
 
         def evaluate_variable(node)
           name = node.name
@@ -85,6 +108,18 @@ module Ruby
         def evaluate_set_literal(node)
           elements = node.elements.map { |element| evaluate(element) }
           SetValue.new(elements)
+        end
+
+        def eval_array_comprehension(node)
+          comprehension_evaluator.eval_array(node)
+        end
+
+        def eval_object_comprehension(node)
+          comprehension_evaluator.eval_object(node)
+        end
+
+        def eval_set_comprehension(node)
+          comprehension_evaluator.eval_set(node)
         end
 
         # :reek:TooManyStatements
@@ -137,6 +172,7 @@ module Ruby
           yielder << empty_bindings if value.truthy?
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end

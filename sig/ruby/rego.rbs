@@ -561,6 +561,7 @@ module Ruby
       include Evaluator::AssignmentSupport
 
       def initialize: (environment: Environment, reference_resolver: Evaluator::ReferenceResolver, ?unifier: Unifier) -> void
+      def attach_query_evaluator: (Evaluator::RuleEvaluator query_evaluator) -> void
       def evaluate: (untyped node) -> Value
       def eval_with_unification: (untyped node, ?Environment env) -> Enumerator[Hash[String, Value]]
 
@@ -571,8 +572,12 @@ module Ruby
       def evaluate_array_literal: (AST::ArrayLiteral node) -> Value
       def evaluate_object_literal: (AST::ObjectLiteral node) -> Value
       def evaluate_set_literal: (AST::SetLiteral node) -> Value
+      def eval_array_comprehension: (AST::ArrayComprehension node) -> Value
+      def eval_object_comprehension: (AST::ObjectComprehension node) -> Value
+      def eval_set_comprehension: (AST::SetComprehension node) -> Value
       def evaluate_binary_op: (AST::BinaryOp node) -> Value
       def evaluate_unary_op: (AST::UnaryOp node) -> Value
+      def build_dispatch: () -> Evaluator::ExpressionDispatch
       def handle_unification_operator: (AST::BinaryOp node, Environment env, Enumerator::Yielder yielder) -> void
       def yield_assignment_bindings: (AST::BinaryOp node, Environment env, Enumerator::Yielder yielder) -> void
       def yield_unification_bindings: (AST::BinaryOp node, Environment env, Enumerator::Yielder yielder) -> void
@@ -584,7 +589,53 @@ module Ruby
       attr_reader object_literal_evaluator: Evaluator::ObjectLiteralEvaluator
       attr_reader dispatch: Evaluator::ExpressionDispatch
       attr_reader unifier: Unifier
+      attr_reader comprehension_evaluator: Evaluator::ComprehensionEvaluator
 
+    end
+
+    class Evaluator::ComprehensionEvaluator
+      class ObjectAccumulator
+        def initialize: () -> void
+        def add: (Hash[Object, Value] values, untyped key, Value value) -> void
+
+        private
+
+        attr_reader key_sources: Hash[Object, Object]
+      end
+
+      class ObjectPairContext
+        attr_reader result_values: Hash[Object, Value]
+        attr_reader accumulator: ObjectAccumulator
+
+        def initialize: (Hash[Object, Value] result_values, ObjectAccumulator accumulator) -> void
+      end
+
+      def initialize: (expression_evaluator: Evaluator::ExpressionEvaluator, environment: Environment) -> void
+      def attach_query_evaluator: (Evaluator::RuleEvaluator query_evaluator) -> void
+      def eval_array: (AST::ArrayComprehension node) -> Value
+      def eval_object: (AST::ObjectComprehension node) -> Value
+      def eval_set: (AST::SetComprehension node) -> Value
+
+      private
+
+      def object_pairs: (AST::ObjectComprehension node) -> Hash[Object, Value]
+      def apply_object_binding: (ObjectPairContext context, AST::object_term term, Hash[String, Value] bindings) -> void
+      def resolve_pair: (AST::object_term term) -> (Array[untyped] | nil)
+      def each_comprehension_binding: (Array[untyped] body) { (Hash[String, Value]) -> untyped } -> void
+      def collect_values: (AST::ArrayComprehension | AST::SetComprehension node) -> Array[Value]
+      def append_value: (Array[Value] values, untyped term, Hash[String, Value] bindings) -> void
+      def evaluate_defined_key: (untyped node) -> untyped
+      def evaluate_defined_value: (untyped node) -> untyped
+      def comprehension_solutions: (Array[untyped] body) -> Enumerator[Hash[String, Value]]
+      def with_comprehension_scope: (Array[untyped] body) { () -> untyped } -> untyped
+      def shadow_comprehension_locals: (Array[untyped] body) -> void
+      def shadow_explicit_locals: (Array[String] names) -> void
+      def shadow_unification_locals: (Array[String] names, Array[String] explicit_names) -> void
+      def bind_undefined: (String name) -> void
+
+      attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
+      attr_reader environment: Environment
+      attr_reader query_evaluator: Evaluator::RuleEvaluator?
     end
 
     module Evaluator::VariableCollectorHelpers
@@ -597,17 +648,23 @@ module Ruby
     end
 
     class Evaluator::BoundVariableCollector
-      @names: Array[String]
+      @explicit_names: Array[String]
+      @unify_names: Array[String]
 
       def initialize: () -> void
       def collect: (Array[untyped] literals) -> Array[String]
+      def collect_details: (Array[untyped] literals) -> Hash[Symbol, Array[String]]
 
       private
 
-      attr_reader names: Array[String]
+      attr_reader explicit_names: Array[String]
+      attr_reader unify_names: Array[String]
+      def reset: () -> void
       def collect_from_literal: (untyped literal) -> void
       def collect_from_expression: (untyped expression) -> void
-      def collect_all_variables: (untyped node) -> void
+      def collect_explicit_variables: (untyped node) -> void
+      def collect_unification_variables: (untyped node) -> void
+      def collect_all_variables: (untyped node, Array[String] target) -> void
     end
 
     class Evaluator::VariableCollector
@@ -679,6 +736,7 @@ module Ruby
       def initialize: (environment: Environment, expression_evaluator: Evaluator::ExpressionEvaluator) -> void
       def evaluate_group: (Array[AST::Rule] rules) -> Value
       def evaluate_rule: (AST::Rule rule) -> untyped
+      def query_solutions: (Array[untyped] literals, ?Environment env) -> Enumerator[Hash[String, Value]]
 
       private
 

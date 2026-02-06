@@ -61,24 +61,40 @@ module Ruby
       # Collects variable names that become bound inside query bodies.
       class BoundVariableCollector
         def initialize
-          @names = [] # @type var @names: Array[String]
+          @explicit_names = [] # @type var @explicit_names: Array[String]
+          @unify_names = [] # @type var @unify_names: Array[String]
         end
 
         # @param literals [Array<Object>]
         # @return [Array<String>]
         def collect(literals)
+          collect_details(literals)[:all]
+        end
+
+        # @param literals [Array<Object>]
+        # @return [Hash<Symbol, Array<String>>]
+        # :reek:TooManyStatements
+        def collect_details(literals)
+          reset
           Array(literals).each { |literal| collect_from_literal(literal) }
-          names.uniq
+          explicit = explicit_names.uniq
+          unification = unify_names.uniq
+          { explicit: explicit, unification: unification, all: (explicit + unification).uniq }
         end
 
         private
 
-        attr_reader :names
+        attr_reader :explicit_names, :unify_names
+
+        def reset
+          explicit_names.clear
+          unify_names.clear
+        end
 
         def collect_from_literal(literal)
           case literal
           in AST::SomeDecl[variables:]
-            variables.each { |variable| names << variable.name }
+            variables.each { |variable| explicit_names << variable.name }
           in AST::QueryLiteral[expression:]
             collect_from_expression(expression)
           else
@@ -86,25 +102,36 @@ module Ruby
           end
         end
 
+        # :reek:FeatureEnvy
+        # :reek:TooManyStatements
         def collect_from_expression(expression)
-          case expression
-          in AST::BinaryOp[operator:, left:, right:]
-            return unless %i[assign unify].include?(operator)
+          return unless expression.is_a?(AST::BinaryOp)
 
-            collect_all_variables(left)
-            collect_all_variables(right) if operator == :unify
-          else
-            nil
-          end
+          operator = expression.operator
+          left = expression.left
+          collect_explicit_variables(left) if operator == :assign
+          return unless operator == :unify
+
+          collect_unification_variables(left)
+          collect_unification_variables(expression.right)
         end
 
-        def collect_all_variables(node)
+        def collect_explicit_variables(node)
+          collect_all_variables(node, explicit_names)
+        end
+
+        def collect_unification_variables(node)
+          collect_all_variables(node, unify_names)
+        end
+
+        # :reek:FeatureEnvy
+        def collect_all_variables(node, target)
           return unless node
-          return names << node.name if node.is_a?(AST::Variable)
+          return target << node.name if node.is_a?(AST::Variable)
           return if VariableCollectorHelpers.comprehension_node?(node)
 
           VariableCollectorHelpers.children_for(node).each do |child|
-            collect_all_variables(child)
+            collect_all_variables(child, target)
           end
         end
       end

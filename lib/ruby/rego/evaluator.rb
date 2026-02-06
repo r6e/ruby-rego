@@ -10,6 +10,7 @@ require_relative "evaluator/operator_evaluator"
 require_relative "evaluator/assignment_support"
 require_relative "evaluator/expression_dispatch"
 require_relative "evaluator/object_literal_evaluator"
+require_relative "evaluator/comprehension_evaluator"
 require_relative "evaluator/rule_value_provider"
 require_relative "evaluator/reference_resolver"
 require_relative "evaluator/reference_key_resolver"
@@ -53,6 +54,7 @@ module Ruby
         rule_value_provider = RuleValueProvider.new(rules_by_name: rules_by_name)
         expression_evaluator = build_expression_evaluator(rule_value_provider, package_path)
         rule_evaluator = build_rule_evaluator(expression_evaluator, rule_value_provider)
+        expression_evaluator.attach_query_evaluator(rule_evaluator)
         [expression_evaluator, rule_evaluator]
       end
 

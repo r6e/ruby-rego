@@ -138,6 +138,222 @@ RSpec.describe Ruby::Rego::Evaluator do
     end
   end
 
+  describe "comprehension evaluation" do
+    def ast_var(name)
+      Ruby::Rego::AST::Variable.new(name: name)
+    end
+
+    def ast_number(value)
+      Ruby::Rego::AST::NumberLiteral.new(value: value)
+    end
+
+    def ast_string(value)
+      Ruby::Rego::AST::StringLiteral.new(value: value)
+    end
+
+    def ast_array(elements)
+      Ruby::Rego::AST::ArrayLiteral.new(elements: elements)
+    end
+
+    def ast_object(pairs)
+      Ruby::Rego::AST::ObjectLiteral.new(pairs: pairs)
+    end
+
+    def ast_some(variables, collection)
+      Ruby::Rego::AST::SomeDecl.new(variables: variables, collection: collection)
+    end
+
+    def ast_assign(left, right)
+      Ruby::Rego::AST::BinaryOp.new(operator: :assign, left: left, right: right)
+    end
+
+    def ast_unify(left, right)
+      Ruby::Rego::AST::BinaryOp.new(operator: :unify, left: left, right: right)
+    end
+
+    def ast_eq(left, right)
+      Ruby::Rego::AST::BinaryOp.new(operator: :eq, left: left, right: right)
+    end
+
+    def ast_query_literal(expression)
+      Ruby::Rego::AST::QueryLiteral.new(expression: expression)
+    end
+
+    it "evaluates array comprehensions" do
+      collection = ast_array([ast_number(1), ast_number(2), ast_number(3)])
+      some_decl = ast_some([ast_var("x")], collection)
+      comp = Ruby::Rego::AST::ArrayComprehension.new(
+        term: ast_var("x"),
+        body: [some_decl]
+      )
+
+      value = eval_node(comp)
+
+      expect(value).to be_a(Ruby::Rego::ArrayValue)
+      expect(value.to_ruby).to eq([1, 2, 3])
+    end
+
+    it "evaluates set comprehensions" do
+      collection = ast_array([ast_number(1), ast_number(1), ast_number(2)])
+      some_decl = ast_some([ast_var("x")], collection)
+      comp = Ruby::Rego::AST::SetComprehension.new(
+        term: ast_var("x"),
+        body: [some_decl]
+      )
+
+      value = eval_node(comp)
+
+      expect(value).to be_a(Ruby::Rego::SetValue)
+      expect(value.to_ruby).to eq(Set.new([1, 2]))
+    end
+
+    it "evaluates object comprehensions" do
+      collection = ast_object(
+        [
+          [ast_string("a"), ast_number(1)],
+          [ast_string("b"), ast_number(2)]
+        ]
+      )
+      some_decl = ast_some([ast_var("k"), ast_var("v")], collection)
+      comp = Ruby::Rego::AST::ObjectComprehension.new(
+        term: [ast_var("k"), ast_var("v")],
+        body: [some_decl]
+      )
+
+      value = eval_node(comp)
+
+      expect(value).to be_a(Ruby::Rego::ObjectValue)
+      expect(value.to_ruby).to eq({ "a" => 1, "b" => 2 })
+    end
+
+    it "supports nested comprehensions" do
+      inner = Ruby::Rego::AST::ArrayComprehension.new(
+        term: ast_var("y"),
+        body: [ast_query_literal(ast_assign(ast_var("y"), ast_var("x")))]
+      )
+      outer = Ruby::Rego::AST::ArrayComprehension.new(
+        term: inner,
+        body: [ast_some([ast_var("x")], ast_array([ast_number(1), ast_number(2)]))]
+      )
+
+      value = eval_node(outer)
+
+      expect(value.to_ruby).to eq([[1], [2]])
+    end
+
+    it "supports references to outer scope variables" do
+      evaluator.environment.bind("threshold", 2)
+      collection = ast_array([ast_number(1), ast_number(2), ast_number(3)])
+      some_decl = ast_some([ast_var("x")], collection)
+      condition = Ruby::Rego::AST::BinaryOp.new(
+        operator: :gt,
+        left: ast_var("x"),
+        right: ast_var("threshold")
+      )
+      comp = Ruby::Rego::AST::ArrayComprehension.new(
+        term: ast_var("x"),
+        body: [some_decl, ast_query_literal(condition)]
+      )
+
+      value = eval_node(comp)
+
+      expect(value.to_ruby).to eq([3])
+    end
+
+    it "respects outer bindings during unification" do
+      evaluator.environment.bind("threshold", 2)
+      comp = Ruby::Rego::AST::ArrayComprehension.new(
+        term: ast_var("x"),
+        body: [ast_query_literal(ast_unify(ast_var("x"), ast_var("threshold")))]
+      )
+
+      value = eval_node(comp)
+
+      expect(value.to_ruby).to eq([2])
+      expect(evaluator.environment.lookup("threshold").to_ruby).to eq(2)
+    end
+
+    it "keeps comprehension bindings local" do
+      evaluator.environment.bind("x", 99)
+      comp = Ruby::Rego::AST::ArrayComprehension.new(
+        term: ast_var("x"),
+        body: [ast_query_literal(ast_assign(ast_var("x"), ast_number(1)))]
+      )
+
+      value = eval_node(comp)
+
+      expect(value.to_ruby).to eq([1])
+      expect(evaluator.environment.lookup("x").to_ruby).to eq(99)
+    end
+
+    it "skips undefined terms and handles empty results" do
+      missing_ref = Ruby::Rego::AST::Reference.new(
+        base: ast_var("input"),
+        path: [Ruby::Rego::AST::DotRefArg.new(value: "missing")]
+      )
+      some_decl = ast_some([ast_var("x")], ast_array([ast_number(1)]))
+      array_comp = Ruby::Rego::AST::ArrayComprehension.new(
+        term: missing_ref,
+        body: [some_decl]
+      )
+      empty_query = ast_query_literal(ast_eq(ast_number(1), ast_number(2)))
+      set_comp = Ruby::Rego::AST::SetComprehension.new(
+        term: ast_var("x"),
+        body: [empty_query]
+      )
+
+      expect(eval_node(array_comp).to_ruby).to eq([])
+      expect(eval_node(set_comp).to_ruby).to eq(Set.new)
+    end
+
+    it "skips undefined keys and values in object comprehensions" do
+      missing_ref = Ruby::Rego::AST::Reference.new(
+        base: ast_var("input"),
+        path: [Ruby::Rego::AST::DotRefArg.new(value: "missing")]
+      )
+      some_decl = ast_some([ast_var("x")], ast_array([ast_number(1)]))
+      missing_key = Ruby::Rego::AST::ObjectComprehension.new(
+        term: [missing_ref, ast_var("x")],
+        body: [some_decl]
+      )
+      missing_value = Ruby::Rego::AST::ObjectComprehension.new(
+        term: [ast_string("k"), missing_ref],
+        body: [some_decl]
+      )
+
+      expect(eval_node(missing_key).to_ruby).to eq({})
+      expect(eval_node(missing_value).to_ruby).to eq({})
+    end
+
+    it "allows false and null keys in object comprehensions" do
+      some_decl = ast_some([ast_var("x")], ast_array([ast_number(1)]))
+      null_key = Ruby::Rego::AST::NullLiteral.new
+      false_key = Ruby::Rego::AST::BooleanLiteral.new(value: false)
+      null_comp = Ruby::Rego::AST::ObjectComprehension.new(
+        term: [null_key, ast_var("x")],
+        body: [some_decl]
+      )
+      false_comp = Ruby::Rego::AST::ObjectComprehension.new(
+        term: [false_key, ast_var("x")],
+        body: [some_decl]
+      )
+
+      expect(eval_node(null_comp).to_ruby).to eq({ nil => 1 })
+      expect(eval_node(false_comp).to_ruby).to eq({ false => 1 })
+    end
+
+    it "errors on conflicting object keys" do
+      some_decl = ast_some([ast_var("x")], ast_array([ast_number(1), ast_number(2)]))
+      comp = Ruby::Rego::AST::ObjectComprehension.new(
+        term: [ast_string("a"), ast_var("x")],
+        body: [some_decl]
+      )
+
+      expect { eval_node(comp) }
+        .to raise_error(Ruby::Rego::ObjectKeyConflictError, /Conflicting object keys/)
+    end
+  end
+
   describe "rule evaluation" do
     let(:rules) do
       condition = Ruby::Rego::AST::BinaryOp.new(
