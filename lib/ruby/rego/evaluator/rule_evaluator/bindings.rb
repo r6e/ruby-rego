@@ -10,19 +10,26 @@ module Ruby
 
         # :reek:TooManyStatements
         # :reek:NestedIterators
-        def each_some_solution(literal)
+        def eval_some_decl(literal, _env = environment)
           Enumerator.new do |yielder|
             collection = literal.collection
-            unless collection
-              yielder << {}
-              next
-            end
+            next yield_empty_bindings(yielder) unless collection
 
             collection_value = expression_evaluator.evaluate(collection)
             next if collection_value.undefined?
 
             collection_bindings(literal.variables, collection_value).each { |bindings| yielder << bindings }
           end
+        end
+
+        # :reek:UtilityFunction
+        def yield_empty_bindings(yielder)
+          empty_bindings = {} # @type var empty_bindings: Hash[String, Value]
+          yielder << empty_bindings
+        end
+
+        def each_some_solution(literal)
+          eval_some_decl(literal, environment)
         end
 
         def collection_bindings(variables, collection_value)

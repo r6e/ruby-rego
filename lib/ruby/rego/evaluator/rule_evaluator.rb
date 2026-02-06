@@ -8,6 +8,9 @@ module Ruby
       # :reek:TooManyMethods
       # :reek:DataClump
       class RuleEvaluator
+        # Bundles query evaluation state to minimize parameter passing.
+        QueryContext = Struct.new(:literals, :env, keyword_init: true)
+
         # @param environment [Environment]
         # @param expression_evaluator [ExpressionEvaluator]
         def initialize(environment:, expression_evaluator:)
@@ -84,7 +87,7 @@ module Ruby
           literals = Array(body)
           return true if literals.empty?
 
-          each_body_solution(literals).any?
+          eval_query(literals, environment).any?
         end
 
         def evaluate_non_default_rules(rules)
@@ -97,7 +100,7 @@ module Ruby
         end
 
         def query_literal_truthy?(literal)
-          each_literal_solution(literal).any?
+          eval_query([literal], environment).any?
         end
 
         def evaluate_rule_value(head)
@@ -121,7 +124,7 @@ module Ruby
         def rule_body_values(rule)
           environment.push_scope
           values = Array.new(0, Value.from_ruby(nil))
-          each_body_solution(rule.body).each do |_bindings|
+          eval_rule_body(rule.body, environment).each do |_bindings|
             value = evaluate_rule_value(rule.head)
             values << value unless value.is_a?(UndefinedValue)
           end
@@ -130,46 +133,93 @@ module Ruby
           environment.pop_scope
         end
 
-        def each_body_solution(literals, index = 0, bindings = {})
+        def eval_rule_body(body, env)
+          eval_query(Array(body), env)
+        end
+
+        # :reek:TooManyStatements
+        def eval_query(literals, env)
+          literals = Array(literals)
+          return Enumerator.new { |yielder| yielder << {} } if literals.empty?
+
+          bound_vars = Environment::RESERVED_NAMES.dup
+          context = QueryContext.new(literals: literals, env: env)
           Enumerator.new do |yielder|
-            yield_body_solutions(yielder, literals, index, bindings)
+            bindings = {} # @type var bindings: Hash[String, Value]
+            yield_query_solutions(yielder, context, 0, bindings, bound_vars)
           end
         end
 
         # rubocop:disable Metrics/MethodLength
         # :reek:TooManyStatements
         # :reek:LongParameterList
-        def yield_body_solutions(yielder, literals, index, bindings)
-          if literals.empty? || index >= literals.length
+        def yield_query_solutions(yielder, context, index, bindings, bound_vars)
+          literals = context.literals
+          env = context.env
+          if index >= literals.length
             yielder << bindings
             return
           end
 
           literal = literals[index]
-          each_literal_solution(literal).each do |literal_bindings|
+          eval_literal(literal, env, bound_vars).each do |literal_bindings|
             merged = merge_bindings(bindings, literal_bindings)
             next unless merged
 
-            environment.with_bindings(literal_bindings) do
-              yield_body_solutions(yielder, literals, index + 1, merged)
+            env.with_bindings(literal_bindings) do
+              next_bound_vars = bound_vars | literal_bindings.keys
+              yield_query_solutions(yielder, context, index + 1, merged, next_bound_vars)
             end
           end
         end
         # rubocop:enable Metrics/MethodLength
 
-        # :reek:NestedIterators
-        # :reek:DuplicateMethodCall
-        def each_literal_solution(literal)
-          Enumerator.new do |yielder|
-            case literal
-            when AST::QueryLiteral
-              expression_evaluator.eval_with_unification(literal.expression, environment).each do |bindings|
-                yielder << bindings
-              end
-            when AST::SomeDecl
-              each_some_solution(literal).each { |bindings| yielder << bindings }
-            end
+        def eval_literal(literal, env, bound_vars)
+          return eval_query_literal(literal, env, bound_vars) if literal.is_a?(AST::QueryLiteral)
+          return eval_some_decl(literal, env) if literal.is_a?(AST::SomeDecl)
+
+          raise EvaluationError.new("Unsupported query literal: #{literal.class}", rule: nil, location: nil)
+        end
+
+        def eval_query_literal(literal, env, bound_vars)
+          expression = literal.expression
+          case expression
+          in AST::UnaryOp[operator: :not, operand:]
+            eval_not(operand, env, bound_vars)
+          else
+            expression_evaluator.eval_with_unification(expression, env)
           end
+        end
+
+        def eval_not(expr, env, bound_vars)
+          check_safety(expr, env, bound_vars)
+          Enumerator.new do |yielder|
+            solutions = expression_evaluator.eval_with_unification(expr, env)
+            yielder << {} unless solutions.any?
+          end
+        end
+
+        def check_safety(expr, env, bound_vars)
+          unbound = unbound_variables(VariableCollector.new.collect(expr), env, bound_vars)
+          return if unbound.empty?
+
+          raise_unsafe_negation(expr, unbound)
+        end
+
+        def raise_unsafe_negation(expr, unbound)
+          message = "Unsafe negation: unbound variables #{unbound.sort.join(", ")}"
+          raise EvaluationError.new(message, rule: nil, location: expr.location)
+        end
+
+        # :reek:UtilityFunction
+        def unbound_variables(names, env, bound_vars)
+          safe_names = bound_vars | Environment::RESERVED_NAMES | ["_"]
+          names.reject { |name| safe_names.include?(name) || env_bound?(env, name) }.uniq
+        end
+
+        # :reek:UtilityFunction
+        def env_bound?(env, name)
+          !env.lookup(name).is_a?(UndefinedValue)
         end
       end
       # rubocop:enable Metrics/ClassLength

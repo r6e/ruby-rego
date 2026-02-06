@@ -587,6 +587,49 @@ module Ruby
 
     end
 
+    module Evaluator::VariableCollectorHelpers
+      NODE_COLLECTORS: Hash[Class, untyped]
+      CHILDREN_EXTRACTORS: Hash[Class, untyped]
+
+      def self.collector_for: (untyped node) -> untyped
+      def self.children_for: (untyped node) -> Array[untyped]
+      def self.comprehension_node?: (untyped node) -> bool
+    end
+
+    class Evaluator::BoundVariableCollector
+      @names: Array[String]
+
+      def initialize: () -> void
+      def collect: (Array[untyped] literals) -> Array[String]
+
+      private
+
+      attr_reader names: Array[String]
+      def collect_from_literal: (untyped literal) -> void
+      def collect_from_expression: (untyped expression) -> void
+      def collect_all_variables: (untyped node) -> void
+    end
+
+    class Evaluator::VariableCollector
+      @names: Array[String]
+      @local_scopes: Array[Array[String]]
+
+      def initialize: () -> void
+      def collect: (untyped node) -> Array[String]
+      def collect_literals: (Array[untyped] literals) -> Array[String]
+
+      private
+
+      attr_reader names: Array[String]
+      def collect_node: (untyped node) -> void
+      def collect_comprehension: (Array[untyped] term_nodes, Array[untyped] body_literals) -> void
+      def collect_comprehension_body: (Array[untyped] term_nodes, Array[untyped] body_literals) -> void
+      def collect_some_decl: (AST::SomeDecl node) -> void
+      def add_name: (String name) -> void
+      def with_locals: (Array[String] names) { () -> untyped } -> void
+      def local_name?: (String name) -> bool
+    end
+
     class Evaluator::ObjectLiteralEvaluator
       def initialize: (expression_evaluator: Evaluator::ExpressionEvaluator) -> void
       def evaluate: (AST::ObjectLiteral node) -> Value
@@ -626,6 +669,13 @@ module Ruby
     end
 
     class Evaluator::RuleEvaluator
+      class QueryContext
+        attr_reader literals: Array[untyped]
+        attr_reader env: Environment
+
+        def initialize: (literals: Array[untyped], env: Environment) -> void
+      end
+
       def initialize: (environment: Environment, expression_evaluator: Evaluator::ExpressionEvaluator) -> void
       def evaluate_group: (Array[AST::Rule] rules) -> Value
       def evaluate_rule: (AST::Rule rule) -> untyped
@@ -644,9 +694,18 @@ module Ruby
       def some_decl_truthy?: (AST::SomeDecl literal) -> bool
       def evaluate_rule_value: (untyped head) -> Value
       def rule_body_values: (AST::Rule rule) -> Array[untyped]
-      def each_body_solution: (Array[untyped] literals, ?Integer index, ?Hash[String, Value] bindings) -> Enumerator[Hash[String, Value]]
-      def yield_body_solutions: (Enumerator::Yielder yielder, Array[untyped] literals, Integer index, Hash[String, Value] bindings) -> void
-      def each_literal_solution: (untyped literal) -> Enumerator[Hash[String, Value]]
+      def eval_rule_body: (Array[untyped]? body, Environment env) -> Enumerator[Hash[String, Value]]
+      def eval_query: (Array[untyped] literals, Environment env) -> Enumerator[Hash[String, Value]]
+      def yield_query_solutions: (Enumerator::Yielder yielder, QueryContext context, Integer index, Hash[String, Value] bindings, Array[String] bound_vars) -> void
+      def eval_literal: (untyped literal, Environment env, Array[String] bound_vars) -> Enumerator[Hash[String, Value]]
+      def eval_query_literal: (AST::QueryLiteral literal, Environment env, Array[String] bound_vars) -> Enumerator[Hash[String, Value]]
+      def eval_not: (untyped expr, Environment env, Array[String] bound_vars) -> Enumerator[Hash[String, Value]]
+      def check_safety: (untyped expr, Environment env, Array[String] bound_vars) -> void
+      def raise_unsafe_negation: (untyped expr, Array[String] unbound) -> void
+      def unbound_variables: (Array[String] names, Environment env, Array[String] bound_vars) -> Array[String]
+      def env_bound?: (Environment env, String name) -> bool
+      def eval_some_decl: (AST::SomeDecl literal, ?Environment env) -> Enumerator[Hash[String, Value]]
+      def yield_empty_bindings: (Enumerator::Yielder yielder) -> void
       def each_some_solution: (AST::SomeDecl literal) -> Enumerator[Hash[String, Value]]
       def collection_bindings: (Array[AST::Variable] variables, Value collection_value) -> Enumerator[Hash[String, Value]]
       def each_array_binding: (Array[AST::Variable] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]

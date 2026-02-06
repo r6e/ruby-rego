@@ -313,6 +313,161 @@ RSpec.describe Ruby::Rego::Evaluator do
         expect(result.value.to_ruby["allow"]).to be(true)
       end
     end
+
+    context "when evaluating multi-literal queries" do
+      let(:rules) do
+        user_match = Ruby::Rego::AST::BinaryOp.new(
+          operator: :eq,
+          left: Ruby::Rego::AST::Reference.new(
+            base: Ruby::Rego::AST::Variable.new(name: "input"),
+            path: [
+              Ruby::Rego::AST::DotRefArg.new(value: "user"),
+              Ruby::Rego::AST::DotRefArg.new(value: "name")
+            ]
+          ),
+          right: Ruby::Rego::AST::StringLiteral.new(value: "admin")
+        )
+        enabled_ref = Ruby::Rego::AST::Reference.new(
+          base: Ruby::Rego::AST::Variable.new(name: "data"),
+          path: [
+            Ruby::Rego::AST::DotRefArg.new(value: "config"),
+            Ruby::Rego::AST::DotRefArg.new(value: "enabled")
+          ]
+        )
+        body = [
+          Ruby::Rego::AST::QueryLiteral.new(expression: user_match),
+          Ruby::Rego::AST::QueryLiteral.new(expression: enabled_ref)
+        ]
+        head = { type: :complete, name: "allow", location: nil }
+
+        [Ruby::Rego::AST::Rule.new(name: "allow", head: head, body: body)]
+      end
+
+      it "requires all literals to succeed" do
+        result = evaluator.evaluate
+
+        expect(result.success?).to be(true)
+        expect(result.value.to_ruby["allow"]).to be(true)
+      end
+    end
+
+    context "when using some declarations without collections" do
+      let(:rules) do
+        some_decl = Ruby::Rego::AST::SomeDecl.new(
+          variables: [
+            Ruby::Rego::AST::Variable.new(name: "x"),
+            Ruby::Rego::AST::Variable.new(name: "y")
+          ]
+        )
+        x_condition = Ruby::Rego::AST::BinaryOp.new(
+          operator: :unify,
+          left: Ruby::Rego::AST::Variable.new(name: "x"),
+          right: Ruby::Rego::AST::NumberLiteral.new(value: 1)
+        )
+        y_condition = Ruby::Rego::AST::BinaryOp.new(
+          operator: :unify,
+          left: Ruby::Rego::AST::Variable.new(name: "y"),
+          right: Ruby::Rego::AST::NumberLiteral.new(value: 2)
+        )
+        body = [
+          some_decl,
+          Ruby::Rego::AST::QueryLiteral.new(expression: x_condition),
+          Ruby::Rego::AST::QueryLiteral.new(expression: y_condition)
+        ]
+        head = { type: :complete, name: "allow", location: nil }
+
+        [Ruby::Rego::AST::Rule.new(name: "allow", head: head, body: body)]
+      end
+
+      it "introduces variables for later bindings" do
+        result = evaluator.evaluate
+
+        expect(result.success?).to be(true)
+        expect(result.value.to_ruby["allow"]).to be(true)
+      end
+    end
+
+    context "when using not expressions" do
+      let(:rules) do
+        blocked_ref = Ruby::Rego::AST::Reference.new(
+          base: Ruby::Rego::AST::Variable.new(name: "input"),
+          path: [Ruby::Rego::AST::DotRefArg.new(value: "blocked")]
+        )
+        negated = Ruby::Rego::AST::UnaryOp.new(operator: :not, operand: blocked_ref)
+        body = [Ruby::Rego::AST::QueryLiteral.new(expression: negated)]
+        head = { type: :complete, name: "allow", location: nil }
+
+        [Ruby::Rego::AST::Rule.new(name: "allow", head: head, body: body)]
+      end
+
+      it "succeeds when the negated expression fails" do
+        result = evaluator.evaluate
+
+        expect(result.success?).to be(true)
+        expect(result.value.to_ruby["allow"]).to be(true)
+      end
+    end
+
+    context "when negation references unbound variables" do
+      let(:rules) do
+        unbound_check = Ruby::Rego::AST::BinaryOp.new(
+          operator: :eq,
+          left: Ruby::Rego::AST::Variable.new(name: "x"),
+          right: Ruby::Rego::AST::NumberLiteral.new(value: 1)
+        )
+        negated = Ruby::Rego::AST::UnaryOp.new(operator: :not, operand: unbound_check)
+        body = [Ruby::Rego::AST::QueryLiteral.new(expression: negated)]
+        head = { type: :complete, name: "allow", location: nil }
+
+        [Ruby::Rego::AST::Rule.new(name: "allow", head: head, body: body)]
+      end
+
+      it "raises a safety error" do
+        expect { evaluator.evaluate }
+          .to raise_error(Ruby::Rego::EvaluationError, /Unsafe negation/)
+      end
+    end
+
+    context "when combining some and not in a query" do
+      let(:rules) do
+        roles_ref = Ruby::Rego::AST::Reference.new(
+          base: Ruby::Rego::AST::Variable.new(name: "input"),
+          path: [Ruby::Rego::AST::DotRefArg.new(value: "roles")]
+        )
+        some_decl = Ruby::Rego::AST::SomeDecl.new(
+          variables: [Ruby::Rego::AST::Variable.new(name: "role")],
+          collection: roles_ref
+        )
+        role_match = Ruby::Rego::AST::BinaryOp.new(
+          operator: :unify,
+          left: Ruby::Rego::AST::Variable.new(name: "role"),
+          right: Ruby::Rego::AST::StringLiteral.new(value: "admin")
+        )
+        not_guest = Ruby::Rego::AST::UnaryOp.new(
+          operator: :not,
+          operand: Ruby::Rego::AST::BinaryOp.new(
+            operator: :eq,
+            left: Ruby::Rego::AST::Variable.new(name: "role"),
+            right: Ruby::Rego::AST::StringLiteral.new(value: "guest")
+          )
+        )
+        body = [
+          some_decl,
+          Ruby::Rego::AST::QueryLiteral.new(expression: role_match),
+          Ruby::Rego::AST::QueryLiteral.new(expression: not_guest)
+        ]
+        head = { type: :complete, name: "allow", location: nil }
+
+        [Ruby::Rego::AST::Rule.new(name: "allow", head: head, body: body)]
+      end
+
+      it "threads bindings through nested literals" do
+        result = evaluator.evaluate
+
+        expect(result.success?).to be(true)
+        expect(result.value.to_ruby["allow"]).to be(true)
+      end
+    end
   end
 end
 

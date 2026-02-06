@@ -14,6 +14,7 @@ require_relative "evaluator/rule_value_provider"
 require_relative "evaluator/reference_resolver"
 require_relative "evaluator/reference_key_resolver"
 require_relative "evaluator/expression_evaluator"
+require_relative "evaluator/variable_collector"
 require_relative "evaluator/rule_evaluator"
 require_relative "evaluator/query_node_builder"
 
