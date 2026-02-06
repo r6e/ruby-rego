@@ -10,6 +10,32 @@ module Ruby
       class RuleEvaluator
         # Bundles query evaluation state to minimize parameter passing.
         QueryContext = Struct.new(:literals, :env, keyword_init: true)
+        # Bundles modifier evaluation state.
+        class ModifierContext
+          # @param expression [Object]
+          # @param env [Environment]
+          # @param bound_vars [Array<String>]
+          def initialize(expression:, env:, bound_vars:)
+            @expression = expression
+            @env = env
+            @bound_vars = bound_vars
+          end
+
+          # @return [Object]
+          attr_reader :expression
+
+          # @return [Environment]
+          attr_reader :env
+
+          # @return [Array<String>]
+          attr_reader :bound_vars
+
+          # @param new_env [Environment]
+          # @return [ModifierContext]
+          def with_env(new_env)
+            self.class.new(expression: expression, env: new_env, bound_vars: bound_vars)
+          end
+        end
 
         # @param environment [Environment]
         # @param expression_evaluator [ExpressionEvaluator]
@@ -191,6 +217,30 @@ module Ruby
 
         def eval_query_literal(literal, env, bound_vars)
           expression = literal.expression
+          modifiers = literal.with_modifiers
+          return eval_query_expression(expression, env, bound_vars) if modifiers.empty?
+
+          context = ModifierContext.new(expression: expression, env: env, bound_vars: bound_vars)
+          with_modifiers_enum(modifiers, context)
+        end
+
+        # :reek:NestedIterators
+        def with_modifiers_enum(modifiers, context)
+          Enumerator.new do |yielder|
+            WithModifierApplier.apply(modifiers, context.env, expression_evaluator) do |modified_env|
+              yield_query_expression(yielder, context.with_env(modified_env))
+            end
+          end
+        end
+
+        # :reek:FeatureEnvy
+        def yield_query_expression(yielder, context)
+          eval_query_expression(context.expression, context.env, context.bound_vars).each do |bindings|
+            yielder << bindings
+          end
+        end
+
+        def eval_query_expression(expression, env, bound_vars)
           case expression
           in AST::UnaryOp[operator: :not, operand:]
             eval_not(operand, env, bound_vars)

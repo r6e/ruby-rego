@@ -22,7 +22,7 @@ module Ruby
           [AST::ArrayComprehension, ->(node, evaluator) { evaluator.send(:eval_array_comprehension, node) }],
           [AST::ObjectComprehension, ->(node, evaluator) { evaluator.send(:eval_object_comprehension, node) }],
           [AST::SetComprehension, ->(node, evaluator) { evaluator.send(:eval_set_comprehension, node) }],
-          [AST::Call, ->(_call, _evaluator) { UndefinedValue.new }]
+          [AST::Call, ->(call, evaluator) { evaluator.send(:evaluate_call, call) }]
         ].freeze
 
         include AssignmentSupport
@@ -72,6 +72,14 @@ module Ruby
           end
         end
 
+        # :reek:UtilityFunction
+        def self.call_name(node)
+          return node.name if node.is_a?(AST::Variable)
+          return node.to_s if node.is_a?(String) || node.is_a?(Symbol)
+
+          nil
+        end
+
         private
 
         attr_reader :environment, :reference_resolver, :object_literal_evaluator,
@@ -108,6 +116,14 @@ module Ruby
         def evaluate_set_literal(node)
           elements = node.elements.map { |element| evaluate(element) }
           SetValue.new(elements)
+        end
+
+        def evaluate_call(node)
+          name = self.class.call_name(node.name)
+          return UndefinedValue.new unless name
+
+          args = node.args.map { |arg| evaluate(arg) }
+          environment.builtin_registry.call(name, args)
         end
 
         def eval_array_comprehension(node)

@@ -3,10 +3,14 @@
 require_relative "ast"
 require_relative "errors"
 require_relative "value"
+require_relative "builtins/registry"
+require_relative "environment/overrides"
+require_relative "environment/reference_resolution"
 
 module Ruby
   module Rego
     # Execution environment for evaluating Rego policies.
+    # :reek:TooManyInstanceVariables
     class Environment
       RESERVED_BINDINGS = {
         "input" => :input,
@@ -23,16 +27,23 @@ module Ruby
       # @return [Hash]
       attr_reader :rules
 
+      # @return [Builtins::BuiltinRegistry, Builtins::BuiltinRegistryOverlay]
+      attr_reader :builtin_registry
+
       # @param input [Object]
       # @param data [Object]
       # @param rules [Hash]
-      def initialize(input: {}, data: {}, rules: {})
+      # @param builtin_registry [Builtins::BuiltinRegistry, Builtins::BuiltinRegistryOverlay]
+      def initialize(input: {}, data: {}, rules: {}, builtin_registry: Builtins::BuiltinRegistry.instance)
         @input = Value.from_ruby(input)
         @data = Value.from_ruby(data)
         @rules = rules.dup
-        initial_scope = {} # @type var initial_scope: Hash[String, Value]
-        @locals = [initial_scope]
+        @builtin_registry = builtin_registry
+        @locals = [{}] # @type var locals: Array[Hash[String, Value]]
       end
+
+      include EnvironmentOverrides
+      include EnvironmentReferenceResolution
 
       # @return [Environment]
       def push_scope
@@ -74,25 +85,6 @@ module Ruby
         UndefinedValue.new
       end
 
-      # @param ref [Object]
-      # @return [Value]
-      # :reek:FeatureEnvy
-      def resolve_reference(ref)
-        base, path = if ref.is_a?(AST::Reference)
-                       [ref.base, ref.path]
-                     else
-                       path = [] # @type var path: Array[AST::RefArg]
-                       [ref, path]
-                     end
-        resolve_reference_path(resolve_base(base), path)
-      end
-
-      # @param variable [AST::Variable]
-      # @return [Object]
-      def reference_key_for(variable)
-        resolve_reference_variable(variable)
-      end
-
       # @param bindings [Hash{String, Symbol => Object}]
       # @yieldreturn [Object]
       # @return [Object]
@@ -104,63 +96,20 @@ module Ruby
         pop_scope
       end
 
+      # @param registry [Builtins::BuiltinRegistry, Builtins::BuiltinRegistryOverlay]
+      # @yieldparam environment [Environment]
+      # @return [Object]
+      def with_builtin_registry(registry)
+        original = @builtin_registry
+        @builtin_registry = registry
+        yield self
+      ensure
+        @builtin_registry = original
+      end
+
       private
 
       attr_reader :locals
-
-      # :reek:TooManyStatements
-      # :reek:FeatureEnvy
-      def resolve_base(base)
-        return lookup(base.name) if base.is_a?(AST::Variable)
-        return base if base.is_a?(Value)
-        return lookup(base.to_s) if base.is_a?(String) || base.is_a?(Symbol)
-
-        value = base.is_a?(AST::Literal) ? base.value : base
-        Value.from_ruby(value)
-      rescue ArgumentError
-        UndefinedValue.new
-      end
-
-      # :reek:FeatureEnvy
-      def resolve_path_segment(current, segment)
-        key = extract_reference_key(segment)
-        return UndefinedValue.new if key.is_a?(UndefinedValue)
-
-        return current.fetch(key) if current.is_a?(ObjectValue)
-        return current.fetch_index(key) if current.is_a?(ArrayValue)
-
-        UndefinedValue.new
-      end
-
-      # :reek:FeatureEnvy
-      def resolve_reference_path(current, path)
-        path.each do |segment|
-          current = resolve_path_segment(current, segment)
-          return current if current.is_a?(UndefinedValue)
-        end
-        current
-      end
-
-      # :reek:TooManyStatements
-      # :reek:FeatureEnvy
-      def extract_reference_key(segment)
-        value = segment.is_a?(AST::RefArg) ? segment.value : segment
-        return value.value if value.is_a?(AST::Literal)
-        return resolve_reference_variable(value) if value.is_a?(AST::Variable)
-        return value.to_ruby if value.is_a?(Value)
-
-        Value.from_ruby(value).to_ruby
-      rescue ArgumentError
-        UndefinedValue.new
-      end
-
-      # :reek:FeatureEnvy
-      def resolve_reference_variable(value)
-        resolved = lookup(value.name)
-        return resolved if resolved.is_a?(UndefinedValue)
-
-        resolved.to_ruby
-      end
     end
   end
 end

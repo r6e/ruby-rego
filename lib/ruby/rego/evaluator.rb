@@ -18,6 +18,8 @@ require_relative "evaluator/expression_evaluator"
 require_relative "evaluator/variable_collector"
 require_relative "evaluator/rule_evaluator"
 require_relative "evaluator/query_node_builder"
+require_relative "with_modifier"
+require_relative "with_modifier_applier"
 
 module Ruby
   module Rego
