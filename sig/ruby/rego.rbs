@@ -197,6 +197,23 @@ module Ruby
         def ensure_array_args: (untyped args, String builtin_name) -> Array[untyped]
       end
 
+      module RegistryHelpers
+        def register_configured_functions: (BuiltinRegistry registry, Hash[String, Hash[Symbol, untyped]] mapping) -> void
+
+        private
+
+        def register_configured_function: (BuiltinRegistry registry, String name, Hash[Symbol, untyped] config) -> void
+      end
+
+      module NumericHelpers
+        def self.integer_value: (Value value, context: String) -> Integer
+        def self.non_negative_integer: (Value value, context: String) -> Integer
+
+        private
+
+        def self.raise_integer_error: (Numeric numeric, String context) -> bot
+      end
+
       module Types
         TYPE_PREDICATES: Hash[String, Symbol]
 
@@ -233,6 +250,8 @@ module Ruby
       end
 
       module Strings
+        extend RegistryHelpers
+
         BASE_DIGITS: Array[String]
         STRING_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
 
@@ -255,12 +274,9 @@ module Ruby
 
         private
 
-        def self.register_function: (BuiltinRegistry registry, String name, Hash[Symbol, untyped] config) -> void
         def self.string_value: (Value value, context: String) -> String
         def self.array_values: (Value value, name: String) -> Array[Value]
         def self.string_array: (Value value, name: String) -> Array[String]
-        def self.integer_value: (Value value, context: String) -> Integer
-        def self.non_negative_integer: (Value value, context: String) -> Integer
         def self.ensure_base: (Integer base_value) -> void
         def self.trim_with_cutset: (Value string, Value cutset, Hash[Symbol, untyped] context) -> StringValue
         def self.base_encode: (Integer number_value, Integer base_value) -> String
@@ -275,10 +291,12 @@ module Ruby
         def self.apply_trim_or_original: (String string_text, String cutset_text, Symbol mode) -> String
         def self.apply_trim: (String string_text, String cutset_text, Symbol mode) -> String
         def self.trim_patterns: (String escaped, Symbol mode) -> Array[String]
-        def self.raise_integer_error: (Numeric numeric, String context) -> bot
+        def self.string_pair: (Value left, Value right, left_context: String, right_context: String) -> [String, String]
       end
 
       module Collections
+        extend RegistryHelpers
+
         COLLECTION_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
 
         def self.register!: () -> BuiltinRegistry
@@ -294,7 +312,6 @@ module Ruby
 
         private
 
-        def self.register_function: (BuiltinRegistry registry, String name, Hash[Symbol, untyped] config) -> void
         def self.raise_union_type_error: (Value left, Value right) -> bot
       end
 
@@ -312,9 +329,6 @@ module Ruby
         def self.raise_sort_type_error: (Class expected_type, Class actual_type) -> bot
         def self.slice_indices: (Value start, Value stop) -> [Integer, Integer]
         def self.slice_elements: (Array[Value] elements, Integer start_index, Integer stop_index) -> Array[Value]
-        def self.non_negative_integer: (Value value, context: String) -> Integer
-        def self.integer_value: (Value value, context: String) -> Integer
-        def self.raise_integer_error: (Numeric numeric, String context) -> bot
       end
 
       module Collections::ObjectOps
@@ -343,10 +357,13 @@ module Ruby
 
         private
 
+        def self.set_operation: (Value left, Value right, name: String) { (Set[Value], Set[Value]) -> Set[Value] } -> SetValue
         def self.set_contents: (Value value, name: String) -> Set[Value]
       end
 
       module Comparisons
+        extend RegistryHelpers
+
         COMPARISON_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
 
         def self.register!: () -> BuiltinRegistry
@@ -359,8 +376,6 @@ module Ruby
         def self.cast_object: (Value value) -> ObjectValue
 
         private
-
-        def self.register_function: (BuiltinRegistry registry, String name, Hash[Symbol, untyped] config) -> void
       end
 
       module Comparisons::Casts
@@ -633,11 +648,14 @@ module Ruby
       def yield_body_solutions: (Enumerator::Yielder yielder, Array[untyped] literals, Integer index, Hash[String, Value] bindings) -> void
       def each_literal_solution: (untyped literal) -> Enumerator[Hash[String, Value]]
       def each_some_solution: (AST::SomeDecl literal) -> Enumerator[Hash[String, Value]]
+      def collection_bindings: (Array[AST::Variable] variables, Value collection_value) -> Enumerator[Hash[String, Value]]
       def each_array_binding: (Array[AST::Variable] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]
       def each_set_binding: (Array[AST::Variable] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]
       def each_object_binding: (Array[AST::Variable] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]
+      def bindings_for_pair: (Array[AST::Variable] variables, untyped first_value, untyped second_value) -> Hash[String, Value]
       def bindings_for: (AST::Variable variable, untyped value) -> Hash[String, Value]
       def merge_bindings: (Hash[String, Value] existing, Hash[String, Value] additions) -> Hash[String, Value]?
+      def empty_bindings_enum: () -> Enumerator[Hash[String, Value]]
 
       attr_reader environment: Environment
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
@@ -744,6 +762,7 @@ module Ruby
     class Lexer
       KEYWORDS: Hash[String, Symbol]
       SINGLE_CHAR_TOKENS: Hash[String, Symbol]
+      COMPOUND_TOKENS: Hash[String, [Symbol?, Symbol]]
       NEWLINE_CHARS: Array[String]
       WHITESPACE_CHARS: Array[String]
       EXPONENT_CHARS: Array[String]
@@ -761,14 +780,14 @@ module Ruby
       def next_token: () -> Token
       def eof_token: () -> Token
       def simple_token_for: (String char) -> Token?
-      def read_colon_or_assign: () -> Token
-      def read_equal_or_unify: () -> Token
-      def read_not_equal: () -> Token
-      def read_lt_or_lte: () -> Token
-      def read_gt_or_gte: () -> Token
+      def read_compound_token: (String char) -> Token?
       def skip_whitespace: () -> void
       def skip_comment: () -> void
       def read_number: () -> Token
+      def read_number_prefix: () -> String
+      def read_fractional_part: () -> String
+      def read_exponent_part: () -> String
+      def read_exponent_sign: () -> String
       def read_string: () -> Token
       def read_raw_string: () -> Token
       def read_newline: () -> Token
@@ -891,6 +910,7 @@ module Ruby
       def parse_array_comprehension: (Token start_token, AST::expression term) -> AST::ArrayComprehension
       def parse_object_comprehension: (Token start_token, AST::expression key, AST::expression value) -> AST::ObjectComprehension
       def parse_set_comprehension: (Token start_token, AST::expression term) -> AST::SetComprehension
+      def parse_comprehension: (Token start_token, untyped term, Symbol end_token, [String, String] messages, untyped node_class) -> untyped
       def parse_call_args: () -> Array[AST::expression]
       def parse_string_literal: () -> AST::StringLiteral
       def parse_number_literal: () -> AST::NumberLiteral
@@ -899,6 +919,7 @@ module Ruby
       def parse_unary_expression: () -> AST::UnaryOp
       def parse_parenthesized_expression: () -> AST::expression
       def parse_parenthesized_body: () -> AST::expression
+      def parse_parenthesized_expression_list: (open_message: String, close_message: String) -> Array[AST::expression]
       def parse_path: (Parser::IdentifierContext identifier_context) -> Array[String]
       def parse_path_segment: (Parser::IdentifierContext identifier_context) -> String
       def parse_identifier: (Parser::IdentifierContext identifier_context) -> String

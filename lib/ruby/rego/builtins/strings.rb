@@ -2,6 +2,8 @@
 
 require_relative "base"
 require_relative "registry"
+require_relative "numeric_helpers"
+require_relative "registry_helpers"
 require_relative "strings/helpers"
 require_relative "strings/number_helpers"
 require_relative "strings/trim_helpers"
@@ -18,6 +20,8 @@ module Ruby
     module Builtins
       # Built-in string helpers.
       module Strings
+        extend RegistryHelpers
+
         STRING_FUNCTIONS = {
           "concat" => { arity: 2, handler: :concat },
           "contains" => { arity: 2, handler: :contains },
@@ -40,21 +44,12 @@ module Ruby
         def self.register!
           registry = BuiltinRegistry.instance
 
-          STRING_FUNCTIONS.each do |name, config|
-            register_function(registry, name, config)
-          end
+          register_configured_functions(registry, STRING_FUNCTIONS)
 
           registry
         end
 
-        def self.register_function(registry, name, config)
-          return if registry.registered?(name)
-
-          registry.register(name, config.fetch(:arity)) do |*args|
-            public_send(config.fetch(:handler), *args)
-          end
-        end
-        private_class_method :register_function
+        private_class_method :register_configured_functions, :register_configured_function
       end
     end
   end

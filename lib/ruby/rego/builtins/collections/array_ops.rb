@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../base"
+require_relative "../numeric_helpers"
 require_relative "../../errors"
 require_relative "../../value"
 
@@ -82,8 +83,8 @@ module Ruby
 
           def self.slice_indices(start, stop)
             [
-              non_negative_integer(start, context: "array.slice start"),
-              non_negative_integer(stop, context: "array.slice stop")
+              NumericHelpers.non_negative_integer(start, context: "array.slice start"),
+              NumericHelpers.non_negative_integer(stop, context: "array.slice stop")
             ]
           end
           private_class_method :slice_indices
@@ -95,41 +96,6 @@ module Ruby
             elements.slice(start_index, length) || []
           end
           private_class_method :slice_elements
-
-          def self.non_negative_integer(value, context:)
-            integer = integer_value(value, context: context)
-            return integer if integer >= 0
-
-            raise Ruby::Rego::TypeError.new(
-              "Expected non-negative integer",
-              expected: "non-negative integer",
-              actual: integer,
-              context: context,
-              location: nil
-            )
-          end
-          private_class_method :non_negative_integer
-
-          def self.integer_value(value, context:)
-            Base.assert_type(value, expected: NumberValue, context: context)
-            numeric = value.value
-            return numeric if numeric.is_a?(Integer)
-            return numeric.to_i if numeric.is_a?(Float) && numeric.finite? && numeric.modulo(1).zero?
-
-            raise_integer_error(numeric, context)
-          end
-          private_class_method :integer_value
-
-          def self.raise_integer_error(numeric, context)
-            raise Ruby::Rego::TypeError.new(
-              "Expected integer",
-              expected: "integer",
-              actual: numeric,
-              context: context,
-              location: nil
-            )
-          end
-          private_class_method :raise_integer_error
         end
       end
     end

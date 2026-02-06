@@ -11,8 +11,8 @@ module Ruby
         # @return [Ruby::Rego::StringValue]
         def self.substring(string, offset, length)
           string_text = string_value(string, context: "substring string")
-          offset_value = non_negative_integer(offset, context: "substring offset")
-          length_value = non_negative_integer(length, context: "substring length")
+          offset_value = NumericHelpers.non_negative_integer(offset, context: "substring offset")
+          length_value = NumericHelpers.non_negative_integer(length, context: "substring length")
           substring = string_text.slice(offset_value, length_value) || ""
           StringValue.new(substring)
         end

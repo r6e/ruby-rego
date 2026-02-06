@@ -5,30 +5,6 @@ module Ruby
     module Builtins
       # Built-in string helpers.
       module Strings
-        def self.integer_value(value, context:)
-          Base.assert_type(value, expected: NumberValue, context: context)
-          numeric = value.value
-          return numeric if numeric.is_a?(Integer)
-          return numeric.to_i if numeric.is_a?(Float) && numeric.finite? && numeric.modulo(1).zero?
-
-          raise_integer_error(numeric, context)
-        end
-        private_class_method :integer_value
-
-        def self.non_negative_integer(value, context:)
-          integer = integer_value(value, context: context)
-          return integer if integer >= 0
-
-          raise Ruby::Rego::TypeError.new(
-            "Expected non-negative integer",
-            expected: "non-negative integer",
-            actual: integer,
-            context: context,
-            location: nil
-          )
-        end
-        private_class_method :non_negative_integer
-
         def self.ensure_base(base_value)
           return if base_value.between?(2, 36)
 
@@ -41,17 +17,6 @@ module Ruby
           )
         end
         private_class_method :ensure_base
-
-        def self.raise_integer_error(numeric, context)
-          raise Ruby::Rego::TypeError.new(
-            "Expected integer",
-            expected: "integer",
-            actual: numeric,
-            context: context,
-            location: nil
-          )
-        end
-        private_class_method :raise_integer_error
 
         def self.base_encode(number_value, base_value)
           return "0" if number_value.zero?

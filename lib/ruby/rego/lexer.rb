@@ -3,6 +3,9 @@
 require_relative "errors"
 require_relative "location"
 require_relative "token"
+require_relative "lexer/number_reader"
+require_relative "lexer/stream"
+require_relative "lexer/string_reader"
 
 module Ruby
   module Rego
@@ -46,6 +49,14 @@ module Ruby
         "%" => TokenType::PERCENT,
         "|" => TokenType::PIPE,
         "&" => TokenType::AMPERSAND
+      }.freeze
+
+      COMPOUND_TOKENS = {
+        ":" => [TokenType::COLON, TokenType::ASSIGN],
+        "=" => [TokenType::UNIFY, TokenType::EQ],
+        "!" => [nil, TokenType::NEQ],
+        "<" => [TokenType::LT, TokenType::LTE],
+        ">" => [TokenType::GT, TokenType::GTE]
       }.freeze
 
       NEWLINE_CHARS = ["\n", "\r"].freeze
@@ -103,20 +114,10 @@ module Ruby
         token = simple_token_for(char)
         return token if token
 
-        case char
-        when ":"
-          read_colon_or_assign
-        when "="
-          read_equal_or_unify
-        when "!"
-          read_not_equal
-        when "<"
-          read_lt_or_lte
-        when ">"
-          read_gt_or_gte
-        else
-          raise_error("Unexpected character: #{char.inspect}", capture_position, length: 1)
-        end
+        token = read_compound_token(char)
+        return token if token
+
+        raise_error("Unexpected character: #{char.inspect}", capture_position, length: 1)
       end
       # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
 
@@ -134,44 +135,17 @@ module Ruby
         build_token(type, nil, start)
       end
 
-      def read_colon_or_assign
+      def read_compound_token(char)
+        config = COMPOUND_TOKENS[char]
+        return nil unless config
+
+        single_type, double_type = config
         start = capture_position
         advance
-        return build_token(TokenType::ASSIGN, nil, start) if match?("=")
+        return build_token(double_type, nil, start) if match?("=")
+        return build_token(single_type, nil, start) if single_type
 
-        build_token(TokenType::COLON, nil, start)
-      end
-
-      def read_equal_or_unify
-        start = capture_position
-        advance
-        return build_token(TokenType::EQ, nil, start) if match?("=")
-
-        build_token(TokenType::UNIFY, nil, start)
-      end
-
-      def read_not_equal
-        start = capture_position
-        advance
-        return build_token(TokenType::NEQ, nil, start) if match?("=")
-
-        raise_error("Unexpected character: #{"!".inspect}", start, length: 1)
-      end
-
-      def read_lt_or_lte
-        start = capture_position
-        advance
-        return build_token(TokenType::LTE, nil, start) if match?("=")
-
-        build_token(TokenType::LT, nil, start)
-      end
-
-      def read_gt_or_gte
-        start = capture_position
-        advance
-        return build_token(TokenType::GTE, nil, start) if match?("=")
-
-        build_token(TokenType::GT, nil, start)
+        raise_error("Unexpected character: #{char.inspect}", start, length: 1)
       end
 
       def skip_whitespace
@@ -195,80 +169,6 @@ module Ruby
         advance until eof? || newline?(current_char)
       end
 
-      # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
-      def read_number # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
-        start = capture_position
-        buffer = +""
-
-        buffer << advance
-
-        raise_error("Invalid number literal", capture_position, length: 1) if buffer == "0" && digit?(current_char)
-
-        buffer << read_digits
-
-        if current_char == "."
-          if digit?(peek(1))
-            buffer << advance
-            buffer << read_digits
-          else
-            raise_error("Invalid number literal", capture_position, length: 1)
-          end
-        end
-
-        if exponent_start?
-          buffer << advance
-          sign = current_char
-          buffer << advance if sign && SIGN_CHARS.include?(sign)
-          raise_error("Invalid number exponent", capture_position, length: 1) unless digit?(current_char)
-          buffer << read_digits
-        end
-
-        build_token(TokenType::NUMBER, parse_number(buffer, start), start)
-      end
-      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
-
-      # rubocop:disable Metrics/MethodLength
-      def read_string
-        start = capture_position
-        advance
-        buffer = +""
-
-        until eof?
-          char_position = capture_position
-          char = advance
-          return build_token(TokenType::STRING, buffer, start) if char == "\""
-
-          break if char == "\n"
-
-          buffer << (char == "\\" ? read_escape_sequence(char_position) : char)
-        end
-
-        raise_unterminated_string(start)
-      end
-      # rubocop:enable Metrics/MethodLength
-
-      # rubocop:disable Metrics/MethodLength
-      def read_raw_string
-        start = capture_position
-        advance
-        buffer = +""
-
-        until eof?
-          char = advance
-          return build_token(TokenType::RAW_STRING, buffer, start) if char == "`"
-
-          if char == "\\" && current_char == "{"
-            advance
-            buffer << "{"
-          else
-            buffer << char
-          end
-        end
-
-        raise_unterminated_raw_string(start)
-      end
-      # rubocop:enable Metrics/MethodLength
-
       def read_newline
         start = capture_position
         advance
@@ -287,188 +187,6 @@ module Ruby
         return build_token(keyword, nil, start) if keyword
 
         build_token(TokenType::IDENT, buffer, start)
-      end
-
-      def read_digits
-        digits = +""
-        digits << advance while digit?(current_char)
-        digits
-      end
-
-      # rubocop:disable Metrics/MethodLength, Metrics/CyclomaticComplexity
-      def read_escape_sequence(backslash_position)
-        char = current_char
-        raise_unterminated_string(backslash_position) if char.nil? || char == "\n"
-
-        advance
-
-        case char
-        when "\"", "\\", "/", "{"
-          char
-        when "b"
-          "\b"
-        when "f"
-          "\f"
-        when "n"
-          "\n"
-        when "r"
-          "\r"
-        when "t"
-          "\t"
-        when "u"
-          read_unicode_escape
-        else
-          raise_error("Invalid escape sequence: \\#{char}", backslash_position, length: 2)
-        end
-      end
-      # rubocop:enable Metrics/MethodLength, Metrics/CyclomaticComplexity
-
-      def read_unicode_escape
-        hex = +""
-
-        4.times do
-          char = current_char.to_s
-          raise_error("Invalid unicode escape sequence", capture_position, length: 1) unless hex_digit?(char)
-
-          advance
-          hex << char
-        end
-
-        [hex.to_i(16)].pack("U")
-      end
-
-      def parse_number(buffer, start)
-        return Float(buffer) if buffer.include?(".") || buffer.match?(/[eE]/)
-
-        Integer(buffer, 10)
-      rescue ArgumentError
-        raise_error("Invalid number literal", start, length: buffer.length)
-      end
-
-      def advance
-        char = current_char
-        raise_unexpected_eof if char.nil?
-
-        return advance_line_break if char == "\r"
-        return advance_newline if char == "\n"
-
-        increment_position(1)
-        char
-      end
-
-      def advance_line_break
-        increment_line(peek == "\n" ? 2 : 1)
-        "\n"
-      end
-
-      def advance_newline
-        increment_line(1)
-        "\n"
-      end
-
-      def increment_line(count)
-        @position += count
-        @offset += count
-        @line += 1
-        @column = 1
-      end
-
-      def increment_position(count)
-        @position += count
-        @offset += count
-        @column += count
-      end
-
-      def peek(distance = 1)
-        source[@position + distance]
-      end
-
-      def match?(expected)
-        return false unless current_char == expected
-
-        advance
-        true
-      end
-
-      def current_char
-        source[@position]
-      end
-
-      def eof?
-        @position >= source.length
-      end
-
-      def capture_position
-        { line: line, column: column, offset: offset }
-      end
-
-      def build_token(type, value, start)
-        start_offset = start.fetch(:offset) || 0
-        length = offset - start_offset
-        location = Location.new(
-          line: start.fetch(:line),
-          column: start.fetch(:column),
-          offset: start_offset,
-          length: length
-        )
-        Token.new(type: type, value: value, location: location)
-      end
-
-      def identifier_start?(char)
-        !!(char && char.match?(IDENTIFIER_START))
-      end
-
-      def identifier_part?(char)
-        !!(char && char.match?(IDENTIFIER_PART))
-      end
-
-      def digit?(char)
-        !!(char && char.match?(DIGIT))
-      end
-
-      def hex_digit?(char)
-        !!(char && char.match?(HEX_DIGIT))
-      end
-
-      def whitespace?(char)
-        return false if char.nil?
-
-        WHITESPACE_CHARS.include?(char)
-      end
-
-      def newline?(char)
-        return false if char.nil?
-
-        NEWLINE_CHARS.include?(char)
-      end
-
-      def exponent_start?
-        char = current_char
-        !!(char && EXPONENT_CHARS.include?(char))
-      end
-
-      def span_length_from(start)
-        start_offset = start.fetch(:offset) || 0
-        offset - start_offset
-      end
-
-      def raise_unterminated_string(start)
-        raise_error("Unterminated string literal", start, length: span_length_from(start))
-      end
-
-      def raise_unterminated_raw_string(start)
-        raise_error("Unterminated raw string literal", start, length: span_length_from(start))
-      end
-
-      def raise_unexpected_eof
-        raise_error("Unexpected end of input", capture_position, length: 0)
-      end
-
-      def raise_error(message, position, length: nil)
-        line_value = position.fetch(:line)
-        column_value = position.fetch(:column)
-        offset_value = position.fetch(:offset) || 0
-        raise LexerError.new(message, line: line_value, column: column_value, offset: offset_value, length: length)
       end
     end
     # rubocop:enable Metrics/ClassLength

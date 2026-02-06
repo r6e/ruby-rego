@@ -11,8 +11,8 @@ module Ruby
         # @param base [Ruby::Rego::Value]
         # @return [Ruby::Rego::StringValue]
         def self.format_int(number, base)
-          number_value = integer_value(number, context: "format_int number")
-          base_value = integer_value(base, context: "format_int base")
+          number_value = NumericHelpers.integer_value(number, context: "format_int number")
+          base_value = NumericHelpers.integer_value(base, context: "format_int base")
           ensure_base(base_value)
           StringValue.new(base_encode(number_value, base_value))
         end

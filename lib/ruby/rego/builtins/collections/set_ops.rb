@@ -14,28 +14,29 @@ module Ruby
           # @param right [Ruby::Rego::Value]
           # @return [Ruby::Rego::SetValue]
           def self.intersection(left, right)
-            left_set = set_contents(left, name: "intersection left")
-            right_set = set_contents(right, name: "intersection right")
-            SetValue.new(left_set & right_set)
+            set_operation(left, right, name: "intersection") { |left_set, right_set| left_set & right_set }
           end
 
           # @param left [Ruby::Rego::Value]
           # @param right [Ruby::Rego::Value]
           # @return [Ruby::Rego::SetValue]
           def self.set_diff(left, right)
-            left_set = set_contents(left, name: "set_diff left")
-            right_set = set_contents(right, name: "set_diff right")
-            SetValue.new(left_set - right_set)
+            set_operation(left, right, name: "set_diff") { |left_set, right_set| left_set - right_set }
           end
 
           # @param left [Ruby::Rego::Value]
           # @param right [Ruby::Rego::Value]
           # @return [Ruby::Rego::SetValue]
           def self.union_sets(left, right)
-            left_set = set_contents(left, name: "union left")
-            right_set = set_contents(right, name: "union right")
-            SetValue.new(left_set | right_set)
+            set_operation(left, right, name: "union") { |left_set, right_set| left_set | right_set }
           end
+
+          def self.set_operation(left, right, name:)
+            left_set = set_contents(left, name: "#{name} left")
+            right_set = set_contents(right, name: "#{name} right")
+            SetValue.new(yield(left_set, right_set))
+          end
+          private_class_method :set_operation
 
           def self.set_contents(value, name:)
             set_contents = value # @type var set_contents: SetValue

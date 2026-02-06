@@ -2,6 +2,7 @@
 
 require_relative "base"
 require_relative "registry"
+require_relative "registry_helpers"
 require_relative "../value"
 require_relative "comparisons/casts"
 
@@ -10,6 +11,8 @@ module Ruby
     module Builtins
       # Built-in comparison and casting helpers.
       module Comparisons
+        extend RegistryHelpers
+
         COMPARISON_FUNCTIONS = {
           "equal" => { arity: 2, handler: :equal },
           "to_number" => { arity: 1, handler: :to_number },
@@ -24,21 +27,12 @@ module Ruby
         def self.register!
           registry = BuiltinRegistry.instance
 
-          COMPARISON_FUNCTIONS.each do |name, config|
-            register_function(registry, name, config)
-          end
+          register_configured_functions(registry, COMPARISON_FUNCTIONS)
 
           registry
         end
 
-        def self.register_function(registry, name, config)
-          return if registry.registered?(name)
-
-          registry.register(name, config.fetch(:arity)) do |*args|
-            public_send(config.fetch(:handler), *args)
-          end
-        end
-        private_class_method :register_function
+        private_class_method :register_configured_functions, :register_configured_function
 
         # @param left [Ruby::Rego::Value]
         # @param right [Ruby::Rego::Value]

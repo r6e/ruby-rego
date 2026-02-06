@@ -32,6 +32,15 @@ module Ruby
         end
         private_class_method :string_array
 
+        # :reek:LongParameterList
+        def self.string_pair(left, right, left_context:, right_context:)
+          [
+            string_value(left, context: left_context),
+            string_value(right, context: right_context)
+          ]
+        end
+        private_class_method :string_pair
+
         def self.sprintf_values(args)
           array_values(args, name: "sprintf args").map { |value| Base.to_ruby(value) }
         end
