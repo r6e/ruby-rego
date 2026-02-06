@@ -250,7 +250,7 @@ module Ruby
         return unless key_sources.key?(normalized_key)
 
         existing_key = key_sources[normalized_key]
-        raise Error, "Conflicting object keys: #{existing_key.inspect} and #{key.inspect}"
+        raise ObjectKeyConflictError, "Conflicting object keys: #{existing_key.inspect} and #{key.inspect}"
       ensure
         key_sources[normalized_key] = key
       end

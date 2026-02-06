@@ -35,6 +35,71 @@ RSpec.describe Ruby::Rego::Evaluator do
       expect(evaluator.environment.lookup("x").to_ruby).to eq(10)
     end
 
+    it "unifies array patterns with values" do
+      unification = Ruby::Rego::AST::BinaryOp.new(
+        operator: :unify,
+        left: Ruby::Rego::AST::ArrayLiteral.new(
+          elements: [
+            Ruby::Rego::AST::Variable.new(name: "x"),
+            Ruby::Rego::AST::NumberLiteral.new(value: 2)
+          ]
+        ),
+        right: Ruby::Rego::AST::ArrayLiteral.new(
+          elements: [
+            Ruby::Rego::AST::NumberLiteral.new(value: 1),
+            Ruby::Rego::AST::NumberLiteral.new(value: 2)
+          ]
+        )
+      )
+
+      eval_node(unification)
+
+      expect(evaluator.environment.lookup("x").to_ruby).to eq(1)
+    end
+
+    it "unifies when the variable is on the right" do
+      unification = Ruby::Rego::AST::BinaryOp.new(
+        operator: :unify,
+        left: Ruby::Rego::AST::NumberLiteral.new(value: 1),
+        right: Ruby::Rego::AST::Variable.new(name: "x")
+      )
+
+      eval_node(unification)
+
+      expect(evaluator.environment.lookup("x").to_ruby).to eq(1)
+    end
+
+    it "does not bind ambiguous assignments" do
+      assignment = Ruby::Rego::AST::BinaryOp.new(
+        operator: :assign,
+        left: Ruby::Rego::AST::ObjectLiteral.new(
+          pairs: [
+            [
+              Ruby::Rego::AST::Variable.new(name: "k"),
+              Ruby::Rego::AST::NumberLiteral.new(value: 1)
+            ]
+          ]
+        ),
+        right: Ruby::Rego::AST::ObjectLiteral.new(
+          pairs: [
+            [
+              Ruby::Rego::AST::StringLiteral.new(value: "a"),
+              Ruby::Rego::AST::NumberLiteral.new(value: 1)
+            ],
+            [
+              Ruby::Rego::AST::StringLiteral.new(value: "b"),
+              Ruby::Rego::AST::NumberLiteral.new(value: 1)
+            ]
+          ]
+        )
+      )
+
+      result = eval_node(assignment)
+
+      expect(result).to be_a(Ruby::Rego::UndefinedValue)
+      expect(evaluator.environment.lookup("k")).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
     it "resolves input and data references" do
       input_reference = Ruby::Rego::AST::Reference.new(
         base: Ruby::Rego::AST::Variable.new(name: "input"),
@@ -97,6 +162,156 @@ RSpec.describe Ruby::Rego::Evaluator do
 
       expect(result.success?).to be(true)
       expect(result.value.to_ruby["allow"]).to be(true)
+    end
+
+    context "when using some declarations with collections" do
+      let(:rules) do
+        collection = Ruby::Rego::AST::ArrayLiteral.new(
+          elements: [
+            Ruby::Rego::AST::NumberLiteral.new(value: 1),
+            Ruby::Rego::AST::NumberLiteral.new(value: 2)
+          ]
+        )
+        some_decl = Ruby::Rego::AST::SomeDecl.new(
+          variables: [Ruby::Rego::AST::Variable.new(name: "x")],
+          collection: collection
+        )
+        condition = Ruby::Rego::AST::BinaryOp.new(
+          operator: :unify,
+          left: Ruby::Rego::AST::Variable.new(name: "x"),
+          right: Ruby::Rego::AST::NumberLiteral.new(value: 2)
+        )
+        body = [some_decl, Ruby::Rego::AST::QueryLiteral.new(expression: condition)]
+        head = { type: :complete, name: "allow", location: nil }
+
+        [Ruby::Rego::AST::Rule.new(name: "allow", head: head, body: body)]
+      end
+
+      it "iterates bindings to satisfy the rule body" do
+        result = evaluator.evaluate
+
+        expect(result.success?).to be(true)
+        expect(result.value.to_ruby["allow"]).to be(true)
+      end
+    end
+
+    context "when binding array index and value" do
+      let(:rules) do
+        collection = Ruby::Rego::AST::ArrayLiteral.new(
+          elements: [
+            Ruby::Rego::AST::NumberLiteral.new(value: 1),
+            Ruby::Rego::AST::NumberLiteral.new(value: 2)
+          ]
+        )
+        some_decl = Ruby::Rego::AST::SomeDecl.new(
+          variables: [
+            Ruby::Rego::AST::Variable.new(name: "i"),
+            Ruby::Rego::AST::Variable.new(name: "v")
+          ],
+          collection: collection
+        )
+        index_condition = Ruby::Rego::AST::BinaryOp.new(
+          operator: :unify,
+          left: Ruby::Rego::AST::Variable.new(name: "i"),
+          right: Ruby::Rego::AST::NumberLiteral.new(value: 1)
+        )
+        value_condition = Ruby::Rego::AST::BinaryOp.new(
+          operator: :unify,
+          left: Ruby::Rego::AST::Variable.new(name: "v"),
+          right: Ruby::Rego::AST::NumberLiteral.new(value: 2)
+        )
+        body = [
+          some_decl,
+          Ruby::Rego::AST::QueryLiteral.new(expression: index_condition),
+          Ruby::Rego::AST::QueryLiteral.new(expression: value_condition)
+        ]
+        head = { type: :complete, name: "allow", location: nil }
+
+        [Ruby::Rego::AST::Rule.new(name: "allow", head: head, body: body)]
+      end
+
+      it "binds index/value pairs for arrays" do
+        result = evaluator.evaluate
+
+        expect(result.success?).to be(true)
+        expect(result.value.to_ruby["allow"]).to be(true)
+      end
+    end
+
+    context "when binding set members" do
+      let(:rules) do
+        collection = Ruby::Rego::AST::SetLiteral.new(
+          elements: [
+            Ruby::Rego::AST::NumberLiteral.new(value: 1),
+            Ruby::Rego::AST::NumberLiteral.new(value: 2)
+          ]
+        )
+        some_decl = Ruby::Rego::AST::SomeDecl.new(
+          variables: [Ruby::Rego::AST::Variable.new(name: "x")],
+          collection: collection
+        )
+        condition = Ruby::Rego::AST::BinaryOp.new(
+          operator: :unify,
+          left: Ruby::Rego::AST::Variable.new(name: "x"),
+          right: Ruby::Rego::AST::NumberLiteral.new(value: 1)
+        )
+        body = [some_decl, Ruby::Rego::AST::QueryLiteral.new(expression: condition)]
+        head = { type: :complete, name: "allow", location: nil }
+
+        [Ruby::Rego::AST::Rule.new(name: "allow", head: head, body: body)]
+      end
+
+      it "iterates set values" do
+        result = evaluator.evaluate
+
+        expect(result.success?).to be(true)
+        expect(result.value.to_ruby["allow"]).to be(true)
+      end
+    end
+
+    context "when binding object keys and values" do
+      let(:rules) do
+        collection = Ruby::Rego::AST::ObjectLiteral.new(
+          pairs: [
+            [
+              Ruby::Rego::AST::StringLiteral.new(value: "a"),
+              Ruby::Rego::AST::NumberLiteral.new(value: 1)
+            ]
+          ]
+        )
+        some_decl = Ruby::Rego::AST::SomeDecl.new(
+          variables: [
+            Ruby::Rego::AST::Variable.new(name: "k"),
+            Ruby::Rego::AST::Variable.new(name: "v")
+          ],
+          collection: collection
+        )
+        key_condition = Ruby::Rego::AST::BinaryOp.new(
+          operator: :unify,
+          left: Ruby::Rego::AST::Variable.new(name: "k"),
+          right: Ruby::Rego::AST::StringLiteral.new(value: "a")
+        )
+        value_condition = Ruby::Rego::AST::BinaryOp.new(
+          operator: :unify,
+          left: Ruby::Rego::AST::Variable.new(name: "v"),
+          right: Ruby::Rego::AST::NumberLiteral.new(value: 1)
+        )
+        body = [
+          some_decl,
+          Ruby::Rego::AST::QueryLiteral.new(expression: key_condition),
+          Ruby::Rego::AST::QueryLiteral.new(expression: value_condition)
+        ]
+        head = { type: :complete, name: "allow", location: nil }
+
+        [Ruby::Rego::AST::Rule.new(name: "allow", head: head, body: body)]
+      end
+
+      it "iterates object key/value pairs" do
+        result = evaluator.evaluate
+
+        expect(result.success?).to be(true)
+        expect(result.value.to_ruby["allow"]).to be(true)
+      end
     end
   end
 end

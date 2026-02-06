@@ -4,6 +4,8 @@ module Ruby
   module Rego
     class Evaluator
       # Evaluates expressions to Rego values.
+      # :reek:TooManyInstanceVariables
+      # :reek:DataClump
       class ExpressionEvaluator
         PRIMITIVE_TYPES = [String, Numeric, TrueClass, FalseClass, Array, Hash, Set, NilClass].freeze
         NODE_EVALUATORS = [
@@ -22,13 +24,15 @@ module Ruby
 
         # @param environment [Environment]
         # @param reference_resolver [ReferenceResolver]
-        def initialize(environment:, reference_resolver:)
+        # @param unifier [Unifier]
+        def initialize(environment:, reference_resolver:, unifier: Unifier.new)
           @environment = environment
           @reference_resolver = reference_resolver
           @dispatch = ExpressionDispatch.new(
             primitive_types: PRIMITIVE_TYPES,
             node_evaluators: NODE_EVALUATORS
           )
+          @unifier = unifier
           @object_literal_evaluator = ObjectLiteralEvaluator.new(expression_evaluator: self)
         end
 
@@ -40,9 +44,23 @@ module Ruby
           dispatch.primitive_value(node) || dispatch.dispatch_node(node, self) || raise_unknown_node(node)
         end
 
+        # @param node [Object]
+        # @param env [Environment]
+        # @return [Enumerator]
+        def eval_with_unification(node, env = environment)
+          Enumerator.new do |yielder|
+            if node.is_a?(AST::BinaryOp)
+              handle_unification_operator(node, env, yielder)
+              next
+            end
+
+            yield_truthy_bindings(node, yielder)
+          end
+        end
+
         private
 
-        attr_reader :environment, :reference_resolver, :object_literal_evaluator, :dispatch
+        attr_reader :environment, :reference_resolver, :object_literal_evaluator, :dispatch, :unifier
 
         def evaluate_variable(node)
           name = node.name
@@ -69,9 +87,11 @@ module Ruby
           SetValue.new(elements)
         end
 
+        # :reek:TooManyStatements
         def evaluate_binary_op(node)
           operator = node.operator
-          return evaluate_assignment(node) if %i[assign unify].include?(operator)
+          return evaluate_assignment(node) if operator == :assign
+          return evaluate_unification(node) if operator == :unify
 
           left = evaluate(node.left)
           right = evaluate(node.right)
@@ -88,6 +108,33 @@ module Ruby
           in AST::UnaryOp[operator:, operand:]
             OperatorEvaluator.apply_unary(operator, evaluate(operand))
           end
+        end
+
+        def handle_unification_operator(node, env, yielder)
+          case node.operator
+          when :assign
+            yield_assignment_bindings(node, env, yielder)
+          when :unify
+            yield_unification_bindings(node, env, yielder)
+          else
+            yield_truthy_bindings(node, yielder)
+          end
+        end
+
+        def yield_assignment_bindings(node, env, yielder)
+          value = evaluate(node.right)
+          binding_sets = unifier.unify(node.left, value, env)
+          yielder << binding_sets.first if binding_sets.size == 1
+        end
+
+        def yield_unification_bindings(node, env, yielder)
+          unification_binding_sets(node, env).each { |bindings| yielder << bindings }
+        end
+
+        def yield_truthy_bindings(node, yielder)
+          value = evaluate(node)
+          empty_bindings = {} # @type var empty_bindings: Hash[String, Value]
+          yielder << empty_bindings if value.truthy?
         end
       end
     end

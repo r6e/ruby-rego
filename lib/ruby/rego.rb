@@ -9,6 +9,7 @@ require_relative "rego/ast"
 require_relative "rego/parser"
 require_relative "rego/value"
 require_relative "rego/environment"
+require_relative "rego/unifier"
 require_relative "rego/result"
 require_relative "rego/evaluator"
 

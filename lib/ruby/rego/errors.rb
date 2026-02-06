@@ -128,6 +128,10 @@ module Ruby
       end
     end
 
+    # Error raised when object keys normalize to the same value.
+    class ObjectKeyConflictError < Error
+    end
+
     # Error raised during unification/pattern matching.
     class UnificationError < Error
       # @return [Object, nil]

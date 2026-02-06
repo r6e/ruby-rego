@@ -64,6 +64,9 @@ module Ruby
       def initialize: (String message, expected: untyped, actual: untyped, context: String?, location: Location?) -> void
     end
 
+    class ObjectKeyConflictError < Error
+    end
+
     class UnificationError < Error
       attr_reader pattern: untyped
       attr_reader value: untyped
@@ -189,6 +192,42 @@ module Ruby
       def resolve_reference_variable: (untyped value) -> untyped
     end
 
+    class Unifier
+      def initialize: () -> void
+      def unify: (untyped pattern, untyped value, Environment env) -> Array[Hash[String, Value]]
+      def unify_array: (Array[untyped] pattern_elems, untyped value_array, Environment env, ?Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def unify_object: (Array[[untyped, untyped]] pattern_pairs, untyped value_obj, Environment env, ?Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+
+      private
+
+      def unify_with_bindings: (untyped pattern, untyped value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def structured_unification: (untyped pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]?
+      def apply_unification: (untyped pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def reduce_array_bindings: (Array[untyped] pattern_elems, Array[Value] elements, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def reduce_object_pairs: (Array[[untyped, untyped]] pattern_pairs, Hash[untyped, Value] object_values, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def unify_object_pair: (untyped key_pattern, untyped value_pattern, Hash[untyped, Value] object_values, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def unify_object_candidate: (untyped candidate_key, untyped key_pattern, untyped value_pattern, Hash[untyped, Value] object_values, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def bind_key_variable: (untyped key_pattern, untyped candidate_key, Hash[String, Value] bindings, Environment env) -> Hash[String, Value]?
+    end
+
+    module Unifier::Helpers
+      def self.scalar_pattern_value: (untyped pattern, Environment env) -> Value
+      def self.value_for_pattern: (untyped pattern, Environment env) -> Value
+      def self.normalize_value: (untyped value, Environment env) -> Value
+      def self.normalize_array: (untyped value) -> Array[Value]?
+      def self.normalize_elements: (Array[untyped] elements) -> Array[Value]?
+      def self.object_pairs: (untyped value) -> Hash[untyped, untyped]?
+      def self.normalize_key: (untyped key) -> untyped
+      def self.normalize_object: (untyped value) -> Hash[untyped, Value]?
+      def self.bound_value_for: (String name, Hash[String, Value] bindings, Environment env) -> Value?
+      def self.merge_bindings: (Hash[String, Value] bindings, Hash[String, Value] additions) -> Hash[String, Value]?
+      def self.unify_variable: (AST::Variable variable, Value value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def self.variable_candidate_keys: (AST::Variable key_pattern, Array[untyped] keys, Environment env, Hash[String, Value] bindings) -> Array[untyped]
+      def self.bind_key_variable: (untyped key_pattern, untyped candidate_key, Hash[String, Value] bindings, Environment env) -> Hash[String, Value]?
+      def self.candidate_keys_for: (untyped key_pattern, Array[untyped] keys, Environment env, Hash[String, Value] bindings) -> Array[untyped]
+      def self.match_scalar: (untyped pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+    end
+
     class Result
       attr_reader value: Value
       attr_reader bindings: Hash[String, Value]
@@ -289,8 +328,9 @@ module Ruby
 
       include Evaluator::AssignmentSupport
 
-      def initialize: (environment: Environment, reference_resolver: Evaluator::ReferenceResolver) -> void
+      def initialize: (environment: Environment, reference_resolver: Evaluator::ReferenceResolver, ?unifier: Unifier) -> void
       def evaluate: (untyped node) -> Value
+      def eval_with_unification: (untyped node, ?Environment env) -> Enumerator[Hash[String, Value]]
 
       private
 
@@ -301,12 +341,17 @@ module Ruby
       def evaluate_set_literal: (AST::SetLiteral node) -> Value
       def evaluate_binary_op: (AST::BinaryOp node) -> Value
       def evaluate_unary_op: (AST::UnaryOp node) -> Value
+      def handle_unification_operator: (AST::BinaryOp node, Environment env, Enumerator::Yielder yielder) -> void
+      def yield_assignment_bindings: (AST::BinaryOp node, Environment env, Enumerator::Yielder yielder) -> void
+      def yield_unification_bindings: (AST::BinaryOp node, Environment env, Enumerator::Yielder yielder) -> void
+      def yield_truthy_bindings: (untyped node, Enumerator::Yielder yielder) -> void
       def raise_unknown_node: (untyped node) -> Value
 
       attr_reader environment: Environment
       attr_reader reference_resolver: Evaluator::ReferenceResolver
       attr_reader object_literal_evaluator: Evaluator::ObjectLiteralEvaluator
       attr_reader dispatch: Evaluator::ExpressionDispatch
+      attr_reader unifier: Unifier
 
     end
 
@@ -327,10 +372,12 @@ module Ruby
 
       def evaluate: (untyped node) -> Value
       def environment: () -> Environment
+      def unifier: () -> Unifier
       def evaluate_assignment: (AST::BinaryOp node) -> Value
-      def assignment_operand: (untyped node) -> Hash[Symbol, untyped]
-      def assignment_value: (Hash[Symbol, untyped] left, Hash[Symbol, untyped] right) -> Value
-      def bind_unassigned_variable: (untyped node, Value node_value, Value other_value) -> Value?
+      def evaluate_unification: (AST::BinaryOp node) -> Value
+      def unification_binding_sets: (AST::BinaryOp node, Environment env) -> Array[Hash[String, Value]]
+      def unification_result: (AST::BinaryOp node, Environment env) -> [Array[Hash[String, Value]], Value]
+      def apply_bindings: (Hash[String, Value] bindings) -> Hash[String, Value]
     end
 
     class Evaluator::ExpressionDispatch
@@ -362,9 +409,18 @@ module Ruby
       def evaluate_complete_rule_value: (untyped head) -> Value
       def body_succeeds?: (Array[untyped]? body) -> bool
       def query_literal_truthy?: (untyped literal) -> bool
-      def query_expression_truthy?: (AST::QueryLiteral literal) -> bool
       def some_decl_truthy?: (AST::SomeDecl literal) -> bool
       def evaluate_rule_value: (untyped head) -> Value
+      def rule_body_values: (AST::Rule rule) -> Array[untyped]
+      def each_body_solution: (Array[untyped] literals, ?Integer index, ?Hash[String, Value] bindings) -> Enumerator[Hash[String, Value]]
+      def yield_body_solutions: (Enumerator::Yielder yielder, Array[untyped] literals, Integer index, Hash[String, Value] bindings) -> void
+      def each_literal_solution: (untyped literal) -> Enumerator[Hash[String, Value]]
+      def each_some_solution: (AST::SomeDecl literal) -> Enumerator[Hash[String, Value]]
+      def each_array_binding: (Array[AST::Variable] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_set_binding: (Array[AST::Variable] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_object_binding: (Array[AST::Variable] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]
+      def bindings_for: (AST::Variable variable, untyped value) -> Hash[String, Value]
+      def merge_bindings: (Hash[String, Value] existing, Hash[String, Value] additions) -> Hash[String, Value]?
 
       attr_reader environment: Environment
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
