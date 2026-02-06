@@ -277,6 +277,109 @@ module Ruby
         def self.trim_patterns: (String escaped, Symbol mode) -> Array[String]
         def self.raise_integer_error: (Numeric numeric, String context) -> bot
       end
+
+      module Collections
+        COLLECTION_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.sort: (Value array) -> ArrayValue
+        def self.array_concat: (Value left, Value right) -> ArrayValue
+        def self.array_slice: (Value array, Value start, Value stop) -> ArrayValue
+        def self.object_get: (Value object, Value key, Value default) -> Value
+        def self.object_keys: (Value object) -> ArrayValue
+        def self.object_remove: (Value object, Value keys) -> ObjectValue
+        def self.union: (Value left, Value right) -> Value
+        def self.intersection: (Value left, Value right) -> SetValue
+        def self.set_diff: (Value left, Value right) -> SetValue
+
+        private
+
+        def self.register_function: (BuiltinRegistry registry, String name, Hash[Symbol, untyped] config) -> void
+        def self.raise_union_type_error: (Value left, Value right) -> bot
+      end
+
+      module Collections::ArrayOps
+        def self.sort: (Value array) -> ArrayValue
+        def self.array_concat: (Value left, Value right) -> ArrayValue
+        def self.array_slice: (Value array, Value start, Value stop) -> ArrayValue
+
+        private
+
+        def self.array_values: (Value value, name: String) -> Array[Value]
+        def self.ensure_uniform_sort_type: (Array[Value] elements) -> void
+        def self.sort_type: (Array[Value] elements) -> Class
+        def self.validate_sort_element: (Value element, Class type, Integer index) -> void
+        def self.raise_sort_type_error: (Class expected_type, Class actual_type) -> bot
+        def self.slice_indices: (Value start, Value stop) -> [Integer, Integer]
+        def self.slice_elements: (Array[Value] elements, Integer start_index, Integer stop_index) -> Array[Value]
+        def self.non_negative_integer: (Value value, context: String) -> Integer
+        def self.integer_value: (Value value, context: String) -> Integer
+        def self.raise_integer_error: (Numeric numeric, String context) -> bot
+      end
+
+      module Collections::ObjectOps
+        def self.object_get: (Value object, Value key, Value default) -> Value
+        def self.object_keys: (Value object) -> ArrayValue
+        def self.object_remove: (Value object, Value keys) -> ObjectValue
+        def self.union_objects: (Value left, Value right) -> ObjectValue
+
+        private
+
+        def self.object_value: (Value value, name: String) -> ObjectValue
+        def self.normalize_object_key: (untyped key) -> untyped
+        def self.key_collection: (Value keys, name: String) -> Set[untyped]
+        def self.key_values: (Value keys, name: String) -> Array[Value]
+        def self.array_key_values: (ArrayValue keys) -> Array[Value]
+        def self.values_from_set: (SetValue keys) -> Array[Value]
+        def self.merge_objects: (Hash[untyped, Value] left_obj, Hash[untyped, Value] right_obj) -> Hash[untyped, Value]
+        def self.conflicting_key: (Hash[untyped, Value] left_obj, Hash[untyped, Value] right_obj) -> untyped?
+        def self.raise_object_conflict: (untyped key, Hash[untyped, Value] left_obj, Hash[untyped, Value] right_obj) -> bot
+      end
+
+      module Collections::SetOps
+        def self.intersection: (Value left, Value right) -> SetValue
+        def self.set_diff: (Value left, Value right) -> SetValue
+        def self.union_sets: (Value left, Value right) -> SetValue
+
+        private
+
+        def self.set_contents: (Value value, name: String) -> Set[Value]
+      end
+
+      module Comparisons
+        COMPARISON_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.equal: (Value left, Value right) -> BooleanValue
+        def self.to_number: (Value value) -> NumberValue
+        def self.cast_string: (Value value) -> StringValue
+        def self.cast_boolean: (Value value) -> BooleanValue
+        def self.cast_array: (Value value) -> ArrayValue
+        def self.cast_set: (Value value) -> SetValue
+        def self.cast_object: (Value value) -> ObjectValue
+
+        private
+
+        def self.register_function: (BuiltinRegistry registry, String name, Hash[Symbol, untyped] config) -> void
+      end
+
+      module Comparisons::Casts
+        def self.to_number: (Value value) -> NumberValue
+        def self.cast_string: (Value value) -> StringValue
+        def self.cast_boolean: (Value value) -> BooleanValue
+        def self.cast_array: (Value value) -> ArrayValue
+        def self.cast_set: (Value value) -> SetValue
+        def self.cast_object: (Value value) -> ObjectValue
+
+        private
+
+        def self.number_from_string: (String text) -> Numeric
+        def self.raise_number_error: (String text) -> bot
+        def self.boolean_from_string: (String text) -> BooleanValue
+        def self.boolean_from_number: (Numeric number) -> BooleanValue
+        def self.raise_cast_error: (String message, String context, untyped actual) -> bot
+        def self.raise_type_mismatch: (String context, String expected, String actual) -> bot
+      end
     end
 
     class Environment
