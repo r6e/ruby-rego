@@ -21,8 +21,8 @@ require_relative "evaluator/expression_evaluator"
 require_relative "evaluator/variable_collector"
 require_relative "evaluator/rule_evaluator"
 require_relative "evaluator/query_node_builder"
-require_relative "with_modifier"
-require_relative "with_modifier_applier"
+require_relative "with_modifiers/with_modifier"
+require_relative "with_modifiers/with_modifier_applier"
 
 module Ruby
   module Rego
@@ -34,11 +34,8 @@ module Ruby
       def self.from_ast(ast_module, options = {})
         default_input = {} # @type var default_input: Hash[untyped, untyped]
         default_data = {} # @type var default_data: Hash[untyped, untyped]
-        input = options.fetch(:input, default_input)
-        data = options.fetch(:data, default_data)
-        compiler = options.fetch(:compiler, Compiler.new)
-        compiled = compiler.compile(ast_module)
-        new(compiled, input: input, data: data)
+        options = { input: default_input, data: default_data, compiler: Compiler.new }.merge(options)
+        new(options[:compiler].compile(ast_module), input: options[:input], data: options[:data])
       end
 
       # @param compiled_module [#rules_by_name, #package_path]

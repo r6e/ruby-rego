@@ -484,104 +484,106 @@ module Ruby
       def resolve_reference_variable: (untyped value) -> untyped
     end
 
-    class WithModifier
-      attr_reader target: untyped
-      attr_reader value: untyped
+    module WithModifiers
+      class WithModifier
+        attr_reader target: untyped
+        attr_reader value: untyped
 
-      def initialize: (target: untyped, value: untyped) -> void
-      def with_environment: (Environment environment, Evaluator::ExpressionEvaluator expression_evaluator) { (Environment) -> untyped } -> untyped
-    end
+        def initialize: (target: untyped, value: untyped) -> void
+        def with_environment: (Environment environment, Evaluator::ExpressionEvaluator expression_evaluator) { (Environment) -> untyped } -> untyped
+      end
 
-    class WithModifierApplier
-      def self.apply: (Array[AST::WithModifier] modifiers, Environment environment, Evaluator::ExpressionEvaluator expression_evaluator) { (Environment) -> untyped } -> untyped
+      class WithModifierApplier
+        def self.apply: (Array[AST::WithModifier] modifiers, Environment environment, Evaluator::ExpressionEvaluator expression_evaluator) { (Environment) -> untyped } -> untyped
 
-      private
+        private
 
-      def self.build_chain: (Array[AST::WithModifier] modifiers, Evaluator::ExpressionEvaluator expression_evaluator, untyped block) -> untyped
-      def self.wrap_modifier: (AST::WithModifier modifier, Evaluator::ExpressionEvaluator expression_evaluator, untyped block) -> untyped
-    end
+        def self.build_chain: (Array[AST::WithModifier] modifiers, Evaluator::ExpressionEvaluator expression_evaluator, untyped block) -> untyped
+        def self.wrap_modifier: (AST::WithModifier modifier, Evaluator::ExpressionEvaluator expression_evaluator, untyped block) -> untyped
+      end
 
-    class WithModifierContext
-      def initialize: (modifier: WithModifier, environment: Environment, expression_evaluator: Evaluator::ExpressionEvaluator) -> void
-      def apply: () { (Environment) -> untyped } -> untyped
+      class WithModifierContext
+        def initialize: (modifier: WithModifier, environment: Environment, expression_evaluator: Evaluator::ExpressionEvaluator) -> void
+        def apply: () { (Environment) -> untyped } -> untyped
 
-      private
+        private
 
-      attr_reader modifier: WithModifier
-      attr_reader environment: Environment
-      attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
-      def target: () -> untyped
-      def value: () -> untyped
-      def apply_reference: () { (Environment) -> untyped } -> untyped
-      def reference_scope: () -> WithModifierRootScope
-      def reference_override: (WithModifierRootScope scope) -> untyped
-      def reference_path_keys: () -> (Array[untyped] | UndefinedValue)
-      def apply_variable: () { (Environment) -> untyped } -> untyped
-      def apply_builtin_override: (String name) { (Environment) -> untyped } -> untyped
-      def resolved_value: () -> untyped
-    end
+        attr_reader modifier: WithModifier
+        attr_reader environment: Environment
+        attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
+        def target: () -> untyped
+        def value: () -> untyped
+        def apply_reference: () { (Environment) -> untyped } -> untyped
+        def reference_scope: () -> WithModifierRootScope
+        def reference_override: (WithModifierRootScope scope) -> untyped
+        def reference_path_keys: () -> (Array[untyped] | UndefinedValue)
+        def apply_variable: () { (Environment) -> untyped } -> untyped
+        def apply_builtin_override: (String name) { (Environment) -> untyped } -> untyped
+        def resolved_value: () -> untyped
+      end
 
-    class WithModifierPathOverride
-      def initialize: (base_value: untyped, keys: Array[untyped], replacement: untyped, location: Location?) -> void
-      def apply: () -> untyped
+      class WithModifierPathOverride
+        def initialize: (base_value: untyped, keys: Array[untyped], replacement: untyped, location: Location?) -> void
+        def apply: () -> untyped
 
-      private
+        private
 
-      attr_reader base_value: untyped
-      attr_reader keys: Array[untyped]
-      attr_reader replacement: untyped
-      attr_reader location: Location?
-      def apply_to: (untyped container, Array[untyped] path_keys) -> untyped
-      def apply_hash: (Hash[untyped, untyped] container, Array[untyped] path_keys) -> Hash[untyped, untyped]
-      def apply_array: (Array[untyped] container, Array[untyped] path_keys) -> Array[untyped]
-      def array_index: (untyped key) -> Integer
-      def array_index_key?: (untyped key) -> bool
-      def numeric_key?: (untyped key) -> bool
-      def apply_missing_container: (Array[untyped] path_keys) -> untyped
-      def invalid_index_error: (untyped key) -> EvaluationError
-    end
+        attr_reader base_value: untyped
+        attr_reader keys: Array[untyped]
+        attr_reader replacement: untyped
+        attr_reader location: Location?
+        def apply_to: (untyped container, Array[untyped] path_keys) -> untyped
+        def apply_hash: (Hash[untyped, untyped] container, Array[untyped] path_keys) -> Hash[untyped, untyped]
+        def apply_array: (Array[untyped] container, Array[untyped] path_keys) -> Array[untyped]
+        def array_index: (untyped key) -> Integer
+        def array_index_key?: (untyped key) -> bool
+        def numeric_key?: (untyped key) -> bool
+        def apply_missing_container: (Array[untyped] path_keys) -> untyped
+        def invalid_index_error: (untyped key) -> EvaluationError
+      end
 
-    class WithModifierBuiltinOverride
-      def initialize: (name: String, value: untyped, expression_evaluator: Evaluator::ExpressionEvaluator, location: Location?) -> void
-      def apply: (Environment environment) { (Environment) -> untyped } -> untyped
+      class WithModifierBuiltinOverride
+        def initialize: (name: String, value: untyped, expression_evaluator: Evaluator::ExpressionEvaluator, location: Location?) -> void
+        def apply: (Environment environment) { (Environment) -> untyped } -> untyped
 
-      private
+        private
 
-      attr_reader name: String
-      attr_reader value: untyped
-      attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
-      attr_reader location: Location?
-      def override_entry: (untyped registry) -> untyped
-      def replacement_name: () -> String
-      def direct_name_from_value: () -> String?
-      def reference_name_from_value: () -> String?
-      def resolved_name_from_value: () -> String?
-    end
+        attr_reader name: String
+        attr_reader value: untyped
+        attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
+        attr_reader location: Location?
+        def override_entry: (untyped registry) -> untyped
+        def replacement_name: () -> String
+        def direct_name_from_value: () -> String?
+        def reference_name_from_value: () -> String?
+        def resolved_name_from_value: () -> String?
+      end
 
-    class WithModifierRootScope
-      ROOT_NAMES: Array[String]
+      class WithModifierRootScope
+        ROOT_NAMES: Array[String]
 
-      def initialize: (environment: Environment, name: String, location: Location?) -> void
-      def base_value: () -> untyped
-      def with_override: (untyped overridden) { (Environment) -> untyped } -> untyped
+        def initialize: (environment: Environment, name: String, location: Location?) -> void
+        def base_value: () -> untyped
+        def with_override: (untyped overridden) { (Environment) -> untyped } -> untyped
 
-      private
+        private
 
-      attr_reader environment: Environment
-      attr_reader name: String
-      attr_reader location: Location?
-      def input_scope?: () -> bool
-      def validate_name: () -> void
-    end
+        attr_reader environment: Environment
+        attr_reader name: String
+        attr_reader location: Location?
+        def input_scope?: () -> bool
+        def validate_name: () -> void
+      end
 
-    class WithModifierPathKeyResolver
-      def initialize: (expression_evaluator: Evaluator::ExpressionEvaluator) -> void
-      def resolve: (untyped segment) -> untyped
+      class WithModifierPathKeyResolver
+        def initialize: (expression_evaluator: Evaluator::ExpressionEvaluator) -> void
+        def resolve: (untyped segment) -> untyped
 
-      private
+        private
 
-      attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
-      def resolved_key: (untyped raw) -> untyped
+        attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
+        def resolved_key: (untyped raw) -> untyped
+      end
     end
 
     class Unifier
@@ -918,7 +920,6 @@ module Ruby
       def evaluate: (?untyped query) -> Result
 
       private
-
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
       attr_reader rule_evaluator: Evaluator::RuleEvaluator
       def evaluate_rules: () -> Hash[untyped, untyped]

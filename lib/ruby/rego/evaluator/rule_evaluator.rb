@@ -227,7 +227,7 @@ module Ruby
         # :reek:NestedIterators
         def with_modifiers_enum(modifiers, context)
           Enumerator.new do |yielder|
-            WithModifierApplier.apply(modifiers, context.env, expression_evaluator) do |modified_env|
+            WithModifiers::WithModifierApplier.apply(modifiers, context.env, expression_evaluator) do |modified_env|
               yield_query_expression(yielder, context.with_env(modified_env))
             end
           end
