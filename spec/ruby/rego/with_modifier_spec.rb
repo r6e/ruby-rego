@@ -6,8 +6,13 @@ RSpec.describe Ruby::Rego::Evaluator do
   let(:package) { Ruby::Rego::AST::Package.new(path: ["example"]) }
 
   def evaluator_for(rules, input: {}, data: {})
-    module_node = Ruby::Rego::AST::Module.new(package: package, imports: [], rules: rules)
-    described_class.new(module_node, input: input, data: data)
+    rules_by_name = Ruby::Rego::Compiler.new.index_rules(rules)
+    compiled_module = Ruby::Rego::CompiledModule.new(
+      package_path: package.path,
+      rules_by_name: rules_by_name,
+      imports: []
+    )
+    described_class.new(compiled_module, input: input, data: data)
   end
 
   def complete_rule(body)

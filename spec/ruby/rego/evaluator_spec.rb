@@ -4,11 +4,18 @@
 
 RSpec.describe Ruby::Rego::Evaluator do
   let(:package) { Ruby::Rego::AST::Package.new(path: ["example"]) }
-  let(:module_node) { Ruby::Rego::AST::Module.new(package: package, imports: [], rules: rules) }
+  let(:compiled_module) do
+    rules_by_name = Ruby::Rego::Compiler.new.index_rules(rules)
+    Ruby::Rego::CompiledModule.new(
+      package_path: package.path,
+      rules_by_name: rules_by_name,
+      imports: []
+    )
+  end
   let(:input) { { "user" => { "name" => "admin" }, "roles" => ["admin"] } }
   let(:data) { { "config" => { "enabled" => true } } }
   let(:rules) { [] }
-  let(:evaluator) { described_class.new(module_node, input: input, data: data) }
+  let(:evaluator) { described_class.new(compiled_module, input: input, data: data) }
 
   def eval_node(node)
     evaluator.send(:eval_node, node)

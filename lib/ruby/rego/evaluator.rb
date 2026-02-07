@@ -6,6 +6,8 @@ require_relative "errors"
 require_relative "result"
 require_relative "value"
 require_relative "unifier"
+require_relative "compiled_module"
+require_relative "compiler"
 require_relative "evaluator/operator_evaluator"
 require_relative "evaluator/assignment_support"
 require_relative "evaluator/binding_helpers"
@@ -24,20 +26,34 @@ require_relative "with_modifier_applier"
 
 module Ruby
   module Rego
-    # Evaluates Rego AST modules against input and data.
+    # Evaluates compiled Rego modules against input and data.
     class Evaluator
       # @param ast_module [AST::Module]
-      # @param input [Object]
-      # @param data [Object]
-      def initialize(ast_module, input: {}, data: {})
-        @module_node = ast_module
-        rules_by_name = ast_module.rules.group_by(&:name)
-        @environment = Environment.new(input: input, data: data, rules: rules_by_name)
-        @expression_evaluator, @rule_evaluator = build_evaluators(rules_by_name, ast_module.package.path)
+      # @param options [Hash]
+      # @return [Evaluator]
+      def self.from_ast(ast_module, options = {})
+        default_input = {} # @type var default_input: Hash[untyped, untyped]
+        default_data = {} # @type var default_data: Hash[untyped, untyped]
+        input = options.fetch(:input, default_input)
+        data = options.fetch(:data, default_data)
+        compiler = options.fetch(:compiler, Compiler.new)
+        compiled = compiler.compile(ast_module)
+        new(compiled, input: input, data: data)
       end
 
-      # @return [AST::Module]
-      attr_reader :module_node
+      # @param compiled_module [#rules_by_name, #package_path]
+      # @param input [Object]
+      # @param data [Object]
+      def initialize(compiled_module, input: {}, data: {})
+        @compiled_module = compiled_module
+        rules_by_name = compiled_module.rules_by_name
+        package_path = compiled_module.package_path
+        @environment = Environment.new(input: input, data: data, rules: rules_by_name)
+        @expression_evaluator, @rule_evaluator = build_evaluators(rules_by_name, package_path)
+      end
+
+      # @return [#rules_by_name, #package_path]
+      attr_reader :compiled_module
 
       # @return [Environment]
       attr_reader :environment

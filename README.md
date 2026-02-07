@@ -35,6 +35,17 @@ result = Ruby::Rego.evaluate(policy, input: {"user" => "admin"}, query: "data.ex
 puts result
 ```
 
+Low-level API (current):
+
+```ruby
+tokens = Ruby::Rego::Lexer.new(policy).tokenize
+ast_module = Ruby::Rego::Parser.new(tokens).parse
+evaluator = Ruby::Rego::Evaluator.from_ast(ast_module, input: {"user" => "admin"})
+result = evaluator.evaluate
+```
+
+Compiled modules are immutable; rule tables and dependency graphs are frozen for safe reuse.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.

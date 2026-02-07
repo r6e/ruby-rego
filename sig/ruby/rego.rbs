@@ -50,6 +50,9 @@ module Ruby
       def self.from_position: (String message, position: position | Location, context: String?) -> ParserError
     end
 
+    class CompilationError < Error
+    end
+
     class EvaluationError < Error
       attr_reader rule: untyped
 
@@ -633,18 +636,291 @@ module Ruby
       def add_bindings: (Hash[String | Symbol, untyped] bindings) -> void
     end
 
+    module CompiledModuleLike
+      def rules_by_name: () -> Hash[String, Array[AST::Rule]]
+      def package_path: () -> Array[String]
+    end
+
+    type from_ast_options = {
+      input?: untyped,
+      data?: untyped,
+      compiler?: Compiler
+    }
+
+    class CompilationArtifacts
+      attr_reader rules_by_name: Hash[String, Array[AST::Rule]]
+      attr_reader package_path: Array[String]
+      attr_reader dependency_graph: Hash[String, Array[String]]
+
+      def initialize: (rules_by_name: Hash[String, Array[AST::Rule]], package_path: Array[String], dependency_graph: Hash[String, Array[String]]) -> void
+    end
+
+    class CompiledModule
+      include CompiledModuleLike
+      attr_reader package_path: Array[String]
+      attr_reader rules_by_name: Hash[String, Array[AST::Rule]]
+      attr_reader imports: Array[AST::Import]
+      attr_reader dependency_graph: Hash[String, Array[String]]
+
+      def initialize: (package_path: Array[String], rules_by_name: Hash[String, Array[AST::Rule]], ?imports: Array[AST::Import], ?dependency_graph: Hash[String, Array[String]]) -> void
+      def lookup_rule: (String | Symbol name) -> Array[AST::Rule]
+      def rule_names: () -> Array[String]
+      def has_rule?: (String | Symbol name) -> bool
+
+      private
+
+      def empty_rules: () -> Array[AST::Rule]
+    end
+
+    class CompiledModule::Normalizer
+      def initialize: (Hash[Symbol, untyped] state) -> void
+      def normalize: () -> [Array[String], Hash[String, Array[AST::Rule]], Array[AST::Import], Hash[String, Array[String]]]
+
+      private
+
+      attr_reader package_path: Array[String]
+      attr_reader rules_by_name: Hash[String, Array[AST::Rule]]
+      attr_reader imports: Array[AST::Import]
+      attr_reader dependency_graph: Hash[String, Array[String]]
+      def normalize_rules: () -> Hash[String, Array[AST::Rule]]
+      def normalize_dependency_graph: () -> Hash[String, Array[String]]
+    end
+
+    class Compiler
+      def compile: (AST::Module ast_module) -> CompiledModule
+      def index_rules: (Array[AST::Rule] rules) -> Hash[String, Array[AST::Rule]]
+      def check_conflicts: (Array[AST::Rule] | Hash[String, Array[AST::Rule]] rules) -> void
+      def check_safety: (AST::Rule rule) -> void
+
+      private
+
+      def compile_rules: (AST::Module ast_module) -> Hash[String, Array[AST::Rule]]
+      def rule_indexer: () -> singleton(RuleIndexer)
+      def conflict_checker: () -> ConflictChecker
+      def safety_checker: () -> SafetyChecker
+      def dependency_graph_builder: () -> DependencyGraphBuilder
+    end
+
+    class RuleGroup
+      attr_reader name: String
+      attr_reader rules: Array[AST::Rule]
+
+      def initialize: (name: String, rules: Array[AST::Rule]) -> void
+      def validate: (singleton(RuleTypeResolver) type_resolver) -> void
+      def types: (singleton(RuleTypeResolver) type_resolver) -> Array[Symbol?]
+      def complete_rules: () -> Array[AST::Rule]
+      def value_rules: () -> Array[AST::Rule]
+      def function_rules: () -> Array[AST::Rule]
+      def default_rules: () -> Array[AST::Rule]
+
+      private
+
+      def ensure_consistent_types: (singleton(RuleTypeResolver) type_resolver) -> void
+      def ensure_complete_rule_consistency: () -> void
+      def ensure_function_arity: () -> void
+      def ensure_single_default: () -> void
+      def function_arities: () -> Array[Integer]
+    end
+
+    module RuleIndexer
+      def self.index: (Array[AST::Rule] rules) -> Hash[String, Array[AST::Rule]]
+    end
+
+    module RuleTypeResolver
+      def self.type_for: (AST::Rule rule) -> Symbol?
+    end
+
+    class ConflictChecker
+      def initialize: (?indexer: singleton(RuleIndexer), ?type_resolver: singleton(RuleTypeResolver)) -> void
+      def check: (Array[AST::Rule] | Hash[String, Array[AST::Rule]] rules) -> void
+
+      private
+
+      attr_reader indexer: singleton(RuleIndexer)
+      attr_reader type_resolver: singleton(RuleTypeResolver)
+      def rule_groups: (Array[AST::Rule] | Hash[String, Array[AST::Rule]] rules) -> Array[RuleGroup]
+    end
+
+    module CompiledModuleBuilder
+      def self.build: (AST::Module ast_module, CompilationArtifacts artifacts) -> CompiledModule
+    end
+
+    class RuleHead
+      def initialize: (Hash[Symbol, untyped]? head) -> void
+      def type: () -> Symbol?
+      def nodes: () -> Array[untyped]
+      def function_arg_names: () -> Array[String]
+
+      private
+
+      attr_reader head: Hash[Symbol, untyped]
+      def value_nodes: () -> Array[untyped]
+      def function_nodes: () -> Array[untyped]
+      def function_arg_nodes: () -> Array[untyped]
+    end
+
+    class SafetyChecker
+      def initialize: (?bound_collector: Evaluator::BoundVariableCollector, ?variable_collector_class: singleton(Evaluator::VariableCollector), ?safe_names: Array[String]) -> void
+      def check_rules: (Hash[String, Array[AST::Rule]] rules_by_name) -> void
+      def check_rule: (AST::Rule rule) -> void
+
+      private
+
+      attr_reader bound_collector: Evaluator::BoundVariableCollector
+      attr_reader variable_collector_class: singleton(Evaluator::VariableCollector)
+      attr_reader safe_names: Array[String]
+    end
+
+    class RuleSafetyContext
+      attr_reader head: RuleHead
+      attr_reader bound_collector: Evaluator::BoundVariableCollector
+      attr_reader variable_collector_class: singleton(Evaluator::VariableCollector)
+      attr_reader safe_names: Array[String]
+
+      def initialize: (head: RuleHead, bound_collector: Evaluator::BoundVariableCollector, variable_collector_class: singleton(Evaluator::VariableCollector), safe_names: Array[String]) -> void
+    end
+
+    class RuleSafetySection
+      attr_reader body: untyped
+      attr_reader head_nodes: Array[untyped]
+
+      def initialize: (body: untyped, head_nodes: Array[untyped]) -> void
+    end
+
+    class RuleSafety
+      def initialize: (rule: AST::Rule, context: RuleSafetyContext) -> void
+      def check: () -> void
+
+      private
+
+      attr_reader rule: AST::Rule
+      attr_reader context: RuleSafetyContext
+      def head: () -> RuleHead
+      def bound_collector: () -> Evaluator::BoundVariableCollector
+      def variable_collector_class: () -> singleton(Evaluator::VariableCollector)
+      def safe_names: () -> Array[String]
+      def check_body: () -> void
+      def check_else_clause: () -> void
+      def else_section: () -> RuleSafetySection?
+      def else_nodes: (Hash[Symbol, untyped] clause) -> Array[untyped]
+      def check_section: (RuleSafetySection section) -> void
+      def unbound_variables: (RuleSafetySection section) -> Array[String]
+      def bound_variables: (untyped body) -> Array[String]
+      def referenced_names: (RuleSafetySection section) -> Array[String]
+      def error_message: (Array[String] unbound) -> String
+    end
+
+    class DependencyContext
+      attr_reader rule_names: Array[String]
+      attr_reader package_path: Array[String]
+
+      def initialize: (rule_names: Array[String], package_path: Array[String]) -> void
+      def package_depth: () -> Integer
+      def package_match?: (Array[untyped] keys) -> bool
+      def resolve_rule_name: (Array[untyped] keys) -> String?
+
+      private
+
+      def package_candidate: (Array[untyped] keys) -> String?
+      def direct_candidate: (Array[untyped] keys) -> String?
+      def rule_name_for: (untyped value) -> String?
+    end
+
+    class DependencyGraphBuilder
+      def initialize: (?extractor: RuleDependencyExtractor) -> void
+      def build: (Hash[String, Array[AST::Rule]] rules_by_name, Array[String] package_path) -> Hash[String, Array[String]]
+
+      private
+
+      attr_reader extractor: RuleDependencyExtractor
+    end
+
+    class DependencyGraph
+      def initialize: (rules_by_name: Hash[String, Array[AST::Rule]], context: DependencyContext, extractor: RuleDependencyExtractor) -> void
+      def build: () -> Hash[String, Array[String]]
+
+      private
+
+      attr_reader rules_by_name: Hash[String, Array[AST::Rule]]
+      attr_reader context: DependencyContext
+      attr_reader extractor: RuleDependencyExtractor
+      def dependencies_for: (Array[AST::Rule] rules) -> Array[String]
+    end
+
+    class RuleDependencyExtractor
+      def initialize: (?reference_walker: ReferenceWalker, ?resolver: RuleReferenceResolver, ?node_extractor_class: singleton(RuleNodeExtractor)) -> void
+      def dependencies_for: (AST::Rule rule, DependencyContext context) -> Array[String]
+
+      private
+
+      attr_reader reference_walker: ReferenceWalker
+      attr_reader resolver: RuleReferenceResolver
+      attr_reader node_extractor_class: singleton(RuleNodeExtractor)
+    end
+
+    class RuleNodeExtractor
+      def initialize: (AST::Rule rule) -> void
+      def nodes: () -> Array[untyped]
+
+      private
+
+      attr_reader rule: AST::Rule
+      attr_reader else_clause: Hash[Symbol, untyped]?
+      def base_nodes: () -> Array[untyped]
+      def else_nodes: () -> Array[untyped]
+    end
+
+    class ReferenceWalker
+      NODE_CHILDREN: Hash[Class, untyped]
+      NODE_HANDLERS: Hash[Class, untyped]
+
+      def initialize: (?children_extractors: Hash[Class, untyped], ?handlers: Hash[Class, untyped]) -> void
+      def references: (untyped nodes) -> Array[AST::Reference]
+      def each_reference: (untyped nodes) ?{ (AST::Reference) -> void } -> (Enumerator[AST::Reference] | Array[untyped])
+      def walk_children: (untyped node) { (AST::Reference) -> void } -> void
+
+      private
+
+      attr_reader children_extractors: Hash[Class, untyped]
+      attr_reader handlers: Hash[Class, untyped]
+      def walk: (untyped node) { (AST::Reference) -> void } -> void
+      def children_for: (untyped node) -> Array[untyped]
+    end
+
+    class RuleReferenceResolver
+      def initialize: (?key_extractor: ReferenceKeyExtractor, ?data_root: String) -> void
+      def resolve: (AST::Reference ref, DependencyContext context) -> String?
+
+      private
+
+      attr_reader key_extractor: ReferenceKeyExtractor
+      attr_reader data_root: String
+      def reference_keys: (Array[AST::RefArg] path) -> Array[untyped]
+    end
+
+    class ReferenceKeyExtractor
+      DEFAULT_EXTRACTORS: Hash[Class, untyped]
+
+      def initialize: (?extractors: Hash[Class, untyped]) -> void
+      def extract: (untyped segment) -> untyped?
+
+      private
+
+      attr_reader extractors: Hash[Class, untyped]
+    end
+
     class Evaluator
-      attr_reader module_node: AST::Module
+      attr_reader compiled_module: CompiledModuleLike
       attr_reader environment: Environment
 
-      def initialize: (AST::Module ast_module, input: untyped, data: untyped) -> void
+      def self.from_ast: (AST::Module ast_module, ?from_ast_options options) -> Evaluator
+      def initialize: (CompiledModuleLike compiled_module, input: untyped, data: untyped) -> void
       def evaluate: (?untyped query) -> Result
 
       private
 
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
       attr_reader rule_evaluator: Evaluator::RuleEvaluator
-
       def evaluate_rules: () -> Hash[untyped, untyped]
       def evaluate_query: (untyped query) -> Value
       def build_evaluators: (Hash[String, Array[AST::Rule]] rules_by_name, Array[String] package_path) -> [Evaluator::ExpressionEvaluator, Evaluator::RuleEvaluator]

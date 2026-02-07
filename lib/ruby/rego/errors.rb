@@ -86,6 +86,10 @@ module Ruby
       end
     end
 
+    # Error raised during module compilation.
+    class CompilationError < Error
+    end
+
     # Error raised during evaluation.
     class EvaluationError < Error
       # @return [Object, nil]
