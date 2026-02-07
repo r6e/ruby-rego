@@ -354,6 +354,154 @@ RSpec.describe Ruby::Rego::Evaluator do
     end
   end
 
+  describe "every evaluation" do
+    def ast_var(name)
+      Ruby::Rego::AST::Variable.new(name: name)
+    end
+
+    def ast_number(value)
+      Ruby::Rego::AST::NumberLiteral.new(value: value)
+    end
+
+    def ast_string(value)
+      Ruby::Rego::AST::StringLiteral.new(value: value)
+    end
+
+    def ast_array(elements)
+      Ruby::Rego::AST::ArrayLiteral.new(elements: elements)
+    end
+
+    def ast_object(pairs)
+      Ruby::Rego::AST::ObjectLiteral.new(pairs: pairs)
+    end
+
+    def ast_eq(left, right)
+      Ruby::Rego::AST::BinaryOp.new(operator: :eq, left: left, right: right)
+    end
+
+    def ast_neq(left, right)
+      Ruby::Rego::AST::BinaryOp.new(operator: :neq, left: left, right: right)
+    end
+
+    def ast_gt(left, right)
+      Ruby::Rego::AST::BinaryOp.new(operator: :gt, left: left, right: right)
+    end
+
+    def ast_assign(left, right)
+      Ruby::Rego::AST::BinaryOp.new(operator: :assign, left: left, right: right)
+    end
+
+    def ast_query_literal(expression)
+      Ruby::Rego::AST::QueryLiteral.new(expression: expression)
+    end
+
+    def ast_every(value_var:, domain:, body:, key_var: nil)
+      Ruby::Rego::AST::Every.new(
+        key_var: key_var,
+        value_var: value_var,
+        domain: domain,
+        body: body
+      )
+    end
+
+    it "evaluates every with a single variable" do
+      domain = ast_array([ast_number(1), ast_number(2), ast_number(3)])
+      body = [ast_query_literal(ast_gt(ast_var("x"), ast_number(0)))]
+      every = ast_every(value_var: ast_var("x"), domain: domain, body: body)
+
+      value = eval_node(every)
+
+      expect(value).to be_a(Ruby::Rego::BooleanValue)
+      expect(value.to_ruby).to be(true)
+    end
+
+    it "evaluates every with key/value pairs" do
+      domain = ast_object(
+        [
+          [ast_string("a"), ast_number(1)],
+          [ast_string("b"), ast_number(2)]
+        ]
+      )
+      body = [
+        ast_query_literal(ast_neq(ast_var("k"), ast_string(""))),
+        ast_query_literal(ast_gt(ast_var("v"), ast_number(0)))
+      ]
+      every = ast_every(value_var: ast_var("v"), key_var: ast_var("k"), domain: domain, body: body)
+
+      value = eval_node(every)
+
+      expect(value.to_ruby).to be(true)
+    end
+
+    it "returns true for empty collections" do
+      domain = ast_array([])
+      body = [ast_query_literal(ast_eq(ast_var("x"), ast_number(1)))]
+      every = ast_every(value_var: ast_var("x"), domain: domain, body: body)
+
+      value = eval_node(every)
+
+      expect(value.to_ruby).to be(true)
+    end
+
+    it "fails when any body evaluation fails" do
+      domain = ast_array([ast_number(1), ast_number(2)])
+      body = [ast_query_literal(ast_gt(ast_var("x"), ast_number(1)))]
+      every = ast_every(value_var: ast_var("x"), domain: domain, body: body)
+
+      value = eval_node(every)
+
+      expect(value.to_ruby).to be(false)
+    end
+
+    it "supports nested every expressions" do
+      inner = ast_every(
+        value_var: ast_var("y"),
+        domain: ast_var("x"),
+        body: [ast_query_literal(ast_gt(ast_var("y"), ast_number(0)))]
+      )
+      outer_domain = ast_array(
+        [
+          ast_array([ast_number(1), ast_number(2)]),
+          ast_array([ast_number(3)])
+        ]
+      )
+      outer = ast_every(
+        value_var: ast_var("x"),
+        domain: outer_domain,
+        body: [ast_query_literal(inner)]
+      )
+
+      value = eval_node(outer)
+
+      expect(value.to_ruby).to be(true)
+    end
+
+    it "keeps every bindings scoped to the body" do
+      evaluator.environment.bind("x", 99)
+      domain = ast_array([ast_number(1)])
+      body = [ast_query_literal(ast_eq(ast_var("x"), ast_number(1)))]
+      every = ast_every(value_var: ast_var("x"), domain: domain, body: body)
+
+      value = eval_node(every)
+
+      expect(value.to_ruby).to be(true)
+      expect(evaluator.environment.lookup("x").to_ruby).to eq(99)
+    end
+
+    it "does not leak bindings from the domain evaluation" do
+      evaluator.environment.bind("x", 99)
+      domain = ast_assign(ast_var("domain_var"), ast_array([ast_number(1)]))
+      body = [ast_query_literal(ast_eq(ast_var("v"), ast_number(1)))]
+      every = ast_every(value_var: ast_var("v"), domain: domain, body: body)
+
+      value = eval_node(every)
+
+      expect(value.to_ruby).to be(true)
+      expect(evaluator.environment.lookup("x").to_ruby).to eq(99)
+      expect(evaluator.environment.lookup("domain_var")).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
   describe "rule evaluation" do
     let(:rules) do
       condition = Ruby::Rego::AST::BinaryOp.new(

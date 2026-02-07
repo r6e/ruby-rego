@@ -8,6 +8,7 @@ module Ruby
         NODE_COLLECTORS = {
           AST::Variable => ->(node, collector) { collector.send(:add_name, node.name) },
           AST::SomeDecl => ->(node, collector) { collector.send(:collect_some_decl, node) },
+          AST::Every => ->(node, collector) { collector.send(:collect_every, node) },
           AST::QueryLiteral => ->(node, collector) { collector.send(:collect_node, node.expression) },
           AST::ArrayComprehension => lambda do |node, collector|
             collector.send(:collect_comprehension, [node.term], node.body)
@@ -185,6 +186,20 @@ module Ruby
           node.variables.each { |variable| add_name(variable.name) }
           collection = node.collection
           collect_node(collection) if collection
+        end
+
+        # :reek:TooManyStatements
+        def collect_every(node)
+          collect_node(node.domain)
+          body = Array(node.body)
+          locals = BoundVariableCollector.new.collect(body)
+          locals.concat(every_variable_names(node))
+          with_locals(locals.uniq) { body.each { |literal| collect_node(literal) } }
+        end
+
+        # :reek:UtilityFunction
+        def every_variable_names(node)
+          [node.key_var, node.value_var].compact.map(&:name)
         end
 
         def add_name(name)

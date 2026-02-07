@@ -32,6 +32,15 @@ module VariableCollectorSpecHelpers
     Ruby::Rego::AST::QueryLiteral.new(expression: expression)
   end
 
+  def ast_every(value_var:, domain:, body:, key_var: nil)
+    Ruby::Rego::AST::Every.new(
+      key_var: key_var,
+      value_var: value_var,
+      domain: domain,
+      body: body
+    )
+  end
+
   def local_comprehension
     Ruby::Rego::AST::ArrayComprehension.new(
       term: ast_var("x"),
@@ -54,6 +63,14 @@ module VariableCollectorSpecHelpers
       body: [ast_query_literal(unify_expression)]
     )
   end
+
+  def every_expression
+    ast_every(
+      value_var: ast_var("x"),
+      domain: ast_dot_ref("input", "items"),
+      body: [ast_query_literal(ast_eq(ast_var("x"), ast_number(1)))]
+    )
+  end
 end
 
 RSpec.describe Ruby::Rego::Evaluator::VariableCollector do
@@ -67,5 +84,9 @@ RSpec.describe Ruby::Rego::Evaluator::VariableCollector do
 
   it "does not treat nested comprehension terms as bound" do
     expect(collector.collect(nested_comprehension)).to contain_exactly("inner")
+  end
+
+  it "ignores every-local variables" do
+    expect(collector.collect(every_expression)).to contain_exactly("input")
   end
 end

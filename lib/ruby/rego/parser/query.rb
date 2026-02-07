@@ -99,6 +99,37 @@ module Ruby
         parse_expression
       end
 
+      def parse_every
+        keyword = consume(TokenType::EVERY, "Expected 'every' expression.")
+        key_var, value_var = parse_every_variables
+        domain = parse_every_domain
+        body = parse_every_body
+        AST::Every.new(key_var: key_var, value_var: value_var, domain: domain, body: body, location: keyword.location)
+      end
+
+      def parse_every_variables
+        value_var = parse_variable
+        return [nil, value_var] unless match?(TokenType::COMMA)
+
+        advance
+        [value_var, parse_variable]
+      end
+
+      def parse_every_domain
+        consume(TokenType::IN, "Expected 'in' after every variables.")
+        parse_expression
+      end
+
+      # :reek:TooManyStatements
+      def parse_every_body
+        consume_newlines
+        consume(TokenType::LBRACE, "Expected '{' to start every body.")
+        consume_newlines
+        body = parse_query(TokenType::RBRACE, newline_delimiter: true)
+        consume(TokenType::RBRACE, "Expected '}' after every body.")
+        body
+      end
+
       def parse_with_modifier
         keyword = consume(TokenType::WITH, "Expected 'with' modifier.")
         target = parse_expression

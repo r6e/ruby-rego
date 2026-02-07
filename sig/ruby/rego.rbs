@@ -733,6 +733,8 @@ module Ruby
       def eval_array_comprehension: (AST::ArrayComprehension node) -> Value
       def eval_object_comprehension: (AST::ObjectComprehension node) -> Value
       def eval_set_comprehension: (AST::SetComprehension node) -> Value
+      def evaluate_every: (AST::Every node) -> Value
+      def evaluate_every_bindings: (AST::Every node, Enumerator[Hash[String, Value]] bindings_enum) -> Value
       def evaluate_binary_op: (AST::BinaryOp node) -> Value
       def evaluate_unary_op: (AST::UnaryOp node) -> Value
       def self.call_name: (untyped node) -> String?
@@ -741,6 +743,24 @@ module Ruby
       def yield_assignment_bindings: (AST::BinaryOp node, Environment env, Enumerator::Yielder yielder) -> void
       def yield_unification_bindings: (AST::BinaryOp node, Environment env, Enumerator::Yielder yielder) -> void
       def yield_truthy_bindings: (untyped node, Enumerator::Yielder yielder) -> void
+      def every_body_succeeds?: (Array[untyped] body, Hash[String, Value] bindings) -> bool
+      def every_bindings: (Array[AST::Variable] variables, Value collection_value) -> Enumerator[Hash[String, Value]]?
+      def bindings_for_collection: (Array[AST::Variable] variables, Value collection_value) -> Enumerator[Hash[String, Value]]?
+      def array_bindings_for: (Array[AST::Variable] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]?
+      def set_bindings_for: (Array[AST::Variable] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]?
+      def object_bindings_for: (Array[AST::Variable] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]?
+      def each_array_binding: (Array[AST::Variable] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_set_binding: (Array[AST::Variable] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_object_binding: (Array[AST::Variable] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]
+      def bindings_for_pair: (Array[AST::Variable] variables, untyped first_value, untyped second_value) -> Hash[String, Value]
+      def bindings_for: (AST::Variable variable, untyped value) -> Hash[String, Value]
+      def with_every_scope: (AST::Every node) { () -> untyped } -> untyped
+      def shadow_every_locals: (AST::Every node) -> void
+      def every_variable_names: (AST::Every node) -> Array[String]
+      def shadow_explicit_locals: (Array[String] names) -> void
+      def shadow_unification_locals: (Array[String] names, Array[String] explicit_names) -> void
+      def bind_undefined: (String name) -> void
+      def query_evaluator: () -> Evaluator::RuleEvaluator
       def raise_unknown_node: (untyped node) -> Value
 
       attr_reader environment: Environment
@@ -750,6 +770,16 @@ module Ruby
       attr_reader unifier: Unifier
       attr_reader comprehension_evaluator: Evaluator::ComprehensionEvaluator
 
+    end
+
+    module Evaluator::BindingHelpers
+      private
+
+      def each_array_binding: (Array[AST::Variable] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_set_binding: (Array[AST::Variable] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_object_binding: (Array[AST::Variable] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]
+      def bindings_for_pair: (Array[AST::Variable] variables, untyped first_value, untyped second_value) -> Hash[String, Value]
+      def bindings_for: (AST::Variable variable, untyped value) -> Hash[String, Value]
     end
 
     class Evaluator::ComprehensionEvaluator
@@ -841,6 +871,8 @@ module Ruby
       def collect_comprehension: (Array[untyped] term_nodes, Array[untyped] body_literals) -> void
       def collect_comprehension_body: (Array[untyped] term_nodes, Array[untyped] body_literals) -> void
       def collect_some_decl: (AST::SomeDecl node) -> void
+      def collect_every: (AST::Every node) -> void
+      def every_variable_names: (AST::Every node) -> Array[String]
       def add_name: (String name) -> void
       def with_locals: (Array[String] names) { () -> untyped } -> void
       def local_name?: (String name) -> bool
@@ -1180,8 +1212,12 @@ module Ruby
       def consume_query_separators: (bool newline_delimiter) -> bool
       def parse_literal: () -> AST::query_literal
       def parse_some_decl: () -> AST::SomeDecl
+      def parse_every: () -> AST::Every
       def parse_some_variables: () -> Array[AST::Variable]
       def parse_some_collection: () -> AST::expression?
+      def parse_every_variables: () -> [AST::Variable?, AST::Variable]
+      def parse_every_domain: () -> AST::expression
+      def parse_every_body: () -> Array[AST::query_literal]
       def parse_with_modifier: () -> AST::WithModifier
       def parse_with_modifiers: () -> Array[AST::WithModifier]
       def parse_else_clause: () -> Hash[Symbol, untyped]
@@ -1282,7 +1318,7 @@ module Ruby
         def deconstructable_keys: () -> Array[Symbol]
       end
 
-      type expression = Literal | Variable | Reference | BinaryOp | UnaryOp | ArrayLiteral | ObjectLiteral | SetLiteral | ArrayComprehension | ObjectComprehension | SetComprehension | Call
+      type expression = Literal | Variable | Reference | BinaryOp | UnaryOp | ArrayLiteral | ObjectLiteral | SetLiteral | ArrayComprehension | ObjectComprehension | SetComprehension | Every | Call
       type call_name = String | Variable | Reference
       type query_literal = QueryLiteral | SomeDecl
       type query = Array[query_literal]
@@ -1411,6 +1447,15 @@ module Ruby
         attr_reader body: query
 
         def initialize: (term: expression, body: query, ?location: Location?) -> void
+      end
+
+      class Every < Base
+        attr_reader key_var: Variable?
+        attr_reader value_var: Variable
+        attr_reader domain: expression
+        attr_reader body: query
+
+        def initialize: (value_var: Variable, domain: expression, body: query, key_var: Variable?, ?location: Location?) -> void
       end
 
       class QueryLiteral < Base

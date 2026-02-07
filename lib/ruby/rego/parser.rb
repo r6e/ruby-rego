@@ -54,6 +54,7 @@ module Ruby
         TokenType::NULL => :parse_null_literal,
         TokenType::NOT => :parse_unary_expression,
         TokenType::MINUS => :parse_unary_expression,
+        TokenType::EVERY => :parse_every,
         TokenType::LPAREN => :parse_parenthesized_expression,
         TokenType::LBRACKET => :parse_array,
         TokenType::LBRACE => :parse_braced_literal,

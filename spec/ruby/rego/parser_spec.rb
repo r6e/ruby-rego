@@ -185,6 +185,16 @@ RSpec.describe Ruby::Rego::Parser do
       expect(neg_expr.operand).to be_a(Ruby::Rego::AST::NumberLiteral)
     end
 
+    it "parses every expressions" do
+      expr = parse_expression("every k, v in input.users { k != \"\"; v > 0 }")
+
+      expect(expr).to be_a(Ruby::Rego::AST::Every)
+      expect(expr.key_var.name).to eq("k")
+      expect(expr.value_var.name).to eq("v")
+      expect(expr.domain).to be_a(Ruby::Rego::AST::Reference)
+      expect(expr.body.length).to eq(2)
+    end
+
     it "parses binary operations with precedence" do
       expr = parse_expression("1 + 2 * 3")
 

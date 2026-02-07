@@ -22,10 +22,12 @@ module Ruby
           [AST::ArrayComprehension, ->(node, evaluator) { evaluator.send(:eval_array_comprehension, node) }],
           [AST::ObjectComprehension, ->(node, evaluator) { evaluator.send(:eval_object_comprehension, node) }],
           [AST::SetComprehension, ->(node, evaluator) { evaluator.send(:eval_set_comprehension, node) }],
+          [AST::Every, ->(node, evaluator) { evaluator.send(:evaluate_every, node) }],
           [AST::Call, ->(call, evaluator) { evaluator.send(:evaluate_call, call) }]
         ].freeze
 
         include AssignmentSupport
+        include BindingHelpers
 
         # @param environment [Environment]
         # @param reference_resolver [ReferenceResolver]
@@ -41,11 +43,13 @@ module Ruby
             expression_evaluator: self,
             environment: environment
           )
+          @query_evaluator = nil
         end
 
         # @param query_evaluator [RuleEvaluator]
         # @return [void]
         def attach_query_evaluator(query_evaluator)
+          @query_evaluator = query_evaluator
           comprehension_evaluator.attach_query_evaluator(query_evaluator)
           nil
         end
@@ -139,6 +143,27 @@ module Ruby
         end
 
         # :reek:TooManyStatements
+        def evaluate_every(node)
+          collection_value = environment.with_bindings({}) { evaluate(node.domain) }
+          return BooleanValue.new(false) if collection_value.is_a?(UndefinedValue)
+
+          variables = [node.key_var, node.value_var].compact
+          bindings_enum = every_bindings(variables, collection_value)
+          return BooleanValue.new(false) unless bindings_enum
+
+          evaluate_every_bindings(node, bindings_enum)
+        end
+
+        def evaluate_every_bindings(node, bindings_enum)
+          with_every_scope(node) do
+            bindings_enum.each do |bindings|
+              return BooleanValue.new(false) unless every_body_succeeds?(node.body, bindings)
+            end
+            BooleanValue.new(true)
+          end
+        end
+
+        # :reek:TooManyStatements
         def evaluate_binary_op(node)
           operator = node.operator
           return evaluate_assignment(node) if operator == :assign
@@ -170,6 +195,90 @@ module Ruby
           else
             yield_truthy_bindings(node, yielder)
           end
+        end
+
+        def every_body_succeeds?(body, bindings)
+          environment.with_bindings(bindings) do
+            query_evaluator.query_solutions(body, environment).any?
+          end
+        end
+
+        def every_bindings(variables, collection_value)
+          bindings_for_collection(variables, collection_value)
+        end
+
+        def bindings_for_collection(variables, collection_value)
+          case collection_value
+          when ArrayValue then array_bindings_for(variables, collection_value)
+          when SetValue then set_bindings_for(variables, collection_value)
+          when ObjectValue then object_bindings_for(variables, collection_value)
+          end
+        end
+
+        def array_bindings_for(variables, collection_value)
+          return nil unless [1, 2].include?(variables.length)
+
+          each_array_binding(variables, collection_value)
+        end
+
+        def set_bindings_for(variables, collection_value)
+          return nil unless variables.length == 1
+
+          each_set_binding(variables, collection_value)
+        end
+
+        def object_bindings_for(variables, collection_value)
+          return nil unless [1, 2].include?(variables.length)
+
+          each_object_binding(variables, collection_value)
+        end
+
+        def with_every_scope(node)
+          environment.push_scope
+          shadow_every_locals(node)
+          yield
+        ensure
+          environment.pop_scope
+        end
+
+        # :reek:TooManyStatements
+        def shadow_every_locals(node)
+          details = BoundVariableCollector.new.collect_details(node.body)
+          explicit = details[:explicit].dup
+          explicit.concat(every_variable_names(node))
+          explicit.uniq!
+          shadow_explicit_locals(explicit)
+          shadow_unification_locals(details[:unification], explicit)
+        end
+
+        # :reek:UtilityFunction
+        def every_variable_names(node)
+          [node.key_var, node.value_var].compact.map(&:name)
+        end
+
+        def shadow_explicit_locals(names)
+          names.each { |name| bind_undefined(name) }
+        end
+
+        def shadow_unification_locals(names, explicit_names)
+          names.each do |name|
+            next if explicit_names.include?(name)
+            next unless environment.lookup(name).is_a?(UndefinedValue)
+
+            bind_undefined(name)
+          end
+        end
+
+        def bind_undefined(name)
+          return if Environment::RESERVED_NAMES.include?(name) || name == "_"
+
+          environment.bind(name, UndefinedValue.new)
+        end
+
+        def query_evaluator
+          return @query_evaluator if @query_evaluator
+
+          raise EvaluationError.new("Query evaluator not configured", rule: nil, location: nil)
         end
 
         def yield_assignment_bindings(node, env, yielder)
