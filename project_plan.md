@@ -107,7 +107,7 @@ Focus on most commonly used:
 
 ### Directory Structure
 
-```
+```plaintext
 ruby-rego/
 ├── lib/
 │   └── ruby/
@@ -418,28 +418,28 @@ end
 
 ### Phase 1: MVP (Months 1-4)
 
-**Month 1: Lexer & Basic Parser**
+#### Month 1: Lexer & Basic Parser
 
 - Implement tokenizer for all Rego tokens
 - Build parser for basic rules and expressions
 - Create AST node hierarchy
 - Unit tests for lexer and parser
 
-**Month 2: Core Evaluator**
+#### Month 2: Core Evaluator
 
 - Environment and variable binding
 - Expression evaluation
 - Reference resolution
 - Basic rule evaluation
 
-**Month 3: Essential Features**
+#### Month 3: Essential Features
 
 - Comprehensions
 - Unification engine
 - `some` and `not` keywords
 - 20 core built-in functions
 
-**Month 4: Polish & CLI**
+#### Month 4: Polish & CLI
 
 - Error handling and reporting
 - CLI executable
