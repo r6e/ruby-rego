@@ -14,6 +14,7 @@ group :development, :test do
   gem "rspec", "~> 3.13"
   gem "rubocop", "~> 1.60"
   gem "rubycritic", "~> 4.9"
+  gem "ruby-lsp-rspec", require: false
   gem "simplecov", "~> 0.22"
   gem "steep", "~> 1.7"
   gem "typeprof", "~> 0.23"

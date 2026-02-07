@@ -14,11 +14,11 @@
     "**/tmp/**": true
   },
   "steep.enabled": true,
-  "steep.command": "",
+  "steep.command": "bundle exec steep",
   "steep.steepfile": "Steepfile",
   "steep.gemfile": "Gemfile",
   "steep.loglevel": "info",
-  "steep.hideDiagnostics": "",
+  "steep.hideDiagnostics": "Information",
   "chat.tools.terminal.autoApprove": {
     "bundle": true
   }
