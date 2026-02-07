@@ -2,6 +2,10 @@ module Ruby
   module Rego
     VERSION: String
 
+    def self.parse: (String source) -> AST::Module
+    def self.compile: (String source) -> CompiledModule
+    def self.evaluate: (String source, ?input: untyped, ?data: untyped, ?query: untyped) -> Result
+
     type position = {
       line: Integer,
       column: Integer,
@@ -11,6 +15,23 @@ module Ruby
 
     module ErrorFormatting
       def self.format_details: (Hash[Symbol, untyped]) -> String
+    end
+
+    module ErrorHandling
+      def self.wrap: (String context) { () -> untyped } -> untyped
+      def self.location_from: (untyped error) -> Location?
+
+      private
+
+      def self.build_error: (String context, StandardError error) -> Error
+    end
+
+    module ErrorPayload
+      def self.from: (untyped error) -> untyped
+
+      private
+
+      def self.standard_error_payload: (untyped error) -> Hash[Symbol, untyped]
     end
 
     class Location
@@ -28,9 +49,11 @@ module Ruby
       attr_reader location: Location?
 
       def initialize: (?String message, location: Location?) -> void
+      def to_h: () -> Hash[Symbol, untyped]
 
       private
 
+      attr_reader raw_message: String?
       def compose_message: (String? message) -> String
     end
 
@@ -632,10 +655,21 @@ module Ruby
       def success?: () -> bool
       def undefined?: () -> bool
       def to_h: () -> Hash[Symbol, untyped]
+      def to_json: (*untyped) -> String
 
       private
 
       def add_bindings: (Hash[String | Symbol, untyped] bindings) -> void
+    end
+
+    class Policy
+      def initialize: (String source) -> void
+      def evaluate: (?input: untyped, ?data: untyped, ?query: untyped) -> Result
+
+      private
+
+      attr_reader compiled_module: CompiledModule
+      attr_reader source: String
     end
 
     module CompiledModuleLike
@@ -923,7 +957,8 @@ module Ruby
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
       attr_reader rule_evaluator: Evaluator::RuleEvaluator
       def evaluate_rules: () -> Hash[untyped, untyped]
-      def evaluate_query: (untyped query) -> Value
+      def evaluate_query: (untyped query) -> [Value, Hash[String, Value]]
+      def bindings_for_query: (untyped node) -> Hash[String, Value]
       def build_evaluators: (Hash[String, Array[AST::Rule]] rules_by_name, Array[String] package_path) -> [Evaluator::ExpressionEvaluator, Evaluator::RuleEvaluator]
       def build_expression_evaluator: (Evaluator::RuleValueProvider rule_value_provider, Array[String] package_path) -> Evaluator::ExpressionEvaluator
       def build_rule_evaluator: (Evaluator::ExpressionEvaluator expression_evaluator, Evaluator::RuleValueProvider rule_value_provider) -> Evaluator::RuleEvaluator

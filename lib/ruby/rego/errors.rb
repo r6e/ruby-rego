@@ -22,11 +22,23 @@ module Ruby
       # @param message [String, nil]
       # @param location [Location, nil]
       def initialize(message = nil, location: nil)
+        @raw_message = message
         @location = location
         super(compose_message(message))
       end
 
+      # @return [Hash{Symbol => Object}]
+      def to_h
+        {
+          message: raw_message,
+          type: self.class.name,
+          location: location&.to_s
+        }
+      end
+
       private
+
+      attr_reader :raw_message
 
       def compose_message(message)
         [message, location&.then { |loc| "(#{loc})" }].compact.join(" ")

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "json"
+require_relative "error_payload"
 require_relative "value"
 
 module Ruby
@@ -46,8 +48,17 @@ module Ruby
           value: value.to_ruby,
           bindings: bindings.transform_values(&:to_ruby),
           success: success,
-          errors: errors
+          errors: errors.map { |error| ErrorPayload.from(error) }
         }
+      end
+
+      # @param _args [Array<Object>]
+      # @return [String]
+      def to_json(*args)
+        options = args.first
+        return JSON.generate(to_h) unless options.is_a?(Hash)
+
+        JSON.generate(to_h, options)
       end
 
       private

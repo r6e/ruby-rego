@@ -58,8 +58,11 @@ module Ruby
       # @param query [Object, nil]
       # @return [Result]
       def evaluate(query = nil)
-        value = query ? evaluate_query(query) : evaluate_rules
-        Result.new(value: value, success: !value.is_a?(UndefinedValue))
+        value, bindings = query ? evaluate_query(query) : [evaluate_rules, nil]
+        success = !value.is_a?(UndefinedValue)
+        return Result.new(value: value, success: success) unless bindings
+
+        Result.new(value: value, success: success, bindings: bindings)
       end
 
       private
@@ -102,7 +105,13 @@ module Ruby
 
       def evaluate_query(query)
         node = QueryNodeBuilder.new(query).build
-        expression_evaluator.evaluate(node)
+        bindings = bindings_for_query(node)
+        value = expression_evaluator.evaluate(node)
+        [value, bindings]
+      end
+
+      def bindings_for_query(node)
+        expression_evaluator.eval_with_unification(node, environment).first || {}
       end
 
       def eval_node(node)
