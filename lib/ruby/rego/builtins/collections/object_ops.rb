@@ -34,7 +34,7 @@ module Ruby
           def self.object_remove(object, keys)
             obj = object_value(object, name: "object.remove object")
             remove_keys = key_collection(keys, name: "object.remove keys")
-            filtered = obj.value.reject { |key, _| remove_keys.include?(normalize_object_key(key)) }
+            filtered = obj.value.reject { |key, _value| remove_keys.include?(normalize_object_key(key)) }
             ObjectValue.new(filtered)
           end
 

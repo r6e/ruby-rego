@@ -1,0 +1,291 @@
+module RegoValidate
+  class Options
+    attr_accessor policy: String?
+    attr_accessor config: String?
+    attr_accessor query: String?
+    attr_accessor format: String
+    attr_accessor help: bool
+    attr_accessor yaml_aliases: bool
+
+    def initialize: (?policy: String?, ?config: String?, ?query: String?, ?format: String, ?help: bool, ?yaml_aliases: bool) -> void
+    def help?: () -> bool
+  end
+
+  class ParseResult
+    attr_reader options: Options
+    attr_reader parser: untyped
+    attr_reader error: OptionParser::ParseError?
+
+    def initialize: (options: Options, parser: untyped, ?error: OptionParser::ParseError?) -> void
+    def success?: () -> bool
+
+    def report_error: (stdout: IO, stderr: IO) -> void
+
+    private
+
+    def error_message: () -> String
+  end
+
+  class ConfigLoadResult
+    attr_reader value: untyped
+    attr_reader success: bool
+
+    def initialize: (?value: untyped, success: bool) -> void
+    def success?: () -> bool
+  end
+
+  class EvaluationResult
+    attr_reader outcome: Outcome?
+    attr_reader error_message: String?
+
+    def initialize: (?outcome: Outcome?, ?error_message: String?) -> void
+    def success?: () -> bool
+  end
+
+  class Outcome
+    attr_reader success: bool
+    attr_reader value: untyped
+    attr_reader errors: Array[String]
+
+    def initialize: (success: bool, value: untyped, errors: Array[String]) -> void
+    def success?: () -> bool
+  end
+
+  class CLI
+    def initialize: (Array[String] argv, ?stdout: IO, ?stderr: IO) -> void
+    def run: () -> Integer
+
+    private
+
+    attr_reader argv: Array[String]
+    attr_reader options: Options
+    attr_reader stdout: IO
+    attr_reader stderr: IO
+    def perform_run: () -> Integer
+    def apply_parse_result: (ParseResult parse_result) -> Integer
+    def handle_evaluation: (untyped parser) -> Integer
+    def emit_outcome: (Outcome outcome) -> Integer
+    def handle_parse_error: (ParseResult parse_result) -> Integer
+    def required_options_present?: (untyped parser) -> bool
+    def evaluate_policy: (untyped parser) -> EvaluationResult
+    def report_evaluation_error: (EvaluationResult evaluation, untyped parser) -> void
+    def handle_help: (untyped parser) -> Integer
+    def handle_rego_error: (Ruby::Rego::Error error) -> Integer
+    def handle_unexpected_error: (StandardError error) -> Integer
+    def reporter: () -> ErrorReporter
+  end
+
+  class OptionsParser
+    VALID_FORMATS: Array[String]
+
+    def initialize: (Array[String] argv) -> void
+    def parse: () -> ParseResult
+
+    class ParseResultBuilder
+      def initialize: (Array[String] argv) -> void
+      def call: () -> ParseResult
+
+      private
+
+      attr_reader argv: Array[String]
+      def parse_with: (Options options) -> ParseResult
+    end
+
+    class OptionDefinitions
+      OPTION_BUILDERS: Array[Symbol]
+
+      def initialize: (Options options) -> void
+      def build: () -> OptionParser
+
+      private
+
+      attr_reader options: Options
+      def apply_options: (OptionParser opts) -> void
+      def add_policy_option: (OptionParser opts) -> void
+      def add_config_option: (OptionParser opts) -> void
+      def add_query_option: (OptionParser opts) -> void
+      def add_format_option: (OptionParser opts) -> void
+      def add_yaml_aliases_option: (OptionParser opts) -> void
+      def add_help_option: (OptionParser opts) -> void
+    end
+
+    private
+
+    attr_reader argv: Array[String]
+  end
+
+  class OptionsValidator
+    def initialize: (Options options) -> void
+    def missing_required: () -> Array[String]
+
+    private
+
+    attr_reader options: Options
+  end
+
+  class ConfigLoader
+    JSON_EXTENSIONS: Array[String]
+
+    def initialize: (reporter: ErrorReporter, parser: untyped, yaml_aliases: bool) -> void
+    def read_policy: (String path) -> String?
+    def read_config: (String path) -> ConfigLoadResult
+
+    private
+
+    attr_reader reporter: ErrorReporter
+    attr_reader parser: untyped
+    attr_reader json_extensions: Array[String]
+    attr_reader yaml_aliases: bool
+    def read_file: (String path, String label) -> String?
+    def parse_config: (String content, String path) -> ConfigLoadResult
+    def parse_config_value: (String content, String path) -> untyped
+    def report_file_error: (String label, String reason, String path) -> void
+    def json_config?: (String path) -> bool
+  end
+
+  class SourceLoader
+    def initialize: (options: Options, reporter: ErrorReporter, parser: untyped) -> void
+    def load: () -> [String?, ConfigLoadResult]
+
+    private
+
+    attr_reader options: Options
+    attr_reader loader: ConfigLoader
+    def load_policy_source: () -> String?
+    def load_config: () -> ConfigLoadResult
+  end
+
+  class DefaultQueryResolver
+    DEFAULT_RULE_NAMES: Array[String]
+    FALLBACK_RULE_NAMES: Array[String]
+
+    def initialize: (Ruby::Rego::CompiledModule compiled_module) -> void
+    def resolve: () -> String?
+
+    private
+
+    attr_reader compiled_module: Ruby::Rego::CompiledModule
+    attr_reader rule_names: Array[String]
+    def rule_available?: (String name) -> bool
+    def package_path: () -> Array[String]
+  end
+
+  class PolicyEvaluator
+    def initialize: (String policy_source, untyped input, String? query) -> void
+    def evaluate: () -> EvaluationResult
+
+    private
+
+    attr_reader policy_source: String
+    attr_reader input: untyped
+    attr_reader query: String?
+    def resolve_query: (Ruby::Rego::CompiledModule compiled_module) -> String?
+    def build_evaluation: (Ruby::Rego::CompiledModule compiled_module, String query_path) -> EvaluationResult
+    def evaluate_compiled: (Ruby::Rego::CompiledModule compiled_module, String query_path) -> Ruby::Rego::Result
+  end
+
+  class OutcomeBuilder
+    def initialize: (Ruby::Rego::Result result, String query) -> void
+    def build: () -> Outcome
+
+    private
+
+    attr_reader result: Ruby::Rego::Result
+    attr_reader query: String
+    def build_defined_outcome: () -> Outcome
+    def errors_for: (untyped value) -> Array[String]
+    def undefined_outcome: () -> Outcome
+    def errors_from_value: (untyped value) -> Array[String]
+    def errors_for_non_true: (untyped value) -> Array[String]
+    def scalar_error: (untyped value) -> Array[String]
+    def collection_errors: (untyped value) -> Array[String]
+    def hash_errors: (untyped value) -> Array[String]
+    def format_rule_error: (untyped value) -> String
+    def rule_name: () -> String
+  end
+
+  class OutcomeEmitter
+    def initialize: (IO stdout, ?format: String) -> void
+    def emit: (Outcome outcome) -> void
+
+    class JsonFormatter
+      def initialize: (IO stdout) -> void
+      def emit: (Outcome outcome) -> void
+
+      private
+
+      attr_reader stdout: IO
+    end
+
+    class TextFormatter
+      def initialize: (IO stdout) -> void
+      def emit: (Outcome outcome) -> void
+
+      private
+
+      attr_reader stdout: IO
+    end
+
+    class OutcomePayload
+      def initialize: (Outcome outcome) -> void
+      def to_h: () -> Hash[Symbol, untyped]
+
+      private
+
+      attr_reader outcome: Outcome
+      def normalize_json: (untyped value) -> untyped
+      def normalize_array: (Array[untyped] values) -> Array[untyped]
+      def normalize_hash: (Hash[untyped, untyped] values) -> Hash[untyped, untyped]
+      def normalize_set: (Set[untyped] values) -> Array[untyped]
+    end
+
+    FORMATTERS: Hash[String, untyped]
+
+    private
+
+    attr_reader formatter: untyped
+  end
+
+  class ErrorReporter
+    def initialize: (stdout: IO, stderr: IO, ?format: String) -> void
+    def error: (String message, ?untyped parser) -> void
+    def rego_error: (Ruby::Rego::Error error) -> void
+
+    class ErrorPayload
+      def self.from_cli_error: (String message) -> ErrorPayload
+      def self.from_rego_error: (Ruby::Rego::Error error) -> ErrorPayload
+      def initialize: (message: String, type: String, ?location: Ruby::Rego::Location?) -> void
+      def to_h: () -> Hash[Symbol, untyped]
+
+      private
+
+      attr_reader message: String
+      attr_reader type: String
+      attr_reader location: Ruby::Rego::Location?
+    end
+
+    class JsonFormatter
+      def initialize: (stdout: IO, stderr: IO) -> void
+      def error: (String message, ?untyped parser) -> void
+      def rego_error: (Ruby::Rego::Error error) -> void
+
+      private
+
+      attr_reader stdout: IO
+      attr_reader stderr: IO
+    end
+
+    class TextFormatter
+      def initialize: (stdout: IO, stderr: IO) -> void
+      def error: (String message, ?untyped parser) -> void
+      def rego_error: (Ruby::Rego::Error error) -> void
+
+      private
+
+      attr_reader stdout: IO
+      attr_reader stderr: IO
+    end
+
+    FORMATTERS: Hash[String, untyped]
+  end
+end

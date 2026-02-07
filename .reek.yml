@@ -35,3 +35,10 @@ detectors:
   RepeatedConditional:
     exclude:
       - Ruby::Rego::Lexer
+  UncommunicativeVariableName:
+    accept:
+      - e
+      - _
+    exclude:
+      - Ruby::Rego::Builtins::Collections::ObjectOps#self.object_remove
+      - Ruby::Rego::Evaluator::ExpressionDispatch#handler_for

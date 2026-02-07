@@ -1,0 +1,7 @@
+module Psych
+  class BadAlias < StandardError
+  end
+
+  class SyntaxError < StandardError
+  end
+end
