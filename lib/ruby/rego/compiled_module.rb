@@ -4,10 +4,12 @@ module Ruby
   module Rego
     # Bundles compiled rule metadata for fast evaluation.
     class CompiledModule
-      # @param package_path [Array<String>]
-      # @param rules_by_name [Hash{String => Array<AST::Rule>}]
-      # @param imports [Array<AST::Import>]
-      # @param dependency_graph [Hash{String => Array<String>}]
+      # Create a compiled module bundle.
+      #
+      # @param package_path [Array<String>] module package path
+      # @param rules_by_name [Hash{String => Array<AST::Rule>}] indexed rules
+      # @param imports [Array<AST::Import>] imports from the module
+      # @param dependency_graph [Hash{String => Array<String>}] rule dependencies
       def initialize(package_path:, rules_by_name:, imports: [], dependency_graph: {})
         state = {
           package_path: package_path,
@@ -21,31 +23,45 @@ module Ruby
           @dependency_graph = Normalizer.new(state).normalize
       end
 
+      # The module package path.
+      #
       # @return [Array<String>]
       attr_reader :package_path
 
+      # Rules indexed by name.
+      #
       # @return [Hash{String => Array<AST::Rule>}]
       attr_reader :rules_by_name
 
+      # Import declarations.
+      #
       # @return [Array<AST::Import>]
       attr_reader :imports
 
+      # Dependency graph for rule evaluation ordering.
+      #
       # @return [Hash{String => Array<String>}]
       attr_reader :dependency_graph
 
-      # @param name [String, Symbol]
-      # @return [Array<AST::Rule>]
+      # Fetch rules for a given name.
+      #
+      # @param name [String, Symbol] rule name
+      # @return [Array<AST::Rule>] rules matching the name
       def lookup_rule(name)
         rules_by_name.fetch(name.to_s) { empty_rules }
       end
 
+      # List all rule names.
+      #
       # @return [Array<String>]
       def rule_names
         rules_by_name.keys
       end
 
-      # @param name [String, Symbol]
-      # @return [Boolean]
+      # Check whether a rule exists.
+      #
+      # @param name [String, Symbol] rule name
+      # @return [Boolean] true when present
       # rubocop:disable Naming/PredicatePrefix
       def has_rule?(name)
         rules_by_name.key?(name.to_s)

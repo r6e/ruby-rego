@@ -29,8 +29,10 @@ module Ruby
   # Top-level namespace for the Ruby Rego gem.
   module Rego
     class << self
-      # @param source [String]
-      # @return [AST::Module]
+      # Parse Rego source into an AST module.
+      #
+      # @param source [String] Rego source code
+      # @return [AST::Module] parsed AST module
       def parse(source)
         ErrorHandling.wrap("parsing") do
           tokens = Lexer.new(source).tokenize
@@ -38,19 +40,23 @@ module Ruby
         end
       end
 
-      # @param source [String]
-      # @return [CompiledModule]
+      # Compile Rego source into an immutable compiled module.
+      #
+      # @param source [String] Rego source code
+      # @return [CompiledModule] compiled and indexed module
       def compile(source)
         ErrorHandling.wrap("compilation") do
           Compiler.new.compile(parse(source))
         end
       end
 
-      # @param source [String]
-      # @param input [Object]
-      # @param data [Object]
-      # @param query [Object, nil]
-      # @return [Result]
+      # Evaluate Rego source against input and data.
+      #
+      # @param source [String] Rego source code
+      # @param input [Object] input document
+      # @param data [Object] data document
+      # @param query [Object, nil] optional query path
+      # @return [Result] evaluation result
       # :reek:LongParameterList
       def evaluate(source, input: {}, data: {}, query: nil)
         compiled_module = compile(source)

@@ -11,47 +11,65 @@ module Ruby
     class Value
       TYPE_NAME = "value"
 
-      # @param value [Object]
+      # Create a value wrapper.
+      #
+      # @param value [Object] underlying value
       def initialize(value = nil)
         @value = value
       end
 
+      # The wrapped Ruby value.
+      #
       # @return [Object]
       attr_reader :value
 
+      # Determine truthiness for Rego evaluation.
+      #
       # @return [Boolean]
       def truthy?
         true
       end
 
+      # Convert the value back to Ruby.
+      #
       # @return [Object]
       def to_ruby
         value
       end
 
+      # Return the Rego type name.
+      #
       # @return [String]
       def type_name
         self.class::TYPE_NAME
       end
 
-      # @param _key [Object]
-      # @return [Value]
+      # Resolve a reference on the value.
+      #
+      # @param _key [Object] reference key
+      # @return [Value] resolved value or undefined
       def fetch_reference(_key)
         return self if undefined?
 
         UndefinedValue.new
       end
 
+      # Check if the value is undefined.
+      #
       # @return [Boolean]
       def undefined?
         is_a?(UndefinedValue)
       end
 
+      # Return a normalized object key representation.
+      #
       # @return [Object]
       def object_key
         to_ruby
       end
 
+      # Compare values by class and underlying Ruby value.
+      #
       # @param other [Object]
       # @return [Boolean]
       def ==(other)
@@ -60,13 +78,17 @@ module Ruby
 
       alias eql? ==
 
+      # Hash for use in Ruby collections.
+      #
       # @return [Integer]
       def hash
         [self.class.name, to_ruby].hash
       end
 
-      # @param value [Object]
-      # @return [Value]
+      # Coerce Ruby values into Rego values.
+      #
+      # @param value [Object] value to convert
+      # @return [Value] converted value
       def self.from_ruby(value)
         return value if value.is_a?(Value)
         return UndefinedValue.new if value.equal?(UndefinedValue::UNDEFINED)
@@ -113,7 +135,9 @@ module Ruby
     class StringValue < Value
       TYPE_NAME = "string"
 
-      # @param value [String]
+      # Create a string value.
+      #
+      # @param value [String] string value
       def initialize(value)
         super(String(value))
       end
@@ -123,7 +147,9 @@ module Ruby
     class NumberValue < Value
       TYPE_NAME = "number"
 
-      # @param value [Numeric]
+      # Create a numeric value.
+      #
+      # @param value [Numeric] numeric value
       def initialize(value)
         raise ArgumentError, "Expected Numeric, got #{value.class}" unless value.is_a?(Numeric)
 
@@ -135,7 +161,9 @@ module Ruby
     class BooleanValue < Value
       TYPE_NAME = "boolean"
 
-      # @param value [Boolean]
+      # Create a boolean value.
+      #
+      # @param value [Boolean] boolean value
       def initialize(value)
         klass = value.class
         raise ArgumentError, "Expected Boolean, got #{klass}" unless [TrueClass, FalseClass].include?(klass)
@@ -143,6 +171,8 @@ module Ruby
         super
       end
 
+      # Determine truthiness.
+      #
       # @return [Boolean]
       def truthy?
         value
@@ -153,10 +183,13 @@ module Ruby
     class NullValue < Value
       TYPE_NAME = "null"
 
+      # Create a null value.
       def initialize
         super(nil)
       end
 
+      # Null is falsy.
+      #
       # @return [Boolean]
       def truthy?
         false
@@ -168,20 +201,27 @@ module Ruby
       TYPE_NAME = "undefined"
       UNDEFINED = Object.new.freeze
 
+      # Create an undefined value marker.
       def initialize
         super(UNDEFINED)
       end
 
+      # Undefined is falsy.
+      #
       # @return [Boolean]
       def truthy?
         false
       end
 
+      # Return the singleton undefined marker.
+      #
       # @return [Object]
       def to_ruby
         UNDEFINED
       end
 
+      # Use the instance itself as an object key.
+      #
       # @return [UndefinedValue]
       def object_key
         self
@@ -192,26 +232,34 @@ module Ruby
     class ArrayValue < Value
       TYPE_NAME = "array"
 
-      # @param elements [Array<Object>]
+      # Create an array value.
+      #
+      # @param elements [Array<Object>] elements to wrap
       def initialize(elements)
         @elements = elements.map { |element| Value.from_ruby(element) }
         super(@elements)
       end
 
-      # @param index [Integer]
-      # @return [Value]
+      # Fetch an element by index.
+      #
+      # @param index [Integer] array index
+      # @return [Value] element or undefined
       def fetch_index(index)
         return UndefinedValue.new unless index.is_a?(Integer)
 
         @elements[index] || UndefinedValue.new
       end
 
-      # @param key [Object]
-      # @return [Value]
+      # Resolve a reference for an array.
+      #
+      # @param key [Object] index value
+      # @return [Value] element or undefined
       def fetch_reference(key)
         fetch_index(key)
       end
 
+      # Convert the array back to Ruby.
+      #
       # @return [Array<Object>]
       def to_ruby
         @elements.map(&:to_ruby)
@@ -226,7 +274,9 @@ module Ruby
     class ObjectValue < Value
       TYPE_NAME = "object"
 
-      # @param pairs [Hash<Object, Object>]
+      # Create an object value.
+      #
+      # @param pairs [Hash<Object, Object>] object pairs
       def initialize(pairs)
         @values = normalize_pairs(pairs)
         super(@values)
@@ -255,8 +305,10 @@ module Ruby
         key_sources[normalized_key] = key
       end
 
-      # @param key [Object]
-      # @return [Value]
+      # Fetch a value by key.
+      #
+      # @param key [Object] object key
+      # @return [Value] value or undefined
       def fetch(key)
         return @values[key] if @values.key?(key)
 
@@ -265,8 +317,10 @@ module Ruby
         UndefinedValue.new
       end
 
-      # @param key [Object]
-      # @return [Value]
+      # Resolve a reference for an object.
+      #
+      # @param key [Object] object key
+      # @return [Value] value or undefined
       def fetch_reference(key)
         fetch(key)
       end
@@ -276,6 +330,8 @@ module Ruby
         @values[string_key] || UndefinedValue.new
       end
 
+      # Convert the object back to Ruby.
+      #
       # @return [Hash<Object, Object>]
       def to_ruby
         @values.transform_values(&:to_ruby)
@@ -291,19 +347,25 @@ module Ruby
     class SetValue < Value
       TYPE_NAME = "set"
 
-      # @param elements [Set<Object>, Array<Object>]
+      # Create a set value.
+      #
+      # @param elements [Set<Object>, Array<Object>] set elements
       def initialize(elements)
         collection = elements.is_a?(Set) ? elements.to_a : Array(elements)
         @elements = Set.new(collection.map { |element| Value.from_ruby(element) })
         super(@elements)
       end
 
-      # @param value [Object]
+      # Check whether the set includes a value.
+      #
+      # @param value [Object] value to check
       # @return [Boolean]
       def include?(value)
         @elements.include?(Value.from_ruby(value))
       end
 
+      # Convert the set back to Ruby.
+      #
       # @return [Set<Object>]
       def to_ruby
         Set.new(@elements.map(&:to_ruby))

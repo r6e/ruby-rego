@@ -8,7 +8,9 @@ module Ruby
   module Rego
     # Internal helper for wrapping unexpected errors in public API calls.
     module ErrorHandling
-      # @param context [String]
+      # Wrap a public API call with standardized error handling.
+      #
+      # @param context [String] error context label
       # @yieldreturn [Object]
       # @return [Object]
       # :reek:TooManyStatements
@@ -21,7 +23,9 @@ module Ruby
         raise build_error(context, e), cause: e
       end
 
-      # @param error [Object]
+      # Extract a location from an error-like object.
+      #
+      # @param error [Object] error to inspect
       # @return [Location, nil]
       # :reek:ManualDispatch
       # :reek:TooManyStatements
@@ -37,6 +41,8 @@ module Ruby
         nil
       end
 
+      # Build a wrapped error from an exception.
+      #
       # @param context [String]
       # @param error [StandardError]
       # @return [Error]

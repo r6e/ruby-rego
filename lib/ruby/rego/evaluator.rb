@@ -28,9 +28,11 @@ module Ruby
   module Rego
     # Evaluates compiled Rego modules against input and data.
     class Evaluator
-      # @param ast_module [AST::Module]
-      # @param options [Hash]
-      # @return [Evaluator]
+      # Build an evaluator directly from an AST module.
+      #
+      # @param ast_module [AST::Module] parsed module
+      # @param options [Hash] evaluator options (input, data, compiler)
+      # @return [Evaluator] evaluator instance
       def self.from_ast(ast_module, options = {})
         default_input = {} # @type var default_input: Hash[untyped, untyped]
         default_data = {} # @type var default_data: Hash[untyped, untyped]
@@ -38,9 +40,11 @@ module Ruby
         new(options[:compiler].compile(ast_module), input: options[:input], data: options[:data])
       end
 
-      # @param compiled_module [#rules_by_name, #package_path]
-      # @param input [Object]
-      # @param data [Object]
+      # Create an evaluator for a compiled module.
+      #
+      # @param compiled_module [#rules_by_name, #package_path] compiled module
+      # @param input [Object] input document
+      # @param data [Object] data document
       def initialize(compiled_module, input: {}, data: {})
         @compiled_module = compiled_module
         rules_by_name = compiled_module.rules_by_name
@@ -49,14 +53,20 @@ module Ruby
         @expression_evaluator, @rule_evaluator = build_evaluators(rules_by_name, package_path)
       end
 
+      # The compiled module being evaluated.
+      #
       # @return [#rules_by_name, #package_path]
       attr_reader :compiled_module
 
+      # The environment used to evaluate expressions and rules.
+      #
       # @return [Environment]
       attr_reader :environment
 
-      # @param query [Object, nil]
-      # @return [Result]
+      # Evaluate either a query path or all rules.
+      #
+      # @param query [Object, nil] query path (e.g. "data.package.rule")
+      # @return [Result] evaluation result
       def evaluate(query = nil)
         value, bindings = query ? evaluate_query(query) : [evaluate_rules, nil]
         success = !value.is_a?(UndefinedValue)

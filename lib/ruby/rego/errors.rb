@@ -7,6 +7,10 @@ module Ruby
   module Rego
     # Shared formatting helpers for error message details.
     module ErrorFormatting
+      # Format detail key/value pairs for error messages.
+      #
+      # @param details [Hash{Symbol => Object}]
+      # @return [String]
       def self.format_details(details)
         details.compact.map { |key, value| "#{key}: #{value}" }.join(", ")
       end
@@ -19,14 +23,18 @@ module Ruby
       # @return [Location, nil]
       attr_reader :location
 
-      # @param message [String, nil]
-      # @param location [Location, nil]
+      # Create a new error with optional location details.
+      #
+      # @param message [String, nil] error message
+      # @param location [Location, nil] source location
       def initialize(message = nil, location: nil)
         @raw_message = message
         @location = location
         super(compose_message(message))
       end
 
+      # Serialize the error to a hash.
+      #
       # @return [Hash{Symbol => Object}]
       def to_h
         {
@@ -53,11 +61,13 @@ module Ruby
       # @return [Integer]
       attr_reader :column
 
-      # @param message [String]
-      # @param line [Integer]
-      # @param column [Integer]
-      # @param offset [Integer, nil]
-      # @param length [Integer, nil]
+      # Create a lexer error.
+      #
+      # @param message [String] error message
+      # @param line [Integer] line number
+      # @param column [Integer] column number
+      # @param offset [Integer, nil] character offset
+      # @param length [Integer, nil] token length
       def initialize(message, line:, column:, offset: nil, length: nil)
         @line = line
         @column = column
@@ -77,9 +87,11 @@ module Ruby
       # @return [String, nil]
       attr_reader :context
 
-      # @param message [String]
-      # @param context [String, nil]
-      # @param location [Location]
+      # Create a parser error.
+      #
+      # @param message [String] error message
+      # @param context [String, nil] token context
+      # @param location [Location] error location
       def initialize(message, location:, context: nil)
         @line = location.line
         @column = location.column
@@ -88,9 +100,11 @@ module Ruby
         super(composed, location: location)
       end
 
-      # @param message [String]
-      # @param position [Hash, Location]
-      # @param context [String, nil]
+      # Build an error from a position hash or location.
+      #
+      # @param message [String] error message
+      # @param position [Hash, Location] source position
+      # @param context [String, nil] token context
       # @return [ParserError]
       def self.from_position(message, position:, context: nil)
         location = Location.from(position)
@@ -107,9 +121,11 @@ module Ruby
       # @return [Object, nil]
       attr_reader :rule
 
-      # @param message [String]
-      # @param rule [Object, nil]
-      # @param location [Location, nil]
+      # Create an evaluation error.
+      #
+      # @param message [String] error message
+      # @param rule [Object, nil] rule context
+      # @param location [Location, nil] source location
       def initialize(message, rule: nil, location: nil)
         @rule = rule
         details = ErrorFormatting.format_details(rule: rule)
@@ -129,11 +145,13 @@ module Ruby
       # @return [String, nil]
       attr_reader :context
 
-      # @param message [String]
-      # @param expected [Object, nil]
-      # @param actual [Object, nil]
-      # @param context [String, nil]
-      # @param location [Location, nil]
+      # Create a type error.
+      #
+      # @param message [String] error message
+      # @param expected [Object, nil] expected type or value
+      # @param actual [Object, nil] actual type or value
+      # @param context [String, nil] error context
+      # @param location [Location, nil] source location
       def initialize(message, expected: nil, actual: nil, context: nil, location: nil)
         @expected = expected
         @actual = actual
@@ -156,10 +174,12 @@ module Ruby
       # @return [Object, nil]
       attr_reader :value
 
-      # @param message [String]
-      # @param pattern [Object, nil]
-      # @param value [Object, nil]
-      # @param location [Location, nil]
+      # Create a unification error.
+      #
+      # @param message [String] error message
+      # @param pattern [Object, nil] pattern being matched
+      # @param value [Object, nil] value being matched
+      # @param location [Location, nil] source location
       def initialize(message, pattern: nil, value: nil, location: nil)
         @pattern = pattern
         @value = value

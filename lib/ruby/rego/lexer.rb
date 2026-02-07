@@ -69,7 +69,9 @@ module Ruby
       DIGIT = /\d/
       HEX_DIGIT = /[0-9A-Fa-f]/
 
-      # @param source [String]
+      # Create a lexer for the provided source.
+      #
+      # @param source [String] Rego source code
       def initialize(source)
         @source = source.to_s
         @position = 0
@@ -78,7 +80,9 @@ module Ruby
         @offset = 0
       end
 
-      # @return [Array<Token>]
+      # Tokenize the source into a list of tokens, including EOF.
+      #
+      # @return [Array<Token>] token stream
       def tokenize
         # @type var tokens: Array[Token]
         tokens = []

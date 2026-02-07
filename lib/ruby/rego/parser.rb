@@ -68,14 +68,18 @@ module Ruby
       # Bundles identifier parsing configuration for error messages and validation.
       IdentifierContext = Struct.new(:name, :allowed_types, keyword_init: true)
 
-      # @param tokens [Array<Token>]
+      # Create a parser from a token list.
+      #
+      # @param tokens [Array<Token>] token stream
       def initialize(tokens)
         @tokens = tokens.dup
         @current = 0
         @errors = [] # @type var errors: Array[ParserError]
       end
 
-      # @return [AST::Module]
+      # Parse the token stream into an AST module.
+      #
+      # @return [AST::Module] parsed module
       def parse
         module_node = parse_module
         raise errors.first if errors.any?

@@ -81,6 +81,17 @@ RSpec.describe Ruby::Rego::Parser do
       expect(rule.body[1].expression).to be_a(Ruby::Rego::AST::Reference)
     end
 
+    it "parses braced rule bodies separated by newlines" do
+      rule = parse_rule("deny[msg] { input.enabled == false\nmsg := \"feature must be enabled\" }")
+
+      expect(rule.body.length).to eq(2)
+      expect(rule.head[:type]).to eq(:partial_set)
+      expect(rule.body[0]).to be_a(Ruby::Rego::AST::QueryLiteral)
+      expect(rule.body[0].expression).to be_a(Ruby::Rego::AST::BinaryOp)
+      expect(rule.body[1].expression).to be_a(Ruby::Rego::AST::BinaryOp)
+      expect(rule.body[1].expression.operator).to eq(:assign)
+    end
+
     it "parses partial set rules" do
       rule = parse_rule("roles contains \"admin\"")
 

@@ -18,22 +18,32 @@ module Ruby
       }.freeze
       RESERVED_NAMES = RESERVED_BINDINGS.keys.freeze
 
+      # Input document as a Rego value.
+      #
       # @return [Value]
       attr_reader :input
 
+      # Data document as a Rego value.
+      #
       # @return [Value]
       attr_reader :data
 
+      # Rule index by name.
+      #
       # @return [Hash]
       attr_reader :rules
 
+      # Builtin registry in use.
+      #
       # @return [Builtins::BuiltinRegistry, Builtins::BuiltinRegistryOverlay]
       attr_reader :builtin_registry
 
-      # @param input [Object]
-      # @param data [Object]
-      # @param rules [Hash]
-      # @param builtin_registry [Builtins::BuiltinRegistry, Builtins::BuiltinRegistryOverlay]
+      # Create an evaluation environment.
+      #
+      # @param input [Object] input document
+      # @param data [Object] data document
+      # @param rules [Hash] rule index
+      # @param builtin_registry [Builtins::BuiltinRegistry, Builtins::BuiltinRegistryOverlay] registry
       def initialize(input: {}, data: {}, rules: {}, builtin_registry: Builtins::BuiltinRegistry.instance)
         @input = Value.from_ruby(input)
         @data = Value.from_ruby(data)
@@ -45,22 +55,28 @@ module Ruby
       include EnvironmentOverrides
       include EnvironmentReferenceResolution
 
-      # @return [Environment]
+      # Push a new scope for local bindings.
+      #
+      # @return [Environment] self
       def push_scope
         scope = {} # @type var scope: Hash[String, Value]
         locals << scope
         self
       end
 
+      # Pop the latest local scope.
+      #
       # @return [void]
       def pop_scope
         locals.pop if locals.length > 1
         nil
       end
 
-      # @param name [String, Symbol]
-      # @param value [Object]
-      # @return [Value]
+      # Bind a local name to a value.
+      #
+      # @param name [String, Symbol] binding name
+      # @param value [Object] value to bind
+      # @return [Value] bound value
       def bind(name, value)
         name = name.to_s
         raise Error, "Cannot bind reserved name: #{name}" if RESERVED_NAMES.include?(name)
@@ -70,8 +86,10 @@ module Ruby
         value
       end
 
-      # @param name [String, Symbol]
-      # @return [Value]
+      # Lookup a binding from the current scope chain.
+      #
+      # @param name [String, Symbol] binding name
+      # @return [Value] resolved value or undefined
       # :reek:TooManyStatements
       def lookup(name)
         name = name.to_s
@@ -85,9 +103,11 @@ module Ruby
         UndefinedValue.new
       end
 
-      # @param bindings [Hash{String, Symbol => Object}]
+      # Execute a block with additional temporary bindings.
+      #
+      # @param bindings [Hash{String, Symbol => Object}] bindings to apply
       # @yieldreturn [Object]
-      # @return [Object]
+      # @return [Object] block result
       def with_bindings(bindings)
         push_scope
         bindings.each { |name, value| bind(name, value) }
@@ -96,9 +116,11 @@ module Ruby
         pop_scope
       end
 
-      # @param registry [Builtins::BuiltinRegistry, Builtins::BuiltinRegistryOverlay]
+      # Execute a block with an overridden builtin registry.
+      #
+      # @param registry [Builtins::BuiltinRegistry, Builtins::BuiltinRegistryOverlay] registry to use
       # @yieldparam environment [Environment]
-      # @return [Object]
+      # @return [Object] block result
       def with_builtin_registry(registry)
         original = @builtin_registry
         @builtin_registry = registry

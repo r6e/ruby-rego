@@ -9,7 +9,6 @@ module Ruby
       # :reek:TooManyStatements
       # :reek:DuplicateMethodCall
       # :reek:BooleanParameter
-      # rubocop:disable Metrics/MethodLength
       def parse_query(*end_tokens, newline_delimiter: false)
         terminators = end_tokens.flatten
         literals = [] # @type var literals: Array[AST::query_literal]
@@ -19,7 +18,6 @@ module Ruby
           break if terminators.include?(current_token.type)
 
           literals << parse_literal
-          consume_newlines if newline_delimiter
           break if terminators.include?(current_token.type)
 
           break unless consume_query_separators(newline_delimiter)
@@ -27,7 +25,6 @@ module Ruby
 
         literals
       end
-      # rubocop:enable Metrics/MethodLength
 
       # rubocop:disable Metrics/MethodLength
       # :reek:TooManyStatements

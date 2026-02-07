@@ -8,12 +8,18 @@ require "ruby/rego"
 
 module RegoValidate
   Options = Struct.new(:policy, :config, :query, :format, :help, keyword_init: true) do
+    # Check whether help output was requested.
+    #
+    # @return [Boolean]
     def help?
       help
     end
   end
 
   ParseResult = Struct.new(:options, :parser, :error, keyword_init: true) do
+    # Check whether parsing succeeded.
+    #
+    # @return [Boolean]
     def success?
       error.nil?
     end
@@ -21,18 +27,27 @@ module RegoValidate
 
   # Captures the outcome of loading a config file.
   ConfigLoadResult = Struct.new(:value, :success, keyword_init: true) do
+    # Check whether loading succeeded.
+    #
+    # @return [Boolean]
     def success?
       success
     end
   end
 
   EvaluationResult = Struct.new(:outcome, :error_message, keyword_init: true) do
+    # Check whether evaluation succeeded.
+    #
+    # @return [Boolean]
     def success?
       error_message.nil? && !outcome.nil?
     end
   end
 
   Outcome = Struct.new(:success, :value, :errors, keyword_init: true) do
+    # Check whether the outcome indicates success.
+    #
+    # @return [Boolean]
     def success?
       success
     end
@@ -40,6 +55,11 @@ module RegoValidate
 
   # Command-line interface for validating inputs against a Rego policy.
   class CLI
+    # Create a CLI instance.
+    #
+    # @param argv [Array<String>] command-line arguments
+    # @param stdout [IO] output stream
+    # @param stderr [IO] error stream
     def initialize(argv, stdout: $stdout, stderr: $stderr)
       @argv = argv
       @stdout = stdout
@@ -47,6 +67,9 @@ module RegoValidate
       @options = Options.new(format: "text", help: false)
     end
 
+    # Run the CLI and return an exit status.
+    #
+    # @return [Integer]
     def run
       perform_run
     rescue Ruby::Rego::Error => e
@@ -139,10 +162,16 @@ module RegoValidate
   class OptionsParser
     VALID_FORMATS = %w[text json].freeze
 
+    # Create an options parser.
+    #
+    # @param argv [Array<String>] command-line arguments
     def initialize(argv)
       @argv = argv
     end
 
+    # Parse arguments into an options result.
+    #
+    # @return [ParseResult]
     def parse
       options = Options.new(format: "text", help: false)
       parser = build_parser(options)
@@ -201,10 +230,16 @@ module RegoValidate
 
   # Checks presence of required CLI options.
   class OptionsValidator
+    # Create a validator for parsed options.
+    #
+    # @param options [Options]
     def initialize(options)
       @options = options
     end
 
+    # List missing required flags.
+    #
+    # @return [Array<String>]
     def missing_required
       missing = []
       missing << "--policy" unless options.policy
@@ -219,16 +254,29 @@ module RegoValidate
 
   # Loads policy and input configuration files.
   class ConfigLoader
+    # Create a config loader.
+    #
+    # @param reporter [ErrorReporter]
+    # @param parser [OptionParser]
+    # @param format [String]
     def initialize(reporter:, parser:, format:)
       @reporter = reporter
       @parser = parser
       @format = format
     end
 
+    # Read the policy file content.
+    #
+    # @param path [String]
+    # @return [String, nil]
     def read_policy(path)
       read_file(path, "policy")
     end
 
+    # Read and parse the config file content.
+    #
+    # @param path [String]
+    # @return [ConfigLoadResult]
     def read_config(path)
       content = read_file(path, "config")
       return ConfigLoadResult.new(success: false) unless content
@@ -268,12 +316,20 @@ module RegoValidate
     DEFAULT_RULE_NAMES = %w[deny violations violation errors error].freeze
     FALLBACK_RULE_NAMES = %w[allow].freeze
 
+    # Create a policy evaluator.
+    #
+    # @param policy_source [String]
+    # @param input [Object]
+    # @param query [String, nil]
     def initialize(policy_source, input, query)
       @policy_source = policy_source
       @input = input
       @query = query
     end
 
+    # Compile and evaluate the policy using the resolved query.
+    #
+    # @return [EvaluationResult]
     def evaluate
       compiled_module = Ruby::Rego.compile(policy_source)
       query_path = query || default_query(compiled_module)
@@ -324,11 +380,18 @@ module RegoValidate
 
   # Builds a normalized outcome payload from evaluation results.
   class OutcomeBuilder
+    # Create an outcome builder.
+    #
+    # @param result [Ruby::Rego::Result]
+    # @param query [String]
     def initialize(result, query)
       @result = result
       @query = query
     end
 
+    # Build the normalized outcome.
+    #
+    # @return [Outcome]
     def build
       return undefined_outcome if result.undefined?
 
@@ -395,10 +458,18 @@ module RegoValidate
 
   # Emits human-readable or JSON output.
   class OutcomeEmitter
+    # Create an emitter for CLI output.
+    #
+    # @param stdout [IO]
     def initialize(stdout)
       @stdout = stdout
     end
 
+    # Emit the outcome payload.
+    #
+    # @param outcome [Outcome]
+    # @param format [String]
+    # @return [void]
     def emit(outcome, format: "text")
       return emit_json(outcome) if format == "json"
 
@@ -442,11 +513,21 @@ module RegoValidate
 
   # Formats and emits CLI errors to stderr/stdout.
   class ErrorReporter
+    # Create an error reporter.
+    #
+    # @param stdout [IO]
+    # @param stderr [IO]
     def initialize(stdout:, stderr:)
       @stdout = stdout
       @stderr = stderr
     end
 
+    # Emit a generic CLI error.
+    #
+    # @param message [String]
+    # @param parser [OptionParser, nil]
+    # @param format [String]
+    # @return [void]
     def error(message, parser = nil, format: "text")
       return error_json(message) if format == "json"
 
@@ -454,6 +535,11 @@ module RegoValidate
       stderr.puts(parser) if parser
     end
 
+    # Emit a Ruby::Rego error with location details.
+    #
+    # @param error [Ruby::Rego::Error]
+    # @param format [String]
+    # @return [void]
     def rego_error(error, format: "text")
       return rego_error_json(error) if format == "json"
 
