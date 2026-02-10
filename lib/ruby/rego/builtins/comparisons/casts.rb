@@ -84,7 +84,7 @@ module Ruby
           private_class_method :number_from_string
 
           def self.raise_number_error(text)
-            raise Ruby::Rego::TypeError.new(
+            raise Ruby::Rego::BuiltinArgumentError.new(
               "Invalid number string",
               expected: "numeric string",
               actual: text,
@@ -112,7 +112,7 @@ module Ruby
           private_class_method :boolean_from_number
 
           def self.raise_cast_error(message, context, actual)
-            raise Ruby::Rego::TypeError.new(
+            raise Ruby::Rego::BuiltinArgumentError.new(
               message,
               expected: "castable value",
               actual: actual,
@@ -123,7 +123,7 @@ module Ruby
           private_class_method :raise_cast_error
 
           def self.raise_type_mismatch(context, expected, actual)
-            raise Ruby::Rego::TypeError.new(
+            raise Ruby::Rego::BuiltinArgumentError.new(
               "Type mismatch",
               expected: expected,
               actual: actual,

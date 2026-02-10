@@ -162,6 +162,10 @@ module Ruby
       end
     end
 
+    # Error raised for invalid builtin arguments.
+    class BuiltinArgumentError < TypeError
+    end
+
     # Error raised when object keys normalize to the same value.
     class ObjectKeyConflictError < Error
     end

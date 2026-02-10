@@ -50,7 +50,7 @@ module Ruby
 
       def parse_import
         keyword = consume(TokenType::IMPORT, "Expected import declaration.")
-        path = parse_path(IdentifierContext.new(name: "import", allowed_types: IMPORT_PATH_TOKEN_TYPES)).join(".")
+        path = parse_path(IdentifierContext.new(name: "import", allowed_types: IMPORT_PATH_TOKEN_TYPES))
         alias_name = parse_import_alias
 
         AST::Import.new(path: path, alias_name: alias_name, location: keyword.location)
@@ -67,8 +67,10 @@ module Ruby
       def parse_rule
         default_token = consume_default_keyword
         name_token = current_token
-        name = parse_rule_name
+        name_path = parse_rule_name_path
+        name = name_path.first
         head = parse_rule_head(name, name_token)
+        head = apply_rule_head_path(head, name_path.drop(1), name_token)
         head = mark_default_head(head) if default_token
         definition = parse_rule_definition(default_token, head)
         validate_rule_definition(default_token, head, definition)
@@ -80,9 +82,31 @@ module Ruby
         match?(TokenType::DEFAULT) ? advance : nil
       end
 
-      def parse_rule_name
-        parse_identifier(IdentifierContext.new(name: "rule", allowed_types: PACKAGE_PATH_TOKEN_TYPES))
+      # :reek:DuplicateMethodCall
+      # rubocop:disable Metrics/MethodLength
+      def parse_rule_name_path
+        segments = [] # @type var segments: Array[String]
+        context = IdentifierContext.new(name: "rule", allowed_types: PACKAGE_PATH_TOKEN_TYPES)
+        segments << parse_identifier(context)
+
+        loop do
+          if match?(TokenType::DOT)
+            advance
+            segments << parse_identifier(context)
+            next
+          end
+
+          break unless bracket_string_segment?
+
+          segment = parse_bracket_path_segment
+          break unless segment
+
+          segments << segment
+        end
+
+        segments
       end
+      # rubocop:enable Metrics/MethodLength
 
       # :reek:UtilityFunction
       def mark_default_head(head)
@@ -194,6 +218,35 @@ module Ruby
         { type: type, name: name, location: name_token.location }.merge(attrs)
       end
 
+      def apply_rule_head_path(head, segments, name_token)
+        return head if segments.empty?
+        return nested_rule_head(head, segments, name_token) if head[:type] == :complete
+
+        parse_error("Rule head references require complete rule definitions.")
+      end
+
+      # :reek:UtilityFunction
+      # rubocop:disable Metrics/MethodLength
+      def nested_rule_head(head, segments, name_token)
+        location = name_token.location
+        key_segment = segments.first
+        remaining = segments.drop(1)
+        value_node = head[:value] || AST::BooleanLiteral.new(value: true, location: location)
+
+        remaining.reverse_each do |segment|
+          key_node = AST::StringLiteral.new(value: segment, location: location)
+          value_node = AST::ObjectLiteral.new(pairs: [[key_node, value_node]], location: location)
+        end
+
+        head.merge(
+          type: :partial_object,
+          key: AST::StringLiteral.new(value: key_segment, location: location),
+          value: value_node,
+          nested: remaining.any?
+        )
+      end
+      # rubocop:enable Metrics/MethodLength
+
       # :reek:TooManyStatements
       def parse_rule_head_args
         parse_parenthesized_expression_list(
@@ -247,8 +300,9 @@ module Ruby
         value = nil
         value = parse_rule_value if match?(TokenType::ASSIGN, TokenType::UNIFY)
         body = parse_rule_body if match?(TokenType::IF, TokenType::LBRACE)
+        else_clause = parse_else_clause_if_present
 
-        { value: value, body: body, location: keyword.location }
+        { value: value, body: body, location: keyword.location, else_clause: else_clause }
       end
     end
     # rubocop:enable Metrics/ClassLength

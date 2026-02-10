@@ -72,6 +72,25 @@ RSpec.describe Ruby::Rego::TypeError do
   end
 end
 
+RSpec.describe Ruby::Rego::BuiltinArgumentError do
+  it "includes expected and actual in the message" do
+    error = described_class.new(
+      "Invalid builtin argument",
+      expected: "string",
+      actual: "number",
+      context: "count"
+    )
+
+    expect(error.message).to include("Invalid builtin argument")
+    expect(error.message).to include("expected: string")
+    expect(error.message).to include("actual: number")
+    expect(error.message).to include("context: count")
+    expect(error.expected).to eq("string")
+    expect(error.actual).to eq("number")
+    expect(error.context).to eq("count")
+  end
+end
+
 RSpec.describe Ruby::Rego::UnificationError do
   it "includes pattern and value in the message" do
     error = described_class.new("Unification failed", pattern: "x", value: 42)

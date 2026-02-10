@@ -17,8 +17,9 @@ RSpec.describe "comparison builtins" do
   end
 
   it "raises for invalid numeric strings" do
-    expect { registry.call("to_number", ["oops"]) }
-      .to raise_error(Ruby::Rego::TypeError, /Invalid number string/)
+    result = registry.call("to_number", ["oops"])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "casts values to string" do
@@ -35,10 +36,11 @@ RSpec.describe "comparison builtins" do
   end
 
   it "raises for invalid boolean casts" do
-    expect { registry.call("cast_boolean", ["yes"]) }
-      .to raise_error(Ruby::Rego::TypeError, /Expected boolean string/)
-    expect { registry.call("cast_boolean", [2]) }
-      .to raise_error(Ruby::Rego::TypeError, /Expected 0 or 1/)
+    yes_result = registry.call("cast_boolean", ["yes"])
+    two_result = registry.call("cast_boolean", [2])
+
+    expect(yes_result).to be_a(Ruby::Rego::UndefinedValue)
+    expect(two_result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "casts arrays and sets" do
@@ -47,13 +49,15 @@ RSpec.describe "comparison builtins" do
   end
 
   it "raises for invalid array casts" do
-    expect { registry.call("cast_array", [{ "a" => 1 }]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    result = registry.call("cast_array", [{ "a" => 1 }])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "raises for invalid set casts" do
-    expect { registry.call("cast_set", [{ "a" => 1 }]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    result = registry.call("cast_set", [{ "a" => 1 }])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "casts objects" do
@@ -61,8 +65,9 @@ RSpec.describe "comparison builtins" do
   end
 
   it "raises for invalid object casts" do
-    expect { registry.call("cast_object", [[1]]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    result = registry.call("cast_object", [[1]])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "allows repeated registration" do

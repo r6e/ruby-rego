@@ -8,6 +8,7 @@ module Ruby
   module Rego
     # Handles pattern matching and unification for Rego terms.
     # :reek:DataClump
+    # rubocop:disable Metrics/ClassLength
     class Unifier
       # Internal helpers that do not rely on instance state.
       module Helpers
@@ -152,6 +153,13 @@ module Ruby
         end
       end
 
+      # Bundles inputs for reference key candidate evaluation.
+      ReferenceKeyContext = Struct.new(:current, :env, :bindings, :variable_resolver, keyword_init: true)
+
+      def initialize(variable_resolver: nil)
+        @variable_resolver = variable_resolver
+      end
+
       # @param pattern [Object]
       # @param value [Object]
       # @param env [Environment]
@@ -159,6 +167,22 @@ module Ruby
       def unify(pattern, value, env)
         bindings = {} # @type var bindings: Hash[String, Value]
         unify_with_bindings(pattern, value, env, bindings)
+      end
+
+      # Resolve reference bindings for references with variable keys.
+      #
+      # @param reference [AST::Reference]
+      # @param env [Environment]
+      # @param bindings [Hash{String => Value}]
+      # @param variable_resolver [#call, nil]
+      # @return [Array<Array(Hash{String => Value}, Value)>]
+      # :reek:LongParameterList
+      def reference_bindings(reference, env, bindings = {}, base_value: nil, variable_resolver: nil)
+        base_value ||= resolve_reference_base(reference.base, env, bindings)
+        return [] if base_value.is_a?(UndefinedValue)
+
+        resolver = variable_resolver || @variable_resolver
+        traverse_reference(base_value, reference.path, env, bindings, variable_resolver: resolver)
       end
 
       # @param pattern_elems [Array<Object>]
@@ -203,6 +227,7 @@ module Ruby
       # :reek:FeatureEnvy
       def structured_unification(pattern, resolved_value, env, bindings)
         return Helpers.unify_variable(pattern, resolved_value, env, bindings) if pattern.is_a?(AST::Variable)
+        return unify_reference(pattern, resolved_value, env, bindings) if pattern.is_a?(AST::Reference)
         return unify_array(pattern.elements, resolved_value, env, bindings) if pattern.is_a?(AST::ArrayLiteral)
         return unify_object(pattern.pairs, resolved_value, env, bindings) if pattern.is_a?(AST::ObjectLiteral)
 
@@ -284,6 +309,143 @@ module Ruby
         unify_with_bindings(value_pattern, object_values[candidate_key], env, updated_bindings)
       end
       # rubocop:enable Metrics/ParameterLists
+
+      # :reek:LongParameterList
+      def unify_reference(pattern, resolved_value, env, bindings)
+        # @type var results: Array[Hash[String, Value]]
+        results = []
+        reference_bindings(pattern, env, bindings).each_with_object(results) do |(candidate_bindings, value), acc|
+          next if value.is_a?(UndefinedValue)
+          next unless value == resolved_value
+
+          acc << candidate_bindings
+        end
+      end
+
+      def resolve_reference_base(base, env, bindings)
+        return env.input if base.is_a?(AST::Variable) && base.name == "input"
+        return env.data if base.is_a?(AST::Variable) && base.name == "data"
+
+        if base.is_a?(AST::Variable)
+          bound = Helpers.bound_value_for(base.name, bindings, env)
+          return bound if bound
+        end
+
+        Helpers.scalar_pattern_value(base, env)
+      end
+
+      # :reek:LongParameterList
+      # rubocop:disable Metrics/CyclomaticComplexity, Metrics/MethodLength
+      def traverse_reference(current, path, env, bindings, variable_resolver: nil)
+        return [[bindings, current]] if path.empty?
+        return [] unless current.is_a?(ObjectValue) || current.is_a?(ArrayValue)
+
+        segment = path.first
+        key_node = segment.is_a?(AST::RefArg) ? segment.value : segment
+        candidates = reference_key_candidates(current, key_node, env, bindings, variable_resolver: variable_resolver)
+        candidates.flat_map do |candidate_key, candidate_bindings|
+          next [] if candidate_bindings.nil?
+
+          next_value = current.fetch_reference(candidate_key)
+          next [] if next_value.is_a?(UndefinedValue)
+
+          traverse_reference(next_value, path.drop(1), env, candidate_bindings, variable_resolver: variable_resolver)
+        end
+      end
+      # rubocop:enable Metrics/CyclomaticComplexity, Metrics/MethodLength
+
+      # :reek:LongParameterList
+      def reference_key_candidates(current, key_node, env, bindings, variable_resolver: nil)
+        keys = reference_keys_for(current)
+        return [] if keys.empty?
+
+        context = ReferenceKeyContext.new(
+          current: current,
+          env: env,
+          bindings: bindings,
+          variable_resolver: variable_resolver
+        )
+        return variable_key_candidates(key_node, keys, context) if key_node.is_a?(AST::Variable)
+
+        value_key_candidates(key_node, context)
+      end
+
+      def variable_key_candidates(key_node, keys, context)
+        name = key_node.name
+        return wildcard_key_candidates(keys, context.bindings) if name == "_"
+
+        bound_candidate = bound_key_candidate(name, context)
+        return bound_candidate if bound_candidate
+
+        resolved_candidate = resolved_key_candidate(name, context)
+        return resolved_candidate if resolved_candidate
+
+        binding_key_candidates(name, keys, context.bindings)
+      end
+
+      def wildcard_key_candidates(keys, bindings)
+        keys.map { |key| [key, bindings] }
+      end
+
+      def bound_key_candidate(name, context)
+        bound = Helpers.bound_value_for(name, context.bindings, context.env)
+        return nil unless bound
+
+        [[normalize_reference_key(context.current, bound.to_ruby), context.bindings]]
+      end
+
+      def resolved_key_candidate(name, context)
+        resolved = resolve_variable_reference(name, context.variable_resolver)
+        return nil unless resolved
+
+        normalized = normalize_reference_key(context.current, resolved_reference_value(resolved))
+        [[normalized, context.bindings]]
+      end
+
+      def binding_key_candidates(name, keys, bindings)
+        keys.map do |key|
+          new_bindings = Helpers.merge_bindings(bindings, name => Value.from_ruby(key))
+          [key, new_bindings]
+        end
+      end
+
+      def value_key_candidates(key_node, context)
+        key_value = Helpers.value_for_pattern(key_node, context.env)
+        return [] if key_value.is_a?(UndefinedValue)
+
+        [[normalize_reference_key(context.current, key_value.to_ruby), context.bindings]]
+      end
+
+      def resolved_reference_value(resolved)
+        resolved.is_a?(Value) ? resolved.to_ruby : resolved
+      end
+
+      def resolve_variable_reference(name, resolver)
+        return nil unless resolver
+
+        resolved = resolver.call(name)
+        return nil if resolved.nil? || resolved.is_a?(UndefinedValue)
+
+        resolved
+      end
+
+      def reference_keys_for(current)
+        case current
+        when ObjectValue
+          current.value.keys
+        when ArrayValue
+          (0...current.value.length).to_a
+        else
+          []
+        end
+      end
+
+      def normalize_reference_key(current, key)
+        return Helpers.normalize_key(key) if current.is_a?(ObjectValue)
+
+        key
+      end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end

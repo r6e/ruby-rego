@@ -6,8 +6,8 @@ RSpec.describe Ruby::Rego::Compiler do
   let(:compiler) { described_class.new }
   let(:package) { Ruby::Rego::AST::Package.new(path: ["example"]) }
 
-  def module_with(rules)
-    Ruby::Rego::AST::Module.new(package: package, imports: [], rules: rules)
+  def module_with(rules, imports: [])
+    Ruby::Rego::AST::Module.new(package: package, imports: imports, rules: rules)
   end
 
   def string(value)
@@ -20,6 +20,27 @@ RSpec.describe Ruby::Rego::Compiler do
 
   def boolean(value)
     Ruby::Rego::AST::BooleanLiteral.new(value: value)
+  end
+
+  def array_literal(elements)
+    Ruby::Rego::AST::ArrayLiteral.new(elements: elements)
+  end
+
+  def call(name, args)
+    Ruby::Rego::AST::Call.new(
+      name: Ruby::Rego::AST::Variable.new(name: name),
+      args: args,
+      location: nil
+    )
+  end
+
+  def reference_call(segments, args)
+    base, *path = segments
+    name = Ruby::Rego::AST::Reference.new(
+      base: Ruby::Rego::AST::Variable.new(name: base),
+      path: path.map { |segment| Ruby::Rego::AST::DotRefArg.new(value: segment) }
+    )
+    Ruby::Rego::AST::Call.new(name: name, args: args, location: nil)
   end
 
   def variable(name)
@@ -35,6 +56,10 @@ RSpec.describe Ruby::Rego::Compiler do
     Ruby::Rego::AST::Rule.new(name: name, head: head, body: nil)
   end
 
+  def import(path, alias_name: nil)
+    Ruby::Rego::AST::Import.new(path: path, alias_name: alias_name, location: nil)
+  end
+
   def default_rule(name:, value:)
     head = { type: :complete, name: name, value: value, default: true, location: nil }
     Ruby::Rego::AST::Rule.new(name: name, head: head, body: nil, default_value: value)
@@ -43,6 +68,13 @@ RSpec.describe Ruby::Rego::Compiler do
   def data_ref(*segments)
     Ruby::Rego::AST::Reference.new(
       base: Ruby::Rego::AST::Variable.new(name: "data"),
+      path: segments.map { |segment| Ruby::Rego::AST::DotRefArg.new(value: segment) }
+    )
+  end
+
+  def input_ref(*segments)
+    Ruby::Rego::AST::Reference.new(
+      base: Ruby::Rego::AST::Variable.new(name: "input"),
       path: segments.map { |segment| Ruby::Rego::AST::DotRefArg.new(value: segment) }
     )
   end
@@ -77,14 +109,17 @@ RSpec.describe Ruby::Rego::Compiler do
       expect(compiled.has_rule?("allow")).to be(true)
     end
 
-    it "detects conflicting complete rules" do
+    it "defers conflicting complete rules to evaluation" do
       rules = [
         complete_rule(name: "allow", value: boolean(true)),
         complete_rule(name: "allow", value: boolean(false))
       ]
 
-      expect { compiler.compile(module_with(rules)) }
-        .to raise_error(Ruby::Rego::CompilationError, /Conflicting complete rules/)
+      compiled = compiler.compile(module_with(rules))
+      evaluator = Ruby::Rego::Evaluator.new(compiled)
+
+      expect { evaluator.evaluate }
+        .to raise_error(Ruby::Rego::EvaluationError, /Conflicting values/)
     end
 
     it "detects conflicting rule types" do
@@ -105,6 +140,44 @@ RSpec.describe Ruby::Rego::Compiler do
 
       expect { compiler.compile(module_with(rules)) }
         .to raise_error(Ruby::Rego::CompilationError, /Conflicting function arity/)
+    end
+
+    it "rejects function names that conflict with builtins" do
+      rules = [function_rule(name: "count", args: [variable("x")], value: boolean(true))]
+
+      expect { compiler.compile(module_with(rules)) }
+        .to raise_error(Ruby::Rego::CompilationError, /Function name conflicts with builtin/)
+    end
+
+    it "rejects duplicate import aliases" do
+      imports = [
+        import(%w[data users], alias_name: "users"),
+        import(%w[data roles], alias_name: "users")
+      ]
+
+      expect { compiler.compile(module_with([], imports: imports)) }
+        .to raise_error(Ruby::Rego::CompilationError, /Duplicate import alias/)
+    end
+
+    it "rejects import aliases that conflict with rule names" do
+      imports = [import(%w[data users], alias_name: "allow")]
+      rules = [complete_rule(name: "allow", value: boolean(true))]
+
+      expect { compiler.compile(module_with(rules, imports: imports)) }
+        .to raise_error(Ruby::Rego::CompilationError, /Import alias conflicts with rule name/)
+    end
+
+    it "rejects import aliases that shadow reserved names" do
+      imports = [import(%w[data users], alias_name: "input")]
+
+      expect { compiler.compile(module_with([], imports: imports)) }
+        .to raise_error(Ruby::Rego::CompilationError, /Import alias conflicts with reserved name/)
+    end
+
+    it "allows importing reserved roots without aliases" do
+      imports = [import(%w[data]), import(%w[input])]
+
+      expect { compiler.compile(module_with([], imports: imports)) }.not_to raise_error
     end
 
     it "detects multiple default rules" do
@@ -159,6 +232,42 @@ RSpec.describe Ruby::Rego::Compiler do
 
       expect { compiler.compile(module_with(rules)) }
         .to raise_error(Ruby::Rego::CompilationError, /unbound variables x/)
+    end
+
+    it "allows default rules with comprehensions" do
+      comprehension = Ruby::Rego::AST::ArrayComprehension.new(
+        term: string("value"),
+        body: [query(input_ref("user"))]
+      )
+      rules = [default_rule(name: "allow", value: comprehension)]
+
+      expect { compiler.compile(module_with(rules)) }.not_to raise_error
+    end
+
+    it "rejects default rules with builtin calls" do
+      value = call("count", [array_literal([number(1), number(2)])])
+      rules = [default_rule(name: "allow", value: value)]
+
+      expect { compiler.compile(module_with(rules)) }
+        .to raise_error(Ruby::Rego::CompilationError, /Default rule values must be ground/)
+    end
+
+    it "rejects default rules with namespaced builtin calls" do
+      value = reference_call(
+        %w[array concat],
+        [array_literal([number(1)]), array_literal([number(2)])]
+      )
+      rules = [default_rule(name: "allow", value: value)]
+
+      expect { compiler.compile(module_with(rules)) }
+        .to raise_error(Ruby::Rego::CompilationError, /Default rule values must be ground/)
+    end
+
+    it "rejects default rules with references" do
+      rules = [default_rule(name: "allow", value: data_ref("defaults", "allow"))]
+
+      expect { compiler.compile(module_with(rules)) }
+        .to raise_error(Ruby::Rego::CompilationError, /Default rule values must be ground/)
     end
   end
 end

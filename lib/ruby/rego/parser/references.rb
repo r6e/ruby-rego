@@ -13,24 +13,52 @@ module Ruby
       end
 
       # :reek:TooManyStatements
+      # :reek:DuplicateMethodCall
+      # rubocop:disable Metrics/MethodLength
       def parse_path(identifier_context)
         segments = [] # @type var segments: Array[String]
 
-        loop do
-          segments << parse_path_segment(identifier_context)
-          break unless match?(TokenType::DOT)
+        segments << parse_path_segment(identifier_context)
 
-          advance
+        loop do
+          if match?(TokenType::DOT)
+            advance
+            segments << parse_path_segment(identifier_context)
+            next
+          end
+
+          segment = parse_bracket_path_segment
+          break unless segment
+
+          segments << segment
         end
 
         segments
       end
+      # rubocop:enable Metrics/MethodLength
 
       def parse_path_segment(identifier_context)
         token_type = current_token.type
         return parse_identifier(identifier_context) if identifier_context.allowed_types.include?(token_type)
 
         parse_error("Expected #{identifier_context.name} identifier.")
+      end
+
+      def parse_bracket_path_segment
+        return nil unless match?(TokenType::LBRACKET)
+        return nil unless bracket_string_segment?
+
+        advance
+        value = parse_string_literal
+        consume(TokenType::RBRACKET, "Expected ']' after path segment.")
+        value.value
+      end
+
+      def bracket_string_segment?
+        return false unless match?(TokenType::LBRACKET)
+
+        token = peek
+        [TokenType::STRING, TokenType::RAW_STRING].include?(token.type)
       end
 
       # :reek:TooManyStatements

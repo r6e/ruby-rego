@@ -8,7 +8,7 @@ module Ruby
         def self.ensure_base(base_value)
           return if base_value.between?(2, 36)
 
-          raise Ruby::Rego::TypeError.new(
+          raise Ruby::Rego::BuiltinArgumentError.new(
             "Invalid base",
             expected: "base between 2 and 36",
             actual: base_value,

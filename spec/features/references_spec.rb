@@ -13,6 +13,10 @@ REFERENCES_POLICY = <<~REGO
 
   lead := input.team.leads[1]
 
+  enabled { input.enabled }
+
+  optional { input.optional }
+
   missing_tag { input.resources[0].tags["missing"] == "x" }
 REGO
 
@@ -26,6 +30,8 @@ REFERENCES_DATA = {
 REFERENCES_INPUT = {
   "user" => "alice",
   "env" => "prod",
+  "enabled" => false,
+  "optional" => nil,
   "resources" => [
     { "name" => "server-1", "tags" => { "env" => "prod" } }
   ],
@@ -84,6 +90,30 @@ RSpec.describe "References missing paths" do
       input: REFERENCES_INPUT,
       data: REFERENCES_DATA,
       query: "data.refs.missing_tag"
+    )
+
+    expect(result.undefined?).to be(true)
+  end
+end
+
+RSpec.describe "References falsy values" do
+  it "treats false references as undefined in rule bodies" do
+    result = evaluate_policy(
+      REFERENCES_POLICY,
+      input: REFERENCES_INPUT,
+      data: REFERENCES_DATA,
+      query: "data.refs.enabled"
+    )
+
+    expect(result.undefined?).to be(true)
+  end
+
+  it "treats null references as undefined in rule bodies" do
+    result = evaluate_policy(
+      REFERENCES_POLICY,
+      input: REFERENCES_INPUT,
+      data: REFERENCES_DATA,
+      query: "data.refs.optional"
     )
 
     expect(result.undefined?).to be(true)

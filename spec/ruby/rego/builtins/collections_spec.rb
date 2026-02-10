@@ -11,8 +11,9 @@ RSpec.describe "collection builtins" do
   end
 
   it "raises for mixed sort types" do
-    expect { registry.call("sort", [[1, "a"]]) }
-      .to raise_error(Ruby::Rego::TypeError, /Mixed types/)
+    result = registry.call("sort", [[1, "a"]])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "concatenates arrays" do
@@ -25,8 +26,9 @@ RSpec.describe "collection builtins" do
   end
 
   it "raises for invalid slice indices" do
-    expect { registry.call("array.slice", [[1], -1, 1]) }
-      .to raise_error(Ruby::Rego::TypeError, /non-negative integer/)
+    result = registry.call("array.slice", [[1], -1, 1])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "gets object keys with defaults" do
@@ -55,13 +57,15 @@ RSpec.describe "collection builtins" do
   end
 
   it "raises for union conflicts" do
-    expect { registry.call("union", [{ "a" => 1 }, { "a" => 2 }]) }
-      .to raise_error(Ruby::Rego::TypeError, /Conflicting object keys/)
+    result = registry.call("union", [{ "a" => 1 }, { "a" => 2 }])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "raises for union type mismatch" do
-    expect { registry.call("union", [Set.new([1]), { "a" => 1 }]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    result = registry.call("union", [Set.new([1]), { "a" => 1 }])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "intersects and diffs sets" do
@@ -74,6 +78,24 @@ RSpec.describe "collection builtins" do
   it "allows repeated registration" do
     expect { Ruby::Rego::Builtins::Collections.register! }.not_to raise_error
     expect { Ruby::Rego::Builtins::Collections.register! }.not_to raise_error
+  end
+
+  it "builds empty sets" do
+    result = registry.call("set", [])
+
+    expect(result.to_ruby).to eq(Set.new)
+  end
+
+  it "converts arrays to sets" do
+    result = registry.call("set", [[1, 2]])
+
+    expect(result.to_ruby).to eq(Set.new([1, 2]))
+  end
+
+  it "returns undefined for invalid set arguments" do
+    result = registry.call("set", [{ "a" => 1 }])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 end
 

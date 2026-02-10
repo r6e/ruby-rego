@@ -107,7 +107,7 @@ module Ruby
         def self.ensure_non_empty(numbers, name:)
           return unless numbers.empty?
 
-          raise Ruby::Rego::TypeError.new(
+          raise Ruby::Rego::BuiltinArgumentError.new(
             "Expected a non-empty array",
             expected: "non-empty array",
             actual: numbers.size,

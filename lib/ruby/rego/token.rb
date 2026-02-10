@@ -18,6 +18,8 @@ module Ruby
       IN = :IN
       EVERY = :EVERY
       NOT = :NOT
+      AND = :AND
+      OR = :OR
       WITH = :WITH
       ELSE = :ELSE
       TRUE = :TRUE
@@ -55,8 +57,10 @@ module Ruby
       UNDERSCORE = :UNDERSCORE
 
       STRING = :STRING
+      TEMPLATE_STRING = :TEMPLATE_STRING
       NUMBER = :NUMBER
       RAW_STRING = :RAW_STRING
+      RAW_TEMPLATE_STRING = :RAW_TEMPLATE_STRING
       IDENT = :IDENT
 
       EOF = :EOF
@@ -75,6 +79,8 @@ module Ruby
         IN,
         EVERY,
         NOT,
+        AND,
+        OR,
         WITH,
         ELSE,
         TRUE,
@@ -98,6 +104,8 @@ module Ruby
         STAR,
         SLASH,
         PERCENT,
+        AND,
+        OR,
         PIPE,
         AMPERSAND,
         UNIFY
@@ -119,8 +127,10 @@ module Ruby
 
       LITERALS = [
         STRING,
+        TEMPLATE_STRING,
         NUMBER,
         RAW_STRING,
+        RAW_TEMPLATE_STRING,
         IDENT
       ].freeze
 

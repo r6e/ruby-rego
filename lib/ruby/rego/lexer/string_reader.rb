@@ -4,6 +4,8 @@ module Ruby
   module Rego
     # Lexer helpers for string literals.
     class Lexer
+      TEMPLATE_ESCAPE = "\u0000"
+
       private
 
       # rubocop:disable Metrics/MethodLength
@@ -11,7 +13,6 @@ module Ruby
         start = capture_position
         advance
         buffer = +""
-
         until eof?
           char_position = capture_position
           char = advance
@@ -21,17 +22,13 @@ module Ruby
 
           buffer << (char == "\\" ? read_escape_sequence(char_position) : char)
         end
-
         raise_unterminated_string(start)
       end
-      # rubocop:enable Metrics/MethodLength
 
-      # rubocop:disable Metrics/MethodLength
       def read_raw_string
         start = capture_position
         advance
         buffer = +""
-
         until eof?
           char = advance
           return build_token(TokenType::RAW_STRING, buffer, start) if char == "`"
@@ -43,7 +40,6 @@ module Ruby
             buffer << char
           end
         end
-
         raise_unterminated_raw_string(start)
       end
       # rubocop:enable Metrics/MethodLength

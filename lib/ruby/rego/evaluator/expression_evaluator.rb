@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "json"
+require_relative "../call_name"
+
 module Ruby
   module Rego
     class Evaluator
@@ -23,21 +26,33 @@ module Ruby
           [AST::ObjectComprehension, ->(node, evaluator) { evaluator.send(:eval_object_comprehension, node) }],
           [AST::SetComprehension, ->(node, evaluator) { evaluator.send(:eval_set_comprehension, node) }],
           [AST::Every, ->(node, evaluator) { evaluator.send(:evaluate_every, node) }],
-          [AST::Call, ->(call, evaluator) { evaluator.send(:evaluate_call, call) }]
+          [AST::Call, ->(call, evaluator) { evaluator.send(:evaluate_call, call) }],
+          [AST::TemplateString, ->(node, evaluator) { evaluator.send(:evaluate_template_string, node) }]
         ].freeze
+        LOGICAL_AND_RESULTS = {
+          %i[truthy truthy] => BooleanValue.new(true),
+          %i[truthy falsy] => BooleanValue.new(false),
+          %i[undefined falsy] => BooleanValue.new(false),
+          %i[falsy falsy] => BooleanValue.new(false)
+        }.freeze
+        LOGICAL_OR_RESULTS = {
+          %i[truthy truthy] => BooleanValue.new(true),
+          %i[falsy truthy] => BooleanValue.new(true),
+          %i[undefined truthy] => BooleanValue.new(true),
+          %i[falsy falsy] => BooleanValue.new(false)
+        }.freeze
 
         include AssignmentSupport
         include BindingHelpers
 
         # @param environment [Environment]
         # @param reference_resolver [ReferenceResolver]
-        # @param unifier [Unifier]
         # :reek:TooManyStatements
-        def initialize(environment:, reference_resolver:, unifier: Unifier.new)
+        def initialize(environment:, reference_resolver:)
           @environment = environment
           @reference_resolver = reference_resolver
           @dispatch = build_dispatch
-          @unifier = unifier
+          @unifier = Unifier.new(variable_resolver: method(:resolve_reference_variable_key))
           @object_literal_evaluator = ObjectLiteralEvaluator.new(expression_evaluator: self)
           @comprehension_evaluator = ComprehensionEvaluator.new(
             expression_evaluator: self,
@@ -67,22 +82,41 @@ module Ruby
         # @return [Enumerator]
         def eval_with_unification(node, env = environment)
           Enumerator.new do |yielder|
-            if node.is_a?(AST::BinaryOp)
+            case node
+            when AST::BinaryOp
               handle_unification_operator(node, env, yielder)
-              next
+            when AST::Reference
+              yield_reference_bindings(node, env, yielder)
+            else
+              yield_truthy_bindings(node, yielder)
             end
-
-            yield_truthy_bindings(node, yielder)
           end
         end
 
         # :reek:UtilityFunction
         def self.call_name(node)
-          return node.name if node.is_a?(AST::Variable)
-          return node.to_s if node.is_a?(String) || node.is_a?(Symbol)
-
-          nil
+          CallName.call_name(node)
         end
+
+        def self.reference_call_name(reference)
+          CallName.reference_call_name(reference)
+        end
+        private_class_method :reference_call_name
+
+        def self.reference_base_name(reference)
+          CallName.reference_base_name(reference)
+        end
+        private_class_method :reference_base_name
+
+        def self.reference_call_segments(path)
+          CallName.reference_call_segments(path)
+        end
+        private_class_method :reference_call_segments
+
+        def self.dot_ref_segment_value(segment)
+          CallName.dot_ref_segment_value(segment)
+        end
+        private_class_method :dot_ref_segment_value
 
         private
 
@@ -101,7 +135,25 @@ module Ruby
           name = node.name
           return UndefinedValue.new if name == "_"
 
-          environment.lookup(name)
+          resolve_variable_name(name)
+        end
+
+        def resolve_variable_name(name)
+          resolve_reference_variable_key(name)
+        end
+
+        def resolve_reference_variable_key(name)
+          resolved = environment.lookup(name)
+          return resolved unless resolved.is_a?(UndefinedValue)
+          return resolved if environment.local_bound?(name)
+
+          resolve_import_or_rule(name, resolved)
+        end
+
+        def resolve_import_or_rule(name, fallback)
+          reference_resolver.resolve_import_variable(name) ||
+            reference_resolver.resolve_rule_variable(name) ||
+            fallback
         end
 
         def evaluate_reference(node)
@@ -122,12 +174,46 @@ module Ruby
           SetValue.new(elements)
         end
 
+        # :reek:TooManyStatements
         def evaluate_call(node)
-          name = self.class.call_name(node.name)
+          name_node = node.name
+          name = self.class.call_name(name_node)
           return UndefinedValue.new unless name
 
           args = node.args.map { |arg| evaluate(arg) }
-          environment.builtin_registry.call(name, args)
+          return UndefinedValue.new if args.any?(&:undefined?)
+
+          call_named_function(name, name_node, args)
+        end
+
+        def evaluate_user_function(name, args)
+          return UndefinedValue.new unless query_evaluator
+
+          query_evaluator.evaluate_function_call(name, args)
+        end
+        public :evaluate_user_function
+
+        def evaluate_template_string(node)
+          rendered = node.parts.map do |part|
+            next part.value if part.is_a?(AST::StringLiteral)
+
+            format_template_value(evaluate(part))
+          end.join
+          StringValue.new(rendered)
+        end
+
+        def call_named_function(name, name_node, args)
+          registry = environment.builtin_registry
+          return registry.call(name, args) if registry.registered?(name)
+
+          function_name = function_name_for_call(name_node, name)
+          evaluate_user_function(function_name, args)
+        end
+
+        def function_name_for_call(name_node, fallback_name)
+          return fallback_name unless name_node.is_a?(AST::Reference)
+
+          reference_resolver.function_reference_name(name_node) || fallback_name
         end
 
         def eval_array_comprehension(node)
@@ -168,6 +254,7 @@ module Ruby
           operator = node.operator
           return evaluate_assignment(node) if operator == :assign
           return evaluate_unification(node) if operator == :unify
+          return evaluate_logical_operator(node) if %i[and or].include?(operator)
 
           left = evaluate(node.left)
           right = evaluate(node.right)
@@ -195,6 +282,37 @@ module Ruby
           else
             yield_truthy_bindings(node, yielder)
           end
+        end
+
+        def evaluate_logical_operator(node)
+          case node.operator
+          when :and then evaluate_and_operator(node)
+          when :or then evaluate_or_operator(node)
+          else UndefinedValue.new
+          end
+        end
+
+        # :reek:TooManyStatements
+        def evaluate_and_operator(node)
+          left_state = logical_state(evaluate(node.left))
+          left_falsy = left_state == :falsy
+          right_state = left_falsy ? :falsy : logical_state(evaluate(node.right))
+          LOGICAL_AND_RESULTS.fetch([left_state, right_state], UndefinedValue.new)
+        end
+
+        # :reek:TooManyStatements
+        def evaluate_or_operator(node)
+          left_state = logical_state(evaluate(node.left))
+          left_truthy = left_state == :truthy
+          right_state = left_truthy ? :truthy : logical_state(evaluate(node.right))
+          LOGICAL_OR_RESULTS.fetch([left_state, right_state], UndefinedValue.new)
+        end
+
+        # :reek:UtilityFunction
+        def logical_state(value)
+          return :undefined if value.undefined?
+
+          value.truthy? ? :truthy : :falsy
         end
 
         def every_body_succeeds?(body, bindings)
@@ -294,10 +412,79 @@ module Ruby
         def yield_truthy_bindings(node, yielder)
           value = evaluate(node)
           empty_bindings = {} # @type var empty_bindings: Hash[String, Value]
-          yielder << empty_bindings if value.truthy?
+          yielder << empty_bindings if logical_state(value) == :truthy
+        end
+
+        def yield_reference_bindings(node, env, yielder)
+          reference_bindings_for(node, env).each do |(bindings, value)|
+            next unless logical_state(value) == :truthy
+
+            yielder << bindings
+          end
+        end
+
+        # :reek:TooManyStatements
+        # :reek:UtilityFunction
+        # :reek:FeatureEnvy
+        def format_template_value(value)
+          return "<undefined>" if logical_state(value) == :undefined
+
+          ruby = value.is_a?(Value) ? value.to_ruby : value
+          TemplateValueFormatter.new(ruby).render
         end
       end
       # rubocop:enable Metrics/ClassLength
+
+      # Formats template string values using a stable JSON representation.
+      class TemplateValueFormatter
+        # @param value [Object]
+        def initialize(value)
+          @value = value
+        end
+
+        # @return [String]
+        def render
+          case value
+          when NilClass then "null"
+          when String then value
+          when Array, Hash, Set then JSON.generate(canonical_value)
+          else value.to_s
+          end
+        end
+
+        # @return [Object]
+        def canonical_value
+          case value
+          when Hash then canonicalize_hash
+          when Array then canonicalize_array
+          when Set then canonicalize_set
+          else value
+          end
+        end
+
+        private
+
+        attr_reader :value
+
+        def canonicalize_hash
+          result = {} # @type var result: Hash[untyped, untyped]
+          value.keys.sort_by(&:to_s).each do |key|
+            result[key] = self.class.new(value[key]).canonical_value
+          end
+          result
+        end
+
+        def canonicalize_array
+          value.map { |element| self.class.new(element).canonical_value }
+        end
+
+        def canonicalize_set
+          value
+            .to_a
+            .map { |element| self.class.new(element).canonical_value }
+            .sort_by { |element| JSON.generate(element) }
+        end
+      end
     end
   end
 end

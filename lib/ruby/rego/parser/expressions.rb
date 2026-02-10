@@ -3,6 +3,7 @@
 module Ruby
   module Rego
     # Parsing helpers for expressions.
+    # rubocop:disable Metrics/ClassLength
     class Parser
       private
 
@@ -53,6 +54,15 @@ module Ruby
         advance
         value = token.value.to_s
         AST::StringLiteral.new(value: value, location: token.location)
+      end
+
+      def parse_template_string
+        token = current_token
+        unless [TokenType::TEMPLATE_STRING, TokenType::RAW_TEMPLATE_STRING].include?(token.type)
+          parse_error("Expected template string literal.")
+        end
+        advance
+        AST::TemplateString.new(parts: parse_template_parts(token), location: token.location)
       end
 
       # :reek:FeatureEnvy
@@ -112,6 +122,95 @@ module Ruby
         consume(TokenType::RPAREN, close_message)
         args
       end
+
+      # :reek:NilCheck
+      # :reek:DuplicateMethodCall
+      # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+      def parse_template_parts(token)
+        text = token.value.to_s
+        location = token.location
+        parts = [] # @type var parts: Array[Object]
+        index = 0
+
+        while index < text.length
+          start = text.index("{", index)
+          if start.nil?
+            literal = text[index..]
+            append_template_literal(parts, literal, location)
+            break
+          end
+
+          if start > index
+            literal = text[index...start]
+            append_template_literal(parts, literal, location)
+          end
+
+          expr_start = start + 1
+          expr_end = find_template_expression_end(text, expr_start)
+          expr_source = text[expr_start...expr_end]
+          parts << self.class.parse_expression_from_string(expr_source)
+          index = expr_end + 1
+        end
+
+        parts = [AST::StringLiteral.new(value: "", location: location)] if parts.empty?
+        parts
+      end
+      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+
+      def append_template_literal(parts, literal, location)
+        literal_value = normalize_template_literal(literal)
+        parts << AST::StringLiteral.new(value: literal_value, location: location)
+      end
+
+      # :reek:UtilityFunction
+      def normalize_template_literal(literal)
+        literal.tr(Lexer::TEMPLATE_ESCAPE, "{")
+      end
+
+      # :reek:TooManyStatements
+      # :reek:FeatureEnvy
+      # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
+      def find_template_expression_end(text, start_index)
+        depth = 0
+        index = start_index
+        in_string = nil
+        escaped = false
+
+        while index < text.length
+          char = text[index]
+          if in_string
+            if escaped
+              escaped = false
+            elsif in_string == "\"" && char == "\\"
+              escaped = true
+            elsif char == in_string
+              in_string = nil
+            end
+            index += 1
+            next
+          end
+
+          if char && ["\"", "`"].include?(char)
+            in_string = char
+            index += 1
+            next
+          end
+
+          if char == "{"
+            depth += 1
+          elsif char == "}"
+            return index if depth.zero?
+
+            depth -= 1
+          end
+
+          index += 1
+        end
+
+        parse_error("Unterminated template expression.")
+      end
+      # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end

@@ -27,6 +27,19 @@ module Ruby
         end
       end
 
+      # Represents a template string with interpolations.
+      class TemplateString < Base
+        # @param parts [Array<Object>]
+        # @param location [Location, nil]
+        def initialize(parts:, location: nil)
+          super(location: location)
+          @parts = parts.dup.freeze
+        end
+
+        # @return [Array<Object>]
+        attr_reader :parts
+      end
+
       # Represents a numeric literal.
       class NumberLiteral < Literal
         # @param value [Numeric]

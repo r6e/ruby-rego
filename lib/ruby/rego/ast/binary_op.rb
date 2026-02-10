@@ -10,17 +10,18 @@ module Ruby
         OPERATORS = %i[
           eq
           neq
+          and
+          or
           lt
           lte
           gt
           gte
+          in
           plus
           minus
           mult
           div
           mod
-          and
-          or
           assign
           unify
         ].freeze

@@ -103,6 +103,21 @@ module Ruby
         UndefinedValue.new
       end
 
+      # Check whether a name is bound in any local scope.
+      #
+      # @param name [String, Symbol] binding name
+      # @return [Boolean]
+      def local_bound?(name)
+        name = name.to_s
+        return false if RESERVED_NAMES.include?(name)
+
+        locals.reverse_each do |scope|
+          return true if scope.key?(name)
+        end
+
+        false
+      end
+
       # Execute a block with additional temporary bindings.
       #
       # @param bindings [Hash{String, Symbol => Object}] bindings to apply

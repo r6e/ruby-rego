@@ -27,8 +27,9 @@ module Ruby
       BINARY_OPERATOR_MAP = {
         TokenType::ASSIGN => :assign,
         TokenType::UNIFY => :unify,
-        TokenType::PIPE => :or,
-        TokenType::AMPERSAND => :and,
+        TokenType::IN => :in,
+        TokenType::OR => :or,
+        TokenType::AND => :and,
         TokenType::EQ => :eq,
         TokenType::NEQ => :neq,
         TokenType::LT => :lt,
@@ -47,7 +48,9 @@ module Ruby
       }.freeze
       PRIMARY_PARSERS = {
         TokenType::STRING => :parse_string_literal,
+        TokenType::TEMPLATE_STRING => :parse_template_string,
         TokenType::RAW_STRING => :parse_string_literal,
+        TokenType::RAW_TEMPLATE_STRING => :parse_template_string,
         TokenType::NUMBER => :parse_number_literal,
         TokenType::TRUE => :parse_boolean_literal,
         TokenType::FALSE => :parse_boolean_literal,
@@ -186,6 +189,20 @@ module Ruby
 
       def safe_token_at(index)
         tokens[index] || tokens[-1]
+      end
+
+      class << self
+        # Parse a single Rego expression from source.
+        #
+        # @param source [String]
+        # @return [Object]
+        def parse_expression_from_string(source)
+          tokens = Lexer.new(source.to_s).tokenize
+          parser = new(tokens)
+          expression = parser.send(:parse_expression)
+          parser.send(:consume, TokenType::EOF, "Expected end of expression.")
+          expression
+        end
       end
     end
     # rubocop:enable Metrics/ClassLength

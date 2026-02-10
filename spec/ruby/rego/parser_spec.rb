@@ -36,9 +36,9 @@ RSpec.describe Ruby::Rego::Parser do
       module_node = parse(source)
 
       expect(module_node.imports.length).to eq(2)
-      expect(module_node.imports[0].path).to eq("data.users")
+      expect(module_node.imports[0].path).to eq(%w[data users])
       expect(module_node.imports[0].alias_name).to eq("users")
-      expect(module_node.imports[1].path).to eq("input")
+      expect(module_node.imports[1].path).to eq(["input"])
       expect(module_node.imports[1].alias_name).to be_nil
     end
 
@@ -216,6 +216,16 @@ RSpec.describe Ruby::Rego::Parser do
       expect(expr.right.operator).to eq(:mult)
     end
 
+    it "parses logical operators with precedence" do
+      expr = parse_expression("true or false and true")
+
+      expect(expr).to be_a(Ruby::Rego::AST::BinaryOp)
+      expect(expr.operator).to eq(:or)
+      expect(expr.left).to be_a(Ruby::Rego::AST::BooleanLiteral)
+      expect(expr.right).to be_a(Ruby::Rego::AST::BinaryOp)
+      expect(expr.right.operator).to eq(:and)
+    end
+
     it "parses nested expressions with parentheses" do
       expr = parse_expression("(1 + 2) * (3 - 4)")
 
@@ -244,7 +254,7 @@ RSpec.describe Ruby::Rego::Parser do
       array = parse_expression("[1, true, \"a\"]")
       object = parse_expression("{\"a\": 1, \"b\": 2}")
       set = parse_expression("{1, 2, 3}")
-      empty_set = parse_expression("{}")
+      empty_object = parse_expression("{}")
 
       expect(array).to be_a(Ruby::Rego::AST::ArrayLiteral)
       expect(array.elements.length).to eq(3)
@@ -256,8 +266,8 @@ RSpec.describe Ruby::Rego::Parser do
       expect(set).to be_a(Ruby::Rego::AST::SetLiteral)
       expect(set.elements.length).to eq(3)
 
-      expect(empty_set).to be_a(Ruby::Rego::AST::SetLiteral)
-      expect(empty_set.elements).to eq([])
+      expect(empty_object).to be_a(Ruby::Rego::AST::ObjectLiteral)
+      expect(empty_object.pairs).to eq([])
     end
 
     it "parses function calls" do

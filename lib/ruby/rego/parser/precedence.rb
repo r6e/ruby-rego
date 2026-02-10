@@ -21,8 +21,9 @@ module Ruby
         BINARY = {
           TokenType::ASSIGN => ASSIGNMENT,
           TokenType::UNIFY => ASSIGNMENT,
-          TokenType::PIPE => OR,
-          TokenType::AMPERSAND => AND,
+          TokenType::OR => OR,
+          TokenType::AND => AND,
+          TokenType::IN => COMPARE,
           TokenType::EQ => EQUALS,
           TokenType::NEQ => EQUALS,
           TokenType::LT => COMPARE,

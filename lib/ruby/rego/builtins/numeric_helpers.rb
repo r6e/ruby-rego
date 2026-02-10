@@ -28,7 +28,7 @@ module Ruby
           integer = integer_value(value, context: context)
           return integer if integer >= 0
 
-          raise Ruby::Rego::TypeError.new(
+          raise Ruby::Rego::BuiltinArgumentError.new(
             "Expected non-negative integer",
             expected: "non-negative integer",
             actual: integer,
@@ -41,7 +41,7 @@ module Ruby
         # @param context [String]
         # @return [void]
         def self.raise_integer_error(numeric, context)
-          raise Ruby::Rego::TypeError.new(
+          raise Ruby::Rego::BuiltinArgumentError.new(
             "Expected integer",
             expected: "integer",
             actual: numeric,

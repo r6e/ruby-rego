@@ -47,7 +47,7 @@ module Ruby
         private_class_method :sprintf_values
 
         def self.raise_sprintf_error(error)
-          raise Ruby::Rego::TypeError.new(
+          raise Ruby::Rego::BuiltinArgumentError.new(
             error.message,
             expected: "sprintf-compatible arguments",
             actual: error.class.name,

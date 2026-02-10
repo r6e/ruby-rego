@@ -6,6 +6,7 @@ require_relative "token"
 require_relative "lexer/number_reader"
 require_relative "lexer/stream"
 require_relative "lexer/string_reader"
+require_relative "lexer/template_string_reader"
 
 module Ruby
   module Rego
@@ -23,6 +24,8 @@ module Ruby
         "in" => TokenType::IN,
         "every" => TokenType::EVERY,
         "not" => TokenType::NOT,
+        "and" => TokenType::AND,
+        "or" => TokenType::OR,
         "with" => TokenType::WITH,
         "else" => TokenType::ELSE,
         "true" => TokenType::TRUE,
@@ -110,6 +113,7 @@ module Ruby
         return read_newline if newline?(char)
         return read_number if digit?(char)
         return read_identifier if identifier_start?(char)
+        return read_template_string if template_string_start?(char)
         return read_string if char == "\""
         return read_raw_string if char == "`"
 
@@ -171,6 +175,10 @@ module Ruby
       def skip_comment
         advance
         advance until eof? || newline?(current_char)
+      end
+
+      def template_string_start?(char)
+        char == "$" && ["\"", "`"].include?(peek(1).to_s)
       end
 
       def read_newline

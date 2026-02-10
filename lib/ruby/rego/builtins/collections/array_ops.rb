@@ -71,7 +71,7 @@ module Ruby
           private_class_method :validate_sort_element
 
           def self.raise_sort_type_error(expected_type, actual_type)
-            raise Ruby::Rego::TypeError.new(
+            raise Ruby::Rego::BuiltinArgumentError.new(
               "Mixed types cannot be sorted",
               expected: expected_type.name,
               actual: actual_type.name,

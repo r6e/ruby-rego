@@ -27,7 +27,7 @@ module Ruby
           block ||= ->(_env) {}
           registry = environment.builtin_registry
           registry.entry_for(name)
-          override_registry = registry.with_override(name, override_entry(registry))
+          override_registry = registry.with_override(name, override_entry(registry, environment))
           environment.with_builtin_registry(override_registry, &block)
         end
 
@@ -35,9 +35,57 @@ module Ruby
 
         attr_reader :name, :value, :expression_evaluator, :location
 
-        def override_entry(registry)
-          entry = registry.entry_for(replacement_name)
-          Builtins::BuiltinRegistry::Entry.new(name: name, arity: entry.arity, handler: entry.handler)
+        def override_entry(registry, environment)
+          original = registry.entry_for(name)
+          replacement = replacement_entry(registry, environment)
+          ensure_matching_arity(original.arity, replacement.arity)
+          Builtins::BuiltinRegistry::Entry.new(name: name, arity: replacement.arity, handler: replacement.handler)
+        end
+
+        def replacement_entry(registry, environment)
+          replacement = replacement_name
+          return registry.entry_for(replacement) if registry.registered?(replacement)
+
+          function_entry(environment, replacement)
+        end
+
+        # rubocop:disable Metrics/MethodLength
+        def function_entry(environment, function_name)
+          # @type var empty_rules: Array[AST::Rule]
+          empty_rules = []
+          rules = environment.rules.fetch(function_name.to_s) { empty_rules }
+          function_rule = rules.find(&:function?)
+          unless function_rule
+            raise EvaluationError.new(
+              "With modifier expects a builtin function name",
+              rule: nil,
+              location: location
+            )
+          end
+
+          arity = Array(function_rule.head[:args]).length
+          handler = lambda do |*args|
+            expression_evaluator.evaluate_user_function(function_name, args)
+          end
+          Builtins::BuiltinRegistry::Entry.new(name: function_name, arity: arity, handler: handler)
+        end
+        # rubocop:enable Metrics/MethodLength
+
+        def ensure_matching_arity(expected, actual)
+          expected_list = normalize_arity_list(expected)
+          actual_list = normalize_arity_list(actual)
+          return if expected_list.sort == actual_list.sort
+
+          raise EvaluationError.new(
+            "With modifier function arity mismatch",
+            rule: nil,
+            location: location
+          )
+        end
+
+        # :reek:UtilityFunction
+        def normalize_arity_list(arity)
+          arity.is_a?(Array) ? arity : [arity]
         end
 
         def replacement_name

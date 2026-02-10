@@ -104,7 +104,7 @@ module Ruby
           private_class_method :conflicting_key
 
           def self.raise_object_conflict(key, left_obj, right_obj)
-            raise Ruby::Rego::TypeError.new(
+            raise Ruby::Rego::BuiltinArgumentError.new(
               "Conflicting object keys",
               expected: "matching values for key #{key.inspect}",
               actual: [left_obj[key].to_ruby, right_obj[key].to_ruby],

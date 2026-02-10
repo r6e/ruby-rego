@@ -30,20 +30,42 @@ RSpec.describe Ruby::Rego::Builtins::BuiltinRegistry do
         .to raise_error(Ruby::Rego::EvaluationError, /Undefined built-in function/)
     end
 
+    it "propagates evaluation errors from builtins" do
+      name = "spec_eval_error_#{SecureRandom.hex(4)}"
+      registry.register(name, 1) { |_value| raise Ruby::Rego::EvaluationError, "boom" }
+
+      expect { registry.call(name, ["value"]) }
+        .to raise_error(Ruby::Rego::EvaluationError, /boom/)
+    end
+
     it "raises when args are not an array" do
       name = "spec_args_#{SecureRandom.hex(4)}"
       registry.register(name, 1) { |value| value }
 
-      expect { registry.call(name, "not-array") }
-        .to raise_error(Ruby::Rego::TypeError, /Expected arguments to be an Array/)
+      result = registry.call(name, "not-array")
+
+      expect(result).to be_a(Ruby::Rego::UndefinedValue)
     end
 
     it "raises for arity mismatch" do
       name = "spec_arity_#{SecureRandom.hex(4)}"
       registry.register(name, 1) { |value| value }
 
-      expect { registry.call(name, []) }
-        .to raise_error(Ruby::Rego::TypeError, /Wrong number of arguments/)
+      result = registry.call(name, [])
+
+      expect(result).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "raises when builtin errors have empty backtraces" do
+      name = "spec_empty_backtrace_#{SecureRandom.hex(4)}"
+      registry.register(name, 1) do |_value|
+        error = ArgumentError.new("boom")
+        error.set_backtrace([])
+        raise error
+      end
+
+      expect { registry.call(name, [1]) }
+        .to raise_error(ArgumentError, /boom/)
     end
   end
 end

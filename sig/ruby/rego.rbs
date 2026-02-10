@@ -90,6 +90,9 @@ module Ruby
       def initialize: (String message, expected: untyped, actual: untyped, context: String?, location: Location?) -> void
     end
 
+    class BuiltinArgumentError < TypeError
+    end
+
     class ObjectKeyConflictError < Error
     end
 
@@ -201,7 +204,7 @@ module Ruby
       end
 
       module Base
-        def self.assert_arity: (Array[untyped] args, Integer expected, ?name: String?) -> void
+        def self.assert_arity: (Array[untyped] args, Integer | Array[Integer] expected, ?name: String?) -> void
         def self.assert_type: (untyped value, expected: Class | Array[Class], ?context: String?) -> void
         def self.to_ruby: (untyped value) -> untyped
         def self.to_value: (untyped value) -> Value
@@ -209,6 +212,10 @@ module Ruby
         private
 
         def self.normalize_expected: (Class | Array[Class]) -> Array[Class]
+        def self.normalize_arity: (Integer | Array[Integer] expected) -> Array[Integer]
+        def self.format_arity: (Array[Integer] expected_list) -> String
+        def self.arity_valid?: (Integer actual, Integer | Array[Integer] expected) -> bool
+        def self.raise_builtin_arity_error: (Integer actual, Integer | Array[Integer] expected, String? name) -> void
         def self.raise_type_error: (expected: String, actual: String, ?context: String?) -> void
       end
 
@@ -218,7 +225,7 @@ module Ruby
 
         def initialize: () -> void
         def self.instance: () -> BuiltinRegistry
-        def register: (String | Symbol name, Integer arity) { (*untyped) -> untyped } -> void
+        def register: (String | Symbol name, Integer | Array[Integer] arity) { (*untyped) -> untyped } -> void
         def call: (String | Symbol name, Array[untyped] args) -> Value
         def entry_for: (String | Symbol name) -> untyped
         def with_entry_override: (String | Symbol name, untyped entry) { () -> untyped } -> untyped
@@ -228,7 +235,9 @@ module Ruby
         private
 
         def normalize_name: (String | Symbol name) -> String
-        def validate_arity: (Integer arity) -> void
+        def validate_arity: (Integer | Array[Integer] arity) -> void
+        def integer_arity_valid?: (untyped arity) -> bool
+        def array_arity_valid?: (untyped arity) -> bool
         def fetch_entry: (String builtin_name) -> untyped
         def invoke_entry: (untyped entry, Array[untyped] args) -> Value
         def ensure_array_args: (untyped args, String builtin_name) -> Array[untyped]
@@ -354,8 +363,10 @@ module Ruby
         extend RegistryHelpers
 
         COLLECTION_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        MISSING_SET_ARGUMENT: Object
 
         def self.register!: () -> BuiltinRegistry
+        def self.set: (?Value value) -> SetValue
         def self.sort: (Value array) -> ArrayValue
         def self.array_concat: (Value left, Value right) -> ArrayValue
         def self.array_slice: (Value array, Value start, Value stop) -> ArrayValue
@@ -491,6 +502,7 @@ module Ruby
       def pop_scope: () -> void
       def bind: (String | Symbol name, untyped value) -> Value
       def lookup: (String | Symbol name) -> Value
+      def local_bound?: (String | Symbol name) -> bool
       def resolve_reference: (untyped ref) -> Value
       def reference_key_for: (AST::Variable variable) -> untyped
       def with_bindings: (Hash[String | Symbol, untyped] bindings) { () -> untyped } -> untyped
@@ -575,7 +587,11 @@ module Ruby
         attr_reader value: untyped
         attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
         attr_reader location: Location?
-        def override_entry: (untyped registry) -> untyped
+        def override_entry: (Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay registry, Environment environment) -> untyped
+        def replacement_entry: (Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay registry, Environment environment) -> untyped
+        def function_entry: (Environment environment, String function_name) -> untyped
+        def ensure_matching_arity: (Integer | Array[Integer] expected, Integer | Array[Integer] actual) -> void
+        def normalize_arity_list: (Integer | Array[Integer] arity) -> Array[Integer]
         def replacement_name: () -> String
         def direct_name_from_value: () -> String?
         def reference_name_from_value: () -> String?
@@ -610,10 +626,20 @@ module Ruby
     end
 
     class Unifier
-      def initialize: () -> void
+      class ReferenceKeyContext
+        attr_reader current: Value
+        attr_reader env: Environment
+        attr_reader bindings: Hash[String, Value]
+        attr_reader variable_resolver: untyped
+
+        def initialize: (current: Value, env: Environment, bindings: Hash[String, Value], ?variable_resolver: untyped) -> void
+      end
+
+      def initialize: (?variable_resolver: untyped) -> void
       def unify: (untyped pattern, untyped value, Environment env) -> Array[Hash[String, Value]]
       def unify_array: (Array[untyped] pattern_elems, untyped value_array, Environment env, ?Hash[String, Value] bindings) -> Array[Hash[String, Value]]
       def unify_object: (Array[[untyped, untyped]] pattern_pairs, untyped value_obj, Environment env, ?Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def reference_bindings: (AST::Reference reference, Environment env, ?Hash[String, Value] bindings, ?base_value: Value?, ?variable_resolver: untyped) -> Array[[Hash[String, Value], Value]]
 
       private
 
@@ -625,6 +651,20 @@ module Ruby
       def unify_object_pair: (untyped key_pattern, untyped value_pattern, Hash[untyped, Value] object_values, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
       def unify_object_candidate: (untyped candidate_key, untyped key_pattern, untyped value_pattern, Hash[untyped, Value] object_values, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
       def bind_key_variable: (untyped key_pattern, untyped candidate_key, Hash[String, Value] bindings, Environment env) -> Hash[String, Value]?
+      def unify_reference: (AST::Reference pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def resolve_reference_base: (untyped base, Environment env, Hash[String, Value] bindings) -> Value
+      def traverse_reference: (Value current, Array[AST::RefArg] path, Environment env, Hash[String, Value] bindings, ?variable_resolver: untyped) -> Array[[Hash[String, Value], Value]]
+      def reference_key_candidates: (Value current, untyped key_node, Environment env, Hash[String, Value] bindings, ?variable_resolver: untyped) -> Array[[untyped, Hash[String, Value]?]]
+      def variable_key_candidates: (AST::Variable key_node, Array[untyped] keys, ReferenceKeyContext context) -> Array[[untyped, Hash[String, Value]?]]
+      def value_key_candidates: (untyped key_node, ReferenceKeyContext context) -> Array[[untyped, Hash[String, Value]?]]
+      def wildcard_key_candidates: (Array[untyped] keys, Hash[String, Value] bindings) -> Array[[untyped, Hash[String, Value]?]]
+      def bound_key_candidate: (String name, ReferenceKeyContext context) -> Array[[untyped, Hash[String, Value]?]]?
+      def resolved_key_candidate: (String name, ReferenceKeyContext context) -> Array[[untyped, Hash[String, Value]?]]?
+      def binding_key_candidates: (String name, Array[untyped] keys, Hash[String, Value] bindings) -> Array[[untyped, Hash[String, Value]?]]
+      def resolved_reference_value: (untyped resolved) -> untyped
+      def resolve_variable_reference: (String name, untyped resolver) -> Value?
+      def reference_keys_for: (Value current) -> Array[untyped]
+      def normalize_reference_key: (Value current, untyped key) -> untyped
     end
 
     module Unifier::Helpers
@@ -675,6 +715,7 @@ module Ruby
     module CompiledModuleLike
       def rules_by_name: () -> Hash[String, Array[AST::Rule]]
       def package_path: () -> Array[String]
+      def imports: () -> Array[AST::Import]
     end
 
     type from_ast_options = {
@@ -723,6 +764,7 @@ module Ruby
     end
 
     class Compiler
+      def initialize: (?builtin_registry: Builtins::BuiltinRegistry, ?default_rule_validator: DefaultRuleValidator?) -> void
       def compile: (AST::Module ast_module) -> CompiledModule
       def index_rules: (Array[AST::Rule] rules) -> Hash[String, Array[AST::Rule]]
       def check_conflicts: (Array[AST::Rule] | Hash[String, Array[AST::Rule]] rules) -> void
@@ -734,7 +776,17 @@ module Ruby
       def rule_indexer: () -> singleton(RuleIndexer)
       def conflict_checker: () -> ConflictChecker
       def safety_checker: () -> SafetyChecker
+      def default_rule_validator: () -> DefaultRuleValidator
       def dependency_graph_builder: () -> DependencyGraphBuilder
+      def safe_names_for_imports: (Array[AST::Import] imports) -> Array[String]
+      def import_alias_name: (AST::Import import) -> String?
+      def validate_import_aliases: (Array[AST::Import] imports, Array[String] rule_names) -> void
+      def validate_import_alias: (AST::Import import, Hash[String, bool] seen, Array[String] rule_names) -> void
+      def reserved_import_alias?: (String name, AST::Import import) -> bool
+      def import_path_exact?: (AST::Import import, String name) -> bool
+      def validate_function_name_conflicts: (Hash[String, Array[AST::Rule]] rules_by_name) -> void
+      def conflicting_function_rule: (String name, Array[AST::Rule] rules) -> AST::Rule?
+      attr_reader builtin_registry: Builtins::BuiltinRegistry
     end
 
     class RuleGroup
@@ -797,14 +849,56 @@ module Ruby
 
     class SafetyChecker
       def initialize: (?bound_collector: Evaluator::BoundVariableCollector, ?variable_collector_class: singleton(Evaluator::VariableCollector), ?safe_names: Array[String]) -> void
-      def check_rules: (Hash[String, Array[AST::Rule]] rules_by_name) -> void
-      def check_rule: (AST::Rule rule) -> void
+      def check_rules: (Hash[String, Array[AST::Rule]] rules_by_name, ?safe_names: Array[String]) -> void
+      def check_rule: (AST::Rule rule, ?safe_names: Array[String]) -> void
 
       private
 
       attr_reader bound_collector: Evaluator::BoundVariableCollector
       attr_reader variable_collector_class: singleton(Evaluator::VariableCollector)
       attr_reader safe_names: Array[String]
+    end
+
+    DEFAULT_RULE_CHILD_NODE_EXTRACTORS: Hash[Class, untyped]
+
+    module CallName
+      def call_name: (untyped node) -> String?
+      def reference_call_name: (AST::Reference reference) -> String?
+      def reference_base_name: (AST::Reference reference) -> String?
+      def reference_call_segments: (Array[AST::RefArg] path) -> Array[String]?
+      def dot_ref_segment_value: (untyped segment) -> String?
+
+      def self.call_name: (untyped node) -> String?
+      def self.reference_call_name: (AST::Reference reference) -> String?
+      def self.reference_base_name: (AST::Reference reference) -> String?
+      def self.reference_call_segments: (Array[AST::RefArg] path) -> Array[String]?
+      def self.dot_ref_segment_value: (untyped segment) -> String?
+    end
+
+    module DefaultRuleCallName
+      def call_name: (untyped node) -> String?
+      def reference_call_name: (AST::Reference reference) -> String?
+      def reference_base_name: (AST::Reference reference) -> String?
+      def reference_call_segments: (Array[AST::RefArg] path) -> Array[String]?
+      def dot_ref_segment_value: (untyped segment) -> String?
+
+      def self.call_name: (untyped node) -> String?
+      def self.reference_call_name: (AST::Reference reference) -> String?
+      def self.reference_base_name: (AST::Reference reference) -> String?
+      def self.reference_call_segments: (Array[AST::RefArg] path) -> Array[String]?
+      def self.dot_ref_segment_value: (untyped segment) -> String?
+    end
+
+    class DefaultRuleValidator
+      def initialize: (?child_node_extractors: Hash[Class, untyped], ?builtin_registry: Builtins::BuiltinRegistry) -> void
+      def check: (Hash[String, Array[AST::Rule]] rules_by_name) -> void
+
+      private
+
+      attr_reader child_node_extractors: Hash[Class, untyped]
+      def contains_variable_or_reference?: (untyped node) -> bool
+      def comprehension_value?: (untyped value) -> bool
+      def child_nodes: (untyped node) -> Array[untyped]
     end
 
     class RuleSafetyContext
@@ -988,12 +1082,18 @@ module Ruby
     end
 
     class Evaluator::ReferenceResolver
-      def initialize: (environment: Environment, package_path: Array[String], rule_value_provider: Evaluator::RuleValueProvider) -> void
+      def initialize: (environment: Environment, package_path: Array[String], rule_value_provider: Evaluator::RuleValueProvider, ?imports: Array[AST::Import]) -> void
       def resolve: (untyped ref) -> Value
+      def resolve_import_variable: (String name) -> Value?
+      def resolve_rule_variable: (String name) -> Value?
+      def function_reference_name: (AST::Reference reference) -> String?
 
       private
 
       def resolve_rule_reference: (AST::Reference ref) -> Value?
+      def resolve_import_reference: (AST::Reference ref) -> Value?
+      def resolve_rule_reference_without_data: (AST::Reference ref) -> Value?
+      def import_reference_for: (AST::Reference ref) -> AST::Reference?
       def rule_reference: (Array[AST::RefArg] path) -> [String, Array[AST::RefArg]]?
       def resolve_rule_value: (String rule_name, Array[AST::RefArg] remaining_path) -> Value
       def package_rule_reference: (Array[untyped] keys, Array[AST::RefArg] path) -> [String, Array[AST::RefArg]]?
@@ -1003,58 +1103,85 @@ module Ruby
       def valid_reference_keys: (Array[AST::RefArg] path) -> Array[untyped]?
       def reference_keys: (Array[AST::RefArg] path) -> Array[untyped]
       def package_match?: (Array[untyped] keys) -> bool
+      def function_reference_target: (AST::Reference reference) -> AST::Reference
+      def resolve_function_reference_name: (AST::Reference reference) -> String?
+      def build_import_map: (Array[AST::Import] imports) -> Hash[String, AST::Reference]
+      def import_path_segments: (AST::Import import) -> Array[String]
+      def build_reference_from_path: (Array[String] path) -> AST::Reference
+      def resolve_variable_key: (String name) -> Value
 
       private
 
       attr_reader environment: Environment
       attr_reader key_resolver: Evaluator::ReferenceKeyResolver
-      attr_reader rules_by_name: Hash[String, Array[AST::Rule]]
       attr_reader package_path: Array[String]
       attr_reader rule_value_provider: Evaluator::RuleValueProvider
+      attr_reader import_map: Hash[String, AST::Reference]
     end
 
     class Evaluator::ReferenceKeyResolver
-      def initialize: (environment: Environment) -> void
+      def initialize: (environment: Environment, ?variable_resolver: untyped) -> void
       def resolve: (untyped segment) -> untyped
 
       private
 
       attr_reader environment: Environment
+      attr_reader variable_resolver: untyped
       def resolve_segment: (untyped segment) -> untyped
+      def resolve_variable_key: (AST::Variable variable) -> untyped
     end
 
     class Evaluator::ExpressionEvaluator
       PRIMITIVE_TYPES: Array[Class]
       NODE_EVALUATORS: Array[[Class, ^(untyped, Evaluator::ExpressionEvaluator) -> Value]]
+      LOGICAL_AND_RESULTS: Hash[Array[Symbol], Value]
+      LOGICAL_OR_RESULTS: Hash[Array[Symbol], Value]
 
       include Evaluator::AssignmentSupport
 
-      def initialize: (environment: Environment, reference_resolver: Evaluator::ReferenceResolver, ?unifier: Unifier) -> void
+      def initialize: (environment: Environment, reference_resolver: Evaluator::ReferenceResolver) -> void
       def attach_query_evaluator: (Evaluator::RuleEvaluator query_evaluator) -> void
       def evaluate: (untyped node) -> Value
       def eval_with_unification: (untyped node, ?Environment env) -> Enumerator[Hash[String, Value]]
+      def evaluate_user_function: (String name, Array[Value] args) -> Value
 
       private
 
       def evaluate_variable: (AST::Variable node) -> Value
+      def resolve_variable_name: (String name) -> Value
+      def resolve_reference_variable_key: (String name) -> Value
+      def resolve_import_or_rule: (String name, Value fallback) -> Value
       def evaluate_reference: (AST::Reference node) -> Value
       def evaluate_array_literal: (AST::ArrayLiteral node) -> Value
       def evaluate_object_literal: (AST::ObjectLiteral node) -> Value
       def evaluate_set_literal: (AST::SetLiteral node) -> Value
       def evaluate_call: (AST::Call node) -> Value
+      def evaluate_template_string: (AST::TemplateString node) -> Value
       def eval_array_comprehension: (AST::ArrayComprehension node) -> Value
       def eval_object_comprehension: (AST::ObjectComprehension node) -> Value
       def eval_set_comprehension: (AST::SetComprehension node) -> Value
       def evaluate_every: (AST::Every node) -> Value
       def evaluate_every_bindings: (AST::Every node, Enumerator[Hash[String, Value]] bindings_enum) -> Value
       def evaluate_binary_op: (AST::BinaryOp node) -> Value
+      def evaluate_logical_operator: (AST::BinaryOp node) -> Value
+      def evaluate_and_operator: (AST::BinaryOp node) -> Value
+      def evaluate_or_operator: (AST::BinaryOp node) -> Value
+      def logical_state: (Value value) -> Symbol
       def evaluate_unary_op: (AST::UnaryOp node) -> Value
       def self.call_name: (untyped node) -> String?
+      def self.reference_call_name: (AST::Reference reference) -> String?
+      def self.reference_base_name: (AST::Reference reference) -> String?
+      def self.reference_call_segments: (Array[AST::RefArg] path) -> Array[String]?
+      def self.dot_ref_segment_value: (untyped segment) -> String?
       def build_dispatch: () -> Evaluator::ExpressionDispatch
       def handle_unification_operator: (AST::BinaryOp node, Environment env, Enumerator::Yielder yielder) -> void
       def yield_assignment_bindings: (AST::BinaryOp node, Environment env, Enumerator::Yielder yielder) -> void
       def yield_unification_bindings: (AST::BinaryOp node, Environment env, Enumerator::Yielder yielder) -> void
       def yield_truthy_bindings: (untyped node, Enumerator::Yielder yielder) -> void
+      def yield_reference_bindings: (AST::Reference node, Environment env, Enumerator::Yielder yielder) -> void
+      def format_template_value: (Value value) -> String
+      def call_named_function: (String name, untyped name_node, Array[Value] args) -> Value
+      def function_name_for_call: (untyped name_node, String fallback_name) -> String
       def every_body_succeeds?: (Array[untyped] body, Hash[String, Value] bindings) -> bool
       def every_bindings: (Array[AST::Variable] variables, Value collection_value) -> Enumerator[Hash[String, Value]]?
       def bindings_for_collection: (Array[AST::Variable] variables, Value collection_value) -> Enumerator[Hash[String, Value]]?
@@ -1082,6 +1209,19 @@ module Ruby
       attr_reader unifier: Unifier
       attr_reader comprehension_evaluator: Evaluator::ComprehensionEvaluator
 
+    end
+
+    class Evaluator::TemplateValueFormatter
+      def initialize: (untyped value) -> void
+      def render: () -> String
+      def canonical_value: () -> untyped
+
+      private
+
+      attr_reader value: untyped
+      def canonicalize_hash: () -> Hash[untyped, untyped]
+      def canonicalize_array: () -> Array[untyped]
+      def canonicalize_set: () -> Array[untyped]
     end
 
     module Evaluator::BindingHelpers
@@ -1208,10 +1348,17 @@ module Ruby
       def evaluate: (untyped node) -> Value
       def environment: () -> Environment
       def unifier: () -> Unifier
+      def reference_resolver: () -> Evaluator::ReferenceResolver
       def evaluate_assignment: (AST::BinaryOp node) -> Value
       def evaluate_unification: (AST::BinaryOp node) -> Value
       def unification_binding_sets: (AST::BinaryOp node, Environment env) -> Array[Hash[String, Value]]
       def unification_result: (AST::BinaryOp node, Environment env) -> [Array[Hash[String, Value]], Value]
+      def reference_bindings_for: (AST::Reference reference, Environment env) -> Array[[Hash[String, Value], Value]]
+      def reference_base_override: (AST::Reference reference) -> Value?
+      def reference_base_name: (AST::Reference reference) -> String?
+      def unresolved_reference_base?: (String name) -> bool
+      def resolve_reference_base: (String name) -> Value?
+      def bind_reference_variable: (AST::Variable variable, Array[[Hash[String, Value], Value]] reference_bindings) -> Array[Hash[String, Value]]
       def apply_bindings: (Hash[String, Value] bindings) -> Hash[String, Value]
     end
 
@@ -1245,9 +1392,19 @@ module Ruby
         def with_env: (Environment new_env) -> ModifierContext
       end
 
+      class ValueEvaluationContext
+        attr_reader body: Array[untyped]?
+        attr_reader rule: AST::Rule
+        attr_reader value_node: untyped
+        attr_reader initial_bindings: Hash[String, Value]
+
+        def initialize: (body: Array[untyped]?, rule: AST::Rule, value_node: untyped, initial_bindings: Hash[String, Value]) -> void
+      end
+
       def initialize: (environment: Environment, expression_evaluator: Evaluator::ExpressionEvaluator) -> void
       def evaluate_group: (Array[AST::Rule] rules) -> Value
-      def evaluate_rule: (AST::Rule rule) -> untyped
+      def evaluate_rule: (AST::Rule rule) -> Value
+      def evaluate_function_call: (String name, Array[Value] args) -> Value
       def query_solutions: (Array[untyped] literals, ?Environment env) -> Enumerator[Hash[String, Value]]
 
       private
@@ -1255,17 +1412,37 @@ module Ruby
       def evaluate_partial_set_rules: (Array[AST::Rule] rules) -> Value
       def evaluate_partial_object_rules: (Array[AST::Rule] rules) -> Value
       def partial_object_pairs: (Array[AST::Rule] rules) -> Hash[Object, Value]
+      def merge_partial_object_value: (Value? existing, Value value, untyped key, bool existing_nested, bool current_nested) -> Value
+      def merge_object_value_hash: (Hash[Object, Value] left, Hash[Object, Value] right, untyped key) -> Hash[Object, Value]
+      def merge_object_value_value: (Value? existing, Value value, untyped key) -> Value
       def evaluate_complete_rules: (Array[AST::Rule] rules) -> Value
-      def evaluate_non_default_rules: (Array[AST::Rule] rules) -> Value?
       def evaluate_partial_object_value: (untyped head) -> untyped
-      def evaluate_complete_rule_value: (untyped head) -> Value
+      def evaluate_complete_rule_value: (untyped head, ?untyped value_node) -> Value
+      def complete_rule_value_with_else: (AST::Rule rule) -> Value
+      def else_clause_value: (AST::Rule rule, untyped clause) -> Value
+      def evaluate_value_with_body: (ValueEvaluationContext context) -> Array[Value]
+      def values_for_body_context: (ValueEvaluationContext context) -> Array[Value]
+      def evaluate_value_node: (AST::Rule rule, untyped value_node) -> Value?
+      def empty_bindings: () -> Hash[String, Value]
+      def evaluate_clause_value: (AST::Rule rule, untyped clause, Hash[String, Value] bindings) -> Array[Value]
+      def function_values_with_else: (AST::Rule rule, Hash[String, Value] bindings) -> Array[Value]
+      def function_else_values: (AST::Rule rule, untyped clause, Hash[String, Value] bindings) -> Array[Value]
+      def resolve_conflicts: (Array[Value] values, String name) -> Value?
+      def evaluate_function_rules: (Array[AST::Rule] rules, Array[Value] args) -> Array[Value]
+      def function_rule_values: (AST::Rule rule, Array[Value] args) -> Array[Value]
       def body_succeeds?: (Array[untyped]? body) -> bool
       def query_literal_truthy?: (untyped literal) -> bool
       def some_decl_truthy?: (AST::SomeDecl literal) -> bool
       def evaluate_rule_value: (untyped head) -> Value
-      def rule_body_values: (AST::Rule rule) -> Array[untyped]
+      def rule_body_values: (AST::Rule rule, ?Hash[String, Value] initial_bindings) -> Array[Value]
+      def rule_body_pairs: (AST::Rule rule) -> Array[[Object, Value, bool]]
       def eval_rule_body: (Array[untyped]? body, Environment env) -> Enumerator[Hash[String, Value]]
       def eval_query: (Array[untyped] literals, Environment env) -> Enumerator[Hash[String, Value]]
+      def with_query_scope: (Environment env, Array[untyped] literals) { () -> untyped } -> untyped
+      def shadow_query_locals: (Environment env, Array[untyped] literals) -> void
+      def shadow_explicit_locals: (Environment env, Array[String] names) -> void
+      def shadow_unification_locals: (Environment env, Array[String] names, Array[String] explicit_names) -> void
+      def bind_undefined: (Environment env, String name) -> void
       def yield_query_solutions: (Enumerator::Yielder yielder, QueryContext context, Integer index, Hash[String, Value] bindings, Array[String] bound_vars) -> void
       def eval_literal: (untyped literal, Environment env, Array[String] bound_vars) -> Enumerator[Hash[String, Value]]
       def eval_query_literal: (AST::QueryLiteral literal, Environment env, Array[String] bound_vars) -> Enumerator[Hash[String, Value]]
@@ -1291,6 +1468,7 @@ module Ruby
 
       attr_reader environment: Environment
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
+      attr_reader unifier: Unifier
     end
 
     module Evaluator::OperatorEvaluator
@@ -1298,6 +1476,7 @@ module Ruby
       LOGICAL_OPERATORS: Hash[Symbol, ^(Value, Value) -> Value]
       COMPARISON_OPERATORS: Hash[Symbol, ^(untyped, untyped) -> bool]
       ARITHMETIC_OPERATORS: Hash[Symbol, ^(untyped, untyped) -> untyped]
+      MEMBERSHIP_OPERATORS: Hash[Symbol, ^(Value, Value) -> Value]
       UNARY_OPERATORS: Hash[Symbol, ^(Value) -> Value]
 
       def self.apply: (Symbol operator, Value left, Value right) -> Value
@@ -1310,6 +1489,9 @@ module Ruby
       def self.arithmetic_values: (Symbol operator, Value left, Value right) { (untyped, untyped) -> untyped } -> Value
       def self.numeric_value: (Value value) -> Numeric?
       def self.division_by_zero?: (Symbol operator, Numeric right_value) -> bool
+      def self.undefined_operand?: (Value lhs, Value rhs) -> bool
+      def self.collection_values: (Value value) -> (Array[Value] | UndefinedValue)
+      def self.membership_value: (Value lhs, Value rhs) -> Value
     end
 
     module TokenType
@@ -1323,6 +1505,8 @@ module Ruby
       IN: Symbol
       EVERY: Symbol
       NOT: Symbol
+      AND: Symbol
+      OR: Symbol
       WITH: Symbol
       ELSE: Symbol
       TRUE: Symbol
@@ -1360,8 +1544,10 @@ module Ruby
       UNDERSCORE: Symbol
 
       STRING: Symbol
+      TEMPLATE_STRING: Symbol
       NUMBER: Symbol
       RAW_STRING: Symbol
+      RAW_TEMPLATE_STRING: Symbol
       IDENT: Symbol
 
       EOF: Symbol
@@ -1403,6 +1589,7 @@ module Ruby
       IDENTIFIER_PART: Regexp
       DIGIT: Regexp
       HEX_DIGIT: Regexp
+      TEMPLATE_ESCAPE: String
 
       def initialize: (String source) -> void
       def tokenize: () -> Array[Token]
@@ -1422,12 +1609,16 @@ module Ruby
       def read_exponent_sign: () -> String
       def read_string: () -> Token
       def read_raw_string: () -> Token
+      def read_template_string: () -> Token
+      def read_standard_template_string: (position start) -> Token
+      def read_raw_template_string: (position start) -> Token
       def read_newline: () -> Token
       def read_identifier: () -> Token
       def read_digits: () -> String
       def read_escape_sequence: (position backslash_position) -> String
       def read_unicode_escape: () -> String
       def parse_number: (String buffer, position start) -> Numeric
+      def template_string_start?: (String char) -> bool
       def advance: () -> String
       def advance_line_break: () -> String
       def advance_newline: () -> String
@@ -1476,6 +1667,7 @@ module Ruby
 
       def initialize: (Array[Token] tokens) -> void
       def parse: () -> AST::Module
+      def self.parse_expression_from_string: (String source) -> AST::expression
 
       private
 
@@ -1499,7 +1691,7 @@ module Ruby
       def parse_import_alias: () -> String?
       def parse_rule: () -> AST::Rule
       def consume_default_keyword: () -> Token?
-      def parse_rule_name: () -> String
+      def parse_rule_name_path: () -> Array[String]
       def mark_default_head: (Hash[Symbol, untyped] head) -> Hash[Symbol, untyped]
       def parse_default_value: (Token? default_token, Hash[Symbol, untyped] head) -> AST::expression?
       def parse_non_default_body: (Token? default_token) -> Array[AST::query_literal]?
@@ -1520,6 +1712,8 @@ module Ruby
       def parse_rule_body: () -> Array[AST::query_literal]
       def parse_braced_rule_body: () -> Array[AST::query_literal]
       def parse_empty_rule_body: () -> Array[AST::query_literal]
+      def apply_rule_head_path: (Hash[Symbol, untyped] head, Array[String] segments, Token name_token) -> Hash[Symbol, untyped]
+      def nested_rule_head: (Hash[Symbol, untyped] head, Array[String] segments, Token name_token) -> Hash[Symbol, untyped]
       def parse_query: (*Symbol end_tokens, ?newline_delimiter: bool) -> Array[AST::query_literal]
       def consume_query_separators: (bool newline_delimiter) -> bool
       def parse_literal: () -> AST::query_literal
@@ -1549,6 +1743,11 @@ module Ruby
       def parse_comprehension: (Token start_token, untyped term, Symbol end_token, [String, String] messages, untyped node_class) -> untyped
       def parse_call_args: () -> Array[AST::expression]
       def parse_string_literal: () -> AST::StringLiteral
+      def parse_template_string: () -> AST::TemplateString
+      def parse_template_parts: (Token token) -> Array[untyped]
+      def append_template_literal: (Array[untyped] parts, String literal, Location? location) -> void
+      def normalize_template_literal: (String literal) -> String
+      def find_template_expression_end: (String text, Integer start_index) -> Integer
       def parse_number_literal: () -> AST::NumberLiteral
       def parse_boolean_literal: () -> AST::BooleanLiteral
       def parse_null_literal: () -> AST::NullLiteral
@@ -1558,6 +1757,8 @@ module Ruby
       def parse_parenthesized_expression_list: (open_message: String, close_message: String) -> Array[AST::expression]
       def parse_path: (Parser::IdentifierContext identifier_context) -> Array[String]
       def parse_path_segment: (Parser::IdentifierContext identifier_context) -> String
+      def parse_bracket_path_segment: () -> String?
+      def bracket_string_segment?: () -> bool
       def parse_identifier: (Parser::IdentifierContext identifier_context) -> String
       def parse_braced_literal: () -> AST::expression
       def parse_object_literal_or_comprehension: (Token start_token, AST::expression key) -> AST::expression
@@ -1569,6 +1770,7 @@ module Ruby
       def parse_object_pair: (AST::expression key) -> [AST::expression, AST::expression]
       def append_object_pairs: (Array[[AST::expression, AST::expression]] pairs) -> void
       def empty_set?: (AST::expression?) -> bool
+      def empty_object_literal: (Token start_token) -> AST::ObjectLiteral
       def empty_set_literal: (Token start_token) -> AST::SetLiteral
       def parse_reference_path: (Array[AST::RefArg] path) -> void
       def parse_dot_reference: (Array[AST::RefArg] path) -> void
@@ -1630,7 +1832,7 @@ module Ruby
         def deconstructable_keys: () -> Array[Symbol]
       end
 
-      type expression = Literal | Variable | Reference | BinaryOp | UnaryOp | ArrayLiteral | ObjectLiteral | SetLiteral | ArrayComprehension | ObjectComprehension | SetComprehension | Every | Call
+      type expression = Literal | TemplateString | Variable | Reference | BinaryOp | UnaryOp | ArrayLiteral | ObjectLiteral | SetLiteral | ArrayComprehension | ObjectComprehension | SetComprehension | Every | Call
       type call_name = String | Variable | Reference
       type query_literal = QueryLiteral | SomeDecl
       type query = Array[query_literal]
@@ -1646,6 +1848,12 @@ module Ruby
         attr_reader value: String
 
         def initialize: (value: String, ?location: Location?) -> void
+      end
+
+      class TemplateString < Base
+        attr_reader parts: Array[untyped]
+
+        def initialize: (parts: Array[untyped], ?location: Location?) -> void
       end
 
       class NumberLiteral < Literal
@@ -1813,10 +2021,10 @@ module Ruby
       end
 
       class Import < Base
-        attr_reader path: untyped
+        attr_reader path: Array[String] | String
         attr_reader alias: String?
 
-        def initialize: (path: untyped, ?alias_name: String?, ?location: Location?) -> void
+        def initialize: (path: Array[String] | String, ?alias_name: String?, ?location: Location?) -> void
         def alias_name: () -> String?
       end
 

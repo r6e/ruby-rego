@@ -37,10 +37,7 @@ module Ruby
             key_node, value_node = node.term
             [key_node, value_node]
           end,
-          AST::Call => lambda do |node|
-            call_name = node.name
-            node.args.dup.tap { |args| args.unshift(call_name) if call_name.is_a?(AST::Reference) }
-          end
+          AST::Call => ->(node) { node.args.dup }
         }.freeze
 
         def self.collector_for(node)

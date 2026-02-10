@@ -19,18 +19,21 @@ module Ruby
         end
 
         # :reek:FeatureEnvy
+        # :reek:TooManyStatements
         def invoke_entry(entry, args)
           entry_name = entry.name
           args = ensure_array_args(args, entry_name)
           Builtins::Base.assert_arity(args, entry.arity, name: entry_name)
           Value.from_ruby(entry.handler.call(*args.map { |arg| Value.from_ruby(arg) }))
+        rescue Ruby::Rego::BuiltinArgumentError
+          UndefinedValue.new
         end
 
         # :reek:FeatureEnvy
         def ensure_array_args(args, builtin_name)
           return args if args.is_a?(Array)
 
-          raise Ruby::Rego::TypeError.new(
+          raise Ruby::Rego::BuiltinArgumentError.new(
             "Expected arguments to be an Array",
             expected: Array,
             actual: args.class,
@@ -120,9 +123,23 @@ module Ruby
         # :reek:UtilityFunction
         # :reek:FeatureEnvy
         def validate_arity(arity)
-          return if arity.is_a?(Integer) && arity >= 0
+          return if integer_arity_valid?(arity)
+          return if array_arity_valid?(arity)
 
-          raise ArgumentError, "Arity must be a non-negative Integer"
+          raise ArgumentError, "Arity must be a non-negative Integer or Array of Integers"
+        end
+
+        # :reek:UtilityFunction
+        def integer_arity_valid?(arity)
+          arity.is_a?(Integer) && arity >= 0
+        end
+
+        # :reek:UtilityFunction
+        def array_arity_valid?(arity)
+          return false unless arity.is_a?(Array)
+          return false if arity.empty?
+
+          arity.all? { |value| value.is_a?(Integer) && value >= 0 }
         end
 
         def fetch_entry(builtin_name)

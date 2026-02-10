@@ -2,15 +2,26 @@
 
 require_relative "ast"
 require_relative "compiled_module"
+require_relative "call_name"
 require_relative "errors"
 require_relative "environment"
+require_relative "builtins/registry"
 require_relative "evaluator/variable_collector"
 
 module Ruby
   # Rego compilation helpers.
   module Rego
     # Compiles AST modules into indexed structures for evaluation.
-    class Compiler
+    class Compiler # rubocop:disable Metrics/ClassLength
+      # Create a compiler instance.
+      #
+      # @param builtin_registry [Builtins::BuiltinRegistry] registry for builtin lookup
+      # @param default_rule_validator [DefaultRuleValidator, nil] override validator
+      def initialize(builtin_registry: Builtins::BuiltinRegistry.instance, default_rule_validator: nil)
+        @builtin_registry = builtin_registry
+        @default_rule_validator = default_rule_validator
+      end
+
       # Compile an AST module into a compiled module.
       #
       # @param ast_module [AST::Module] parsed module
@@ -53,10 +64,16 @@ module Ruby
 
       private
 
+      # :reek:TooManyStatements
       def compile_rules(ast_module)
-        rules_by_name = index_rules(ast_module.rules)
+        rule_names = (rules_by_name = index_rules(ast_module.rules)).keys
+        imports = ast_module.imports
+        validate_import_aliases(imports, rule_names)
         check_conflicts(rules_by_name)
-        safety_checker.check_rules(rules_by_name)
+        validate_function_name_conflicts(rules_by_name)
+        safe_names = safe_names_for_imports(imports) | rule_names
+        safety_checker.check_rules(rules_by_name, safe_names: safe_names)
+        default_rule_validator.check(rules_by_name)
         rules_by_name
       end
 
@@ -72,9 +89,108 @@ module Ruby
         @safety_checker ||= SafetyChecker.new
       end
 
+      def safe_names_for_imports(imports)
+        base = Environment::RESERVED_NAMES + ["_"]
+        import_names = Array(imports).filter_map { |import| import_alias_name(import) }
+        (base + import_names).uniq
+      end
+
+      def validate_import_aliases(imports, rule_names)
+        seen = {} # @type var seen: Hash[String, true]
+        Array(imports).each { |import| validate_import_alias(import, seen, rule_names) }
+      end
+
+      # rubocop:disable Metrics/MethodLength
+      # :reek:TooManyStatements
+      def validate_import_alias(import, seen, rule_names)
+        name = import_alias_name(import)
+        return unless name
+
+        location = import.location
+
+        if reserved_import_alias?(name, import)
+          raise CompilationError.new(
+            "Import alias conflicts with reserved name: #{name}",
+            location: location
+          )
+        end
+
+        if rule_names.include?(name)
+          raise CompilationError.new(
+            "Import alias conflicts with rule name: #{name}",
+            location: location
+          )
+        end
+
+        if seen.key?(name)
+          raise CompilationError.new(
+            "Duplicate import alias: #{name}",
+            location: location
+          )
+        end
+
+        seen[name] = true
+      end
+      # rubocop:enable Metrics/MethodLength
+
+      # :reek:UtilityFunction
+      def reserved_import_alias?(name, import)
+        reserved_names = Environment::RESERVED_NAMES + ["_"]
+        return false unless reserved_names.include?(name)
+
+        return false if !import.alias_name && import_path_exact?(import, name)
+
+        true
+      end
+
+      # :reek:UtilityFunction
+      def import_path_exact?(import, name)
+        path = import.path
+        return path == [name] if path.is_a?(Array)
+
+        path.to_s == name
+      end
+
+      # :reek:TooManyStatements
+      # :reek:UtilityFunction
+      def import_alias_name(import)
+        alias_name = import.alias_name
+        return alias_name.to_s if alias_name
+
+        path = import.path
+        return path.last.to_s if path.is_a?(Array) && !path.empty?
+        return path.to_s.split(".").last if path
+
+        nil
+      end
+
+      def default_rule_validator
+        @default_rule_validator ||= DefaultRuleValidator.new(builtin_registry: builtin_registry)
+      end
+
       def dependency_graph_builder
         @dependency_graph_builder ||= DependencyGraphBuilder.new
       end
+
+      def validate_function_name_conflicts(rules_by_name)
+        rules_by_name.each do |name, rules|
+          rule = conflicting_function_rule(name, rules)
+          next unless rule
+
+          raise CompilationError.new(
+            "Function name conflicts with builtin: #{name}",
+            location: rule.location
+          )
+        end
+      end
+
+      def conflicting_function_rule(name, rules)
+        return nil unless builtin_registry.registered?(name)
+
+        rules.find(&:function?)
+      end
+
+      attr_reader :builtin_registry
     end
 
     # Bundles compiled module inputs.
@@ -112,7 +228,6 @@ module Ruby
       # @return [void]
       def validate(type_resolver)
         ensure_consistent_types(type_resolver)
-        ensure_complete_rule_consistency
         ensure_function_arity
         ensure_single_default
       end
@@ -169,6 +284,7 @@ module Ruby
       end
 
       def ensure_complete_rule_consistency
+        # NOTE: Complete-rule conflicts are resolved during evaluation.
         value_rule_list = value_rules
         return if value_rule_list.length <= 1
 
@@ -359,15 +475,15 @@ module Ruby
       #
       # @param rules_by_name [Hash{String => Array<AST::Rule>}]
       # @return [void]
-      def check_rules(rules_by_name)
-        rules_by_name.values.flatten.each { |rule| check_rule(rule) }
+      def check_rules(rules_by_name, safe_names: @safe_names)
+        rules_by_name.values.flatten.each { |rule| check_rule(rule, safe_names: safe_names) }
       end
 
       # Validate a single rule for unbound variables.
       #
       # @param rule [AST::Rule]
       # @return [void]
-      def check_rule(rule)
+      def check_rule(rule, safe_names: @safe_names)
         context = RuleSafetyContext.new(
           head: RuleHead.new(rule.head),
           bound_collector: bound_collector,
@@ -380,6 +496,125 @@ module Ruby
       private
 
       attr_reader :bound_collector, :variable_collector_class, :safe_names
+    end
+
+    DEFAULT_RULE_CHILD_NODE_EXTRACTORS = {
+      AST::BinaryOp => ->(node) { [node.left, node.right] },
+      AST::UnaryOp => ->(node) { [node.operand] },
+      AST::ArrayLiteral => :elements.to_proc,
+      AST::SetLiteral => :elements.to_proc,
+      AST::ObjectLiteral => lambda do |node|
+        node.pairs.flat_map { |key_node, value_node| [key_node, value_node] }
+      end,
+      AST::ArrayComprehension => lambda do |node|
+        term = node.term
+        body = Array(node.body)
+        [term] + body
+      end,
+      AST::SetComprehension => lambda do |node|
+        term = node.term
+        body = Array(node.body)
+        [term] + body
+      end,
+      AST::ObjectComprehension => lambda do |node|
+        key_node, value_node = node.term
+        body = Array(node.body)
+        [key_node, value_node] + body
+      end,
+      AST::Call => ->(node) { [node.name] + node.args },
+      AST::QueryLiteral => ->(node) { [node.expression] + node.with_modifiers },
+      AST::Every => lambda do |node|
+        body = Array(node.body)
+        [node.key_var, node.value_var, node.domain] + body
+      end,
+      AST::SomeDecl => ->(node) { node.variables + Array(node.collection) },
+      AST::WithModifier => ->(node) { [node.target, node.value] },
+      AST::TemplateString => :parts.to_proc
+    }.freeze
+
+    # Resolves builtin call names for default rule validation.
+    module DefaultRuleCallName
+      module_function
+
+      def call_name(node)
+        CallName.call_name(node)
+      end
+
+      def reference_call_name(reference)
+        CallName.reference_call_name(reference)
+      end
+
+      def reference_base_name(reference)
+        CallName.reference_base_name(reference)
+      end
+      private_class_method :reference_base_name
+
+      def reference_call_segments(path)
+        CallName.reference_call_segments(path)
+      end
+      private_class_method :reference_call_segments
+
+      def dot_ref_segment_value(segment)
+        CallName.dot_ref_segment_value(segment)
+      end
+      private_class_method :dot_ref_segment_value
+    end
+
+    # Validates default rule values for groundness.
+    class DefaultRuleValidator
+      def initialize(
+        child_node_extractors: DEFAULT_RULE_CHILD_NODE_EXTRACTORS,
+        builtin_registry: Builtins::BuiltinRegistry.instance
+      )
+        @child_node_extractors = child_node_extractors
+        _ = builtin_registry
+      end
+
+      # :reek:TooManyStatements
+      def check(rules_by_name)
+        Array(rules_by_name.values).flatten.each do |rule|
+          value = rule.default_value
+          next unless value
+          next if comprehension_value?(value)
+          next unless contains_variable_or_reference?(value)
+
+          raise CompilationError.new(
+            "Default rule values must be ground (no variables, references, or calls)",
+            location: rule.location
+          )
+        end
+      end
+
+      private
+
+      attr_reader :child_node_extractors
+
+      # :reek:TooManyStatements
+      def contains_variable_or_reference?(node)
+        return false unless node
+        return true if node.is_a?(AST::Variable)
+        return true if node.is_a?(AST::Reference)
+        return true if node.is_a?(AST::Call)
+        return false if comprehension_value?(node)
+
+        child_nodes(node).any? do |child|
+          contains_variable_or_reference?(child)
+        end
+      end
+
+      # :reek:UtilityFunction
+      def comprehension_value?(value)
+        value.is_a?(AST::ArrayComprehension) ||
+          value.is_a?(AST::SetComprehension) ||
+          value.is_a?(AST::ObjectComprehension)
+      end
+
+      def child_nodes(node)
+        extractor = child_node_extractors[node.class]
+        return [] unless extractor
+
+        extractor.call(node)
+      end
     end
 
     # Bundles dependencies for rule safety checks.

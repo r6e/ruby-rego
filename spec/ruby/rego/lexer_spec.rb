@@ -9,7 +9,7 @@ RSpec.describe Ruby::Rego::Lexer do
 
   describe "#tokenize" do
     it "tokenizes keywords" do
-      source = "package import as default if contains some in every not with else true false null data input"
+      source = "package import as default if contains some in every not and or with else true false null data input"
       types = tokenize(source).map(&:type)
 
       expect(types).to eq(
@@ -24,6 +24,8 @@ RSpec.describe Ruby::Rego::Lexer do
           Ruby::Rego::TokenType::IN,
           Ruby::Rego::TokenType::EVERY,
           Ruby::Rego::TokenType::NOT,
+          Ruby::Rego::TokenType::AND,
+          Ruby::Rego::TokenType::OR,
           Ruby::Rego::TokenType::WITH,
           Ruby::Rego::TokenType::ELSE,
           Ruby::Rego::TokenType::TRUE,

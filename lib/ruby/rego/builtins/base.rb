@@ -9,21 +9,14 @@ module Ruby
       # Shared helpers for built-in function implementations.
       module Base
         # @param args [Array<Object>]
-        # @param expected [Integer]
+        # @param expected [Integer, Array<Integer>]
         # @param name [String, nil]
         # @return [void]
         def self.assert_arity(args, expected, name: nil)
           actual = args.size
-          return if actual == expected
+          return if arity_valid?(actual, expected)
 
-          context = name ? "builtin #{name}" : nil
-          raise Ruby::Rego::TypeError.new(
-            "Wrong number of arguments",
-            expected: expected,
-            actual: actual,
-            context: context,
-            location: nil
-          )
+          raise_builtin_arity_error(actual, expected, name)
         end
 
         # @param value [Object]
@@ -58,8 +51,36 @@ module Ruby
         end
         private_class_method :normalize_expected
 
+        def self.normalize_arity(expected)
+          expected.is_a?(Array) ? expected : [expected]
+        end
+        private_class_method :normalize_arity
+
+        def self.format_arity(expected_list)
+          expected_list.map(&:to_i).uniq.sort.join(" or ")
+        end
+        private_class_method :format_arity
+
+        def self.arity_valid?(actual, expected)
+          normalize_arity(expected).include?(actual)
+        end
+        private_class_method :arity_valid?
+
+        def self.raise_builtin_arity_error(actual, expected, name)
+          context = name ? "builtin #{name}" : nil
+          expected_list = normalize_arity(expected)
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Wrong number of arguments",
+            expected: format_arity(expected_list),
+            actual: actual,
+            context: context,
+            location: nil
+          )
+        end
+        private_class_method :raise_builtin_arity_error
+
         def self.raise_type_error(expected:, actual:, context: nil)
-          raise Ruby::Rego::TypeError.new(
+          raise Ruby::Rego::BuiltinArgumentError.new(
             "Type mismatch",
             expected: expected,
             actual: actual,

@@ -93,7 +93,8 @@ module Ruby
           reference_resolver: ReferenceResolver.new(
             environment: @environment,
             package_path: package_path,
-            rule_value_provider: rule_value_provider
+            rule_value_provider: rule_value_provider,
+            imports: compiled_module.imports
           )
         )
       end

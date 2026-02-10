@@ -11,12 +11,13 @@ RSpec.describe "string builtins" do
   end
 
   it "raises for invalid concat arguments" do
-    expect { registry.call("concat", [1, ["a"]]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
-    expect { registry.call("concat", [",", "a"]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
-    expect { registry.call("concat", [",", [1]]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    first = registry.call("concat", [1, ["a"]])
+    second = registry.call("concat", [",", "a"])
+    third = registry.call("concat", [",", [1]])
+
+    expect(first).to be_a(Ruby::Rego::UndefinedValue)
+    expect(second).to be_a(Ruby::Rego::UndefinedValue)
+    expect(third).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "checks substring containment" do
@@ -26,8 +27,9 @@ RSpec.describe "string builtins" do
   end
 
   it "raises for invalid contains arguments" do
-    expect { registry.call("contains", [1, "a"]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    result = registry.call("contains", [1, "a"])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "checks prefixes and suffixes" do
@@ -39,10 +41,11 @@ RSpec.describe "string builtins" do
   end
 
   it "raises for invalid prefix and suffix arguments" do
-    expect { registry.call("startswith", ["hello", 1]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
-    expect { registry.call("endswith", [1, "lo"]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    first = registry.call("startswith", ["hello", 1])
+    second = registry.call("endswith", [1, "lo"])
+
+    expect(first).to be_a(Ruby::Rego::UndefinedValue)
+    expect(second).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "formats integers in a base" do
@@ -52,14 +55,15 @@ RSpec.describe "string builtins" do
   end
 
   it "raises for invalid format_int arguments" do
-    expect { registry.call("format_int", [10.5, 10]) }
-      .to raise_error(Ruby::Rego::TypeError, /Expected integer/)
-    expect { registry.call("format_int", [10, 1]) }
-      .to raise_error(Ruby::Rego::TypeError, /Invalid base/)
-    expect { registry.call("format_int", [10, 37]) }
-      .to raise_error(Ruby::Rego::TypeError, /Invalid base/)
-    expect { registry.call("format_int", [10, "2"]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    first = registry.call("format_int", [10.5, 10])
+    second = registry.call("format_int", [10, 1])
+    third = registry.call("format_int", [10, 37])
+    fourth = registry.call("format_int", [10, "2"])
+
+    expect(first).to be_a(Ruby::Rego::UndefinedValue)
+    expect(second).to be_a(Ruby::Rego::UndefinedValue)
+    expect(third).to be_a(Ruby::Rego::UndefinedValue)
+    expect(fourth).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "finds the index of a substring" do
@@ -69,8 +73,9 @@ RSpec.describe "string builtins" do
   end
 
   it "raises for invalid indexof arguments" do
-    expect { registry.call("indexof", ["hello", 2]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    result = registry.call("indexof", ["hello", 2])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "lowercases and uppercases strings" do
@@ -81,8 +86,9 @@ RSpec.describe "string builtins" do
   end
 
   it "raises for invalid case arguments" do
-    expect { registry.call("lower", [1]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    result = registry.call("lower", [1])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "splits strings by delimiter" do
@@ -91,8 +97,9 @@ RSpec.describe "string builtins" do
   end
 
   it "raises for invalid split arguments" do
-    expect { registry.call("split", ["a", 1]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    result = registry.call("split", ["a", 1])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "formats strings with sprintf" do
@@ -101,12 +108,13 @@ RSpec.describe "string builtins" do
   end
 
   it "raises for invalid sprintf arguments" do
-    expect { registry.call("sprintf", ["%d", []]) }
-      .to raise_error(Ruby::Rego::TypeError, /sprintf-compatible/)
-    expect { registry.call("sprintf", ["%d", ["x"]]) }
-      .to raise_error(Ruby::Rego::TypeError, /sprintf-compatible/)
-    expect { registry.call("sprintf", ["%s", "not array"]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    first = registry.call("sprintf", ["%d", []])
+    second = registry.call("sprintf", ["%d", ["x"]])
+    third = registry.call("sprintf", ["%s", "not array"])
+
+    expect(first).to be_a(Ruby::Rego::UndefinedValue)
+    expect(second).to be_a(Ruby::Rego::UndefinedValue)
+    expect(third).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "extracts substrings" do
@@ -117,12 +125,13 @@ RSpec.describe "string builtins" do
   end
 
   it "raises for invalid substring arguments" do
-    expect { registry.call("substring", ["hello", -1, 2]) }
-      .to raise_error(Ruby::Rego::TypeError, /non-negative integer/)
-    expect { registry.call("substring", ["hello", 1, -2]) }
-      .to raise_error(Ruby::Rego::TypeError, /non-negative integer/)
-    expect { registry.call("substring", ["hello", "1", 2]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    first = registry.call("substring", ["hello", -1, 2])
+    second = registry.call("substring", ["hello", 1, -2])
+    third = registry.call("substring", ["hello", "1", 2])
+
+    expect(first).to be_a(Ruby::Rego::UndefinedValue)
+    expect(second).to be_a(Ruby::Rego::UndefinedValue)
+    expect(third).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "trims characters from both ends" do
@@ -139,8 +148,9 @@ RSpec.describe "string builtins" do
   end
 
   it "raises for invalid trim arguments" do
-    expect { registry.call("trim", ["hello", 1]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    result = registry.call("trim", ["hello", 1])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "trims whitespace" do
@@ -148,8 +158,9 @@ RSpec.describe "string builtins" do
   end
 
   it "raises for invalid trim_space arguments" do
-    expect { registry.call("trim_space", [1]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    result = registry.call("trim_space", [1])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "allows repeated registration" do

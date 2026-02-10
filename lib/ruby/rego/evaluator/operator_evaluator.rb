@@ -4,10 +4,19 @@ module Ruby
   module Rego
     class Evaluator
       # Shared operator application helpers.
+      # rubocop:disable Metrics/ModuleLength
       module OperatorEvaluator
         EQUALITY_OPERATORS = {
-          eq: ->(lhs, rhs) { BooleanValue.new(lhs == rhs) },
-          neq: ->(lhs, rhs) { BooleanValue.new(lhs != rhs) }
+          eq: lambda do |lhs, rhs|
+            return UndefinedValue.new if lhs.is_a?(UndefinedValue) || rhs.is_a?(UndefinedValue)
+
+            BooleanValue.new(lhs == rhs)
+          end,
+          neq: lambda do |lhs, rhs|
+            return UndefinedValue.new if lhs.is_a?(UndefinedValue) || rhs.is_a?(UndefinedValue)
+
+            BooleanValue.new(lhs != rhs)
+          end
         }.freeze
         LOGICAL_OPERATORS = {
           and: ->(lhs, rhs) { BooleanValue.new(lhs.truthy? && rhs.truthy?) },
@@ -26,6 +35,9 @@ module Ruby
           div: ->(lhs, rhs) { lhs / rhs },
           mod: ->(lhs, rhs) { lhs % rhs }
         }.freeze
+        MEMBERSHIP_OPERATORS = {
+          in: ->(lhs, rhs) { membership_value(lhs, rhs) }
+        }.freeze
         UNARY_OPERATORS = {
           not: ->(operand) { BooleanValue.new(!operand.truthy?) },
           minus: lambda do |operand|
@@ -38,13 +50,24 @@ module Ruby
         # @param left [Value]
         # @param right [Value]
         # @return [Value]
+        # rubocop:disable Metrics/MethodLength
         def self.apply(operator, left, right)
-          apply_logical(operator, left, right) ||
-            EQUALITY_OPERATORS[operator]&.call(left, right) ||
-            apply_comparison(operator, left, right) ||
-            apply_arithmetic(operator, left, right) ||
-            UndefinedValue.new
+          handlers = [
+            -> { apply_logical(operator, left, right) },
+            -> { EQUALITY_OPERATORS[operator]&.call(left, right) },
+            -> { MEMBERSHIP_OPERATORS[operator]&.call(left, right) },
+            -> { apply_comparison(operator, left, right) },
+            -> { apply_arithmetic(operator, left, right) }
+          ]
+
+          handlers.each do |handler|
+            value = handler.call
+            return value if value
+          end
+
+          UndefinedValue.new
         end
+        # rubocop:enable Metrics/MethodLength
 
         # @param operator [Symbol]
         # @param operand [Value]
@@ -109,7 +132,32 @@ module Ruby
 
           nil
         end
+
+        def self.membership_value(lhs, rhs)
+          return UndefinedValue.new if undefined_operand?(lhs, rhs)
+
+          values = collection_values(rhs)
+          return values if values.is_a?(UndefinedValue)
+
+          BooleanValue.new(values.any? { |element| element == lhs })
+        end
+
+        def self.undefined_operand?(lhs, rhs)
+          lhs.is_a?(UndefinedValue) || rhs.is_a?(UndefinedValue)
+        end
+
+        # :reek:DuplicateMethodCall
+        def self.collection_values(value)
+          return UndefinedValue.new unless value.is_a?(ArrayValue) || value.is_a?(SetValue) || value.is_a?(ObjectValue)
+
+          collection = value.value
+          return collection if value.is_a?(ArrayValue)
+          return collection.to_a if value.is_a?(SetValue)
+
+          collection.keys.map { |key| Value.from_ruby(key) }
+        end
       end
+      # rubocop:enable Metrics/ModuleLength
     end
   end
 end

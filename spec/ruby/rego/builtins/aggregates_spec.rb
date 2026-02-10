@@ -17,8 +17,9 @@ RSpec.describe "aggregate builtins" do
   end
 
   it "raises for non-numeric sum elements" do
-    expect { registry.call("sum", [[1, "x"]]) }
-      .to raise_error(Ruby::Rego::TypeError, /Type mismatch/)
+    result = registry.call("sum", [[1, "x"]])
+
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "computes max and min for numeric arrays" do
@@ -27,10 +28,11 @@ RSpec.describe "aggregate builtins" do
   end
 
   it "raises for empty max and min" do
-    expect { registry.call("max", [[]]) }
-      .to raise_error(Ruby::Rego::TypeError, /non-empty array/)
-    expect { registry.call("min", [[]]) }
-      .to raise_error(Ruby::Rego::TypeError, /non-empty array/)
+    max_result = registry.call("max", [[]])
+    min_result = registry.call("min", [[]])
+
+    expect(max_result).to be_a(Ruby::Rego::UndefinedValue)
+    expect(min_result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "evaluates all and any using Rego truthiness" do

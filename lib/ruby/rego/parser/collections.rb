@@ -54,7 +54,7 @@ module Ruby
       def parse_braced_literal
         start = consume(TokenType::LBRACE)
         consume_newlines
-        return parse_set(start) if rbrace_token?
+        return empty_object_literal(start) if rbrace_token?
 
         first = parse_expression(Precedence::OR)
         return parse_set_comprehension(start, first) if pipe_token?
@@ -156,6 +156,11 @@ module Ruby
 
       def empty_set?(first_element)
         rbrace_token? && !first_element
+      end
+
+      def empty_object_literal(start_token)
+        advance
+        AST::ObjectLiteral.new(pairs: [], location: start_token.location)
       end
 
       def empty_set_literal(start_token)

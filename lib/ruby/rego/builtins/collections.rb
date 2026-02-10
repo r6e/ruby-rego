@@ -16,7 +16,10 @@ module Ruby
       module Collections
         extend RegistryHelpers
 
+        MISSING_SET_ARGUMENT = Object.new.freeze
+
         COLLECTION_FUNCTIONS = {
+          "set" => { arity: [0, 1], handler: :set },
           "sort" => { arity: 1, handler: :sort },
           "array.concat" => { arity: 2, handler: :array_concat },
           "array.slice" => { arity: 3, handler: :array_slice },
@@ -43,6 +46,17 @@ module Ruby
         # @return [Ruby::Rego::ArrayValue]
         def self.sort(array)
           ArrayOps.sort(array)
+        end
+
+        # @param value [Ruby::Rego::Value, nil]
+        # @return [Ruby::Rego::SetValue]
+        def self.set(value = MISSING_SET_ARGUMENT)
+          return SetValue.new([]) if value.equal?(MISSING_SET_ARGUMENT)
+
+          Base.assert_type(value, expected: [ArrayValue, SetValue], context: "set")
+          return value if value.is_a?(SetValue)
+
+          SetValue.new(value.value)
         end
 
         # @param left [Ruby::Rego::Value]
@@ -106,7 +120,7 @@ module Ruby
         end
 
         def self.raise_union_type_error(left, right)
-          raise Ruby::Rego::TypeError.new(
+          raise Ruby::Rego::BuiltinArgumentError.new(
             "Type mismatch",
             expected: "both sets or both objects",
             actual: "#{left.class.name} and #{right.class.name}",

@@ -7,7 +7,7 @@ module Ruby
     module AST
       # Represents an import declaration.
       class Import < Base
-        # @param path [Object]
+        # @param path [Array<String> | String]
         # @param alias_name [String, nil]
         # @param location [Location, nil]
         def initialize(path:, alias_name: nil, location: nil)
@@ -16,7 +16,7 @@ module Ruby
           @alias = alias_name
         end
 
-        # @return [Object]
+        # @return [Array<String> | String]
         attr_reader :path
 
         # @return [String, nil]
