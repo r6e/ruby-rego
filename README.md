@@ -68,6 +68,10 @@ puts result.to_h
 
 ```ruby
 require "ruby/rego"
+require "yaml"
+
+policy_source = File.read("examples/validation_policy.rego")
+config_hash = YAML.safe_load(File.read("examples/sample_config.yaml"))
 
 policy = Ruby::Rego::Policy.new(policy_source)
 result = policy.evaluate(input: config_hash, query: "data.validation.deny")
