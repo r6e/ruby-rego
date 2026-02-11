@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
                      "deterministic evaluation, and a CLI for validation workflows."
   spec.homepage = "https://github.com/r6e/ruby-rego"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.2.0"
+  spec.required_ruby_version = ">= 3.3.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["homepage_uri"] = spec.homepage
