@@ -24,12 +24,13 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
+      - name: Skip typeprof on Ruby 3.2
+        if: matrix.ruby == '3.2'
+        run: echo "BUNDLE_WITHOUT=typeprof" >> "$GITHUB_ENV"
       - name: Set up Ruby
         uses: ruby/setup-ruby@09a7688d3b55cf0e976497ff046b70949eeaccfd # v1
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-        env:
-          BUNDLE_WITHOUT: ${{ matrix.ruby == '3.2' && 'typeprof' || '' }}
       - name: Run RSpec
         run: bundle exec rspec
