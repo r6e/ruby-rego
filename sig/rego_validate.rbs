@@ -6,9 +6,11 @@ module RegoValidate
     attr_accessor format: String
     attr_accessor help: bool
     attr_accessor yaml_aliases: bool
+    attr_accessor profile: bool
 
-    def initialize: (?policy: String?, ?config: String?, ?query: String?, ?format: String, ?help: bool, ?yaml_aliases: bool) -> void
+    def initialize: (?policy: String?, ?config: String?, ?query: String?, ?format: String, ?help: bool, ?yaml_aliases: bool, ?profile: bool) -> void
     def help?: () -> bool
+    def profile?: () -> bool
   end
 
   class ParseResult
@@ -67,7 +69,7 @@ module RegoValidate
     def emit_outcome: (Outcome outcome) -> Integer
     def handle_parse_error: (ParseResult parse_result) -> Integer
     def required_options_present?: (untyped parser) -> bool
-    def evaluate_policy: (untyped parser) -> EvaluationResult
+    def evaluate_policy: (untyped parser, ?profiler: Profiler?) -> EvaluationResult
     def report_evaluation_error: (EvaluationResult evaluation, untyped parser) -> void
     def handle_help: (untyped parser) -> Integer
     def handle_rego_error: (Ruby::Rego::Error error) -> Integer
@@ -105,6 +107,7 @@ module RegoValidate
       def add_config_option: (OptionParser opts) -> void
       def add_query_option: (OptionParser opts) -> void
       def add_format_option: (OptionParser opts) -> void
+      def add_profile_option: (OptionParser opts) -> void
       def add_yaml_aliases_option: (OptionParser opts) -> void
       def add_help_option: (OptionParser opts) -> void
     end
@@ -171,7 +174,7 @@ module RegoValidate
   end
 
   class PolicyEvaluator
-    def initialize: (String policy_source, untyped input, String? query) -> void
+    def initialize: (String policy_source, untyped input, String? query, ?profiler: Profiler?) -> void
     def evaluate: () -> EvaluationResult
 
     private
@@ -179,9 +182,97 @@ module RegoValidate
     attr_reader policy_source: String
     attr_reader input: untyped
     attr_reader query: String?
+    attr_reader profiler: Profiler?
     def resolve_query: (Ruby::Rego::CompiledModule compiled_module) -> String?
     def build_evaluation: (Ruby::Rego::CompiledModule compiled_module, String query_path) -> EvaluationResult
     def evaluate_compiled: (Ruby::Rego::CompiledModule compiled_module, String query_path) -> Ruby::Rego::Result
+    def measure: (String label) { () -> untyped } -> untyped
+  end
+
+  class Profiler
+    class Sample
+      attr_reader label: String
+      attr_reader duration_ms: Float
+      attr_reader allocations: Integer
+      attr_reader memory_bytes: Integer
+      attr_reader top_objects: Array[String]
+
+      def initialize: (label: String, duration_ms: Float, allocations: Integer, memory_bytes: Integer, top_objects: Array[String]) -> void
+      def report_line: () -> String
+      def top_objects_line: () -> String?
+
+      private
+
+      def format_duration: () -> String
+      def format_bytes: () -> String
+    end
+
+    class ByteFormatter
+      def initialize: (Integer bytes) -> void
+      def render: () -> String
+
+      private
+
+      attr_reader sign: String
+      attr_reader size: Integer
+    end
+
+    class Snapshot
+      def self.capture: () -> Snapshot
+      def self.capture_before: () -> Snapshot
+      def self.capture_after: () -> Snapshot
+      def initialize: (allocated: Integer, memsize: Integer, objects: Hash[Symbol, Integer]) -> void
+      def delta: (Snapshot other) -> Delta
+      attr_reader allocated: Integer
+      attr_reader memsize: Integer
+      attr_reader objects: Hash[Symbol, Integer]
+
+      private
+
+      def self.build_snapshot: (memsize: Integer, objects: Hash[Symbol, Integer]) -> Snapshot
+      def self.empty_object_counts: () -> Hash[Symbol, Integer]
+
+      def object_delta_map: (Hash[Symbol, Integer] after_objects) -> Hash[Symbol, Integer]
+      def add_delta: (Hash[Symbol, Integer] deltas, Symbol key, Integer count) -> void
+    end
+
+    class Delta
+      SKIP_KEYS: Array[Symbol]
+
+      def self.skip_key?: (Symbol key) -> bool
+      def initialize: (allocations: Integer, memory_bytes: Integer, object_deltas: Hash[Symbol, Integer]) -> void
+      def top_objects: (?limit: Integer) -> Array[String]
+
+      attr_reader allocations: Integer
+      attr_reader memory_bytes: Integer
+      attr_reader object_deltas: Hash[Symbol, Integer]
+    end
+
+    class Measurement
+      def initialize: (label: String, before: Snapshot, start: Float) -> void
+      def finish: (after: Snapshot, finish: Float) -> Sample
+
+      private
+
+      attr_reader before: Snapshot
+      attr_reader label: String
+      attr_reader start: Float
+    end
+
+    def initialize: (?stderr: IO) -> void
+    def measure: (String label) { () -> untyped } -> untyped
+    def report: () -> void
+
+    private
+
+    attr_reader clock: untyped
+    attr_reader samples: Array[Profiler::Sample]
+    attr_reader stderr: IO
+    def report_samples: () -> void
+    def report_hotspot: () -> void
+    def start_measurement: (String label) -> Measurement
+    def finish_measurement: (Measurement measurement) -> void
+    def clock_time: () -> Float
   end
 
   class OutcomeBuilder

@@ -64,6 +64,19 @@ module Ruby
         # @param args [Array<Value>]
         # @return [Value]
         def evaluate_function_call(name, args)
+          cache = memoization&.context&.function_values
+          if cache
+            key = [name.to_s, args]
+            return cache[key] if cache.key?(key)
+
+            cache[key] = evaluate_function_call_uncached(name, args)
+            return cache[key]
+          end
+
+          evaluate_function_call_uncached(name, args)
+        end
+
+        def evaluate_function_call_uncached(name, args)
           rules = environment.rules.fetch(name.to_s) { [] }
           function_rules = rules.select(&:function?)
           return UndefinedValue.new if function_rules.empty?
@@ -95,6 +108,10 @@ module Ruby
         private
 
         attr_reader :environment, :expression_evaluator, :unifier
+
+        def memoization
+          environment.memoization
+        end
 
         def evaluate_partial_set_rules(rules)
           values = rules.flat_map { |rule| rule_body_values(rule) }

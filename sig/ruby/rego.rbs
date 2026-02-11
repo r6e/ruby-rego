@@ -468,6 +468,7 @@ module Ruby
       UNSET: untyped
 
       def with_overrides: (?input: untyped, ?data: untyped) { (untyped) -> untyped } -> untyped
+      def memoization: () -> Memoization::Store
 
       private
 
@@ -488,6 +489,34 @@ module Ruby
       def resolve_reference_variable: (untyped value) -> untyped
     end
 
+    class Environment::State
+      attr_reader input: untyped
+      attr_reader data: untyped
+      attr_reader rules: Hash[untyped, untyped]
+      attr_reader builtin_registry: Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay
+
+      def initialize: (input: untyped, data: untyped, rules: Hash[untyped, untyped], builtin_registry: Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay) -> void
+    end
+
+    module Memoization
+      class Context
+        attr_reader rule_values: Hash[String, Value]
+        attr_reader reference_values: Hash[AST::Reference, Value]
+        attr_reader reference_keys: Hash[AST::Reference, untyped]
+        attr_reader function_values: Hash[Array[untyped], Value]
+
+        def initialize: () -> void
+      end
+
+      class Store
+        def initialize: () -> void
+        def reset!: () -> void
+        def reset: () -> void
+        def with_context: () { () -> untyped } -> untyped
+        def context: () -> Context
+      end
+    end
+
     class Environment
       RESERVED_BINDINGS: Hash[String, Symbol]
       RESERVED_NAMES: Array[String]
@@ -496,6 +525,7 @@ module Ruby
       attr_reader data: Value
       attr_reader rules: Hash[untyped, untyped]
       attr_reader builtin_registry: Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay
+      attr_reader memoization: Memoization::Store
 
       def initialize: (input: untyped, data: untyped, rules: Hash[untyped, untyped], ?builtin_registry: Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay) -> void
       def push_scope: () -> Environment
@@ -508,15 +538,36 @@ module Ruby
       def with_bindings: (Hash[String | Symbol, untyped] bindings) { () -> untyped } -> untyped
       def with_overrides: (?input: untyped, ?data: untyped) { (Environment) -> untyped } -> untyped
       def with_builtin_registry: (Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay registry) { (Environment) -> untyped } -> untyped
+      def self.from_state: (Environment::State state) -> Environment
+      def reset!: (Environment::State state) -> Environment
+      def reset: (Environment::State state) -> Environment
+      def prepare_for_pool: () -> Environment
 
       private
 
       attr_reader locals: Array[Hash[String, Value]]
+      attr_reader scope_pool: Array[Hash[String, Value]]
+      def fresh_scope: () -> Hash[String, Value]
+      def reset_scopes: () -> void
+      def apply_state: (Environment::State state) -> void
       def resolve_base: (untyped base) -> Value
       def resolve_path_segment: (Value current, untyped segment) -> Value
       def resolve_reference_path: (Value current, Array[untyped] path) -> Value
       def extract_reference_key: (untyped segment) -> untyped
       def resolve_reference_variable: (untyped value) -> untyped
+    end
+
+    class EnvironmentPool
+      def initialize: (?max_size: Integer?) -> void
+      def checkout: (Environment::State state) -> Environment
+      def checkin: (Environment environment) -> void
+
+      private
+
+      def max_size: () -> untyped
+      def max_size_full?: (Integer current_size) -> bool
+      def unbounded: () -> untyped
+      def normalized_max_size: (untyped value) -> untyped
     end
 
     module WithModifiers
@@ -703,13 +754,15 @@ module Ruby
     end
 
     class Policy
-      def initialize: (String source) -> void
+      def initialize: (String source, ?environment_pool: EnvironmentPool) -> void
       def evaluate: (?input: untyped, ?data: untyped, ?query: untyped) -> Result
 
       private
 
       attr_reader compiled_module: CompiledModule
+      attr_reader environment_pool: EnvironmentPool
       attr_reader source: String
+      def evaluate_with_pool: (input: untyped, data: untyped, query: untyped) -> Result
     end
 
     module CompiledModuleLike
@@ -1044,7 +1097,8 @@ module Ruby
       attr_reader environment: Environment
 
       def self.from_ast: (AST::Module ast_module, ?from_ast_options options) -> Evaluator
-      def initialize: (CompiledModuleLike compiled_module, input: untyped, data: untyped) -> void
+      def self.from_environment: (CompiledModuleLike compiled_module, Environment environment) -> Evaluator
+      def initialize: (CompiledModuleLike compiled_module, ?input: untyped, ?data: untyped) -> void
       def evaluate: (?untyped query) -> Result
 
       private
@@ -1057,6 +1111,17 @@ module Ruby
       def build_expression_evaluator: (Evaluator::RuleValueProvider rule_value_provider, Array[String] package_path) -> Evaluator::ExpressionEvaluator
       def build_rule_evaluator: (Evaluator::ExpressionEvaluator expression_evaluator, Evaluator::RuleValueProvider rule_value_provider) -> Evaluator::RuleEvaluator
       def eval_node: (untyped node) -> Value
+      def initialize_with_environment: (CompiledModuleLike compiled_module, Environment environment) -> void
+    end
+
+    class ResultBuilder
+      def initialize: (untyped value, Hash[String, Value]? bindings) -> void
+      def build: () -> Result
+
+      private
+
+      attr_reader bindings: Hash[String, Value]?
+      attr_reader value: untyped
     end
 
     class Evaluator::QueryNodeBuilder
@@ -1070,7 +1135,7 @@ module Ruby
     end
 
     class Evaluator::RuleValueProvider
-      def initialize: (rules_by_name: Hash[String, Array[AST::Rule]]) -> void
+      def initialize: (rules_by_name: Hash[String, Array[AST::Rule]], ?memoization: Memoization::Store?) -> void
       def attach: (Evaluator::RuleEvaluator rule_evaluator) -> void
       def value_for: (String name) -> Value
       def rule_defined?: (String name) -> bool
@@ -1079,10 +1144,27 @@ module Ruby
 
       attr_reader rule_evaluator: Evaluator::RuleEvaluator?
       attr_reader rules_by_name: Hash[String, Array[AST::Rule]]
+      attr_reader memoization: Memoization::Store?
+      def memoized_value_for: (String name) -> Value
+      def evaluate_value_for: (String name) -> Value
     end
 
     class Evaluator::ReferenceResolver
-      def initialize: (environment: Environment, package_path: Array[String], rule_value_provider: Evaluator::RuleValueProvider, ?imports: Array[AST::Import]) -> void
+      UNCACHEABLE: untyped
+
+      class StaticKeyBuilder
+        ROOT_NAMES: Array[String]
+
+        def initialize: (AST::Reference reference) -> void
+        def call: () -> Array[untyped]?
+
+        private
+
+        attr_reader reference: AST::Reference
+        def segment_key: (untyped segment) -> untyped?
+      end
+
+      def initialize: (environment: Environment, package_path: Array[String], rule_value_provider: Evaluator::RuleValueProvider, ?imports: Array[AST::Import], ?memoization: Memoization::Store?) -> void
       def resolve: (untyped ref) -> Value
       def resolve_import_variable: (String name) -> Value?
       def resolve_rule_variable: (String name) -> Value?
@@ -1090,6 +1172,7 @@ module Ruby
 
       private
 
+      def resolve_reference_value: (AST::Reference ref) -> Value
       def resolve_rule_reference: (AST::Reference ref) -> Value?
       def resolve_import_reference: (AST::Reference ref) -> Value?
       def resolve_rule_reference_without_data: (AST::Reference ref) -> Value?
@@ -1099,6 +1182,8 @@ module Ruby
       def package_rule_reference: (Array[untyped] keys, Array[AST::RefArg] path) -> [String, Array[AST::RefArg]]?
       def direct_rule_reference: (Array[untyped] keys, Array[AST::RefArg] path) -> [String, Array[AST::RefArg]]?
       def resolve_reference_path: (Value current, Array[AST::RefArg] path) -> Value
+      def resolve_reference_path_fast: (Value current, AST::Reference reference) -> Value
+      def resolve_reference_path_keys: (Value current, Array[untyped] keys) -> Value
       def resolve_path_segment: (Value current, AST::RefArg segment) -> Value
       def valid_reference_keys: (Array[AST::RefArg] path) -> Array[untyped]?
       def reference_keys: (Array[AST::RefArg] path) -> Array[untyped]
@@ -1109,6 +1194,11 @@ module Ruby
       def import_path_segments: (AST::Import import) -> Array[String]
       def build_reference_from_path: (Array[String] path) -> AST::Reference
       def resolve_variable_key: (String name) -> Value
+      def cached_reference_value: (AST::Reference reference) -> Value?
+      def cache_reference_value: (AST::Reference reference, Value value) -> void
+      def reference_cache: () -> Hash[AST::Reference, Value]?
+      def cacheable_reference?: (AST::Reference reference) -> bool
+      def static_reference_keys: (AST::Reference reference) -> Array[untyped]?
 
       private
 
@@ -1117,6 +1207,7 @@ module Ruby
       attr_reader package_path: Array[String]
       attr_reader rule_value_provider: Evaluator::RuleValueProvider
       attr_reader import_map: Hash[String, AST::Reference]
+      attr_reader memoization: Memoization::Store?
     end
 
     class Evaluator::ReferenceKeyResolver
@@ -1134,8 +1225,8 @@ module Ruby
     class Evaluator::ExpressionEvaluator
       PRIMITIVE_TYPES: Array[Class]
       NODE_EVALUATORS: Array[[Class, ^(untyped, Evaluator::ExpressionEvaluator) -> Value]]
-      LOGICAL_AND_RESULTS: Hash[Array[Symbol], Value]
-      LOGICAL_OR_RESULTS: Hash[Array[Symbol], Value]
+      TRUE_VALUE: BooleanValue
+      FALSE_VALUE: BooleanValue
 
       include Evaluator::AssignmentSupport
 
@@ -1409,6 +1500,7 @@ module Ruby
 
       private
 
+      def evaluate_function_call_uncached: (String name, Array[Value] args) -> Value
       def evaluate_partial_set_rules: (Array[AST::Rule] rules) -> Value
       def evaluate_partial_object_rules: (Array[AST::Rule] rules) -> Value
       def partial_object_pairs: (Array[AST::Rule] rules) -> Hash[Object, Value]
@@ -1465,6 +1557,7 @@ module Ruby
       def bindings_for: (AST::Variable variable, untyped value) -> Hash[String, Value]
       def merge_bindings: (Hash[String, Value] existing, Hash[String, Value] additions) -> Hash[String, Value]?
       def empty_bindings_enum: () -> Enumerator[Hash[String, Value]]
+      def memoization: () -> Memoization::Store
 
       attr_reader environment: Environment
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator

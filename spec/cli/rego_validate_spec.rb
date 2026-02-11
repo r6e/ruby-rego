@@ -56,6 +56,28 @@ RSpec.describe "RegoValidate::CLI success" do
   end
 end
 
+RSpec.describe "RegoValidate::CLI profiling" do
+  include_context "rego cli helpers"
+
+  it "profiles when objspace is unavailable" do
+    allow(Kernel).to receive(:require).and_wrap_original do |original, name|
+      raise LoadError, "objspace unavailable" if name == "objspace"
+
+      original.call(name)
+    end
+
+    Dir.mktmpdir do |dir|
+      policy_path = write_temp_file(dir, "policy.rego", policy_source)
+      config_path = write_temp_file(dir, "config.json", JSON.generate({ "user" => "admin" }))
+
+      result = run_cli(["--policy", policy_path, "--config", config_path, "--profile"])
+
+      expect(result[:status]).to eq(0)
+      expect(result[:stderr]).to include("Profile:")
+    end
+  end
+end
+
 RSpec.describe "RegoValidate::CLI errors" do
   include_context "rego cli helpers"
 

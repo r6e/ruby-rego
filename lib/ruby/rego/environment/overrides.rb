@@ -14,8 +14,10 @@ module Ruby
       # @return [Object]
       def with_overrides(input: UNSET, data: UNSET)
         original = [@input, @data]
-        apply_overrides(input, data)
-        yield self
+        memoization.with_context do
+          apply_overrides(input, data)
+          yield self
+        end
       ensure
         @input, @data = original
       end

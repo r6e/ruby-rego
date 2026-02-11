@@ -93,6 +93,68 @@ RSpec.describe Ruby::Rego::Environment do
       expect(value.to_ruby).to eq("alpha")
     end
   end
+
+  describe "pooling" do
+    it "reuses environments with reset state" do
+      pool = Ruby::Rego::EnvironmentPool.new
+      state1 = Ruby::Rego::Environment::State.new(
+        input: { "user" => "admin" },
+        data: {},
+        rules: {},
+        builtin_registry: Ruby::Rego::Builtins::BuiltinRegistry.instance
+      )
+      env1 = pool.checkout(state1)
+      env1.bind("x", 1)
+      pool.checkin(env1)
+
+      state2 = Ruby::Rego::Environment::State.new(
+        input: { "user" => "bob" },
+        data: {},
+        rules: {},
+        builtin_registry: Ruby::Rego::Builtins::BuiltinRegistry.instance
+      )
+      env2 = pool.checkout(state2)
+
+      expect(env2.lookup("x")).to be_a(Ruby::Rego::UndefinedValue)
+      expect(env2.input.to_ruby["user"]).to eq("bob")
+    end
+
+    it "caps the pool size when max_size is set" do
+      pool = Ruby::Rego::EnvironmentPool.new(max_size: 1)
+      state1 = Ruby::Rego::Environment::State.new(
+        input: { "user" => "admin" },
+        data: {},
+        rules: {},
+        builtin_registry: Ruby::Rego::Builtins::BuiltinRegistry.instance
+      )
+      state2 = Ruby::Rego::Environment::State.new(
+        input: { "user" => "bob" },
+        data: {},
+        rules: {},
+        builtin_registry: Ruby::Rego::Builtins::BuiltinRegistry.instance
+      )
+      state3 = Ruby::Rego::Environment::State.new(
+        input: { "user" => "carol" },
+        data: {},
+        rules: {},
+        builtin_registry: Ruby::Rego::Builtins::BuiltinRegistry.instance
+      )
+
+      env1 = pool.checkout(state1)
+      env2 = pool.checkout(state2)
+      pool.checkin(env1)
+      pool.checkin(env2)
+
+      env3 = pool.checkout(state3)
+
+      expect(env3.object_id).to eq(env1.object_id)
+    end
+
+    it "raises for negative max_size" do
+      expect { Ruby::Rego::EnvironmentPool.new(max_size: -1) }
+        .to raise_error(ArgumentError, /max_size/)
+    end
+  end
 end
 
 # rubocop:enable Metrics/BlockLength

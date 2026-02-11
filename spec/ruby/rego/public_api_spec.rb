@@ -115,6 +115,15 @@ RSpec.describe Ruby::Rego::Policy do
       expect(admin_result.value.to_ruby).to be(true)
       expect(user_result.value.to_ruby).to be(false)
     end
+
+    it "accepts a custom environment pool" do
+      pool = Ruby::Rego::EnvironmentPool.new(max_size: 0)
+      policy = described_class.new(policy_source, environment_pool: pool)
+
+      result = policy.evaluate(input: { "user" => "admin" }, query: "data.example.allow")
+
+      expect(result.value.to_ruby).to be(true)
+    end
   end
 end
 

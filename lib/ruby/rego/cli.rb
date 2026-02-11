@@ -8,7 +8,7 @@ require "ruby/rego"
 # CLI entrypoints and helpers for rego-validate.
 module RegoValidate
   # CLI option values.
-  Options = Struct.new(:policy, :config, :query, :format, :help, :yaml_aliases, keyword_init: true)
+  Options = Struct.new(:policy, :config, :query, :format, :help, :yaml_aliases, :profile, keyword_init: true)
 
   # CLI option values.
   class Options
@@ -17,6 +17,13 @@ module RegoValidate
     # @return [Boolean]
     def help?
       help
+    end
+
+    # Check whether profiling output was requested.
+    #
+    # @return [Boolean]
+    def profile?
+      profile
     end
   end
 
@@ -99,7 +106,7 @@ module RegoValidate
       @argv = argv
       @stdout = stdout
       @stderr = stderr
-      @options = Options.new(format: "text", help: false, yaml_aliases: false)
+      @options = Options.new(format: "text", help: false, yaml_aliases: false, profile: false)
     end
 
     # Run the CLI and return an exit status.
@@ -134,11 +141,9 @@ module RegoValidate
     end
 
     def handle_evaluation(parser)
-      evaluation = evaluate_policy(parser)
-      return 2 unless evaluation.success?
-
+      evaluation = evaluate_policy(parser, profiler: options.profile? ? Profiler.new(stderr: stderr) : nil)
       outcome = evaluation.outcome
-      return 2 unless outcome
+      return 2 unless evaluation.success? && outcome
 
       emit_outcome(outcome)
     end
@@ -161,11 +166,11 @@ module RegoValidate
       false
     end
 
-    def evaluate_policy(parser)
+    def evaluate_policy(parser, profiler: nil)
       policy_source, config_result = SourceLoader.new(options: options, reporter: reporter, parser: parser).load
       return EvaluationResult.new unless policy_source && config_result.success?
 
-      evaluation = PolicyEvaluator.new(policy_source, config_result.value, options.query).evaluate
+      evaluation = PolicyEvaluator.new(policy_source, config_result.value, options.query, profiler: profiler).evaluate
       report_evaluation_error(evaluation, parser)
       evaluation
     end
@@ -233,7 +238,7 @@ module RegoValidate
       # @return [ParseResult]
       def call
         # @type var options: Options
-        options = Options.new(format: "text", help: false, yaml_aliases: false)
+        options = Options.new(format: "text", help: false, yaml_aliases: false, profile: false)
         parse_with(options)
       end
 
@@ -257,6 +262,7 @@ module RegoValidate
         add_config_option
         add_query_option
         add_format_option
+        add_profile_option
         add_yaml_aliases_option
         add_help_option
       ].freeze
@@ -304,6 +310,12 @@ module RegoValidate
         message = "Output format: #{OptionsParser::VALID_FORMATS.join(", ")} (default: text)"
         opts.on("--format FORMAT", OptionsParser::VALID_FORMATS, message) do |format|
           options.format = format
+        end
+      end
+
+      def add_profile_option(opts)
+        opts.on("--profile", "Emit evaluation profiling to stderr") do
+          options.profile = true
         end
       end
 
@@ -488,6 +500,238 @@ module RegoValidate
   end
   private_constant :DefaultQueryResolver
 
+  # Captures timing and memory statistics for policy evaluation.
+  class Profiler
+    # Holds a single profiler sample.
+    Sample = Struct.new(:label, :duration_ms, :allocations, :memory_bytes, :top_objects, keyword_init: true)
+
+    # Rendering helpers for profiler samples.
+    class Sample
+      def report_line
+        parts = [
+          "  #{label}: #{format_duration}",
+          "allocs +#{allocations}",
+          "mem #{format_bytes}"
+        ]
+        parts.join(", ")
+      end
+
+      def top_objects_line
+        return nil if top_objects.empty?
+
+        "  top allocations: #{top_objects.join(", ")}"
+      end
+
+      private
+
+      def format_duration
+        format("%.2f ms", duration_ms)
+      end
+
+      def format_bytes
+        ByteFormatter.new(memory_bytes).render
+      end
+    end
+
+    # Formats byte sizes for profiler output.
+    class ByteFormatter
+      def initialize(bytes)
+        @sign = bytes.negative? ? "-" : "+"
+        @size = bytes.abs
+      end
+
+      def render
+        unit, value = if size < 1024
+                        ["B", size.to_s]
+                      elsif size < 1024 * 1024
+                        ["KB", Kernel.format("%.2f", size / 1024.0)]
+                      else
+                        ["MB", Kernel.format("%.2f", size / (1024.0 * 1024.0))]
+                      end
+        "#{sign}#{value} #{unit}"
+      end
+
+      private
+
+      attr_reader :sign, :size
+    end
+
+    # Captures a memory snapshot for diffing.
+    class Snapshot
+      class << self
+        def capture
+          require "objspace"
+          build_snapshot(memsize: ObjectSpace.memsize_of_all, objects: ObjectSpace.count_objects)
+        rescue LoadError, NoMethodError
+          build_snapshot(memsize: 0, objects: empty_object_counts)
+        end
+
+        def capture_before
+          capture
+        end
+
+        def capture_after
+          capture
+        end
+
+        private
+
+        def build_snapshot(memsize:, objects:)
+          new(
+            allocated: GC.stat[:total_allocated_objects],
+            memsize: memsize,
+            objects: objects
+          )
+        end
+
+        def empty_object_counts
+          {} # @type var objects: Hash[Symbol, Integer]
+        end
+      end
+
+      def initialize(allocated:, memsize:, objects:)
+        @allocated = allocated
+        @memsize = memsize
+        @objects = objects
+      end
+
+      attr_reader :allocated, :memsize, :objects
+
+      def delta(other)
+        Delta.new(
+          allocations: other.allocated - allocated,
+          memory_bytes: other.memsize - memsize,
+          object_deltas: object_delta_map(other.objects)
+        )
+      end
+
+      private
+
+      def object_delta_map(after_objects)
+        deltas = {} # @type var deltas: Hash[Symbol, Integer]
+        after_objects.each { |key, count| add_delta(deltas, key, count) }
+        deltas
+      end
+
+      def add_delta(deltas, key, count)
+        return if Delta.skip_key?(key)
+
+        delta = count - (objects[key] || 0)
+        deltas[key] = delta if delta.positive?
+      end
+    end
+
+    # Computes deltas between snapshots.
+    class Delta
+      SKIP_KEYS = %i[TOTAL FREE].freeze
+
+      def self.skip_key?(key)
+        SKIP_KEYS.include?(key)
+      end
+
+      def initialize(allocations:, memory_bytes:, object_deltas:)
+        @allocations = allocations
+        @memory_bytes = memory_bytes
+        @object_deltas = object_deltas
+      end
+
+      attr_reader :allocations, :memory_bytes, :object_deltas
+
+      def top_objects(limit: 3)
+        object_deltas
+          .sort_by { |(_, count)| -count }
+          .first(limit)
+          .map { |(key, count)| "#{key} +#{count}" }
+      end
+    end
+
+    # Tracks measurement state for a single sample.
+    class Measurement
+      def initialize(label:, before:, start:)
+        @label = label
+        @before = before
+        @start = start
+      end
+
+      def finish(after:, finish:)
+        delta = before.delta(after)
+        Sample.new(
+          label: label,
+          duration_ms: ((finish - start) * 1000.0),
+          allocations: delta.allocations,
+          memory_bytes: delta.memory_bytes,
+          top_objects: delta.top_objects
+        )
+      end
+
+      private
+
+      attr_reader :before, :label, :start
+    end
+
+    # @param stderr [IO]
+    def initialize(stderr: $stderr)
+      @stderr = stderr
+      @samples = [] # @type var @samples: Array[Sample]
+      @clock = Process.method(:clock_gettime)
+    end
+
+    # @param label [String]
+    # @return [Object]
+    def measure(label)
+      measurement = start_measurement(label)
+      result = yield
+      result
+    ensure
+      finish_measurement(measurement)
+    end
+
+    # @return [void]
+    def report
+      return if samples.empty?
+
+      stderr.puts("Profile:")
+      report_samples
+      report_hotspot
+    end
+
+    private
+
+    attr_reader :clock, :samples, :stderr
+
+    def report_samples
+      samples.each do |sample|
+        stderr.puts(sample.report_line)
+        top_line = sample.top_objects_line
+        stderr.puts(top_line) if top_line
+      end
+    end
+
+    def report_hotspot
+      hotspot = samples.max_by(&:duration_ms)
+      stderr.puts("  hotspot: #{hotspot.label}") if hotspot
+    end
+
+    def start_measurement(label)
+      Measurement.new(
+        label: label,
+        before: Snapshot.capture_before,
+        start: clock_time
+      )
+    end
+
+    def finish_measurement(measurement)
+      return unless measurement
+
+      sample = measurement.finish(after: Snapshot.capture_after, finish: clock_time)
+      samples << sample
+    end
+
+    def clock_time
+      clock.call(Process::CLOCK_MONOTONIC)
+    end
+  end
+
   # Compiles and evaluates policies with a resolved query.
   class PolicyEvaluator
     # Create a policy evaluator.
@@ -495,33 +739,36 @@ module RegoValidate
     # @param policy_source [String]
     # @param input [Object]
     # @param query [String, nil]
-    def initialize(policy_source, input, query)
+    def initialize(policy_source, input, query, profiler: nil)
       @policy_source = policy_source
       @input = input
       @query = query
+      @profiler = profiler
     end
 
     # Compile and evaluate the policy using the resolved query.
     #
     # @return [EvaluationResult]
     def evaluate
-      compiled_module = Ruby::Rego.compile(policy_source)
+      compiled_module = measure("compile") { Ruby::Rego.compile(policy_source) }
       query_path = resolve_query(compiled_module)
       return EvaluationResult.new(error_message: "No default validation rule found. Provide --query.") unless query_path
 
       build_evaluation(compiled_module, query_path)
+    ensure
+      profiler&.report
     end
 
     private
 
-    attr_reader :policy_source, :input, :query
+    attr_reader :policy_source, :input, :query, :profiler
 
     def resolve_query(compiled_module)
       query || DefaultQueryResolver.new(compiled_module).resolve
     end
 
     def build_evaluation(compiled_module, query_path)
-      result = evaluate_compiled(compiled_module, query_path)
+      result = measure("evaluate") { evaluate_compiled(compiled_module, query_path) }
       outcome = OutcomeBuilder.new(result, query_path).build
       EvaluationResult.new(outcome: outcome)
     end
@@ -532,6 +779,12 @@ module RegoValidate
       raise
     rescue StandardError => e
       raise Ruby::Rego::Error.new("Rego evaluation failed: #{e.message}", location: nil), cause: e
+    end
+
+    def measure(label, &)
+      return yield unless profiler
+
+      profiler.measure(label, &)
     end
   end
 

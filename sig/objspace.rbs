@@ -1,0 +1,4 @@
+module ObjectSpace
+  def self.memsize_of_all: () -> Integer
+  def self.count_objects: () -> Hash[Symbol, Integer]
+end

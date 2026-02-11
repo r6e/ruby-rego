@@ -28,6 +28,17 @@ module Ruby
   module Rego
     # Evaluates compiled Rego modules against input and data.
     class Evaluator
+      # Builds an evaluator with a preconfigured environment.
+      #
+      # @param compiled_module [#rules_by_name, #package_path] compiled module
+      # @param environment [Environment] preconfigured environment
+      # @return [Evaluator]
+      def self.from_environment(compiled_module, environment)
+        evaluator = allocate
+        evaluator.send(:initialize_with_environment, compiled_module, environment)
+        evaluator
+      end
+
       # Build an evaluator directly from an AST module.
       #
       # @param ast_module [AST::Module] parsed module
@@ -68,11 +79,9 @@ module Ruby
       # @param query [Object, nil] query path (e.g. "data.package.rule")
       # @return [Result] evaluation result
       def evaluate(query = nil)
+        environment.memoization.reset!
         value, bindings = query ? evaluate_query(query) : [evaluate_rules, nil]
-        success = !value.is_a?(UndefinedValue)
-        return Result.new(value: value, success: success) unless bindings
-
-        Result.new(value: value, success: success, bindings: bindings)
+        ResultBuilder.new(value, bindings).build
       end
 
       private
@@ -80,7 +89,10 @@ module Ruby
       attr_reader :expression_evaluator, :rule_evaluator
 
       def build_evaluators(rules_by_name, package_path)
-        rule_value_provider = RuleValueProvider.new(rules_by_name: rules_by_name)
+        rule_value_provider = RuleValueProvider.new(
+          rules_by_name: rules_by_name,
+          memoization: environment.memoization
+        )
         expression_evaluator = build_expression_evaluator(rule_value_provider, package_path)
         rule_evaluator = build_rule_evaluator(expression_evaluator, rule_value_provider)
         expression_evaluator.attach_query_evaluator(rule_evaluator)
@@ -94,7 +106,8 @@ module Ruby
             environment: @environment,
             package_path: package_path,
             rule_value_provider: rule_value_provider,
-            imports: compiled_module.imports
+            imports: compiled_module.imports,
+            memoization: environment.memoization
           )
         )
       end
@@ -128,6 +141,34 @@ module Ruby
       def eval_node(node)
         expression_evaluator.evaluate(node)
       end
+
+      def initialize_with_environment(compiled_module, environment)
+        @compiled_module = compiled_module
+        rules_by_name = compiled_module.rules_by_name
+        package_path = compiled_module.package_path
+        @environment = environment
+        @expression_evaluator, @rule_evaluator = build_evaluators(rules_by_name, package_path)
+      end
+      private :initialize_with_environment
+    end
+
+    # Builds result objects from evaluation outputs.
+    class ResultBuilder
+      def initialize(value, bindings)
+        @value = value
+        @bindings = bindings
+      end
+
+      def build
+        success = !value.is_a?(UndefinedValue)
+        return Result.new(value: value, success: success) unless bindings
+
+        Result.new(value: value, success: success, bindings: bindings)
+      end
+
+      private
+
+      attr_reader :bindings, :value
     end
   end
 end

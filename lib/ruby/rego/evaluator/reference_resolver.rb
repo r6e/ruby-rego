@@ -6,13 +6,56 @@ module Ruby
       # Resolves AST references against input/data and rule outputs.
       # rubocop:disable Metrics/ClassLength
       class ReferenceResolver
+        UNCACHEABLE = Object.new.freeze
+
+        # Builds static reference keys for cacheable references.
+        class StaticKeyBuilder
+          ROOT_NAMES = %w[input data].freeze
+
+          # @param reference [AST::Reference]
+          def initialize(reference)
+            @reference = reference
+          end
+
+          # @return [Array<Object>, nil]
+          def call
+            base = reference.base
+            return nil unless base.is_a?(AST::Variable)
+            return nil unless ROOT_NAMES.include?(base.name)
+
+            keys = [] # @type var keys: Array[Object]
+            reference.path.each do |segment|
+              key = segment_key(segment)
+              return nil unless key
+
+              keys << key
+            end
+            keys
+          end
+
+          private
+
+          attr_reader :reference
+
+          def segment_key(segment)
+            value = segment.is_a?(AST::RefArg) ? segment.value : segment
+            return value.value if value.is_a?(AST::Literal)
+            return value.to_ruby if value.is_a?(Value)
+            return value if value.is_a?(String) || value.is_a?(Symbol) || value.is_a?(Numeric)
+
+            nil
+          end
+        end
+
         # @param environment [Environment]
         # @param package_path [Array<String>]
         # @param rule_value_provider [RuleValueProvider]
-        def initialize(environment:, package_path:, rule_value_provider:, imports: [])
+        # @param memoization [Memoization::Store, nil]
+        def initialize(environment:, package_path:, rule_value_provider:, imports: [], memoization: nil)
           @environment = environment
           @package_path = package_path
           @rule_value_provider = rule_value_provider
+          @memoization = memoization
           @key_resolver = ReferenceKeyResolver.new(
             environment: environment,
             variable_resolver: method(:resolve_variable_key)
@@ -22,28 +65,16 @@ module Ruby
 
         # @param ref [Object]
         # @return [Value]
-        # rubocop:disable Metrics/MethodLength
         def resolve(ref)
-          if ref.is_a?(AST::Reference)
-            import_value = resolve_import_reference(ref)
-            return import_value if import_value
+          return environment.resolve_reference(ref) unless ref.is_a?(AST::Reference)
 
-            rule_value = resolve_rule_reference_without_data(ref)
-            return rule_value if rule_value
-          end
+          cached = cached_reference_value(ref)
+          return cached if cached
 
-          resolved = if ref.is_a?(AST::Reference)
-                       base_value = environment.resolve_reference(ref.base)
-                       resolve_reference_path(base_value, ref.path)
-                     else
-                       environment.resolve_reference(ref)
-                     end
-          return resolved unless ref.is_a?(AST::Reference)
-
-          rule_value = resolve_rule_reference(ref)
-          rule_value || resolved
+          value = resolve_reference_value(ref)
+          cache_reference_value(ref, value) if cacheable_reference?(ref)
+          value
         end
-        # rubocop:enable Metrics/MethodLength
 
         # Resolve an import alias used as a bare variable.
         #
@@ -107,7 +138,20 @@ module Ruby
 
         private
 
-        attr_reader :environment, :package_path, :rule_value_provider, :key_resolver, :import_map
+        attr_reader :environment, :package_path, :rule_value_provider, :key_resolver, :import_map, :memoization
+
+        def resolve_reference_value(ref)
+          import_value = resolve_import_reference(ref)
+          return import_value if import_value
+
+          rule_value = resolve_rule_reference_without_data(ref)
+          return rule_value if rule_value
+
+          base_value = environment.resolve_reference(ref.base)
+          resolved = resolve_reference_path_fast(base_value, ref)
+          rule_value = resolve_rule_reference(ref)
+          rule_value || resolved
+        end
 
         def resolve_rule_reference(ref)
           base = ref.base
@@ -153,6 +197,21 @@ module Ruby
         def resolve_reference_path(current, path)
           path.each do |segment|
             current = resolve_path_segment(current, segment)
+            return current if current.is_a?(UndefinedValue)
+          end
+          current
+        end
+
+        def resolve_reference_path_fast(current, reference)
+          keys = static_reference_keys(reference)
+          return resolve_reference_path(current, reference.path) unless keys
+
+          resolve_reference_path_keys(current, keys)
+        end
+
+        def resolve_reference_path_keys(current, keys)
+          keys.each do |key|
+            current = current.fetch_reference(key)
             return current if current.is_a?(UndefinedValue)
           end
           current
@@ -254,6 +313,37 @@ module Ruby
             base: AST::Variable.new(name: base_name.to_s),
             path: segments.map { |segment| AST::DotRefArg.new(value: segment.to_s) }
           )
+        end
+
+        def cached_reference_value(reference)
+          reference_cache&.fetch(reference, nil)
+        end
+
+        def cache_reference_value(reference, value)
+          cache = reference_cache
+          return unless cache
+
+          cache[reference] = value
+        end
+
+        def reference_cache
+          memoization&.context&.reference_values
+        end
+
+        def cacheable_reference?(reference)
+          !static_reference_keys(reference).nil?
+        end
+
+        def static_reference_keys(reference)
+          cache = memoization&.context&.reference_keys
+          return StaticKeyBuilder.new(reference).call unless cache
+
+          cached = cache.fetch(reference) do
+            StaticKeyBuilder.new(reference).call || UNCACHEABLE
+          end
+          return nil if cached == UNCACHEABLE
+
+          cached
         end
       end
       # rubocop:enable Metrics/ClassLength

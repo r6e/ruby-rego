@@ -29,18 +29,8 @@ module Ruby
           [AST::Call, ->(call, evaluator) { evaluator.send(:evaluate_call, call) }],
           [AST::TemplateString, ->(node, evaluator) { evaluator.send(:evaluate_template_string, node) }]
         ].freeze
-        LOGICAL_AND_RESULTS = {
-          %i[truthy truthy] => BooleanValue.new(true),
-          %i[truthy falsy] => BooleanValue.new(false),
-          %i[undefined falsy] => BooleanValue.new(false),
-          %i[falsy falsy] => BooleanValue.new(false)
-        }.freeze
-        LOGICAL_OR_RESULTS = {
-          %i[truthy truthy] => BooleanValue.new(true),
-          %i[falsy truthy] => BooleanValue.new(true),
-          %i[undefined truthy] => BooleanValue.new(true),
-          %i[falsy falsy] => BooleanValue.new(false)
-        }.freeze
+        TRUE_VALUE = BooleanValue.new(true)
+        FALSE_VALUE = BooleanValue.new(false)
 
         include AssignmentSupport
         include BindingHelpers
@@ -295,17 +285,29 @@ module Ruby
         # :reek:TooManyStatements
         def evaluate_and_operator(node)
           left_state = logical_state(evaluate(node.left))
-          left_falsy = left_state == :falsy
-          right_state = left_falsy ? :falsy : logical_state(evaluate(node.right))
-          LOGICAL_AND_RESULTS.fetch([left_state, right_state], UndefinedValue.new)
+          return FALSE_VALUE if left_state == :falsy
+
+          right_state = logical_state(evaluate(node.right))
+          right_truthy = right_state == :truthy
+          right_falsy = right_state == :falsy
+          return TRUE_VALUE if left_state == :truthy && right_truthy
+          return FALSE_VALUE if right_falsy
+
+          UndefinedValue.new
         end
 
         # :reek:TooManyStatements
         def evaluate_or_operator(node)
           left_state = logical_state(evaluate(node.left))
-          left_truthy = left_state == :truthy
-          right_state = left_truthy ? :truthy : logical_state(evaluate(node.right))
-          LOGICAL_OR_RESULTS.fetch([left_state, right_state], UndefinedValue.new)
+          return TRUE_VALUE if left_state == :truthy
+
+          right_state = logical_state(evaluate(node.right))
+          right_truthy = right_state == :truthy
+          right_falsy = right_state == :falsy
+          return TRUE_VALUE if right_truthy
+          return FALSE_VALUE if left_state == :falsy && right_falsy
+
+          UndefinedValue.new
         end
 
         # :reek:UtilityFunction

@@ -5,6 +5,7 @@ source "https://rubygems.org"
 gemspec
 
 group :development, :test do
+  gem "benchmark-ips", "~> 2.13"
   gem "bundler-audit", "~> 0.9"
   gem "factory_bot", "~> 6.2"
   gem "faker", "~> 3.4"

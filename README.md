@@ -111,6 +111,46 @@ Built-ins are currently limited to core categories: types, aggregates, strings, 
 - Advanced `with` semantics, partial evaluation, and additional built-ins are still in progress.
 - Performance work is ongoing; expect lower throughput than OPA.
 
+## Performance and benchmarks
+
+Ruby::Rego focuses on correctness and clarity over raw throughput. Expect performance to scale with
+policy complexity: deep references, large comprehensions, and heavy use of `with` modifiers cost more.
+Memoization caches rule outputs and static references during a single evaluation to reduce repeated work.
+
+### Comparison with OPA
+
+OPA (Go) is highly optimized and typically faster, especially on large policies or high-throughput workloads.
+Use Ruby::Rego when you need a pure Ruby runtime or tight integration with Ruby applications, and prefer OPA
+for latency-critical or batch-heavy policy evaluation.
+
+### Tips for performant policies
+
+- Prefer indexed data structures and avoid deep, repeated reference chains.
+- Keep comprehensions small; filter early and avoid nested comprehensions when possible.
+- Use built-ins like `count`, `sum`, and `object.get` instead of manual loops.
+- Avoid `with` modifiers on hot paths; they are intentionally isolated and reset memoization caches.
+- Keep rule dependencies shallow to minimize repeated rule evaluation.
+
+### Running benchmarks
+
+Benchmarks use `benchmark-ips` and live in the `benchmark/` directory:
+
+```bash
+bundle exec ruby benchmark/simple_rules.rb
+bundle exec ruby benchmark/comprehensions.rb
+bundle exec ruby benchmark/builtin_calls.rb
+bundle exec ruby benchmark/complex_policy.rb
+```
+
+### CLI profiling
+
+Use `--profile` to capture timing and memory deltas for compilation and evaluation. Profiling output is
+emitted to stderr so JSON output remains machine-readable.
+
+```bash
+bundle exec exe/rego-validate --policy examples/validation_policy.rego --config examples/sample_config.yaml --profile
+```
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at [https://github.com/r6e/ruby-rego](https://github.com/r6e/ruby-rego).
