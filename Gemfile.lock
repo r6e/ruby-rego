@@ -172,10 +172,11 @@ GEM
     ruby_parser (3.22.0)
       racc (~> 1.5)
       sexp_processor (~> 4.16)
-    rubycritic (4.12.0)
+    rubycritic (5.0.0)
       flay (~> 2.13)
       flog (~> 4.7)
       launchy (>= 2.5.2)
+      ostruct
       parser (>= 3.3.0.5)
       prism (>= 1.6.0)
       rainbow (~> 3.1.1)
@@ -250,7 +251,7 @@ DEPENDENCIES
   rubocop (~> 1.60)
   ruby-lsp-rspec
   ruby-rego!
-  rubycritic (~> 4.9)
+  rubycritic (~> 5.0)
   simplecov (~> 0.22)
   steep (~> 1.7)
   typeprof (~> 0.23)
@@ -327,7 +328,7 @@ CHECKSUMS
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
   ruby-rego (0.1.0)
   ruby_parser (3.22.0) sha256=1eb4937cd9eb220aa2d194e352a24dba90aef00751e24c8dfffdb14000f15d23
-  rubycritic (4.12.0) sha256=024fed90fe656fa939f6ea80aab17569699ac3863d0b52fd72cb99892247abc8
+  rubycritic (5.0.0) sha256=7f3877556d7f52bf0980496b7c907a827a9592ba690b80a593403a60bd6cfb42
   securerandom (0.4.1) sha256=cc5193d414a4341b6e225f0cb4446aceca8e50d5e1888743fac16987638ea0b1
   sexp_processor (4.17.5) sha256=ae2b48ba98353d5d465ce8759836b7a05f2e12c5879fcd14d7815b026de32f0e
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
