@@ -9,10 +9,6 @@ All notable changes to this project will be documented in this file.
 
 ## 0.1.0
 
-- Initial scaffolding for the Ruby::Rego gem.
-
-## 1.0.0 (planned)
-
 ### Features
 
 - Lexer, parser, and AST support for core Rego syntax.
