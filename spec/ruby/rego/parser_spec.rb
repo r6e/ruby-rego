@@ -107,6 +107,37 @@ RSpec.describe Ruby::Rego::Parser do
       expect(rule.head[:value]).to be_a(Ruby::Rego::AST::ObjectLiteral)
     end
 
+    it "parses rule head references with bracket expressions" do
+      rule = parse_rule("fruit[input.color].shade := \"red\"")
+
+      expect(rule.name).to eq("fruit")
+      expect(rule.head[:type]).to eq(:partial_object)
+      expect(rule.head[:key]).to be_a(Ruby::Rego::AST::Reference)
+      expect(rule.head[:value]).to be_a(Ruby::Rego::AST::ObjectLiteral)
+      key_node, value_node = rule.head[:value].pairs.first
+      expect(key_node).to be_a(Ruby::Rego::AST::StringLiteral)
+      expect(key_node.value).to eq("shade")
+      expect(value_node).to be_a(Ruby::Rego::AST::StringLiteral)
+      expect(value_node.value).to eq("red")
+      expect(rule.head[:nested]).to be(true)
+    end
+
+    it "parses partial object heads with string keys" do
+      rule = parse_rule("p[\"a\"] := 1")
+
+      expect(rule.head[:type]).to eq(:partial_object)
+      expect(rule.head[:key]).to be_a(Ruby::Rego::AST::StringLiteral)
+      expect(rule.head[:value]).to be_a(Ruby::Rego::AST::NumberLiteral)
+    end
+
+    it "parses partial object heads with variable keys" do
+      rule = parse_rule("p[x] := 1")
+
+      expect(rule.head[:type]).to eq(:partial_object)
+      expect(rule.head[:key]).to be_a(Ruby::Rego::AST::Variable)
+      expect(rule.head[:value]).to be_a(Ruby::Rego::AST::NumberLiteral)
+    end
+
     it "parses function rules with parameters" do
       rule = parse_rule("sum(x, y) := x + y")
 

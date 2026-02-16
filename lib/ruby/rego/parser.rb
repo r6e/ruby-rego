@@ -98,6 +98,10 @@ module Ruby
         safe_token_at(@current)
       end
 
+      def current_index
+        @current
+      end
+
       def peek(distance = 1)
         safe_token_at(@current + distance)
       end

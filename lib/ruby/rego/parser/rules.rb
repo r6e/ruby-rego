@@ -67,10 +67,9 @@ module Ruby
       def parse_rule
         default_token = consume_default_keyword
         name_token = current_token
-        name_path = parse_rule_name_path
-        name = name_path.first
+        name, head_segments = parse_rule_name_path
         head = parse_rule_head(name, name_token)
-        head = apply_rule_head_path(head, name_path.drop(1), name_token)
+        head = apply_rule_head_path(head, head_segments, name_token)
         head = mark_default_head(head) if default_token
         definition = parse_rule_definition(default_token, head)
         validate_rule_definition(default_token, head, definition)
@@ -82,31 +81,45 @@ module Ruby
         match?(TokenType::DEFAULT) ? advance : nil
       end
 
-      # :reek:DuplicateMethodCall
-      # rubocop:disable Metrics/MethodLength
       def parse_rule_name_path
-        segments = [] # @type var segments: Array[String]
         context = IdentifierContext.new(name: "rule", allowed_types: PACKAGE_PATH_TOKEN_TYPES)
-        segments << parse_identifier(context)
+        name = parse_identifier(context)
+        [name, parse_rule_head_segments(context)]
+      end
 
+      def parse_rule_head_segments(context)
+        segments = [] # @type var segments: Array[AST::expression]
         loop do
-          if match?(TokenType::DOT)
-            advance
-            segments << parse_identifier(context)
-            next
-          end
-
-          break unless bracket_string_segment?
-
-          segment = parse_bracket_path_segment
+          segment = parse_rule_head_segment(context, segments)
           break unless segment
 
           segments << segment
         end
-
         segments
       end
-      # rubocop:enable Metrics/MethodLength
+
+      def parse_rule_head_segment(context, segments)
+        return parse_dot_rule_head_segment(context) if match?(TokenType::DOT)
+        return parse_bracket_rule_head_segment(segments) if match?(TokenType::LBRACKET)
+
+        nil
+      end
+
+      def parse_dot_rule_head_segment(context)
+        advance
+        segment_token = current_token
+        segment = parse_identifier(context)
+        AST::StringLiteral.new(value: segment, location: segment_token.location)
+      end
+
+      def parse_bracket_rule_head_segment(segments)
+        return parse_rule_head_path_segment if bracket_string_segment?
+        return parse_rule_head_path_segment if segments.any?
+
+        return nil unless bracket_expression_followed_by_path?
+
+        parse_rule_head_path_segment
+      end
 
       # :reek:UtilityFunction
       def mark_default_head(head)
@@ -226,26 +239,146 @@ module Ruby
       end
 
       # :reek:UtilityFunction
-      # rubocop:disable Metrics/MethodLength
       def nested_rule_head(head, segments, name_token)
-        location = name_token.location
-        key_segment = segments.first
-        remaining = segments.drop(1)
-        value_node = head[:value] || AST::BooleanLiteral.new(value: true, location: location)
+        return rule_head_path_builder(head, segments, name_token).call if segments.any?
 
-        remaining.reverse_each do |segment|
-          key_node = AST::StringLiteral.new(value: segment, location: location)
-          value_node = AST::ObjectLiteral.new(pairs: [[key_node, value_node]], location: location)
-        end
-
-        head.merge(
-          type: :partial_object,
-          key: AST::StringLiteral.new(value: key_segment, location: location),
-          value: value_node,
-          nested: remaining.any?
+        raise ParserError.from_position(
+          "Expected rule head segments.",
+          position: rule_head_location(name_token),
+          context: nil
         )
       end
-      # rubocop:enable Metrics/MethodLength
+
+      def rule_head_path_builder(head, segments, name_token)
+        RuleHeadPathBuilder.new(head: head, segments: segments, location: rule_head_location(name_token))
+      end
+
+      def rule_head_location(name_token)
+        name_token.location || current_token.location || Location.new(
+          line: 1,
+          column: 1,
+          offset: nil,
+          length: nil
+        )
+      end
+
+      def bracket_expression_followed_by_path?
+        closing_index = matching_bracket_index(current_index)
+        return false unless closing_index
+
+        next_token = next_non_newline_token(closing_index + 1)
+        return false unless next_token
+
+        [TokenType::DOT, TokenType::LBRACKET].include?(next_token.type)
+      end
+
+      def matching_bracket_index(start_index)
+        bracket_matcher.matching_index(start_index)
+      end
+
+      def next_non_newline_token(start_index)
+        index = start_index
+        loop do
+          token = safe_token_at(index)
+          return token unless [TokenType::NEWLINE, TokenType::COMMENT].include?(token.type)
+
+          index += 1
+        end
+      end
+
+      def bracket_matcher
+        @bracket_matcher ||= BracketMatcher.new(token_provider: ->(index) { safe_token_at(index) })
+      end
+
+      # Builds nested object values for rule head segments.
+      class RuleHeadPathBuilder
+        # @param head [Hash]
+        # @param segments [Array<AST::expression>]
+        # @param location [Location]
+        def initialize(head:, segments:, location:)
+          @head = head
+          @segments = segments
+          @location = location
+        end
+
+        # @return [Hash]
+        def call
+          key_segment, *remaining = segments
+          return head unless key_segment
+
+          value_node = head[:value] || AST::BooleanLiteral.new(value: true, location: location)
+          value_node = build_nested_value(remaining, value_node)
+
+          head.merge(
+            type: :partial_object,
+            key: normalize(key_segment),
+            value: value_node,
+            nested: remaining.any?
+          )
+        end
+
+        private
+
+        attr_reader :head, :segments, :location
+
+        def build_nested_value(segments, value_node)
+          segments.reverse_each do |segment|
+            key_node = normalize(segment) # @type var key_node: AST::expression
+            value_node = AST::ObjectLiteral.new(pairs: [[key_node, value_node]], location: location)
+          end
+          value_node
+        end
+
+        # :reek:FeatureEnvy
+        def normalize(segment)
+          return segment if segment.is_a?(AST::Base)
+
+          AST::StringLiteral.new(value: segment.to_s, location: location)
+        end
+      end
+
+      # Finds matching closing brackets for rule head path segments.
+      class BracketMatcher
+        BRACKET_DEPTH_DELTA = {
+          TokenType::LBRACKET => 1,
+          TokenType::RBRACKET => -1
+        }.freeze
+
+        # @param token_provider [#call]
+        def initialize(token_provider:)
+          @token_provider = token_provider
+        end
+
+        # @param start_index [Integer]
+        # @return [Integer, nil]
+        # :reek:FeatureEnvy
+        def matching_index(start_index)
+          depth = 0
+
+          loop do
+            token_type = token_provider.call(start_index).type
+            return nil if token_type == TokenType::EOF
+
+            depth += BRACKET_DEPTH_DELTA.fetch(token_type, 0)
+            return start_index if token_type == TokenType::RBRACKET && depth.zero?
+
+            start_index += 1
+          end
+        end
+
+        private
+
+        attr_reader :token_provider
+      end
+
+      def parse_rule_head_path_segment
+        consume(TokenType::LBRACKET, "Expected '[' after rule name.")
+        consume_newlines
+        segment = parse_expression
+        consume_newlines
+        consume(TokenType::RBRACKET, "Expected ']' after rule path segment.")
+        segment
+      end
 
       # :reek:TooManyStatements
       def parse_rule_head_args
