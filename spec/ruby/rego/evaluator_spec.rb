@@ -166,6 +166,10 @@ RSpec.describe Ruby::Rego::Evaluator do
       Ruby::Rego::AST::ObjectLiteral.new(pairs: pairs)
     end
 
+    def ast_set(elements)
+      Ruby::Rego::AST::SetLiteral.new(elements: elements)
+    end
+
     def ast_some(variables, collection)
       Ruby::Rego::AST::SomeDecl.new(variables: variables, collection: collection)
     end
@@ -382,6 +386,10 @@ RSpec.describe Ruby::Rego::Evaluator do
       Ruby::Rego::AST::ObjectLiteral.new(pairs: pairs)
     end
 
+    def ast_set(elements)
+      Ruby::Rego::AST::SetLiteral.new(elements: elements)
+    end
+
     def ast_eq(left, right)
       Ruby::Rego::AST::BinaryOp.new(operator: :eq, left: left, right: right)
     end
@@ -440,6 +448,16 @@ RSpec.describe Ruby::Rego::Evaluator do
       expect(value.to_ruby).to be(true)
     end
 
+    it "iterates object values when only the value variable is provided" do
+      domain = ast_object([[ast_string("a"), ast_number(1)]])
+      body = [ast_query_literal(ast_eq(ast_var("v"), ast_number(1)))]
+      every = ast_every(value_var: ast_var("v"), domain: domain, body: body)
+
+      value = eval_node(every)
+
+      expect(value.to_ruby).to be(true)
+    end
+
     it "returns true for empty collections" do
       domain = ast_array([])
       body = [ast_query_literal(ast_eq(ast_var("x"), ast_number(1)))]
@@ -457,7 +475,37 @@ RSpec.describe Ruby::Rego::Evaluator do
 
       value = eval_node(every)
 
-      expect(value.to_ruby).to be(false)
+      expect(value).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "returns undefined when the domain is undefined" do
+      domain = ast_var("missing")
+      body = [ast_query_literal(ast_eq(ast_var("x"), ast_number(1)))]
+      every = ast_every(value_var: ast_var("x"), domain: domain, body: body)
+
+      value = eval_node(every)
+
+      expect(value).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "returns undefined when the domain is not a collection" do
+      domain = ast_number(10)
+      body = [ast_query_literal(ast_eq(ast_var("x"), ast_number(10)))]
+      every = ast_every(value_var: ast_var("x"), domain: domain, body: body)
+
+      value = eval_node(every)
+
+      expect(value).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "returns undefined when set iteration uses key/value variables" do
+      domain = ast_set([ast_number(1)])
+      body = [ast_query_literal(ast_gt(ast_var("v"), ast_number(0)))]
+      every = ast_every(value_var: ast_var("v"), key_var: ast_var("k"), domain: domain, body: body)
+
+      value = eval_node(every)
+
+      expect(value).to be_a(Ruby::Rego::UndefinedValue)
     end
 
     it "supports nested every expressions" do

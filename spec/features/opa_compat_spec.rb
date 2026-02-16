@@ -103,6 +103,12 @@ OPA_EVERY_NEGATION_POLICY = <<~REGO
   not_all_positive := not every x in input.values { x > 0 }
 REGO
 
+OPA_EVERY_POLICY = <<~REGO
+  package every_policy
+
+  all_positive := every x in input.values { x > 0 }
+REGO
+
 OPA_FUNCTION_ELSE_POLICY = <<~REGO
   package function_else
 
@@ -295,20 +301,21 @@ RSpec.describe "OPA logical operators" do
 end
 
 RSpec.describe "OPA negated every" do
-  it "evaluates negated every expressions" do
+  it "rejects negated every expressions" do
     all_positive = evaluate_policy(
-      OPA_EVERY_NEGATION_POLICY,
+      OPA_EVERY_POLICY,
       input: { "values" => [1, 2] },
-      query: "data.every_negation.all_positive"
-    )
-    not_all_positive = evaluate_policy(
-      OPA_EVERY_NEGATION_POLICY,
-      input: { "values" => [1, 2, -1] },
-      query: "data.every_negation.not_all_positive"
+      query: "data.every_policy.all_positive"
     )
 
     expect(all_positive.value.to_ruby).to be(true)
-    expect(not_all_positive.value.to_ruby).to be(true)
+    expect do
+      evaluate_policy(
+        OPA_EVERY_NEGATION_POLICY,
+        input: { "values" => [1, 2, -1] },
+        query: "data.every_negation.not_all_positive"
+      )
+    end.to raise_error(Ruby::Rego::ParserError, /Negating every is not supported/)
   end
 end
 
