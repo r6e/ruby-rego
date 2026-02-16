@@ -113,7 +113,6 @@ module Ruby
       end
 
       def parse_bracket_rule_head_segment(segments)
-        return parse_rule_head_path_segment if bracket_string_segment?
         return parse_rule_head_path_segment if segments.any?
 
         return nil unless bracket_expression_followed_by_path?
