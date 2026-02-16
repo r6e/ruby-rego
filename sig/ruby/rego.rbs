@@ -1766,6 +1766,7 @@ module Ruby
 
       def tokens: () -> Array[Token]
       def current_token: () -> Token
+      def current_index: () -> Integer
       def peek: (?Integer distance) -> Token
       def advance: () -> Token
       def consume: (Symbol type, ?String message) -> Token
@@ -1784,7 +1785,13 @@ module Ruby
       def parse_import_alias: () -> String?
       def parse_rule: () -> AST::Rule
       def consume_default_keyword: () -> Token?
-      def parse_rule_name_path: () -> Array[String]
+      def parse_rule_name_path: () -> [String, Array[AST::expression]]
+      def parse_rule_head_segments: (Parser::IdentifierContext context) -> Array[AST::expression]
+      def consume_rule_head_newlines?: (Array[AST::expression] segments) -> bool
+      def rule_head_path_continues_after_newline?: () -> bool
+      def parse_rule_head_segment: (Parser::IdentifierContext context, Array[AST::expression] segments) -> AST::expression?
+      def parse_dot_rule_head_segment: (Parser::IdentifierContext context) -> AST::expression
+      def parse_bracket_rule_head_segment: (Array[AST::expression] segments) -> AST::expression?
       def mark_default_head: (Hash[Symbol, untyped] head) -> Hash[Symbol, untyped]
       def parse_default_value: (Token? default_token, Hash[Symbol, untyped] head) -> AST::expression?
       def parse_non_default_body: (Token? default_token) -> Array[AST::query_literal]?
@@ -1805,8 +1812,15 @@ module Ruby
       def parse_rule_body: () -> Array[AST::query_literal]
       def parse_braced_rule_body: () -> Array[AST::query_literal]
       def parse_empty_rule_body: () -> Array[AST::query_literal]
-      def apply_rule_head_path: (Hash[Symbol, untyped] head, Array[String] segments, Token name_token) -> Hash[Symbol, untyped]
-      def nested_rule_head: (Hash[Symbol, untyped] head, Array[String] segments, Token name_token) -> Hash[Symbol, untyped]
+      def apply_rule_head_path: (Hash[Symbol, untyped] head, Array[AST::expression] segments, Token name_token) -> Hash[Symbol, untyped]
+      def nested_rule_head: (Hash[Symbol, untyped] head, Array[AST::expression] segments, Token name_token) -> Hash[Symbol, untyped]
+      def rule_head_path_builder: (Hash[Symbol, untyped] head, Array[AST::expression] segments, Token name_token) -> Parser::RuleHeadPathBuilder
+      def rule_head_location: (Token name_token) -> Location
+      def bracket_expression_followed_by_path?: () -> bool
+      def matching_bracket_index: (Integer start_index) -> Integer?
+      def next_non_newline_token: (Integer start_index) -> Token
+      def bracket_matcher: () -> Parser::BracketMatcher
+      def parse_rule_head_path_segment: () -> AST::expression
       def parse_query: (*Symbol end_tokens, ?newline_delimiter: bool) -> Array[AST::query_literal]
       def consume_query_separators: (bool newline_delimiter) -> bool
       def parse_literal: () -> AST::query_literal
@@ -1881,6 +1895,30 @@ module Ruby
       attr_reader allowed_types: Array[Symbol]
 
       def initialize: (name: String, allowed_types: Array[Symbol]) -> void
+    end
+
+    class Parser::RuleHeadPathBuilder
+      def initialize: (head: Hash[Symbol, untyped], segments: Array[AST::expression], location: Location?) -> void
+      def call: () -> Hash[Symbol, untyped]
+
+      private
+
+      attr_reader head: Hash[Symbol, untyped]
+      attr_reader segments: Array[AST::expression]
+      attr_reader location: Location?
+      def build_nested_value: (Array[AST::expression] segments, AST::expression value_node) -> AST::expression
+      def normalize: (AST::expression segment) -> AST::expression
+    end
+
+    class Parser::BracketMatcher
+      BRACKET_DEPTH_DELTA: Hash[Symbol, Integer]
+
+      def initialize: (token_provider: ^(Integer) -> Token) -> void
+      def matching_index: (Integer start_index) -> Integer?
+
+      private
+
+      attr_reader token_provider: ^(Integer) -> Token
     end
 
     class Parser

@@ -109,6 +109,21 @@ RSpec.describe Ruby::Rego::Compiler do
       expect(compiled.has_rule?("allow")).to be(true)
     end
 
+    it "indexes rules with head references" do
+      source = <<~REGO
+        package example
+        fruit[input.color].shade := "red"
+      REGO
+
+      module_node = Ruby::Rego.parse(source)
+      compiled = compiler.compile(module_node)
+      rules = compiled.lookup_rule("fruit")
+
+      expect(rules.length).to eq(1)
+      expect(rules.first.head[:type]).to eq(:partial_object)
+      expect(rules.first.head[:key]).to be_a(Ruby::Rego::AST::Reference)
+    end
+
     it "defers conflicting complete rules to evaluation" do
       rules = [
         complete_rule(name: "allow", value: boolean(true)),
