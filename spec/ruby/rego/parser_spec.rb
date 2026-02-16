@@ -138,6 +138,13 @@ RSpec.describe Ruby::Rego::Parser do
       expect(rule.head[:value]).to be_a(Ruby::Rego::AST::NumberLiteral)
     end
 
+    it "parses bracket-headed partial set rules without a path" do
+      rule = parse_rule("p[\"a\"] { true }")
+
+      expect(rule.head[:type]).to eq(:partial_set)
+      expect(rule.head[:term]).to be_a(Ruby::Rego::AST::StringLiteral)
+    end
+
     it "parses function rules with parameters" do
       rule = parse_rule("sum(x, y) := x + y")
 
