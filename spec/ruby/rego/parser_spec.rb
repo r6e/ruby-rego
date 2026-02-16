@@ -122,6 +122,37 @@ RSpec.describe Ruby::Rego::Parser do
       expect(rule.head[:nested]).to be(true)
     end
 
+    it "parses rule head references with consecutive bracket segments" do
+      rule = parse_rule("fruit[input.color][input.size] := 1")
+
+      expect(rule.head[:type]).to eq(:partial_object)
+      expect(rule.head[:key]).to be_a(Ruby::Rego::AST::Reference)
+      expect(rule.head[:value]).to be_a(Ruby::Rego::AST::ObjectLiteral)
+      key_node, value_node = rule.head[:value].pairs.first
+      expect(key_node).to be_a(Ruby::Rego::AST::Reference)
+      expect(value_node).to be_a(Ruby::Rego::AST::NumberLiteral)
+      expect(rule.head[:nested]).to be(true)
+    end
+
+    it "parses rule head references across newlines" do
+      source = <<~REGO
+        fruit[input.color]
+          .shade := "red"
+      REGO
+
+      rule = parse_rule(source)
+
+      expect(rule.head[:type]).to eq(:partial_object)
+      expect(rule.head[:key]).to be_a(Ruby::Rego::AST::Reference)
+      expect(rule.head[:value]).to be_a(Ruby::Rego::AST::ObjectLiteral)
+      key_node, value_node = rule.head[:value].pairs.first
+      expect(key_node).to be_a(Ruby::Rego::AST::StringLiteral)
+      expect(key_node.value).to eq("shade")
+      expect(value_node).to be_a(Ruby::Rego::AST::StringLiteral)
+      expect(value_node.value).to eq("red")
+      expect(rule.head[:nested]).to be(true)
+    end
+
     it "parses partial object heads with string keys" do
       rule = parse_rule("p[\"a\"] := 1")
 

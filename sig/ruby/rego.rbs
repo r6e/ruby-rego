@@ -1787,6 +1787,8 @@ module Ruby
       def consume_default_keyword: () -> Token?
       def parse_rule_name_path: () -> [String, Array[AST::expression]]
       def parse_rule_head_segments: (Parser::IdentifierContext context) -> Array[AST::expression]
+      def consume_rule_head_newlines?: (Array[AST::expression] segments) -> bool
+      def rule_head_path_continues_after_newline?: () -> bool
       def parse_rule_head_segment: (Parser::IdentifierContext context, Array[AST::expression] segments) -> AST::expression?
       def parse_dot_rule_head_segment: (Parser::IdentifierContext context) -> AST::expression
       def parse_bracket_rule_head_segment: (Array[AST::expression] segments) -> AST::expression?

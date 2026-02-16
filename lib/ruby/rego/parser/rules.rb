@@ -90,12 +90,26 @@ module Ruby
       def parse_rule_head_segments(context)
         segments = [] # @type var segments: Array[AST::expression]
         loop do
-          segment = parse_rule_head_segment(context, segments)
-          break unless segment
+          break unless consume_rule_head_newlines?(segments)
 
+          segment = parse_rule_head_segment(context, segments) or break
           segments << segment
         end
         segments
+      end
+
+      def consume_rule_head_newlines?(segments)
+        return true unless segments.any? && newline_token?
+
+        return false unless rule_head_path_continues_after_newline?
+
+        consume_newlines
+        true
+      end
+
+      def rule_head_path_continues_after_newline?
+        next_token = next_non_newline_token(current_index)
+        next_token && [TokenType::DOT, TokenType::LBRACKET].include?(next_token.type)
       end
 
       def parse_rule_head_segment(context, segments)
