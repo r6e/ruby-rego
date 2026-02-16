@@ -93,9 +93,14 @@ module Ruby
 
       def parse_unary_expression
         token = advance
+        location = token.location || Location.new(line: 1, column: 1)
         operator = UNARY_OPERATOR_MAP.fetch(token.type)
         operand = parse_expression(Precedence::UNARY)
-        AST::UnaryOp.new(operator: operator, operand: operand, location: token.location)
+        if operator == :not && operand.is_a?(AST::Every)
+          raise ParserError.new("Negating every is not supported", location: location, context: token.to_s)
+        end
+
+        AST::UnaryOp.new(operator: operator, operand: operand, location: location)
       end
 
       def parse_parenthesized_expression

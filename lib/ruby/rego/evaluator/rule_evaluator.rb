@@ -512,6 +512,10 @@ module Ruby
         end
 
         def eval_not(expr, env, bound_vars)
+          if expr.is_a?(AST::Every)
+            raise EvaluationError.new("Negating every is not supported", rule: nil, location: expr.location)
+          end
+
           check_safety(expr, env, bound_vars)
           Enumerator.new do |yielder|
             solutions = expression_evaluator.eval_with_unification(expr, env)

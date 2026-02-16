@@ -221,11 +221,11 @@ module Ruby
         # :reek:TooManyStatements
         def evaluate_every(node)
           collection_value = environment.with_bindings({}) { evaluate(node.domain) }
-          return BooleanValue.new(false) if collection_value.is_a?(UndefinedValue)
+          return UndefinedValue.new if collection_value.is_a?(UndefinedValue)
 
           variables = [node.key_var, node.value_var].compact
           bindings_enum = every_bindings(variables, collection_value)
-          return BooleanValue.new(false) unless bindings_enum
+          return UndefinedValue.new unless bindings_enum
 
           evaluate_every_bindings(node, bindings_enum)
         end
@@ -233,7 +233,7 @@ module Ruby
         def evaluate_every_bindings(node, bindings_enum)
           with_every_scope(node) do
             bindings_enum.each do |bindings|
-              return BooleanValue.new(false) unless every_body_succeeds?(node.body, bindings)
+              return UndefinedValue.new unless every_body_succeeds?(node.body, bindings)
             end
             BooleanValue.new(true)
           end
@@ -259,6 +259,10 @@ module Ruby
         def evaluate_unary_op(node)
           case node
           in AST::UnaryOp[operator:, operand:]
+            if operator == :not && operand.is_a?(AST::Every)
+              raise EvaluationError.new("Negating every is not supported", rule: nil, location: operand.location)
+            end
+
             OperatorEvaluator.apply_unary(operator, evaluate(operand))
           end
         end

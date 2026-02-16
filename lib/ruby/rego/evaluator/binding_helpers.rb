@@ -35,7 +35,7 @@ module Ruby
           Enumerator.new do |yielder|
             pairs = collection_value.to_ruby
             case variables.length
-            when 1 then pairs.each_key { |key| yielder << bindings_for(variables[0], key) }
+            when 1 then pairs.each_value { |value| yielder << bindings_for(variables[0], value) }
             when 2 then pairs.each { |key, value| yielder << bindings_for_pair(variables, key, value) }
             end
           end
