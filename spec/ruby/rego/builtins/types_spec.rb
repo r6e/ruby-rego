@@ -40,6 +40,14 @@ RSpec.describe "type builtins" do
     expect(registry.call("is_null", [false]).to_ruby).to be(false)
   end
 
+  it "returns type names" do
+    expect(registry.call("type_name", [nil]).to_ruby).to eq("null")
+    expect(registry.call("type_name", [[1, 2]]).to_ruby).to eq("array")
+    expect(registry.call("type_name", [{ "a" => 1 }]).to_ruby).to eq("object")
+    expect(registry.call("type_name", [Set.new([1, 2])]).to_ruby).to eq("set")
+    expect(registry.call("type_name", [registry.call("object.keys", [{ "a" => 1 }])]).to_ruby).to eq("set")
+  end
+
   it "allows repeated registration" do
     expect { Ruby::Rego::Builtins::Types.register! }.not_to raise_error
     expect { Ruby::Rego::Builtins::Types.register! }.not_to raise_error

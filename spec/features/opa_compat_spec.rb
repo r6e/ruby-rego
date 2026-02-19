@@ -133,6 +133,12 @@ OPA_NON_COLLECTION_MEMBERSHIP_POLICY = <<~REGO
   result := "a" in 1
 REGO
 
+OPA_TYPE_NAME_UNDEFINED_POLICY = <<~REGO
+  package type_name_undefined
+
+  result := type_name(input.missing)
+REGO
+
 OPA_RULE_HEAD_POLICY = <<~REGO
   package fruits
 
@@ -344,6 +350,18 @@ RSpec.describe "OPA membership non-collection" do
     result = evaluate_policy(
       OPA_NON_COLLECTION_MEMBERSHIP_POLICY,
       query: "data.membership_non_collection.result"
+    )
+
+    expect(result.undefined?).to be(true)
+  end
+end
+
+RSpec.describe "OPA type_name undefined" do
+  it "treats type_name on undefined input as undefined" do
+    result = evaluate_policy(
+      OPA_TYPE_NAME_UNDEFINED_POLICY,
+      input: {},
+      query: "data.type_name_undefined.result"
     )
 
     expect(result.undefined?).to be(true)

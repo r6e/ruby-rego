@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "../base"
-require_relative "../numeric_helpers"
 require_relative "../../errors"
 require_relative "../../value"
 
@@ -20,6 +19,13 @@ module Ruby
             ensure_uniform_sort_type(elements)
             sorted = elements.sort_by(&:to_ruby)
             ArrayValue.new(sorted)
+          end
+
+          # @param array [Ruby::Rego::Value]
+          # @return [Ruby::Rego::ArrayValue]
+          def self.reverse(array)
+            elements = array_values(array, name: "array.reverse")
+            ArrayValue.new(elements.reverse)
           end
 
           # @param left [Ruby::Rego::Value]
@@ -83,19 +89,44 @@ module Ruby
 
           def self.slice_indices(start, stop)
             [
-              NumericHelpers.non_negative_integer(start, context: "array.slice start"),
-              NumericHelpers.non_negative_integer(stop, context: "array.slice stop")
+              slice_index(start, context: "array.slice start"),
+              slice_index(stop, context: "array.slice stop")
             ]
           end
           private_class_method :slice_indices
 
-          def self.slice_elements(elements, start_index, stop_index)
-            length = stop_index - start_index
-            return [] if length <= 0 || start_index >= elements.length
+          def self.slice_index(value, context:)
+            Base.assert_type(value, expected: NumberValue, context: context)
+            numeric = value.value
+            return numeric if numeric.is_a?(Integer)
 
-            elements.slice(start_index, length) || []
+            raise Ruby::Rego::BuiltinArgumentError.new(
+              "Expected integer",
+              expected: "integer",
+              actual: numeric,
+              context: context,
+              location: nil
+            )
+          end
+          private_class_method :slice_index
+
+          def self.slice_elements(elements, start_index, stop_index)
+            array_length = elements.length
+            bounded_start, bounded_stop = clamped_bounds(array_length, start_index, stop_index)
+            length = bounded_stop - bounded_start
+            return [] if length <= 0 || bounded_start >= array_length
+
+            elements.slice(bounded_start, length) || []
           end
           private_class_method :slice_elements
+
+          def self.clamped_bounds(array_length, start_index, stop_index)
+            [
+              start_index.clamp(0, array_length),
+              stop_index.clamp(0, array_length)
+            ]
+          end
+          private_class_method :clamped_bounds
         end
       end
     end

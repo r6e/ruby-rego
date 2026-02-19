@@ -21,6 +21,7 @@ module Ruby
         COLLECTION_FUNCTIONS = {
           "set" => { arity: [0, 1], handler: :set },
           "sort" => { arity: 1, handler: :sort },
+          "array.reverse" => { arity: 1, handler: :array_reverse },
           "array.concat" => { arity: 2, handler: :array_concat },
           "array.slice" => { arity: 3, handler: :array_slice },
           "object.get" => { arity: 3, handler: :object_get },
@@ -74,6 +75,12 @@ module Ruby
           ArrayOps.array_slice(array, start, stop)
         end
 
+        # @param array [Ruby::Rego::Value]
+        # @return [Ruby::Rego::ArrayValue]
+        def self.array_reverse(array)
+          ArrayOps.reverse(array)
+        end
+
         # @param object [Ruby::Rego::Value]
         # @param key [Ruby::Rego::Value]
         # @param default [Ruby::Rego::Value]
@@ -83,7 +90,7 @@ module Ruby
         end
 
         # @param object [Ruby::Rego::Value]
-        # @return [Ruby::Rego::ArrayValue]
+        # @return [Ruby::Rego::SetValue]
         def self.object_keys(object)
           ObjectOps.object_keys(object)
         end
