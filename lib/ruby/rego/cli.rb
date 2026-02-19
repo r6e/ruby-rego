@@ -792,7 +792,7 @@ module RegoValidate
   class OutcomeBuilder
     # Create an outcome builder.
     #
-    # @param result [Ruby::Rego::Result]
+    # @param result [Ruby::Rego::Result, nil]
     # @param query [String]
     def initialize(result, query)
       @result = result
@@ -803,6 +803,7 @@ module RegoValidate
     #
     # @return [Outcome]
     def build
+      return undefined_outcome unless result
       return undefined_outcome if result.undefined?
 
       build_defined_outcome
@@ -813,16 +814,20 @@ module RegoValidate
     attr_reader :result, :query
 
     def build_defined_outcome
-      value = result.value.to_ruby
+      value = defined_result.value.to_ruby
       errors = errors_for(value)
       Outcome.new(success: errors.empty?, value: value, errors: errors)
     end
 
     def errors_for(value)
       errors = errors_from_value(value)
-      result_errors = result.errors
+      result_errors = defined_result.errors
       errors.concat(result_errors.map(&:to_s)) unless result_errors.empty?
       errors
+    end
+
+    def defined_result
+      result || raise("Expected defined result")
     end
 
     def undefined_outcome

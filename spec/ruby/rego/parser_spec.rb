@@ -223,6 +223,16 @@ RSpec.describe Ruby::Rego::Parser do
       expect(rule.body[1].expression).to be_a(Ruby::Rego::AST::UnaryOp)
       expect(rule.body[2].with_modifiers.length).to eq(1)
     end
+
+    it "parses multiple with modifiers in order" do
+      rule = parse_rule("allow { input.user == \"admin\" with input.user as \"bob\" with input.user as \"carol\" }")
+
+      literal = rule.body.first
+      expect(literal).to be_a(Ruby::Rego::AST::QueryLiteral)
+      expect(literal.with_modifiers.length).to eq(2)
+      expect(literal.with_modifiers[0].value.value).to eq("bob")
+      expect(literal.with_modifiers[1].value.value).to eq("carol")
+    end
   end
 
   describe "#parse_expression" do

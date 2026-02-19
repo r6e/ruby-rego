@@ -28,7 +28,7 @@ RSpec.describe "Rule head references" do
   it "returns undefined when head reference key is undefined" do
     result = evaluate_policy(RULE_HEAD_REFERENCE_POLICY, input: {}, query: "data.head_refs.fruit")
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 
   it "raises on conflicting nested head references" do

@@ -31,12 +31,6 @@ module Ruby
 
           # @return [Array<String>]
           attr_reader :bound_vars
-
-          # @param new_env [Environment]
-          # @return [ModifierContext]
-          def with_env(new_env)
-            self.class.new(expression: expression, env: new_env, bound_vars: bound_vars)
-          end
         end
 
         # @param environment [Environment]
@@ -488,17 +482,15 @@ module Ruby
 
         # :reek:NestedIterators
         def with_modifiers_enum(modifiers, context)
-          Enumerator.new do |yielder|
-            WithModifiers::WithModifierApplier.apply(modifiers, context.env, expression_evaluator) do |modified_env|
-              yield_query_expression(yielder, context.with_env(modified_env))
+          results = [] # @type var results: Array[Hash[String, Value]]
+          WithModifiers::WithModifierApplier.apply(modifiers, context.env, expression_evaluator) do |modified_env|
+            eval_query_expression(context.expression, modified_env, context.bound_vars).each do |bindings|
+              results << bindings
             end
           end
-        end
 
-        # :reek:FeatureEnvy
-        def yield_query_expression(yielder, context)
-          eval_query_expression(context.expression, context.env, context.bound_vars).each do |bindings|
-            yielder << bindings
+          Enumerator.new do |yielder|
+            results.each { |bindings| yielder << bindings }
           end
         end
 

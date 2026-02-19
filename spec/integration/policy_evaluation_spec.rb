@@ -49,7 +49,7 @@ RSpec.describe "Policy evaluation integration deny" do
 
     result = evaluate_policy(policy, input: input, query: "data.compliance.deny")
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 end
 

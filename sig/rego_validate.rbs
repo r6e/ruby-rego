@@ -185,7 +185,7 @@ module RegoValidate
     attr_reader profiler: Profiler?
     def resolve_query: (Ruby::Rego::CompiledModule compiled_module) -> String?
     def build_evaluation: (Ruby::Rego::CompiledModule compiled_module, String query_path) -> EvaluationResult
-    def evaluate_compiled: (Ruby::Rego::CompiledModule compiled_module, String query_path) -> Ruby::Rego::Result
+    def evaluate_compiled: (Ruby::Rego::CompiledModule compiled_module, String query_path) -> (Ruby::Rego::Result | nil)
     def measure: (String label) { () -> untyped } -> untyped
   end
 
@@ -276,15 +276,16 @@ module RegoValidate
   end
 
   class OutcomeBuilder
-    def initialize: (Ruby::Rego::Result result, String query) -> void
+    def initialize: ((Ruby::Rego::Result | nil) result, String query) -> void
     def build: () -> Outcome
 
     private
 
-    attr_reader result: Ruby::Rego::Result
+    attr_reader result: Ruby::Rego::Result?
     attr_reader query: String
     def build_defined_outcome: () -> Outcome
     def errors_for: (untyped value) -> Array[String]
+    def defined_result: () -> Ruby::Rego::Result
     def undefined_outcome: () -> Outcome
     def errors_from_value: (untyped value) -> Array[String]
     def errors_for_non_true: (untyped value) -> Array[String]

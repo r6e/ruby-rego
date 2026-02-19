@@ -76,7 +76,7 @@ config_hash = YAML.safe_load(File.read("examples/sample_config.yaml"))
 policy = Ruby::Rego::Policy.new(policy_source)
 result = policy.evaluate(input: config_hash, query: "data.validation.deny")
 
-if result.undefined?
+if result.nil?
   puts "No decision"
 elsif result.success?
   puts "OK"

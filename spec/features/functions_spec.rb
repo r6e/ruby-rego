@@ -105,13 +105,13 @@ RSpec.describe "User-defined functions" do
   it "returns undefined when no function matches" do
     result = evaluate_policy(USER_FUNCTIONS_POLICY, query: "data.userfuncs.missing")
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 
   it "returns undefined when function arguments are undefined" do
     result = evaluate_policy(USER_FUNCTIONS_UNDEFINED_POLICY, query: "data.userfuncs.missing_arg")
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 end
 
@@ -125,6 +125,6 @@ RSpec.describe "Functions errors" do
 
     result = evaluate_policy(policy, query: "data.funcs.bad")
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 end

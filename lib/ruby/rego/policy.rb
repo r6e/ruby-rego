@@ -24,7 +24,7 @@ module Ruby
       # @param input [Object] input document
       # @param data [Object] data document
       # @param query [Object, nil] query path
-      # @return [Result] evaluation result
+      # @return [Result, nil] evaluation result, or nil when a query is undefined
       def evaluate(input: {}, data: {}, query: nil)
         ErrorHandling.wrap("evaluation") { evaluate_with_pool(input: input, data: data, query: query) }
       end

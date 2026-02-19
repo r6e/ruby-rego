@@ -59,7 +59,7 @@ module Ruby
       # @param input [Object] input document
       # @param data [Object] data document
       # @param query [Object, nil] optional query path
-      # @return [Result] evaluation result
+      # @return [Result, nil] evaluation result, or nil when a query is undefined
       # :reek:LongParameterList
       def evaluate(source, input: {}, data: {}, query: nil)
         compiled_module = compile(source)
