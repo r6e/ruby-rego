@@ -733,6 +733,101 @@ RSpec.describe Ruby::Rego::Evaluator do
       end
     end
 
+    context "when destructuring arrays and objects in rule bodies" do
+      let(:input) do
+        {
+          "user" => { "role" => "admin", "id" => 7 },
+          "roles" => %w[admin viewer]
+        }
+      end
+
+      let(:rules) do
+        roles_ref = Ruby::Rego::AST::Reference.new(
+          base: Ruby::Rego::AST::Variable.new(name: "input"),
+          path: [Ruby::Rego::AST::DotRefArg.new(value: "roles")]
+        )
+        user_ref = Ruby::Rego::AST::Reference.new(
+          base: Ruby::Rego::AST::Variable.new(name: "input"),
+          path: [Ruby::Rego::AST::DotRefArg.new(value: "user")]
+        )
+        roles_pattern = Ruby::Rego::AST::ArrayLiteral.new(
+          elements: [
+            Ruby::Rego::AST::Variable.new(name: "first"),
+            Ruby::Rego::AST::Variable.new(name: "_")
+          ]
+        )
+        user_pattern = Ruby::Rego::AST::ObjectLiteral.new(
+          pairs: [
+            [
+              Ruby::Rego::AST::StringLiteral.new(value: "role"),
+              Ruby::Rego::AST::Variable.new(name: "role")
+            ]
+          ]
+        )
+        roles_assign = Ruby::Rego::AST::BinaryOp.new(operator: :assign, left: roles_pattern, right: roles_ref)
+        user_assign = Ruby::Rego::AST::BinaryOp.new(operator: :assign, left: user_pattern, right: user_ref)
+        role_check = Ruby::Rego::AST::BinaryOp.new(
+          operator: :eq,
+          left: Ruby::Rego::AST::Variable.new(name: "role"),
+          right: Ruby::Rego::AST::StringLiteral.new(value: "admin")
+        )
+        body = [
+          Ruby::Rego::AST::QueryLiteral.new(expression: roles_assign),
+          Ruby::Rego::AST::QueryLiteral.new(expression: user_assign),
+          Ruby::Rego::AST::QueryLiteral.new(expression: role_check)
+        ]
+        head = { type: :complete, name: "allow", location: nil }
+
+        [Ruby::Rego::AST::Rule.new(name: "allow", head: head, body: body)]
+      end
+
+      it "binds nested patterns" do
+        result = evaluator.evaluate
+
+        expect(result.success?).to be(true)
+        expect(result.value.to_ruby["allow"]).to be(true)
+      end
+
+      it "does not leak bindings when destructuring fails" do
+        failing_rule = Ruby::Rego::AST::Rule.new(
+          name: "deny",
+          head: { type: :complete, name: "deny", location: nil },
+          body: [
+            Ruby::Rego::AST::QueryLiteral.new(expression: Ruby::Rego::AST::BinaryOp.new(
+              operator: :assign,
+              left: Ruby::Rego::AST::ArrayLiteral.new(
+                elements: [
+                  Ruby::Rego::AST::Variable.new(name: "x"),
+                  Ruby::Rego::AST::Variable.new(name: "y")
+                ]
+              ),
+              right: Ruby::Rego::AST::Reference.new(
+                base: Ruby::Rego::AST::Variable.new(name: "input"),
+                path: [Ruby::Rego::AST::DotRefArg.new(value: "roles")]
+              )
+            )),
+            Ruby::Rego::AST::QueryLiteral.new(expression: Ruby::Rego::AST::BinaryOp.new(
+              operator: :eq,
+              left: Ruby::Rego::AST::Variable.new(name: "x"),
+              right: Ruby::Rego::AST::StringLiteral.new(value: "guest")
+            ))
+          ]
+        )
+
+        failing_module = Ruby::Rego::CompiledModule.new(
+          package_path: package.path,
+          rules_by_name: Ruby::Rego::Compiler.new.index_rules([failing_rule]),
+          imports: []
+        )
+        evaluator_with_failure = described_class.new(failing_module, input: input, data: data)
+
+        evaluator_with_failure.evaluate
+
+        expect(evaluator_with_failure.environment.lookup("x")).to be_a(Ruby::Rego::UndefinedValue)
+        expect(evaluator_with_failure.environment.lookup("y")).to be_a(Ruby::Rego::UndefinedValue)
+      end
+    end
+
     context "when evaluating multi-literal queries" do
       let(:rules) do
         user_match = Ruby::Rego::AST::BinaryOp.new(

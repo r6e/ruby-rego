@@ -155,6 +155,8 @@ module Ruby
 
       # Bundles inputs for reference key candidate evaluation.
       ReferenceKeyContext = Struct.new(:current, :env, :bindings, :variable_resolver, keyword_init: true)
+      # Tracks bindings and object keys already matched in a pattern.
+      ObjectBindingState = Struct.new(:bindings, :used_keys, keyword_init: true)
 
       def initialize(variable_resolver: nil)
         @variable_resolver = variable_resolver
@@ -185,30 +187,32 @@ module Ruby
         traverse_reference(base_value, reference.path, env, bindings, variable_resolver: resolver)
       end
 
-      # @param pattern_elems [Array<Object>]
+      # @param pattern_elems [Array<Object>, AST::ArrayLiteral]
       # @param value_array [Object]
       # @param env [Environment]
       # @param bindings [Hash{String => Value}]
       # @return [Array<Hash{String => Value}>]
       # :reek:LongParameterList
       def unify_array(pattern_elems, value_array, env, bindings = {})
+        pattern_elements = pattern_elems.is_a?(AST::ArrayLiteral) ? pattern_elems.elements : pattern_elems
         elements = Helpers.normalize_array(value_array)
-        return [] unless elements && elements.length == pattern_elems.length
+        return [] unless elements && elements.length == pattern_elements.length
 
-        reduce_array_bindings(pattern_elems, elements, env, bindings)
+        reduce_array_bindings(pattern_elements, elements, env, bindings)
       end
 
-      # @param pattern_pairs [Array<Array(Object, Object)>]
+      # @param pattern_pairs [Array<Array(Object, Object)>, AST::ObjectLiteral]
       # @param value_obj [Object]
       # @param env [Environment]
       # @param bindings [Hash{String => Value}]
       # @return [Array<Hash{String => Value}>]
       # :reek:LongParameterList
       def unify_object(pattern_pairs, value_obj, env, bindings = {})
+        pairs = pattern_pairs.is_a?(AST::ObjectLiteral) ? pattern_pairs.pairs : pattern_pairs
         object_values = Helpers.normalize_object(value_obj)
         return [] unless object_values
 
-        reduce_object_pairs(pattern_pairs, object_values, env, bindings)
+        reduce_object_pairs(pairs, object_values, env, bindings).map(&:bindings)
       end
 
       private
@@ -228,8 +232,8 @@ module Ruby
       def structured_unification(pattern, resolved_value, env, bindings)
         return Helpers.unify_variable(pattern, resolved_value, env, bindings) if pattern.is_a?(AST::Variable)
         return unify_reference(pattern, resolved_value, env, bindings) if pattern.is_a?(AST::Reference)
-        return unify_array(pattern.elements, resolved_value, env, bindings) if pattern.is_a?(AST::ArrayLiteral)
-        return unify_object(pattern.pairs, resolved_value, env, bindings) if pattern.is_a?(AST::ObjectLiteral)
+        return unify_array(pattern, resolved_value, env, bindings) if pattern.is_a?(AST::ArrayLiteral)
+        return unify_object(pattern, resolved_value, env, bindings) if pattern.is_a?(AST::ObjectLiteral)
 
         nil
       end
@@ -264,18 +268,22 @@ module Ruby
       end
       # rubocop:enable Metrics/MethodLength
 
+      def available_object_keys(object_values, used_keys)
+        object_values.keys.reject { |key| used_keys.include?(key) }
+      end
+
       # :reek:TooManyStatements
       # :reek:LongParameterList
       # :reek:FeatureEnvy
       # rubocop:disable Metrics/MethodLength
       def reduce_object_pairs(pattern_pairs, object_values, env, bindings)
-        binding_sets = [bindings]
+        binding_sets = [ObjectBindingState.new(bindings: bindings, used_keys: Set.new)]
         index = 0
         while index < pattern_pairs.length
           key_pattern, value_pattern = pattern_pairs[index]
-          next_sets = [] # @type var next_sets: Array[Hash[String, Value]]
-          binding_sets.each do |current|
-            next_sets.concat(unify_object_pair(key_pattern, value_pattern, object_values, env, current))
+          next_sets = [] # @type var next_sets: Array[ObjectBindingState]
+          binding_sets.each do |current_state|
+            next_sets.concat(unify_object_pair(key_pattern, value_pattern, object_values, env, current_state))
           end
           binding_sets = next_sets
           break if binding_sets.empty?
@@ -288,25 +296,29 @@ module Ruby
 
       # :reek:LongParameterList
       # :reek:FeatureEnvy
-      def unify_object_pair(key_pattern, value_pattern, object_values, env, bindings)
-        candidate_keys = Helpers.candidate_keys_for(key_pattern, object_values.keys, env, bindings)
+      def unify_object_pair(key_pattern, value_pattern, object_values, env, state)
+        available_keys = available_object_keys(object_values, state.used_keys)
+        candidate_keys = Helpers.candidate_keys_for(key_pattern, available_keys, env, state.bindings)
         return [] if candidate_keys.empty?
 
         candidate_keys.flat_map do |candidate_key|
-          unify_object_candidate(candidate_key, key_pattern, value_pattern, object_values, env, bindings)
+          unify_object_candidate(candidate_key, key_pattern, value_pattern, object_values, env, state)
         end
       end
 
       # :reek:LongParameterList
       # :reek:FeatureEnvy
       # rubocop:disable Metrics/ParameterLists
-      def unify_object_candidate(candidate_key, key_pattern, value_pattern, object_values, env, bindings)
+      def unify_object_candidate(candidate_key, key_pattern, value_pattern, object_values, env, state)
         return [] unless object_values.key?(candidate_key)
+        return [] if state.used_keys.include?(candidate_key)
 
-        updated_bindings = Helpers.bind_key_variable(key_pattern, candidate_key, bindings, env)
+        updated_bindings = Helpers.bind_key_variable(key_pattern, candidate_key, state.bindings, env)
         return [] unless updated_bindings
 
-        unify_with_bindings(value_pattern, object_values[candidate_key], env, updated_bindings)
+        unify_with_bindings(value_pattern, object_values[candidate_key], env, updated_bindings).map do |bindings|
+          ObjectBindingState.new(bindings: bindings, used_keys: state.used_keys | [candidate_key])
+        end
       end
       # rubocop:enable Metrics/ParameterLists
 

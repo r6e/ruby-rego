@@ -686,10 +686,17 @@ module Ruby
         def initialize: (current: Value, env: Environment, bindings: Hash[String, Value], ?variable_resolver: untyped) -> void
       end
 
+      class ObjectBindingState
+        attr_reader bindings: Hash[String, Value]
+        attr_reader used_keys: Set[untyped]
+
+        def initialize: (bindings: Hash[String, Value], used_keys: Set[untyped]) -> void
+      end
+
       def initialize: (?variable_resolver: untyped) -> void
       def unify: (untyped pattern, untyped value, Environment env) -> Array[Hash[String, Value]]
-      def unify_array: (Array[untyped] pattern_elems, untyped value_array, Environment env, ?Hash[String, Value] bindings) -> Array[Hash[String, Value]]
-      def unify_object: (Array[[untyped, untyped]] pattern_pairs, untyped value_obj, Environment env, ?Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def unify_array: (AST::ArrayLiteral | Array[untyped] pattern_elems, untyped value_array, Environment env, ?Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def unify_object: (AST::ObjectLiteral | Array[[untyped, untyped]] pattern_pairs, untyped value_obj, Environment env, ?Hash[String, Value] bindings) -> Array[Hash[String, Value]]
       def reference_bindings: (AST::Reference reference, Environment env, ?Hash[String, Value] bindings, ?base_value: Value?, ?variable_resolver: untyped) -> Array[[Hash[String, Value], Value]]
 
       private
@@ -698,9 +705,10 @@ module Ruby
       def structured_unification: (untyped pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]?
       def apply_unification: (untyped pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
       def reduce_array_bindings: (Array[untyped] pattern_elems, Array[Value] elements, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
-      def reduce_object_pairs: (Array[[untyped, untyped]] pattern_pairs, Hash[untyped, Value] object_values, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
-      def unify_object_pair: (untyped key_pattern, untyped value_pattern, Hash[untyped, Value] object_values, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
-      def unify_object_candidate: (untyped candidate_key, untyped key_pattern, untyped value_pattern, Hash[untyped, Value] object_values, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
+      def available_object_keys: (Hash[untyped, Value] object_values, Set[untyped] used_keys) -> Array[untyped]
+      def reduce_object_pairs: (Array[[untyped, untyped]] pattern_pairs, Hash[untyped, Value] object_values, Environment env, Hash[String, Value] bindings) -> Array[ObjectBindingState]
+      def unify_object_pair: (untyped key_pattern, untyped value_pattern, Hash[untyped, Value] object_values, Environment env, ObjectBindingState state) -> Array[ObjectBindingState]
+      def unify_object_candidate: (untyped candidate_key, untyped key_pattern, untyped value_pattern, Hash[untyped, Value] object_values, Environment env, ObjectBindingState state) -> Array[ObjectBindingState]
       def bind_key_variable: (untyped key_pattern, untyped candidate_key, Hash[String, Value] bindings, Environment env) -> Hash[String, Value]?
       def unify_reference: (AST::Reference pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
       def resolve_reference_base: (untyped base, Environment env, Hash[String, Value] bindings) -> Value
