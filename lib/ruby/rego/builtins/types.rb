@@ -27,6 +27,7 @@ module Ruby
           TYPE_PREDICATES.each do |name, handler|
             register_predicate(registry, name, handler)
           end
+          register_type_name(registry)
 
           registry
         end
@@ -37,6 +38,13 @@ module Ruby
           registry.register(name, 1) { |value| public_send(handler, value) }
         end
         private_class_method :register_predicate
+
+        def self.register_type_name(registry)
+          return if registry.registered?("type_name")
+
+          registry.register("type_name", 1) { |value| type_name(value) }
+        end
+        private_class_method :register_type_name
 
         # @param value [Ruby::Rego::Value]
         # @return [Ruby::Rego::BooleanValue]
@@ -78,6 +86,12 @@ module Ruby
         # @return [Ruby::Rego::BooleanValue]
         def self.is_null(value)
           BooleanValue.new(value.is_a?(NullValue))
+        end
+
+        # @param value [Ruby::Rego::Value]
+        # @return [Ruby::Rego::StringValue]
+        def self.type_name(value)
+          StringValue.new(value.type_name)
         end
       end
     end

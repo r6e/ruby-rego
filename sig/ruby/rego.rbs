@@ -290,10 +290,12 @@ module Ruby
         def self.is_object: (Value value) -> BooleanValue
         def self.is_set: (Value value) -> BooleanValue
         def self.is_null: (Value value) -> BooleanValue
+        def self.type_name: (Value value) -> StringValue
 
         private
 
         def self.register_predicate: (BuiltinRegistry registry, String name, Symbol handler) -> void
+        def self.register_type_name: (BuiltinRegistry registry) -> void
       end
 
       module Aggregates
@@ -370,8 +372,9 @@ module Ruby
         def self.sort: (Value array) -> ArrayValue
         def self.array_concat: (Value left, Value right) -> ArrayValue
         def self.array_slice: (Value array, Value start, Value stop) -> ArrayValue
+        def self.array_reverse: (Value array) -> ArrayValue
         def self.object_get: (Value object, Value key, Value default) -> Value
-        def self.object_keys: (Value object) -> ArrayValue
+        def self.object_keys: (Value object) -> SetValue
         def self.object_remove: (Value object, Value keys) -> ObjectValue
         def self.union: (Value left, Value right) -> Value
         def self.intersection: (Value left, Value right) -> SetValue
@@ -384,6 +387,7 @@ module Ruby
 
       module Collections::ArrayOps
         def self.sort: (Value array) -> ArrayValue
+        def self.reverse: (Value array) -> ArrayValue
         def self.array_concat: (Value left, Value right) -> ArrayValue
         def self.array_slice: (Value array, Value start, Value stop) -> ArrayValue
 
@@ -395,12 +399,14 @@ module Ruby
         def self.validate_sort_element: (Value element, Class type, Integer index) -> void
         def self.raise_sort_type_error: (Class expected_type, Class actual_type) -> bot
         def self.slice_indices: (Value start, Value stop) -> [Integer, Integer]
+        def self.slice_index: (Value value, context: String) -> Integer
         def self.slice_elements: (Array[Value] elements, Integer start_index, Integer stop_index) -> Array[Value]
+        def self.clamped_bounds: (Integer array_length, Integer start_index, Integer stop_index) -> [Integer, Integer]
       end
 
       module Collections::ObjectOps
         def self.object_get: (Value object, Value key, Value default) -> Value
-        def self.object_keys: (Value object) -> ArrayValue
+        def self.object_keys: (Value object) -> SetValue
         def self.object_remove: (Value object, Value keys) -> ObjectValue
         def self.union_objects: (Value left, Value right) -> ObjectValue
 

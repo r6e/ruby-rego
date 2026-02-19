@@ -23,12 +23,21 @@ RSpec.describe "collection builtins" do
   it "slices arrays" do
     expect(registry.call("array.slice", [[1, 2, 3, 4], 1, 3]).to_ruby).to eq([2, 3])
     expect(registry.call("array.slice", [[1, 2, 3], 3, 3]).to_ruby).to eq([])
+    expect(registry.call("array.slice", [[1, 2, 3], -1, 2]).to_ruby).to eq([1, 2])
+    expect(registry.call("array.slice", [[1, 2, 3], 1, 10]).to_ruby).to eq([2, 3])
+    expect(registry.call("array.slice", [[1, 2, 3], -5, -1]).to_ruby).to eq([])
   end
 
-  it "raises for invalid slice indices" do
-    result = registry.call("array.slice", [[1], -1, 1])
+  it "returns undefined for non-integer slice indices" do
+    first = registry.call("array.slice", [[1, 2, 3], 1.2, 2])
+    second = registry.call("array.slice", [[1, 2, 3], 1, 2.5])
+    third = registry.call("array.slice", [[1, 2, 3], 1.0, 2])
+    fourth = registry.call("array.slice", [[1, 2, 3], 1, 2.0])
 
-    expect(result).to be_a(Ruby::Rego::UndefinedValue)
+    expect(first).to be_a(Ruby::Rego::UndefinedValue)
+    expect(second).to be_a(Ruby::Rego::UndefinedValue)
+    expect(third).to be_a(Ruby::Rego::UndefinedValue)
+    expect(fourth).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "gets object keys with defaults" do
@@ -37,8 +46,35 @@ RSpec.describe "collection builtins" do
   end
 
   it "returns object keys" do
-    expect(registry.call("object.keys", [{ "a" => 1, "b" => 2 }]).to_ruby)
-      .to match_array(%w[a b])
+    expect(registry.call("object.keys", [{ "b" => 2, "a" => 1 }]).to_ruby)
+      .to eq(Set.new(%w[a b]))
+  end
+
+  it "returns object keys as a set for mixed key types" do
+    result = registry.call("object.keys", [{ 1 => "n", "1" => "s", true => "b", nil => "z" }]).to_ruby
+
+    expect(result).to eq(Set.new([1, "1", true, nil]))
+  end
+
+  it "reverses arrays" do
+    expect(registry.call("array.reverse", [[1, 2, 3]]).to_ruby).to eq([3, 2, 1])
+  end
+
+  it "does not mutate inputs for sort and reverse" do
+    input = [3, 1, 2]
+
+    sorted = registry.call("sort", [input]).to_ruby
+    reversed = registry.call("array.reverse", [input]).to_ruby
+
+    expect(sorted).to eq([1, 2, 3])
+    expect(reversed).to eq([2, 1, 3])
+    expect(input).to eq([3, 1, 2])
+  end
+
+  it "returns undefined for invalid reverse input" do
+    reverse_result = registry.call("array.reverse", [Set.new([1, 2])])
+
+    expect(reverse_result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "removes keys from objects" do
