@@ -22,10 +22,10 @@ module Ruby
           end
 
           # @param object [Ruby::Rego::Value]
-          # @return [Ruby::Rego::ArrayValue]
+          # @return [Ruby::Rego::SetValue]
           def self.object_keys(object)
             obj = object_value(object, name: "object.keys")
-            ArrayValue.new(obj.value.keys)
+            SetValue.new(obj.value.keys)
           end
 
           # @param object [Ruby::Rego::Value]

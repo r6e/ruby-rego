@@ -91,6 +91,24 @@ RSpec.describe "string builtins" do
     expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
+  it "returns undefined for null and undefined string operation inputs" do
+    undefined = Ruby::Rego::UndefinedValue.new
+
+    results = [
+      registry.call("lower", [nil]),
+      registry.call("upper", [undefined]),
+      registry.call("contains", [nil, "a"]),
+      registry.call("startswith", ["hello", nil]),
+      registry.call("endswith", [undefined, "lo"]),
+      registry.call("split", ["a,b", nil]),
+      registry.call("trim", ["  hello  ", nil])
+    ]
+
+    results.each do |result|
+      expect(result).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
   it "splits strings by delimiter" do
     expect(registry.call("split", ["a,b,c", ","]).to_ruby).to eq(%w[a b c])
     expect(registry.call("split", ["a,", ","]).to_ruby).to eq(["a", ""])
