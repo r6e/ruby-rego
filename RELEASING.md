@@ -9,7 +9,6 @@
   - `bundle exec rubocop --format simple --no-color`
   - `bundle exec reek lib`
   - `bundle exec steep check`
-  - `bundle exec typeprof lib/**/*.rb`
 - Verify coverage is above 90% in `coverage/`.
 
 ## 2) Build and validate the gem

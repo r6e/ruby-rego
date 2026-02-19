@@ -168,7 +168,6 @@ bundle exec rubocop
 bundle exec reek lib/
 bundle exec rubycritic lib/
 bundle exec steep check
-bundle exec typeprof lib/**/*.rb
 bundle exec bundler-audit check --update
 ```
 
