@@ -93,6 +93,12 @@ RSpec.describe Ruby::Rego do
       expect(result.bindings["x"]).to be_a(Ruby::Rego::NumberValue)
       expect(result.bindings["x"].to_ruby).to eq(1)
     end
+
+    it "returns nil when a query is undefined" do
+      result = described_class.evaluate(policy_source, input: { "user" => "admin" }, query: "data.example.missing")
+
+      expect(result).to be_nil
+    end
   end
 end
 
@@ -123,6 +129,14 @@ RSpec.describe Ruby::Rego::Policy do
       result = policy.evaluate(input: { "user" => "admin" }, query: "data.example.allow")
 
       expect(result.value.to_ruby).to be(true)
+    end
+
+    it "returns nil when a query is undefined" do
+      policy = described_class.new(policy_source)
+
+      result = policy.evaluate(input: { "user" => "admin" }, query: "data.example.missing")
+
+      expect(result).to be_nil
     end
   end
 end

@@ -4,7 +4,7 @@ module Ruby
 
     def self.parse: (String source) -> AST::Module
     def self.compile: (String source) -> CompiledModule
-    def self.evaluate: (String source, ?input: untyped, ?data: untyped, ?query: untyped) -> Result
+    def self.evaluate: (String source, ?input: untyped, ?data: untyped, ?query: untyped) -> (Result | nil)
 
     type position = {
       line: Integer,
@@ -606,6 +606,8 @@ module Ruby
         def target: () -> untyped
         def value: () -> untyped
         def apply_reference: () { (Environment) -> untyped } -> untyped
+        def root_reference_target?: () -> bool
+        def builtin_target_name: () -> String
         def reference_scope: () -> WithModifierRootScope
         def reference_override: (WithModifierRootScope scope) -> untyped
         def reference_path_keys: () -> (Array[untyped] | UndefinedValue)
@@ -644,15 +646,39 @@ module Ruby
         attr_reader value: untyped
         attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
         attr_reader location: Location?
-        def override_entry: (Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay registry, Environment environment) -> untyped
-        def replacement_entry: (Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay registry, Environment environment) -> untyped
-        def function_entry: (Environment environment, String function_name) -> untyped
+        def override_entry: (WithModifierBuiltinResolver resolver) -> untyped
         def ensure_matching_arity: (Integer | Array[Integer] expected, Integer | Array[Integer] actual) -> void
         def normalize_arity_list: (Integer | Array[Integer] arity) -> Array[Integer]
-        def replacement_name: () -> String
-        def direct_name_from_value: () -> String?
-        def reference_name_from_value: () -> String?
-        def resolved_name_from_value: () -> String?
+      end
+
+      class WithModifierBuiltinResolver
+        def initialize: (
+          registry: Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay,
+          environment: Environment,
+          expression_evaluator: Evaluator::ExpressionEvaluator,
+          location: Location?
+        ) -> void
+        def target_entry: (String function_name) -> untyped
+        def replacement_entry: (untyped value) -> untyped
+
+        private
+
+        attr_reader registry: Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay
+        attr_reader environment: Environment
+        attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
+        attr_reader location: Location?
+        def replacement_function_name: (untyped value) -> String?
+        def function_replacement?: (String? function_name) -> bool
+        def function_replacement_entry: (String function_name) -> untyped
+        def ensure_safe_replacement_variable: (untyped value, String? function_name) -> void
+        def value_replacement_entry: (untyped value) -> untyped
+        def function_target?: (String function_name) -> bool
+        def function_defined?: (String function_name) -> bool
+        def function_entry: (String function_name) -> untyped
+        def function_rule_for: (String function_name) -> AST::Rule
+        def function_handler: (String function_name) -> untyped
+        def resolved_replacement_value: (untyped value) -> untyped
+        def unwrap_resolved_value: (untyped resolved) -> untyped
       end
 
       class WithModifierRootScope
@@ -769,14 +795,14 @@ module Ruby
 
     class Policy
       def initialize: (String source, ?environment_pool: EnvironmentPool) -> void
-      def evaluate: (?input: untyped, ?data: untyped, ?query: untyped) -> Result
+      def evaluate: (?input: untyped, ?data: untyped, ?query: untyped) -> (Result | nil)
 
       private
 
       attr_reader compiled_module: CompiledModule
       attr_reader environment_pool: EnvironmentPool
       attr_reader source: String
-      def evaluate_with_pool: (input: untyped, data: untyped, query: untyped) -> Result
+      def evaluate_with_pool: (input: untyped, data: untyped, query: untyped) -> (Result | nil)
     end
 
     module CompiledModuleLike
@@ -1113,12 +1139,13 @@ module Ruby
       def self.from_ast: (AST::Module ast_module, ?from_ast_options options) -> Evaluator
       def self.from_environment: (CompiledModuleLike compiled_module, Environment environment) -> Evaluator
       def initialize: (CompiledModuleLike compiled_module, ?input: untyped, ?data: untyped) -> void
-      def evaluate: (?untyped query) -> Result
+      def evaluate: (?untyped query) -> (Result | nil)
 
       private
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
       attr_reader rule_evaluator: Evaluator::RuleEvaluator
       def evaluate_rules: () -> Hash[untyped, untyped]
+      def include_rule_result: (Hash[String, Value] results, String name, Array[AST::Rule] rules) -> void
       def evaluate_query: (untyped query) -> [Value, Hash[String, Value]]
       def bindings_for_query: (untyped node) -> Hash[String, Value]
       def build_evaluators: (Hash[String, Array[AST::Rule]] rules_by_name, Array[String] package_path) -> [Evaluator::ExpressionEvaluator, Evaluator::RuleEvaluator]
@@ -1249,6 +1276,7 @@ module Ruby
       def evaluate: (untyped node) -> Value
       def eval_with_unification: (untyped node, ?Environment env) -> Enumerator[Hash[String, Value]]
       def evaluate_user_function: (String name, Array[Value] args) -> Value
+      def variable_known?: (String | Symbol name) -> bool
 
       private
 
@@ -1256,6 +1284,9 @@ module Ruby
       def resolve_variable_name: (String name) -> Value
       def resolve_reference_variable_key: (String name) -> Value
       def resolve_import_or_rule: (String name, Value fallback) -> Value
+      def wildcard_variable_name?: (String name) -> bool
+      def locally_resolved_variable?: (String name) -> bool
+      def imported_or_rule_variable?: (String name) -> bool
       def evaluate_reference: (AST::Reference node) -> Value
       def evaluate_array_literal: (AST::ArrayLiteral node) -> Value
       def evaluate_object_literal: (AST::ObjectLiteral node) -> Value
@@ -1459,6 +1490,8 @@ module Ruby
       def unification_binding_sets: (AST::BinaryOp node, Environment env) -> Array[Hash[String, Value]]
       def unification_result: (AST::BinaryOp node, Environment env) -> [Array[Hash[String, Value]], Value]
       def reference_bindings_for: (AST::Reference reference, Environment env) -> Array[[Hash[String, Value], Value]]
+      def static_reference_bindings: (AST::Reference reference) -> Array[[Hash[String, Value], Value]]
+      def reference_contains_variable_path_key?: (AST::Reference reference) -> bool
       def reference_base_override: (AST::Reference reference) -> Value?
       def reference_base_name: (AST::Reference reference) -> String?
       def unresolved_reference_base?: (String name) -> bool
@@ -1494,7 +1527,6 @@ module Ruby
         attr_reader bound_vars: Array[String]
 
         def initialize: (expression: untyped, env: Environment, bound_vars: Array[String]) -> void
-        def with_env: (Environment new_env) -> ModifierContext
       end
 
       class ValueEvaluationContext
@@ -1554,7 +1586,6 @@ module Ruby
       def eval_query_literal: (AST::QueryLiteral literal, Environment env, Array[String] bound_vars) -> Enumerator[Hash[String, Value]]
       def eval_query_expression: (untyped expression, Environment env, Array[String] bound_vars) -> Enumerator[Hash[String, Value]]
       def with_modifiers_enum: (Array[AST::WithModifier] modifiers, ModifierContext context) -> Enumerator[Hash[String, Value]]
-      def yield_query_expression: (Enumerator::Yielder yielder, ModifierContext context) -> void
       def eval_not: (untyped expr, Environment env, Array[String] bound_vars) -> Enumerator[Hash[String, Value]]
       def check_safety: (untyped expr, Environment env, Array[String] bound_vars) -> void
       def raise_unsafe_negation: (untyped expr, Array[String] unbound) -> void

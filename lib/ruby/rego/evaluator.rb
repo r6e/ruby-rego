@@ -77,10 +77,12 @@ module Ruby
       # Evaluate either a query path or all rules.
       #
       # @param query [Object, nil] query path (e.g. "data.package.rule")
-      # @return [Result] evaluation result
+      # @return [Result, nil] evaluation result, or nil when a query is undefined
       def evaluate(query = nil)
         environment.memoization.reset!
         value, bindings = query ? evaluate_query(query) : [evaluate_rules, nil]
+        return nil if query && value.is_a?(UndefinedValue)
+
         ResultBuilder.new(value, bindings).build
       end
 
@@ -120,11 +122,15 @@ module Ruby
       end
 
       def evaluate_rules
-        results = {} # @type var results: Hash[String, Value]
-        environment.rules.each do |name, rules|
-          results[name] = rule_evaluator.evaluate_group(rules)
+        initial_results = {} # @type var initial_results: Hash[String, Value]
+        environment.rules.each_with_object(initial_results) do |(name, rules), results|
+          include_rule_result(results, name, rules)
         end
-        results
+      end
+
+      def include_rule_result(results, name, rules)
+        value = rule_evaluator.evaluate_group(rules)
+        results[name] = value unless value.is_a?(UndefinedValue)
       end
 
       def evaluate_query(query)

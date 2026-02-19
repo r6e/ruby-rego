@@ -183,6 +183,30 @@ module Ruby
         end
         public :evaluate_user_function
 
+        def variable_known?(name)
+          variable_name = name.to_s
+          return false if wildcard_variable_name?(variable_name)
+          return true if locally_resolved_variable?(variable_name)
+
+          imported_or_rule_variable?(variable_name)
+        end
+        public :variable_known?
+
+        # :reek:UtilityFunction
+        def wildcard_variable_name?(name)
+          name == "_"
+        end
+
+        def locally_resolved_variable?(name)
+          resolved = environment.lookup(name)
+          !resolved.is_a?(UndefinedValue) || environment.local_bound?(name)
+        end
+
+        def imported_or_rule_variable?(name)
+          !!(reference_resolver.resolve_import_variable(name) ||
+            reference_resolver.resolve_rule_variable(name))
+        end
+
         def evaluate_template_string(node)
           rendered = node.parts.map do |part|
             next part.value if part.is_a?(AST::StringLiteral)
@@ -407,6 +431,8 @@ module Ruby
 
         def yield_assignment_bindings(node, env, yielder)
           value = evaluate(node.right)
+          return if value.is_a?(UndefinedValue)
+
           binding_sets = unifier.unify(node.left, value, env)
           yielder << binding_sets.first if binding_sets.size == 1
         end

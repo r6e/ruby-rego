@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../ast"
+require_relative "../call_name"
 require_relative "../errors"
 require_relative "../value"
 require_relative "with_modifier_builtin_override"
@@ -44,11 +45,32 @@ module Ruby
         end
 
         def apply_reference(&)
+          return apply_builtin_override(builtin_target_name, &) unless root_reference_target?
+
           scope = reference_scope
           overridden = reference_override(scope)
           return overridden if overridden.is_a?(UndefinedValue)
 
           scope.with_override(overridden, &)
+        end
+
+        # :reek:FeatureEnvy
+        def root_reference_target?
+          base = target.base
+          return false unless base.is_a?(AST::Variable)
+
+          WithModifierRootScope::ROOT_NAMES.include?(base.name)
+        end
+
+        def builtin_target_name
+          name = CallName.call_name(target)
+          return name if name
+
+          raise EvaluationError.new(
+            "With modifier expects input/data reference or builtin function name",
+            rule: nil,
+            location: target.location
+          )
         end
 
         def reference_scope

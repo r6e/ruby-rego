@@ -92,7 +92,7 @@ RSpec.describe "References missing paths" do
       query: "data.refs.missing_tag"
     )
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 end
 
@@ -105,7 +105,7 @@ RSpec.describe "References falsy values" do
       query: "data.refs.enabled"
     )
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 
   it "treats null references as undefined in rule bodies" do
@@ -116,6 +116,6 @@ RSpec.describe "References falsy values" do
       query: "data.refs.optional"
     )
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 end

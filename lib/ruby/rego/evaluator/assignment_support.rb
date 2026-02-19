@@ -11,6 +11,8 @@ module Ruby
         def evaluate_assignment(node)
           pattern = node.left
           value = evaluate(node.right)
+          return UndefinedValue.new if value.is_a?(UndefinedValue)
+
           binding_sets = unifier.unify(pattern, value, environment)
           return UndefinedValue.new unless binding_sets.size == 1
 
@@ -59,6 +61,8 @@ module Ruby
         # :reek:TooManyStatements
         # :reek:UtilityFunction
         def reference_bindings_for(reference, env)
+          return static_reference_bindings(reference) unless reference_contains_variable_path_key?(reference)
+
           base_value = reference_base_override(reference)
           unifier.reference_bindings(
             reference,
@@ -67,6 +71,22 @@ module Ruby
             base_value: base_value,
             variable_resolver: method(:resolve_reference_variable_key)
           )
+        end
+
+        def static_reference_bindings(reference)
+          value = reference_resolver.resolve(reference)
+          return [] if value.is_a?(UndefinedValue)
+
+          empty_bindings = {} # @type var empty_bindings: Hash[String, Value]
+          [[empty_bindings, value]]
+        end
+
+        # :reek:UtilityFunction
+        def reference_contains_variable_path_key?(reference)
+          reference.path.any? do |segment|
+            key = segment.is_a?(AST::RefArg) ? segment.value : segment
+            key.is_a?(AST::Variable)
+          end
         end
 
         def reference_base_override(reference)

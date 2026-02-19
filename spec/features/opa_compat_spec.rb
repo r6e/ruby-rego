@@ -174,7 +174,7 @@ RSpec.describe "OPA imports" do
 
     direct = evaluate_policy(OPA_IMPORTS_POLICY, input: input, data: data, query: "data.access.allow_direct")
 
-    expect(direct.undefined?).to be(true)
+    expect(direct).to be_nil
   end
 end
 
@@ -189,7 +189,7 @@ RSpec.describe "OPA import shadowing" do
       query: "data.shadow.allow"
     )
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 end
 
@@ -197,7 +197,7 @@ RSpec.describe "OPA rule shadowing" do
   it "treats local variables as shadowing rules" do
     result = evaluate_policy(OPA_RULE_SHADOW_POLICY, query: "data.shadow_rule.allow")
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 end
 
@@ -263,7 +263,7 @@ RSpec.describe "OPA undefined comparisons" do
   it "treats undefined comparisons as undefined" do
     result = evaluate_policy(OPA_UNDEFINED_EQ_POLICY, input: {}, query: "data.eq.result")
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 end
 
@@ -281,8 +281,8 @@ RSpec.describe "OPA undefined membership" do
       query: "data.membership_undefined.right"
     )
 
-    expect(left.undefined?).to be(true)
-    expect(right.undefined?).to be(true)
+    expect(left).to be_nil
+    expect(right).to be_nil
   end
 end
 
@@ -292,17 +292,17 @@ RSpec.describe "OPA logical operators" do
   end
 
   it "short-circuits and on and" do
-    expect(logical_result("true_and_missing").undefined?).to be(true)
+    expect(logical_result("true_and_missing")).to be_nil
     expect(logical_result("false_and_missing").value.to_ruby).to be(false)
-    expect(logical_result("missing_and_true").undefined?).to be(true)
+    expect(logical_result("missing_and_true")).to be_nil
     expect(logical_result("missing_and_false").value.to_ruby).to be(false)
   end
 
   it "short-circuits and on or" do
     expect(logical_result("true_or_missing").value.to_ruby).to be(true)
-    expect(logical_result("false_or_missing").undefined?).to be(true)
+    expect(logical_result("false_or_missing")).to be_nil
     expect(logical_result("missing_or_true").value.to_ruby).to be(true)
-    expect(logical_result("missing_or_false").undefined?).to be(true)
+    expect(logical_result("missing_or_false")).to be_nil
   end
 end
 
@@ -352,7 +352,7 @@ RSpec.describe "OPA membership non-collection" do
       query: "data.membership_non_collection.result"
     )
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 end
 
@@ -364,7 +364,7 @@ RSpec.describe "OPA type_name undefined" do
       query: "data.type_name_undefined.result"
     )
 
-    expect(result.undefined?).to be(true)
+    expect(result).to be_nil
   end
 end
 
