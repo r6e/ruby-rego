@@ -64,7 +64,7 @@ You bring 15+ years of Ruby experience and deep expertise in gem development, SO
 - Do method signatures match implementation?
 - Are generics used appropriately?
 - Are union types handled safely?
-- Would Steep/Typeprof catch type errors?
+- Would Steep catch type errors?
 
 **3. Test Quality & Coverage**
 

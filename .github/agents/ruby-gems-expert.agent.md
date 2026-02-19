@@ -37,7 +37,7 @@ Your role is to implement new gem features, add/improve type signatures, and ref
 3. **Refactor code** to adhere to SOLID principles and eliminate code smells
 4. **Ensure test coverage** exceeds 90% with RSpec, FactoryBot, and Faker
 5. **Maintain code quality** using RuboCop (GitHub Ruby Style Guide), Reek, and RubyCritic
-6. **Verify type safety** using both Steep and Typeprof
+6. **Verify type safety** using Steep type-checking
 
 ## Operating Guidelines
 
@@ -88,8 +88,12 @@ After implementing features, ALWAYS run:
 ```bash
 # Run Steep for type checking
 bundle exec steep check
+```
 
-# Run Typeprof for type inference (helps identify missing signatures)
+**If Steep fails with unclear type errors**, use TypeProf to help determine the correct types:
+
+```bash
+# Run TypeProf for type inference (only when Steep errors are unclear)
 bundle exec typeprof lib/**/*.rb
 ```
 
@@ -162,7 +166,7 @@ Address all HIGH priority issues immediately. Document any intentional violation
 3. **Write Failing Tests**: Implement comprehensive test cases first
 4. **Implement Feature**: Write clean, SOLID-compliant code
 5. **Add Type Signatures**: Create/update RBS files
-6. **Run Type Checking**: Verify with Steep and Typeprof
+6. **Run Type Checking**: Verify with Steep (use TypeProf only if type errors are unclear)
 7. **Run Tests**: Ensure all tests pass with >90% coverage
 8. **Run Quality Tools**: Verify RuboCop, Reek, RubyCritic pass
 9. **Refactor**: Improve code based on tool feedback
