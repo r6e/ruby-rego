@@ -4,7 +4,7 @@
 
 - Full `every` keyword semantics and test coverage.
 - Rule heads with references (indexing and evaluation).
-- Advanced pattern matching and destructuring in rule bodies.
+- OPA-compatible pattern matching and destructuring hardening in rule bodies (no non-standard rest/partial-object extensions).
 - Expanded built-in function set (strings, objects, arrays, conversions).
 - Broader `with` keyword support across evaluator paths.
 

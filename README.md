@@ -112,6 +112,7 @@ Built-ins are currently limited to core categories: types, aggregates, strings, 
 ### Known limitations
 
 - Not full OPA spec coverage yet.
+- No non-standard destructuring extensions (e.g., rest elements or partial-object remainder capture).
 - Advanced `with` semantics, partial evaluation, and additional built-ins are still in progress.
 - Performance work is ongoing; expect lower throughput than OPA.
 
