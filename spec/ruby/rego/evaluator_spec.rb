@@ -736,7 +736,7 @@ RSpec.describe Ruby::Rego::Evaluator do
     context "when destructuring arrays and objects in rule bodies" do
       let(:input) do
         {
-          "user" => { "role" => "admin", "id" => 7 },
+          "user" => { "role" => "admin" },
           "roles" => %w[admin viewer]
         }
       end
@@ -786,6 +786,16 @@ RSpec.describe Ruby::Rego::Evaluator do
 
         expect(result.success?).to be(true)
         expect(result.value.to_ruby["allow"]).to be(true)
+      end
+
+      it "does not match object patterns when input has extra keys" do
+        strict_input = input.merge("user" => { "role" => "admin", "id" => 7 })
+        strict_evaluator = described_class.new(compiled_module, input: strict_input, data: data)
+
+        result = strict_evaluator.evaluate
+
+        expect(result.success?).to be(true)
+        expect(result.value.to_ruby).not_to have_key("allow")
       end
 
       it "does not leak bindings when destructuring fails" do

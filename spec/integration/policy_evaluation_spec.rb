@@ -58,6 +58,15 @@ INTEGRATION_COMBINED_FEATURES_EXPECTED_USER_CHECKS = {
   "bob" => { "role_count" => 1 }
 }.freeze
 
+INTEGRATION_STRICT_OBJECT_PATTERN_POLICY = <<~REGO
+  package integrated_strict_object_patterns
+
+  allow if {
+    {"role": role} := input.user
+    role == "admin"
+  }
+REGO
+
 RSpec.describe "Policy evaluation integration allow" do
   it "parses fixture policies into AST nodes" do
     allow_policy = read_fixture("policies/allow_admin.rego")
@@ -153,5 +162,24 @@ RSpec.describe "Policy evaluation integration combined features with overrides" 
     expect(simulated.success?).to be(true)
     expect(simulated.value.to_ruby).to eq(Set.new(["bob"]))
     expect(baseline.value.to_ruby).to eq(INTEGRATION_COMBINED_FEATURES_EXPECTED_USER_CHECKS)
+  end
+end
+
+RSpec.describe "Policy evaluation integration strict object patterns" do
+  it "requires exact object shape when destructuring in rule bodies" do
+    exact = evaluate_policy(
+      INTEGRATION_STRICT_OBJECT_PATTERN_POLICY,
+      input: { "user" => { "role" => "admin" } },
+      query: "data.integrated_strict_object_patterns.allow"
+    )
+    extra_keys = evaluate_policy(
+      INTEGRATION_STRICT_OBJECT_PATTERN_POLICY,
+      input: { "user" => { "role" => "admin", "id" => 7 } },
+      query: "data.integrated_strict_object_patterns.allow"
+    )
+
+    expect(exact.success?).to be(true)
+    expect(exact.value.to_ruby).to be(true)
+    expect(extra_keys).to be_nil
   end
 end

@@ -211,6 +211,7 @@ module Ruby
         pairs = pattern_pairs.is_a?(AST::ObjectLiteral) ? pattern_pairs.pairs : pattern_pairs
         object_values = Helpers.normalize_object(value_obj)
         return [] unless object_values
+        return [] unless pairs.length == object_values.length
 
         reduce_object_pairs(pairs, object_values, env, bindings).map(&:bindings)
       end

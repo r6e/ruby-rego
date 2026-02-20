@@ -40,7 +40,7 @@ RSpec.describe Ruby::Rego::Unifier do
     expect(results.first["y"].to_ruby).to eq(2)
   end
 
-  it "matches partial objects" do
+  it "matches exact objects" do
     pattern = Ruby::Rego::AST::ObjectLiteral.new(
       pairs: [
         [
@@ -50,10 +50,23 @@ RSpec.describe Ruby::Rego::Unifier do
       ]
     )
 
-    results = unify(pattern, { "a" => 1, "b" => 2 })
+    results = unify(pattern, { "a" => 1 })
 
     expect(results.size).to eq(1)
     expect(results.first["x"].to_ruby).to eq(1)
+  end
+
+  it "does not match objects with extra keys" do
+    pattern = Ruby::Rego::AST::ObjectLiteral.new(
+      pairs: [
+        [
+          Ruby::Rego::AST::StringLiteral.new(value: "a"),
+          Ruby::Rego::AST::Variable.new(name: "x")
+        ]
+      ]
+    )
+
+    expect(unify(pattern, { "a" => 1, "b" => 2 })).to be_empty
   end
 
   it "does not reuse object keys for multiple pairs" do
@@ -95,7 +108,7 @@ RSpec.describe Ruby::Rego::Unifier do
     expect(results).to be_empty
   end
 
-  it "returns multiple solutions for key matches" do
+  it "matches variable object keys for exact objects" do
     pattern = Ruby::Rego::AST::ObjectLiteral.new(
       pairs: [
         [
@@ -105,10 +118,10 @@ RSpec.describe Ruby::Rego::Unifier do
       ]
     )
 
-    results = unify(pattern, { "a" => 1, "b" => 1 })
-    keys = results.map { |bindings| bindings["key"].to_ruby }.sort
+    results = unify(pattern, { "a" => 1 })
 
-    expect(keys).to eq(%w[a b])
+    expect(results.size).to eq(1)
+    expect(results.first["key"].to_ruby).to eq("a")
   end
 
   it "supports wildcard patterns" do
