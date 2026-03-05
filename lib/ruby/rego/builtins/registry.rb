@@ -48,7 +48,7 @@ module Ruby
         include BuiltinInvocation
 
         # Represents a registered built-in definition.
-        Entry = Struct.new(:name, :arity, :handler, keyword_init: true)
+        Entry = Struct.new(:name, :arity, :handler)
 
         # @return [BuiltinRegistry]
         def self.instance

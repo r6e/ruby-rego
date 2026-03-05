@@ -8,7 +8,7 @@ require "ruby/rego"
 # CLI entrypoints and helpers for rego-validate.
 module RegoValidate
   # CLI option values.
-  Options = Struct.new(:policy, :config, :query, :format, :help, :yaml_aliases, :profile, keyword_init: true)
+  Options = Struct.new(:policy, :config, :query, :format, :help, :yaml_aliases, :profile)
 
   # CLI option values.
   class Options
@@ -28,7 +28,7 @@ module RegoValidate
   end
 
   # Parsed options plus parser state and error details.
-  ParseResult = Struct.new(:options, :parser, :error, keyword_init: true)
+  ParseResult = Struct.new(:options, :parser, :error)
 
   # Parsed options plus parser state and error details.
   class ParseResult
@@ -57,7 +57,7 @@ module RegoValidate
   end
 
   # Captures the outcome of loading a config file.
-  ConfigLoadResult = Struct.new(:value, :success, keyword_init: true)
+  ConfigLoadResult = Struct.new(:value, :success)
 
   # Captures the outcome of loading a config file.
   class ConfigLoadResult
@@ -70,7 +70,7 @@ module RegoValidate
   end
 
   # Policy evaluation outcome with optional error message.
-  EvaluationResult = Struct.new(:outcome, :error_message, keyword_init: true)
+  EvaluationResult = Struct.new(:outcome, :error_message)
 
   # Policy evaluation outcome with optional error message.
   class EvaluationResult
@@ -83,7 +83,7 @@ module RegoValidate
   end
 
   # Normalized policy evaluation outcome.
-  Outcome = Struct.new(:success, :value, :errors, keyword_init: true)
+  Outcome = Struct.new(:success, :value, :errors)
 
   # Normalized policy evaluation outcome.
   class Outcome
@@ -503,7 +503,7 @@ module RegoValidate
   # Captures timing and memory statistics for policy evaluation.
   class Profiler
     # Holds a single profiler sample.
-    Sample = Struct.new(:label, :duration_ms, :allocations, :memory_bytes, :top_objects, keyword_init: true)
+    Sample = Struct.new(:label, :duration_ms, :allocations, :memory_bytes, :top_objects)
 
     # Rendering helpers for profiler samples.
     class Sample

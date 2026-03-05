@@ -15,7 +15,7 @@ module Ruby
     # rubocop:disable Metrics/ClassLength
     class Environment
       # Encapsulates environment state for pooling.
-      State = Struct.new(:input, :data, :rules, :builtin_registry, keyword_init: true)
+      State = Struct.new(:input, :data, :rules, :builtin_registry)
 
       RESERVED_BINDINGS = {
         "input" => :input,

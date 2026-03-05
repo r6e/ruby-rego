@@ -69,7 +69,7 @@ module Ruby
       PACKAGE_PATH_TOKEN_TYPES = [TokenType::IDENT].freeze
       IMPORT_PATH_TOKEN_TYPES = IDENTIFIER_TOKEN_TYPES
       # Bundles identifier parsing configuration for error messages and validation.
-      IdentifierContext = Struct.new(:name, :allowed_types, keyword_init: true)
+      IdentifierContext = Struct.new(:name, :allowed_types)
 
       # Create a parser from a token list.
       #

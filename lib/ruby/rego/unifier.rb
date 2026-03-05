@@ -154,9 +154,9 @@ module Ruby
       end
 
       # Bundles inputs for reference key candidate evaluation.
-      ReferenceKeyContext = Struct.new(:current, :env, :bindings, :variable_resolver, keyword_init: true)
+      ReferenceKeyContext = Struct.new(:current, :env, :bindings, :variable_resolver)
       # Tracks bindings and object keys already matched in a pattern.
-      ObjectBindingState = Struct.new(:bindings, :used_keys, keyword_init: true)
+      ObjectBindingState = Struct.new(:bindings, :used_keys)
 
       def initialize(variable_resolver: nil)
         @variable_resolver = variable_resolver
