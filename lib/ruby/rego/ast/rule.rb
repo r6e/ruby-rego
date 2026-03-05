@@ -10,7 +10,7 @@ module Ruby
         RULE_TYPE_LOOKUP = %i[rule_type type kind].freeze
 
         # Bundles rule components for storage.
-        Definition = Struct.new(:head, :body, :default_value, :else_clause, keyword_init: true)
+        Definition = Struct.new(:head, :body, :default_value, :else_clause)
 
         # @param name [String]
         # @param head [Object, nil]

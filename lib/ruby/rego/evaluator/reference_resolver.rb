@@ -226,7 +226,7 @@ module Ruby
 
         def valid_reference_keys(path)
           keys = reference_keys(path)
-          keys.any? { |key| key.is_a?(UndefinedValue) } ? nil : keys
+          keys.any?(UndefinedValue) ? nil : keys
         end
 
         def reference_keys(path)

@@ -9,9 +9,9 @@ module Ruby
       # :reek:DataClump
       class RuleEvaluator
         # Bundles query evaluation state to minimize parameter passing.
-        QueryContext = Struct.new(:literals, :env, keyword_init: true)
+        QueryContext = Struct.new(:literals, :env)
         # Bundles value evaluation parameters for else/default handling.
-        ValueEvaluationContext = Struct.new(:body, :rule, :value_node, :initial_bindings, keyword_init: true)
+        ValueEvaluationContext = Struct.new(:body, :rule, :value_node, :initial_bindings)
         # Bundles modifier evaluation state.
         class ModifierContext
           # @param expression [Object]

@@ -197,8 +197,7 @@ module Ruby
     CompilationArtifacts = Struct.new(
       :rules_by_name,
       :package_path,
-      :dependency_graph,
-      keyword_init: true
+      :dependency_graph
     )
 
     # Groups rules with the same name for conflict checks.
@@ -622,12 +621,11 @@ module Ruby
       :head,
       :bound_collector,
       :variable_collector_class,
-      :safe_names,
-      keyword_init: true
+      :safe_names
     )
 
     # Represents a safety check section.
-    RuleSafetySection = Struct.new(:body, :head_nodes, keyword_init: true)
+    RuleSafetySection = Struct.new(:body, :head_nodes)
 
     # Runs safety checks for a single rule.
     class RuleSafety
