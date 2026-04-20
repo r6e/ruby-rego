@@ -11,7 +11,7 @@ group :development, :test do
   gem "faker", "~> 3.4"
   gem "kramdown", "~> 2.4"
   gem "ostruct", "~> 0.6"
-  gem "rake", "~> 13.0"
+  gem "rake", "~> 13.4"
   gem "reek", "~> 6.3"
   gem "rspec", "~> 3.13"
   gem "rubocop", "~> 1.85"
