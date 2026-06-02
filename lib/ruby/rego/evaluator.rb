@@ -261,6 +261,10 @@ module Ruby
         mod = policy_set.module_for(keys)
         return context_by_module(mod) if mod
 
+        # No module owns the query path: fall back to the first context. This
+        # correctly handles non-data queries (input refs, literal expressions),
+        # which evaluate against the shared environment, and unowned data paths,
+        # which resolve to undefined regardless of which context is used.
         module_contexts.first
       end
 
@@ -291,16 +295,35 @@ module Ruby
       end
 
       def assign_package_subtree(tree, package_path, rules_value)
-        node = tree
+        node = tree # @type var node: untyped
         parent_segments = package_path[0...-1] || [] # @type var parent_segments: Array[String]
         parent_segments.each do |segment|
-          child = node[segment] || {} # @type var child: Hash[String, untyped]
-          node[segment] = child
-          node = child
+          node = descend_into_segment(node, segment, package_path)
         end
-        last = package_path.last
+        merge_leaf_rules(node, package_path.last, rules_value)
+      end
+
+      # Hash-tree navigation intrinsically references the node accumulator.
+      # :reek:FeatureEnvy
+      def descend_into_segment(node, segment, package_path)
+        empty = {} # @type var empty: Hash[String, untyped]
+        child = node[segment] || empty
+        raise_package_conflict(package_path, segment) unless child.is_a?(Hash)
+
+        node[segment] = child
+      end
+
+      def merge_leaf_rules(node, last, rules_value)
         existing = node[last]
         node[last] = existing.is_a?(Hash) ? existing.merge(rules_value) : rules_value
+      end
+
+      def raise_package_conflict(package_path, segment)
+        raise EvaluationError.new(
+          "Package #{package_path.join(".")} conflicts with rule #{segment.inspect}",
+          rule: nil,
+          location: nil
+        )
       end
 
       def initialize_with_environment(compiled_module, environment)

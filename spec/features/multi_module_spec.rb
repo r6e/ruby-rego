@@ -199,5 +199,43 @@ RSpec.describe "Multi-module edge cases" do
       expect { cross_cycle.call }.not_to raise_error
     end
   end
+
+  it "raises a clear error when a rule name collides with a subpackage segment" do
+    set = compiler.compile_set(
+      "a.rego" => "package a\nb := 1\n",
+      "abc.rego" => "package a.b.c\nd := 2\n"
+    )
+
+    expect do
+      Ruby::Rego::Evaluator.for_policy_set(set, input: {}, data: {}).evaluate
+    end.to raise_error(Ruby::Rego::EvaluationError, /conflict/i)
+  end
+
+  it "assembles three-level nested packages in the no-query result" do
+    set = compiler.compile_set(
+      "ab.rego" => "package a.b\nbar := 2\n",
+      "abc.rego" => "package a.b.c\nbaz := 3\n"
+    )
+    result = Ruby::Rego::Evaluator.for_policy_set(set, input: {}, data: {}).evaluate
+
+    expect(result.value.to_ruby).to eq("a" => { "b" => { "bar" => 2, "c" => { "baz" => 3 } } })
+  end
+
+  it "evaluates a non-data query expression against the shared environment" do
+    result = evaluate(
+      { "a.rego" => "package a\nallow := true\n" },
+      query: "input.user",
+      input: { "user" => "root" }
+    )
+    expect(result.value.to_ruby).to eq("root")
+  end
+
+  it "returns nil for a query targeting an unowned package" do
+    result = evaluate(
+      { "a.rego" => "package a\nallow := true\n" },
+      query: "data.nonexistent.rule"
+    )
+    expect(result).to be_nil
+  end
 end
 # rubocop:enable Metrics/BlockLength
