@@ -27,7 +27,7 @@ GEM
       ice_nine (~> 0.11.0)
       thread_safe (~> 0.3, >= 0.3.1)
     base64 (0.3.0)
-    benchmark-ips (2.14.0)
+    benchmark-ips (2.15.1)
     bigdecimal (4.0.1)
     bundler-audit (0.9.3)
       bundler (>= 1.2.0)
@@ -245,7 +245,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  benchmark-ips (~> 2.13)
+  benchmark-ips (~> 2.15)
   bundler-audit (~> 0.9)
   factory_bot (~> 6.2)
   faker (~> 3.8)
