@@ -74,7 +74,7 @@ GEM
       dry-logic (~> 1.4)
       zeitwerk (~> 2.6)
     erubi (1.13.1)
-    factory_bot (6.5.6)
+    factory_bot (6.6.0)
       activesupport (>= 6.1.0)
     faker (3.8.0)
       i18n (>= 1.8.11, < 2)
@@ -247,7 +247,7 @@ PLATFORMS
 DEPENDENCIES
   benchmark-ips (~> 2.15)
   bundler-audit (~> 0.9)
-  factory_bot (~> 6.2)
+  factory_bot (~> 6.6)
   faker (~> 3.8)
   kramdown (~> 2.4)
   ostruct (~> 0.6)
