@@ -292,8 +292,11 @@ module Ruby
 
       def assign_package_subtree(tree, package_path, rules_value)
         node = tree
-        package_path[0...-1].each do |segment|
-          node = (node[segment] ||= {})
+        parent_segments = package_path[0...-1] || [] # @type var parent_segments: Array[String]
+        parent_segments.each do |segment|
+          child = node[segment] || {} # @type var child: Hash[String, untyped]
+          node[segment] = child
+          node = child
         end
         last = package_path.last
         existing = node[last]

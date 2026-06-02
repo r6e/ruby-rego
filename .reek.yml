@@ -27,6 +27,7 @@ detectors:
     exclude:
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
+      - Ruby::Rego::CompiledPolicySet
       - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Evaluator::RuleEvaluator
@@ -50,6 +51,8 @@ detectors:
       - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Unifier
+      # Module-merge helpers (parse_source, merge_imports) are pure AST transforms.
+      - Ruby::Rego::Compiler
   FeatureEnvy:
     exclude:
       - Ruby::Rego::Lexer
@@ -57,6 +60,10 @@ detectors:
       - Ruby::Rego::Evaluator::ReferenceKeyResolver
       - Ruby::Rego::Evaluator::BoundVariableCollector
       - Ruby::Rego::Unifier
+      # Module-merge helpers (merge_group, merge_modules_by_package) operate over AST groups.
+      - Ruby::Rego::Compiler
+      # Package-key indexing builds a local accumulator over the module list.
+      - Ruby::Rego::CompiledPolicySet
   ControlParameter:
     exclude:
       - Ruby::Rego::Lexer
