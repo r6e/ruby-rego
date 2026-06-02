@@ -7,7 +7,7 @@ gemspec
 group :development, :test do
   gem "benchmark-ips", "~> 2.15"
   gem "bundler-audit", "~> 0.9"
-  gem "factory_bot", "~> 6.2"
+  gem "factory_bot", "~> 6.6"
   gem "faker", "~> 3.8"
   gem "kramdown", "~> 2.4"
   gem "ostruct", "~> 0.6"
