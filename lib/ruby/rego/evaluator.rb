@@ -30,6 +30,13 @@ module Ruby
     # Evaluates compiled Rego modules against input and data.
     # rubocop:disable Metrics/ClassLength
     class Evaluator
+      # Per-module evaluation context for the policy-set path.
+      ModuleContext = Struct.new(
+        :compiled_module, :package_key, :reference_resolver,
+        :expression_evaluator, :rule_evaluator,
+        keyword_init: true
+      )
+
       # Builds an evaluator with a preconfigured environment.
       #
       # @param compiled_module [#rules_by_name, #package_path] compiled module
@@ -173,8 +180,8 @@ module Ruby
         @module_contexts = build_module_contexts(policy_set)
         attach_module_registry(@module_contexts)
         primary = @module_contexts.first
-        @expression_evaluator = primary&.fetch(:expression_evaluator)
-        @rule_evaluator = primary&.fetch(:rule_evaluator)
+        @expression_evaluator = primary&.expression_evaluator
+        @rule_evaluator = primary&.rule_evaluator
       end
       private :initialize_with_policy_set
 
@@ -184,37 +191,28 @@ module Ruby
 
       def build_module_context(mod)
         package_key = mod.package_path.join(".")
-        rule_value_provider = build_module_rule_value_provider(mod, package_key)
-        reference_resolver = build_module_reference_resolver(mod, rule_value_provider)
-        expression_evaluator, rule_evaluator = wire_evaluators(
-          reference_resolver, rule_value_provider, mod: mod, package_key: package_key
-        )
-        {
-          module: mod, package_key: package_key, reference_resolver: reference_resolver,
+        rule_value_provider, reference_resolver = build_module_resolvers(mod, package_key)
+        expression_evaluator, rule_evaluator =
+          wire_module_evaluators(mod, package_key, reference_resolver, rule_value_provider)
+        ModuleContext.new(
+          compiled_module: mod, package_key: package_key, reference_resolver: reference_resolver,
           expression_evaluator: expression_evaluator, rule_evaluator: rule_evaluator
-        }
-      end
-
-      def build_module_rule_value_provider(mod, package_key)
-        RuleValueProvider.new(
-          rules_by_name: mod.rules_by_name,
-          memoization: environment.memoization,
-          package_key: package_key
         )
       end
 
-      def build_module_reference_resolver(mod, rule_value_provider)
-        ReferenceResolver.new(
-          environment: @environment,
-          package_path: mod.package_path,
-          rule_value_provider: rule_value_provider,
-          imports: mod.imports,
-          memoization: environment.memoization
+      def build_module_resolvers(mod, package_key)
+        rule_value_provider = RuleValueProvider.new(
+          rules_by_name: mod.rules_by_name, memoization: environment.memoization, package_key: package_key
         )
+        reference_resolver = ReferenceResolver.new(
+          environment: @environment, package_path: mod.package_path, rule_value_provider: rule_value_provider,
+          imports: mod.imports, memoization: environment.memoization
+        )
+        [rule_value_provider, reference_resolver]
       end
 
       # :reek:LongParameterList
-      def wire_evaluators(reference_resolver, rule_value_provider, mod:, package_key:)
+      def wire_module_evaluators(mod, package_key, reference_resolver, rule_value_provider)
         expression_evaluator = ExpressionEvaluator.new(
           environment: @environment, reference_resolver: reference_resolver
         )
@@ -229,10 +227,10 @@ module Ruby
 
       def attach_module_registry(contexts)
         resolvers_by_key = contexts.to_h do |context|
-          [context.fetch(:package_key), context.fetch(:reference_resolver)]
+          [context.package_key, context.reference_resolver]
         end
         registry = ModuleContextRegistry.new(resolvers_by_key)
-        contexts.each { |context| context.fetch(:reference_resolver).attach_module_resolver(registry) }
+        contexts.each { |context| context.reference_resolver.attach_module_resolver(registry) }
       end
 
       def evaluate_policy_set(query)
@@ -246,7 +244,7 @@ module Ruby
         context = context_for_query(query)
         return nil unless context
 
-        evaluator = context.fetch(:expression_evaluator)
+        evaluator = context.expression_evaluator
         node = QueryNodeBuilder.new(query).build
         bindings = evaluator.eval_with_unification(node, environment).first || {}
         value = evaluator.evaluate(node)
@@ -269,7 +267,7 @@ module Ruby
       end
 
       def context_by_module(mod)
-        module_contexts.find { |context| context.fetch(:module).equal?(mod) }
+        module_contexts.find { |context| context.compiled_module.equal?(mod) }
       end
 
       def evaluate_policy_set_rules
@@ -278,14 +276,14 @@ module Ruby
           rules_value = evaluate_module_rules(context)
           next if rules_value.empty?
 
-          assign_package_subtree(tree, context.fetch(:module).package_path, rules_value)
+          assign_package_subtree(tree, context.compiled_module.package_path, rules_value)
         end
         Value.from_ruby(tree)
       end
 
       def evaluate_module_rules(context)
-        evaluator = context.fetch(:rule_evaluator)
-        mod = context.fetch(:module)
+        evaluator = context.rule_evaluator
+        mod = context.compiled_module
         results = {} # @type var results: Hash[String, untyped]
         mod.rules_by_name.each do |name, rules|
           value = evaluator.evaluate_group(rules)

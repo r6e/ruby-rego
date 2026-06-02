@@ -1170,18 +1170,17 @@ module Ruby
       attr_reader policy_set: untyped
       attr_reader module_contexts: untyped
       def initialize_with_policy_set: (CompiledPolicySet policy_set, input: untyped, data: untyped) -> void
-      def build_module_contexts: (CompiledPolicySet policy_set) -> Array[Hash[Symbol, untyped]]
-      def build_module_context: (CompiledModule mod) -> Hash[Symbol, untyped]
-      def build_module_rule_value_provider: (CompiledModule mod, String package_key) -> Evaluator::RuleValueProvider
-      def build_module_reference_resolver: (CompiledModule mod, Evaluator::RuleValueProvider rule_value_provider) -> Evaluator::ReferenceResolver
-      def wire_evaluators: (Evaluator::ReferenceResolver reference_resolver, Evaluator::RuleValueProvider rule_value_provider, mod: CompiledModule, package_key: String) -> [Evaluator::ExpressionEvaluator, Evaluator::RuleEvaluator]
-      def attach_module_registry: (Array[Hash[Symbol, untyped]] contexts) -> void
+      def build_module_contexts: (CompiledPolicySet policy_set) -> Array[Evaluator::ModuleContext]
+      def build_module_context: (CompiledModule mod) -> Evaluator::ModuleContext
+      def build_module_resolvers: (CompiledModule mod, String package_key) -> [Evaluator::RuleValueProvider, Evaluator::ReferenceResolver]
+      def wire_module_evaluators: (CompiledModule mod, String package_key, Evaluator::ReferenceResolver reference_resolver, Evaluator::RuleValueProvider rule_value_provider) -> [Evaluator::ExpressionEvaluator, Evaluator::RuleEvaluator]
+      def attach_module_registry: (Array[Evaluator::ModuleContext] contexts) -> void
       def evaluate_policy_set: (untyped query) -> (Result | nil)
       def evaluate_policy_set_query: (untyped query) -> (Result | nil)
-      def context_for_query: (untyped query) -> untyped
-      def context_by_module: (untyped mod) -> untyped
+      def context_for_query: (untyped query) -> Evaluator::ModuleContext?
+      def context_by_module: (untyped mod) -> Evaluator::ModuleContext?
       def evaluate_policy_set_rules: () -> Value
-      def evaluate_module_rules: (Hash[Symbol, untyped] context) -> Hash[String, untyped]
+      def evaluate_module_rules: (Evaluator::ModuleContext context) -> Hash[String, untyped]
       def assign_package_subtree: (Hash[String, untyped] tree, Array[String] package_path, Hash[String, untyped] rules_value) -> void
       def descend_into_segment: (Hash[String, untyped] node, String segment, Array[String] package_path) -> Hash[String, untyped]
       def merge_leaf_rules: (Hash[String, untyped] node, String last, Hash[String, untyped] rules_value) -> Hash[String, untyped]
@@ -1195,6 +1194,16 @@ module Ruby
       def build_rule_evaluator: (Evaluator::ExpressionEvaluator expression_evaluator, Evaluator::RuleValueProvider rule_value_provider) -> Evaluator::RuleEvaluator
       def eval_node: (untyped node) -> Value
       def initialize_with_environment: (CompiledModuleLike compiled_module, Environment environment) -> void
+    end
+
+    class Evaluator::ModuleContext
+      attr_reader compiled_module: CompiledModule
+      attr_reader package_key: String
+      attr_reader reference_resolver: Evaluator::ReferenceResolver
+      attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
+      attr_reader rule_evaluator: Evaluator::RuleEvaluator
+
+      def initialize: (compiled_module: CompiledModule, package_key: String, reference_resolver: Evaluator::ReferenceResolver, expression_evaluator: Evaluator::ExpressionEvaluator, rule_evaluator: Evaluator::RuleEvaluator) -> void
     end
 
     class Evaluator::ModuleContextRegistry
