@@ -179,6 +179,7 @@ module Ruby
         @environment = Environment.new(input: input, data: data, rules: {})
         @module_contexts = build_module_contexts(policy_set)
         attach_module_registry(@module_contexts)
+        detect_package_rule_conflicts
         primary = @module_contexts.first
         @expression_evaluator = primary&.expression_evaluator
         @rule_evaluator = primary&.rule_evaluator
@@ -271,7 +272,6 @@ module Ruby
       end
 
       def evaluate_policy_set_rules
-        detect_package_rule_conflicts
         tree = {} # @type var tree: Hash[String, untyped]
         module_contexts.each do |context|
           rules_value = evaluate_module_rules(context)

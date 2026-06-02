@@ -266,5 +266,16 @@ RSpec.describe "Multi-module edge cases" do
     )
     expect(result).to be_nil
   end
+
+  it "detects a package/rule conflict even for a targeted query" do
+    set = compiler.compile_set(
+      "a.rego" => "package a\nb := 1\n",
+      "abc.rego" => "package a.b.c\nd := 2\n"
+    )
+
+    expect do
+      Ruby::Rego::Evaluator.for_policy_set(set, input: {}, data: {}).evaluate("data.a.b")
+    end.to raise_error(Ruby::Rego::EvaluationError, /conflict/i)
+  end
 end
 # rubocop:enable Metrics/BlockLength
