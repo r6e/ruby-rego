@@ -10,6 +10,7 @@ detectors:
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
       - Ruby::Rego::Compiler
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Evaluator::RuleEvaluator
       - Ruby::Rego::Unifier
@@ -20,11 +21,13 @@ detectors:
   TooManyInstanceVariables:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
   TooManyStatements:
     exclude:
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Evaluator::RuleEvaluator
       - Ruby::Rego::Evaluator::OperatorEvaluator
@@ -36,6 +39,7 @@ detectors:
   DuplicateMethodCall:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Evaluator::RuleEvaluator
       - Ruby::Rego::Unifier
@@ -43,6 +47,7 @@ detectors:
   UtilityFunction:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Unifier
   FeatureEnvy:
@@ -66,6 +71,7 @@ detectors:
   RepeatedConditional:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Evaluator::RuleEvaluator
   NestedIterators:

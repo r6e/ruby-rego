@@ -61,6 +61,15 @@ module Ruby
             variable_resolver: method(:resolve_variable_key)
           )
           @import_map = build_import_map(imports)
+          @module_resolver = nil
+        end
+
+        # Attach the cross-package module registry.
+        #
+        # @param module_resolver [ModuleContextRegistry]
+        # @return [void]
+        def attach_module_resolver(module_resolver)
+          @module_resolver = module_resolver
         end
 
         # @param ref [Object]
@@ -138,7 +147,8 @@ module Ruby
 
         private
 
-        attr_reader :environment, :package_path, :rule_value_provider, :key_resolver, :import_map, :memoization
+        attr_reader :environment, :package_path, :rule_value_provider, :key_resolver, :import_map, :memoization,
+                    :module_resolver
 
         def resolve_reference_value(ref)
           import_value = resolve_import_reference(ref)
@@ -149,8 +159,17 @@ module Ruby
 
           base_value = environment.resolve_reference(ref.base)
           resolved = resolve_reference_path_fast(base_value, ref)
+          resolve_data_reference_value(ref, resolved)
+        end
+
+        def resolve_data_reference_value(ref, resolved)
           rule_value = resolve_rule_reference(ref)
-          rule_value || resolved
+          return rule_value if rule_value
+
+          cross_value = resolve_cross_package_reference(ref)
+          return cross_value if cross_value
+
+          resolved
         end
 
         def resolve_rule_reference(ref)
@@ -161,6 +180,22 @@ module Ruby
           rule_reference(path)&.then do |(rule_name, remaining_path)|
             resolve_rule_value(rule_name, remaining_path)
           end
+        end
+
+        def resolve_cross_package_reference(ref)
+          resolver = module_resolver
+          return nil unless resolver
+
+          base = ref.base
+          return nil unless base.is_a?(AST::Variable) && base.name == "data"
+
+          keys = valid_reference_keys(ref.path)
+          return nil unless keys
+
+          owner = resolver.resolver_for(keys)
+          return nil if owner.nil? || owner.equal?(self)
+
+          owner.resolve(ref)
         end
 
         def rule_reference(path)
