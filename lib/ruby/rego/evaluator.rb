@@ -186,7 +186,9 @@ module Ruby
         package_key = mod.package_path.join(".")
         rule_value_provider = build_module_rule_value_provider(mod, package_key)
         reference_resolver = build_module_reference_resolver(mod, rule_value_provider)
-        expression_evaluator, rule_evaluator = wire_evaluators(reference_resolver, rule_value_provider)
+        expression_evaluator, rule_evaluator = wire_evaluators(
+          reference_resolver, rule_value_provider, mod: mod, package_key: package_key
+        )
         {
           module: mod, package_key: package_key, reference_resolver: reference_resolver,
           expression_evaluator: expression_evaluator, rule_evaluator: rule_evaluator
@@ -211,12 +213,14 @@ module Ruby
         )
       end
 
-      def wire_evaluators(reference_resolver, rule_value_provider)
+      # :reek:LongParameterList
+      def wire_evaluators(reference_resolver, rule_value_provider, mod:, package_key:)
         expression_evaluator = ExpressionEvaluator.new(
           environment: @environment, reference_resolver: reference_resolver
         )
         rule_evaluator = RuleEvaluator.new(
-          environment: @environment, expression_evaluator: expression_evaluator
+          environment: @environment, expression_evaluator: expression_evaluator,
+          rules: mod.rules_by_name, package_key: package_key
         )
         rule_value_provider.attach(rule_evaluator)
         expression_evaluator.attach_query_evaluator(rule_evaluator)
@@ -291,7 +295,9 @@ module Ruby
         package_path[0...-1].each do |segment|
           node = (node[segment] ||= {})
         end
-        node[package_path.last] = rules_value
+        last = package_path.last
+        existing = node[last]
+        node[last] = existing.is_a?(Hash) ? existing.merge(rules_value) : rules_value
       end
 
       def initialize_with_environment(compiled_module, environment)

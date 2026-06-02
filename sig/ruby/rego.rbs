@@ -1538,7 +1538,7 @@ module Ruby
         def initialize: (body: Array[untyped]?, rule: AST::Rule, value_node: untyped, initial_bindings: Hash[String, Value]) -> void
       end
 
-      def initialize: (environment: Environment, expression_evaluator: Evaluator::ExpressionEvaluator) -> void
+      def initialize: (environment: Environment, expression_evaluator: Evaluator::ExpressionEvaluator, ?rules: Hash[String, Array[AST::Rule]]?, ?package_key: String) -> void
       def evaluate_group: (Array[AST::Rule] rules) -> Value
       def evaluate_rule: (AST::Rule rule) -> Value
       def evaluate_function_call: (String name, Array[Value] args) -> Value
@@ -1547,6 +1547,7 @@ module Ruby
       private
 
       def evaluate_function_call_uncached: (String name, Array[Value] args) -> Value
+      def function_rule_table: () -> Hash[String, Array[AST::Rule]]
       def evaluate_partial_set_rules: (Array[AST::Rule] rules) -> Value
       def evaluate_partial_object_rules: (Array[AST::Rule] rules) -> Value
       def partial_object_pairs: (Array[AST::Rule] rules) -> Hash[Object, Value]
@@ -1607,6 +1608,7 @@ module Ruby
       attr_reader environment: Environment
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
       attr_reader unifier: Unifier
+      attr_reader package_key: String
     end
 
     module Evaluator::OperatorEvaluator

@@ -35,10 +35,15 @@ module Ruby
 
         # @param environment [Environment]
         # @param expression_evaluator [ExpressionEvaluator]
-        def initialize(environment:, expression_evaluator:)
+        # @param rules [Hash{String => Array<AST::Rule>}, nil] function lookup table (defaults to environment.rules)
+        # @param package_key [String] namespaces the function-value cache
+        # :reek:LongParameterList
+        def initialize(environment:, expression_evaluator:, rules: nil, package_key: "")
           @environment = environment
           @expression_evaluator = expression_evaluator
           @unifier = Unifier.new
+          @rules = rules
+          @package_key = package_key
         end
 
         # @param rules [Array<AST::Rule>]
@@ -60,7 +65,7 @@ module Ruby
         def evaluate_function_call(name, args)
           cache = memoization&.context&.function_values
           if cache
-            key = [name.to_s, args]
+            key = [package_key, name.to_s, args]
             return cache[key] if cache.key?(key)
 
             cache[key] = evaluate_function_call_uncached(name, args)
@@ -71,7 +76,7 @@ module Ruby
         end
 
         def evaluate_function_call_uncached(name, args)
-          rules = environment.rules.fetch(name.to_s) { [] }
+          rules = function_rule_table.fetch(name.to_s) { [] }
           function_rules = rules.select(&:function?)
           return UndefinedValue.new if function_rules.empty?
 
@@ -80,6 +85,10 @@ module Ruby
 
           resolved = resolve_conflicts(value, name)
           resolved || UndefinedValue.new
+        end
+
+        def function_rule_table
+          @rules || environment.rules
         end
 
         # @param rule [AST::Rule]
@@ -101,7 +110,7 @@ module Ruby
 
         private
 
-        attr_reader :environment, :expression_evaluator, :unifier
+        attr_reader :environment, :expression_evaluator, :unifier, :package_key
 
         def memoization
           environment.memoization

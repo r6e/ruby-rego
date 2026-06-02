@@ -52,5 +52,54 @@ RSpec.describe "Multi-module evaluation" do
 
     expect(result.value.to_ruby).to eq(2)
   end
+
+  it "evaluates a user-defined function within a package" do
+    result = evaluate(
+      { "a.rego" => "package a\nf(x) := x * 2\nallow if f(3) == 6\n" },
+      query: "data.a.allow"
+    )
+
+    expect(result.value.to_ruby).to be(true)
+  end
+
+  it "isolates same-named functions across packages in the value cache" do
+    result_a = evaluate(
+      {
+        "a.rego" => "package a\nf(x) := x + 1\nval := f(10)\n",
+        "b.rego" => "package b\nf(x) := x + 100\nval := f(10)\n"
+      },
+      query: "data.a.val"
+    )
+    result_b = evaluate(
+      {
+        "a.rego" => "package a\nf(x) := x + 1\nval := f(10)\n",
+        "b.rego" => "package b\nf(x) := x + 100\nval := f(10)\n"
+      },
+      query: "data.b.val"
+    )
+
+    expect(result_a.value.to_ruby).to eq(11)
+    expect(result_b.value.to_ruby).to eq(110)
+  end
+
+  it "nests subpackage results under the parent package (parent first)" do
+    set = Ruby::Rego::Compiler.new.compile_set(
+      "a.rego" => "package a\nfoo := 1\n",
+      "ab.rego" => "package a.b\nbar := 2\n"
+    )
+    result = Ruby::Rego::Evaluator.for_policy_set(set, input: {}, data: {}).evaluate
+
+    expect(result.value.to_ruby).to eq("a" => { "foo" => 1, "b" => { "bar" => 2 } })
+  end
+
+  it "nests subpackage results under the parent package (child first)" do
+    set = Ruby::Rego::Compiler.new.compile_set(
+      "ab.rego" => "package a.b\nbar := 2\n",
+      "a.rego" => "package a\nfoo := 1\n"
+    )
+    result = Ruby::Rego::Evaluator.for_policy_set(set, input: {}, data: {}).evaluate
+
+    expect(result.value.to_ruby).to eq("a" => { "foo" => 1, "b" => { "bar" => 2 } })
+  end
 end
 # rubocop:enable Metrics/BlockLength
