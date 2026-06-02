@@ -52,11 +52,12 @@ annotations — these ripple structurally and are not "just more functions").
 
 ## Built-in function backlog
 
-~46 of OPA's ~210 builtins are implemented (types, aggregates, strings,
+~51 of OPA's ~210 builtins are implemented (types, aggregates, numbers, strings,
 collections, comparisons). The registry pattern makes additions mechanical;
 this is volume, not difficulty. Highest compatibility-per-effort first:
 
-- ⬜ Numeric: `abs`, `round`, `ceil`, `floor`, `numbers.range`, `rand.intn`.
+- 🟡 Numeric: ✅ `abs`, `round`, `ceil`, `floor`, `numbers.range`; ⬜ `rand.intn`
+  (stateful/seeded — deferred), ⬜ `numbers.range_step`.
 - ⬜ Regex: `regex.match`, `regex.find_n`, `regex.split`, `regex.replace`, etc.
 - ⬜ Encoding: `json.marshal`/`json.unmarshal`, `yaml.*`, `base64*`, `hex`, `urlquery`.
 - ⬜ Object: `object.union`, `object.union_n`, `object.filter`, `json.patch`,

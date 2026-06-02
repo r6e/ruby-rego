@@ -107,7 +107,7 @@ The CLI attempts to infer a validation query in this order: `deny`, `violations`
 
 ### Built-in functions
 
-Built-ins are currently limited to core categories: types, aggregates, strings, collections, and comparisons. See the builtins registry for the current list.
+Built-ins are currently limited to core categories: types, aggregates, numbers (`abs`, `round`, `ceil`, `floor`, `numbers.range`), strings, collections, and comparisons. See the builtins registry for the current list.
 
 ### Multi-module composition
 

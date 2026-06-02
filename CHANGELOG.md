@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Numeric built-ins: `abs`, `round`, `ceil`, `floor`, and `numbers.range`,
+  matching OPA semantics (round half away from zero; `numbers.range` accepts
+  integer-valued bounds and is undefined for a non-integer bound).
 - Multi-module composition: `Ruby::Rego.compile_modules` / `evaluate_modules` compile
   and evaluate a named set of modules with cross-package references and OPA-style
   same-package merge.

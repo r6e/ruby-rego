@@ -318,6 +318,25 @@ module Ruby
         def self.ensure_non_empty: (Array[Numeric] numbers, name: String) -> void
       end
 
+      module Numbers
+        extend RegistryHelpers
+
+        NUMBER_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.abs: (Value value) -> NumberValue
+        def self.round: (Value value) -> NumberValue
+        def self.ceil: (Value value) -> NumberValue
+        def self.floor: (Value value) -> NumberValue
+        def self.range: (Value start_value, Value end_value) -> (ArrayValue | UndefinedValue)
+
+        private
+
+        def self.numeric: (Value value, String context) -> Numeric
+        def self.integer_bound: (Value value, String context) -> Integer?
+        def self.range_elements: (Integer start_bound, Integer end_bound) -> Array[Integer]
+      end
+
       module Strings
         extend RegistryHelpers
 
