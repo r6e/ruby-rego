@@ -7,9 +7,11 @@ module Ruby
       class RuleValueProvider
         # @param rules_by_name [Hash{String => Array<AST::Rule>}]
         # @param memoization [Memoization::Store, nil]
-        def initialize(rules_by_name:, memoization: nil)
+        # @param package_key [String] package key used to namespace cache entries
+        def initialize(rules_by_name:, memoization: nil, package_key: "")
           @rules_by_name = rules_by_name
           @memoization = memoization
+          @package_key = package_key
           @rule_evaluator = nil
         end
 
@@ -33,14 +35,15 @@ module Ruby
 
         private
 
-        attr_reader :memoization, :rule_evaluator, :rules_by_name
+        attr_reader :memoization, :package_key, :rule_evaluator, :rules_by_name
 
         def memoized_value_for(name)
           memo = memoization
           return evaluate_value_for(name) unless memo
 
           cache = memo.context.rule_values
-          cache.fetch(name.to_s) { |key| cache[key] = evaluate_value_for(key) }
+          cache_key = "#{package_key} #{name}"
+          cache.fetch(cache_key) { |_key| cache[cache_key] = evaluate_value_for(name) }
         end
 
         def evaluate_value_for(name)

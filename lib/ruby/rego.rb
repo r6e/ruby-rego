@@ -21,6 +21,7 @@ require_relative "rego/memoization"
 require_relative "rego/environment"
 require_relative "rego/environment_pool"
 require_relative "rego/compiled_module"
+require_relative "rego/compiled_policy_set"
 require_relative "rego/compiler"
 require_relative "rego/with_modifiers/with_modifier"
 require_relative "rego/unifier"
@@ -53,6 +54,16 @@ module Ruby
         end
       end
 
+      # Compile a named set of module sources into a policy set.
+      #
+      # @param modules [Hash{String => String}] map of name => Rego source
+      # @return [CompiledPolicySet] compiled policy set
+      def compile_modules(modules)
+        ErrorHandling.wrap("compilation") do
+          Compiler.new.compile_set(modules)
+        end
+      end
+
       # Evaluate Rego source against input and data.
       #
       # @param source [String] Rego source code
@@ -65,6 +76,21 @@ module Ruby
         compiled_module = compile(source)
         ErrorHandling.wrap("evaluation") do
           Evaluator.new(compiled_module, input: input, data: data).evaluate(query)
+        end
+      end
+
+      # Evaluate a named set of modules against input and data.
+      #
+      # @param modules [Hash{String => String}] map of name => Rego source
+      # @param input [Object] input document
+      # @param data [Object] data document
+      # @param query [Object, nil] optional query path
+      # @return [Result, nil] evaluation result, or nil when a query is undefined
+      # :reek:LongParameterList
+      def evaluate_modules(modules, input: {}, data: {}, query: nil)
+        policy_set = compile_modules(modules)
+        ErrorHandling.wrap("evaluation") do
+          Evaluator.for_policy_set(policy_set, input: input, data: data).evaluate(query)
         end
       end
     end

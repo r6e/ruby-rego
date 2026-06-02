@@ -16,6 +16,7 @@ require_relative "evaluator/object_literal_evaluator"
 require_relative "evaluator/comprehension_evaluator"
 require_relative "evaluator/rule_value_provider"
 require_relative "evaluator/reference_resolver"
+require_relative "evaluator/module_context_registry"
 require_relative "evaluator/reference_key_resolver"
 require_relative "evaluator/expression_evaluator"
 require_relative "evaluator/variable_collector"
@@ -27,7 +28,15 @@ require_relative "with_modifiers/with_modifier_applier"
 module Ruby
   module Rego
     # Evaluates compiled Rego modules against input and data.
+    # rubocop:disable Metrics/ClassLength
     class Evaluator
+      # Per-module evaluation context for the policy-set path.
+      ModuleContext = Struct.new(
+        :compiled_module, :package_key, :reference_resolver,
+        :expression_evaluator, :rule_evaluator,
+        keyword_init: true
+      )
+
       # Builds an evaluator with a preconfigured environment.
       #
       # @param compiled_module [#rules_by_name, #package_path] compiled module
@@ -51,12 +60,26 @@ module Ruby
         new(options[:compiler].compile(ast_module), input: options[:input], data: options[:data])
       end
 
+      # Build an evaluator over a compiled policy set.
+      #
+      # @param policy_set [CompiledPolicySet]
+      # @param input [Object] input document
+      # @param data [Object] data document
+      # @return [Evaluator]
+      def self.for_policy_set(policy_set, input: {}, data: {})
+        evaluator = allocate
+        evaluator.send(:initialize_with_policy_set, policy_set, input: input, data: data)
+        evaluator
+      end
+
       # Create an evaluator for a compiled module.
       #
       # @param compiled_module [#rules_by_name, #package_path] compiled module
       # @param input [Object] input document
       # @param data [Object] data document
       def initialize(compiled_module, input: {}, data: {})
+        @policy_set = nil
+        @module_contexts = nil
         @compiled_module = compiled_module
         rules_by_name = compiled_module.rules_by_name
         package_path = compiled_module.package_path
@@ -80,6 +103,8 @@ module Ruby
       # @return [Result, nil] evaluation result, or nil when a query is undefined
       def evaluate(query = nil)
         environment.memoization.reset!
+        return evaluate_policy_set(query) if policy_set
+
         value, bindings = query ? evaluate_query(query) : [evaluate_rules, nil]
         return nil if query && value.is_a?(UndefinedValue)
 
@@ -88,7 +113,7 @@ module Ruby
 
       private
 
-      attr_reader :expression_evaluator, :rule_evaluator
+      attr_reader :policy_set, :module_contexts, :expression_evaluator, :rule_evaluator
 
       def build_evaluators(rules_by_name, package_path)
         rule_value_provider = RuleValueProvider.new(
@@ -148,7 +173,181 @@ module Ruby
         expression_evaluator.evaluate(node)
       end
 
+      def initialize_with_policy_set(policy_set, input:, data:)
+        @policy_set = policy_set
+        @compiled_module = nil
+        @environment = Environment.new(input: input, data: data, rules: {})
+        @module_contexts = build_module_contexts(policy_set)
+        attach_module_registry(@module_contexts)
+        detect_package_rule_conflicts
+        primary = @module_contexts.first
+        @expression_evaluator = primary&.expression_evaluator
+        @rule_evaluator = primary&.rule_evaluator
+      end
+      private :initialize_with_policy_set
+
+      def build_module_contexts(policy_set)
+        policy_set.modules.map { |mod| build_module_context(mod) }
+      end
+
+      def build_module_context(mod)
+        package_key = mod.package_path.join(".")
+        rule_value_provider, reference_resolver = build_module_resolvers(mod, package_key)
+        expression_evaluator, rule_evaluator =
+          wire_module_evaluators(mod, package_key, reference_resolver, rule_value_provider)
+        ModuleContext.new(
+          compiled_module: mod, package_key: package_key, reference_resolver: reference_resolver,
+          expression_evaluator: expression_evaluator, rule_evaluator: rule_evaluator
+        )
+      end
+
+      def build_module_resolvers(mod, package_key)
+        rule_value_provider = RuleValueProvider.new(
+          rules_by_name: mod.rules_by_name, memoization: environment.memoization, package_key: package_key
+        )
+        reference_resolver = ReferenceResolver.new(
+          environment: @environment, package_path: mod.package_path, rule_value_provider: rule_value_provider,
+          imports: mod.imports, memoization: environment.memoization
+        )
+        [rule_value_provider, reference_resolver]
+      end
+
+      # :reek:LongParameterList
+      def wire_module_evaluators(mod, package_key, reference_resolver, rule_value_provider)
+        expression_evaluator = ExpressionEvaluator.new(
+          environment: @environment, reference_resolver: reference_resolver
+        )
+        rule_evaluator = RuleEvaluator.new(
+          environment: @environment, expression_evaluator: expression_evaluator,
+          rules: mod.rules_by_name, package_key: package_key
+        )
+        rule_value_provider.attach(rule_evaluator)
+        expression_evaluator.attach_query_evaluator(rule_evaluator)
+        [expression_evaluator, rule_evaluator]
+      end
+
+      def attach_module_registry(contexts)
+        resolvers_by_key = contexts.to_h do |context|
+          [context.package_key, context.reference_resolver]
+        end
+        registry = ModuleContextRegistry.new(resolvers_by_key)
+        contexts.each { |context| context.reference_resolver.attach_module_resolver(registry) }
+      end
+
+      def evaluate_policy_set(query)
+        return evaluate_policy_set_query(query) if query
+
+        value = evaluate_policy_set_rules
+        ResultBuilder.new(value, nil).build
+      end
+
+      def evaluate_policy_set_query(query)
+        context = context_for_query(query)
+        return nil unless context
+
+        evaluator = context.expression_evaluator
+        node = QueryNodeBuilder.new(query).build
+        bindings = evaluator.eval_with_unification(node, environment).first || {}
+        value = evaluator.evaluate(node)
+        return nil if value.is_a?(UndefinedValue)
+
+        ResultBuilder.new(value, bindings).build
+      end
+
+      def context_for_query(query)
+        keys = query.to_s.split(".")
+        keys = keys[1..] || [] if keys.first == "data"
+        mod = policy_set.module_for(keys)
+        return context_by_module(mod) if mod
+
+        # No module owns the query path: fall back to the first context. This
+        # correctly handles non-data queries (input refs, literal expressions),
+        # which evaluate against the shared environment, and unowned data paths,
+        # which resolve to undefined regardless of which context is used.
+        module_contexts.first
+      end
+
+      def context_by_module(mod)
+        module_contexts.find { |context| context.compiled_module.equal?(mod) }
+      end
+
+      def evaluate_policy_set_rules
+        tree = {} # @type var tree: Hash[String, untyped]
+        module_contexts.each do |context|
+          rules_value = evaluate_module_rules(context)
+          next if rules_value.empty?
+
+          assign_package_subtree(tree, context.compiled_module.package_path, rules_value)
+        end
+        Value.from_ruby(tree)
+      end
+
+      # Reject any rule whose full path (package path + rule name) is a prefix of,
+      # or equal to, another module's package path. Such a path cannot be both a
+      # rule value and a package namespace, matching OPA's conflict semantics. The
+      # check is order- and value-shape-independent, unlike a per-node assembly guard.
+      def detect_package_rule_conflicts
+        package_paths = module_contexts.map { |context| context.compiled_module.package_path }
+        module_contexts.each do |context|
+          raise_conflicts_for_module(context, package_paths)
+        end
+      end
+
+      def raise_conflicts_for_module(context, package_paths)
+        package_path = context.compiled_module.package_path
+        context.compiled_module.rule_names.each do |rule_name|
+          rule_path = package_path + [rule_name]
+          conflicting = conflicting_package(rule_path, package_paths)
+          raise_package_rule_conflict(rule_path, conflicting) if conflicting
+        end
+      end
+
+      # :reek:UtilityFunction
+      def conflicting_package(rule_path, package_paths)
+        package_paths.find { |other| package_prefix?(rule_path, other) }
+      end
+
+      def raise_package_rule_conflict(rule_path, conflicting)
+        raise EvaluationError.new(
+          "Rule #{rule_path.join(".")} conflicts with package #{conflicting.join(".")}",
+          rule: nil,
+          location: nil
+        )
+      end
+
+      # :reek:UtilityFunction
+      # True when `prefix` is a (non-strict) prefix of `path` — i.e. the rule path
+      # is used as, or as an ancestor of, a package namespace.
+      def package_prefix?(prefix, path)
+        path.length >= prefix.length && path[0, prefix.length] == prefix
+      end
+
+      def evaluate_module_rules(context)
+        evaluator = context.rule_evaluator
+        mod = context.compiled_module
+        results = {} # @type var results: Hash[String, untyped]
+        mod.rules_by_name.each do |name, rules|
+          value = evaluator.evaluate_group(rules)
+          results[name] = value.to_ruby unless value.is_a?(UndefinedValue)
+        end
+        results
+      end
+
+      def assign_package_subtree(tree, package_path, rules_value)
+        node = tree # @type var node: untyped
+        parent_segments = package_path[0...-1] || [] # @type var parent_segments: Array[String]
+        empty = {} # @type var empty: Hash[String, untyped]
+        parent_segments.each do |segment|
+          node = (node[segment] ||= empty.dup)
+        end
+        last = package_path.last
+        existing = node[last]
+        node[last] = existing.is_a?(Hash) ? existing.merge(rules_value) : rules_value
+      end
+
       def initialize_with_environment(compiled_module, environment)
+        @policy_set = nil
+        @module_contexts = nil
         @compiled_module = compiled_module
         rules_by_name = compiled_module.rules_by_name
         package_path = compiled_module.package_path
@@ -157,6 +356,7 @@ module Ruby
       end
       private :initialize_with_environment
     end
+    # rubocop:enable Metrics/ClassLength
 
     # Builds result objects from evaluation outputs.
     class ResultBuilder

@@ -5,6 +5,8 @@ module Ruby
     def self.parse: (String source) -> AST::Module
     def self.compile: (String source) -> CompiledModule
     def self.evaluate: (String source, ?input: untyped, ?data: untyped, ?query: untyped) -> (Result | nil)
+    def self.compile_modules: (Hash[String, String] modules) -> CompiledPolicySet
+    def self.evaluate_modules: (Hash[String, String] modules, ?input: untyped, ?data: untyped, ?query: untyped) -> (Result | nil)
 
     type position = {
       line: Integer,
@@ -856,9 +858,24 @@ module Ruby
       def normalize_dependency_graph: () -> Hash[String, Array[String]]
     end
 
+    class CompiledPolicySet
+      def initialize: (Array[CompiledModule] modules) -> void
+      def modules: () -> Array[CompiledModule]
+      def package_keys: () -> Array[String]
+      def module_for: (Array[untyped] keys) -> CompiledModule?
+      def self.longest_prefix_key: (Array[String] package_keys, Array[untyped] keys) -> String?
+      def self.prefix_match?: (String package_key, Array[String] string_keys) -> bool
+
+      private
+
+      attr_reader modules_by_key: Hash[String, CompiledModule]
+      def index_by_package_key: (Array[CompiledModule] modules) -> Hash[String, CompiledModule]
+    end
+
     class Compiler
       def initialize: (?builtin_registry: Builtins::BuiltinRegistry, ?default_rule_validator: DefaultRuleValidator?) -> void
       def compile: (AST::Module ast_module) -> CompiledModule
+      def compile_set: (Hash[String, String] modules) -> CompiledPolicySet
       def index_rules: (Array[AST::Rule] rules) -> Hash[String, Array[AST::Rule]]
       def check_conflicts: (Array[AST::Rule] | Hash[String, Array[AST::Rule]] rules) -> void
       def check_safety: (AST::Rule rule) -> void
@@ -866,6 +883,11 @@ module Ruby
       private
 
       def compile_rules: (AST::Module ast_module) -> Hash[String, Array[AST::Rule]]
+      def parse_named_modules: (Hash[String, String] modules) -> Array[AST::Module]
+      def parse_source: (String source) -> AST::Module
+      def merge_modules_by_package: (Array[AST::Module] ast_modules) -> Array[AST::Module]
+      def merge_group: (Array[AST::Module] group) -> AST::Module
+      def merge_imports: (Array[AST::Module] group) -> Array[AST::Import]
       def rule_indexer: () -> singleton(RuleIndexer)
       def conflict_checker: () -> ConflictChecker
       def safety_checker: () -> SafetyChecker
@@ -1138,12 +1160,33 @@ module Ruby
 
       def self.from_ast: (AST::Module ast_module, ?from_ast_options options) -> Evaluator
       def self.from_environment: (CompiledModuleLike compiled_module, Environment environment) -> Evaluator
+      def self.for_policy_set: (CompiledPolicySet policy_set, ?input: untyped, ?data: untyped) -> Evaluator
       def initialize: (CompiledModuleLike compiled_module, ?input: untyped, ?data: untyped) -> void
       def evaluate: (?untyped query) -> (Result | nil)
 
       private
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
       attr_reader rule_evaluator: Evaluator::RuleEvaluator
+      attr_reader policy_set: untyped
+      attr_reader module_contexts: untyped
+      def initialize_with_policy_set: (CompiledPolicySet policy_set, input: untyped, data: untyped) -> void
+      def build_module_contexts: (CompiledPolicySet policy_set) -> Array[Evaluator::ModuleContext]
+      def build_module_context: (CompiledModule mod) -> Evaluator::ModuleContext
+      def build_module_resolvers: (CompiledModule mod, String package_key) -> [Evaluator::RuleValueProvider, Evaluator::ReferenceResolver]
+      def wire_module_evaluators: (CompiledModule mod, String package_key, Evaluator::ReferenceResolver reference_resolver, Evaluator::RuleValueProvider rule_value_provider) -> [Evaluator::ExpressionEvaluator, Evaluator::RuleEvaluator]
+      def attach_module_registry: (Array[Evaluator::ModuleContext] contexts) -> void
+      def evaluate_policy_set: (untyped query) -> (Result | nil)
+      def evaluate_policy_set_query: (untyped query) -> (Result | nil)
+      def context_for_query: (untyped query) -> Evaluator::ModuleContext?
+      def context_by_module: (untyped mod) -> Evaluator::ModuleContext?
+      def evaluate_policy_set_rules: () -> Value
+      def evaluate_module_rules: (Evaluator::ModuleContext context) -> Hash[String, untyped]
+      def assign_package_subtree: (Hash[String, untyped] tree, Array[String] package_path, Hash[String, untyped] rules_value) -> void
+      def detect_package_rule_conflicts: () -> void
+      def raise_conflicts_for_module: (Evaluator::ModuleContext context, Array[Array[String]] package_paths) -> void
+      def conflicting_package: (Array[String] rule_path, Array[Array[String]] package_paths) -> Array[String]?
+      def raise_package_rule_conflict: (Array[String] rule_path, Array[String] conflicting) -> bot
+      def package_prefix?: (Array[String] prefix, Array[String] path) -> bool
       def evaluate_rules: () -> Hash[untyped, untyped]
       def include_rule_result: (Hash[String, Value] results, String name, Array[AST::Rule] rules) -> void
       def evaluate_query: (untyped query) -> [Value, Hash[String, Value]]
@@ -1153,6 +1196,26 @@ module Ruby
       def build_rule_evaluator: (Evaluator::ExpressionEvaluator expression_evaluator, Evaluator::RuleValueProvider rule_value_provider) -> Evaluator::RuleEvaluator
       def eval_node: (untyped node) -> Value
       def initialize_with_environment: (CompiledModuleLike compiled_module, Environment environment) -> void
+    end
+
+    class Evaluator::ModuleContext
+      attr_reader compiled_module: CompiledModule
+      attr_reader package_key: String
+      attr_reader reference_resolver: Evaluator::ReferenceResolver
+      attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
+      attr_reader rule_evaluator: Evaluator::RuleEvaluator
+
+      def initialize: (compiled_module: CompiledModule, package_key: String, reference_resolver: Evaluator::ReferenceResolver, expression_evaluator: Evaluator::ExpressionEvaluator, rule_evaluator: Evaluator::RuleEvaluator) -> void
+    end
+
+    class Evaluator::ModuleContextRegistry
+      def initialize: (Hash[String, untyped] resolvers_by_key) -> void
+      def resolver_for: (Array[untyped] keys) -> untyped
+
+      private
+
+      attr_reader resolvers_by_key: Hash[String, untyped]
+      attr_reader package_keys: Array[String]
     end
 
     class ResultBuilder
@@ -1176,7 +1239,7 @@ module Ruby
     end
 
     class Evaluator::RuleValueProvider
-      def initialize: (rules_by_name: Hash[String, Array[AST::Rule]], ?memoization: Memoization::Store?) -> void
+      def initialize: (rules_by_name: Hash[String, Array[AST::Rule]], ?memoization: Memoization::Store?, ?package_key: String) -> void
       def attach: (Evaluator::RuleEvaluator rule_evaluator) -> void
       def value_for: (String name) -> Value
       def rule_defined?: (String name) -> bool
@@ -1186,6 +1249,7 @@ module Ruby
       attr_reader rule_evaluator: Evaluator::RuleEvaluator?
       attr_reader rules_by_name: Hash[String, Array[AST::Rule]]
       attr_reader memoization: Memoization::Store?
+      attr_reader package_key: String
       def memoized_value_for: (String name) -> Value
       def evaluate_value_for: (String name) -> Value
     end
@@ -1210,10 +1274,13 @@ module Ruby
       def resolve_import_variable: (String name) -> Value?
       def resolve_rule_variable: (String name) -> Value?
       def function_reference_name: (AST::Reference reference) -> String?
+      def attach_module_resolver: (untyped module_resolver) -> void
 
       private
 
       def resolve_reference_value: (AST::Reference ref) -> Value
+      def resolve_data_reference_value: (AST::Reference ref, Value resolved) -> Value
+      def resolve_cross_package_reference: (AST::Reference ref) -> Value?
       def resolve_rule_reference: (AST::Reference ref) -> Value?
       def resolve_import_reference: (AST::Reference ref) -> Value?
       def resolve_rule_reference_without_data: (AST::Reference ref) -> Value?
@@ -1249,6 +1316,7 @@ module Ruby
       attr_reader rule_value_provider: Evaluator::RuleValueProvider
       attr_reader import_map: Hash[String, AST::Reference]
       attr_reader memoization: Memoization::Store?
+      attr_reader module_resolver: untyped
     end
 
     class Evaluator::ReferenceKeyResolver
@@ -1538,7 +1606,7 @@ module Ruby
         def initialize: (body: Array[untyped]?, rule: AST::Rule, value_node: untyped, initial_bindings: Hash[String, Value]) -> void
       end
 
-      def initialize: (environment: Environment, expression_evaluator: Evaluator::ExpressionEvaluator) -> void
+      def initialize: (environment: Environment, expression_evaluator: Evaluator::ExpressionEvaluator, ?rules: Hash[String, Array[AST::Rule]]?, ?package_key: String) -> void
       def evaluate_group: (Array[AST::Rule] rules) -> Value
       def evaluate_rule: (AST::Rule rule) -> Value
       def evaluate_function_call: (String name, Array[Value] args) -> Value
@@ -1547,6 +1615,7 @@ module Ruby
       private
 
       def evaluate_function_call_uncached: (String name, Array[Value] args) -> Value
+      def function_rule_table: () -> Hash[String, Array[AST::Rule]]
       def evaluate_partial_set_rules: (Array[AST::Rule] rules) -> Value
       def evaluate_partial_object_rules: (Array[AST::Rule] rules) -> Value
       def partial_object_pairs: (Array[AST::Rule] rules) -> Hash[Object, Value]
@@ -1607,6 +1676,7 @@ module Ruby
       attr_reader environment: Environment
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
       attr_reader unifier: Unifier
+      attr_reader package_key: String
     end
 
     module Evaluator::OperatorEvaluator

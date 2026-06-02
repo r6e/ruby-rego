@@ -10,6 +10,7 @@ detectors:
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
       - Ruby::Rego::Compiler
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Evaluator::RuleEvaluator
       - Ruby::Rego::Unifier
@@ -20,11 +21,14 @@ detectors:
   TooManyInstanceVariables:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
   TooManyStatements:
     exclude:
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
+      - Ruby::Rego::CompiledPolicySet
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Evaluator::RuleEvaluator
       - Ruby::Rego::Evaluator::OperatorEvaluator
@@ -36,6 +40,7 @@ detectors:
   DuplicateMethodCall:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Evaluator::RuleEvaluator
       - Ruby::Rego::Unifier
@@ -43,8 +48,11 @@ detectors:
   UtilityFunction:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Unifier
+      # Module-merge helpers (parse_source, merge_imports) are pure AST transforms.
+      - Ruby::Rego::Compiler
   FeatureEnvy:
     exclude:
       - Ruby::Rego::Lexer
@@ -52,6 +60,10 @@ detectors:
       - Ruby::Rego::Evaluator::ReferenceKeyResolver
       - Ruby::Rego::Evaluator::BoundVariableCollector
       - Ruby::Rego::Unifier
+      # Module-merge helpers (merge_group, merge_modules_by_package) operate over AST groups.
+      - Ruby::Rego::Compiler
+      # Package-key indexing builds a local accumulator over the module list.
+      - Ruby::Rego::CompiledPolicySet
   ControlParameter:
     exclude:
       - Ruby::Rego::Lexer
@@ -66,6 +78,7 @@ detectors:
   RepeatedConditional:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Evaluator::RuleEvaluator
   NestedIterators:
