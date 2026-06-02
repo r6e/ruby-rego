@@ -92,11 +92,13 @@ module Ruby
 
       def parse_named_modules(modules)
         modules.map do |name, source|
-          ErrorHandling.wrap(name.to_s) do
-            tokens = Lexer.new(source).tokenize
-            Parser.new(tokens).parse
-          end
+          ErrorHandling.wrap(name.to_s) { parse_source(source) }
         end
+      end
+
+      def parse_source(source)
+        tokens = Lexer.new(source).tokenize
+        Parser.new(tokens).parse
       end
 
       def merge_modules_by_package(ast_modules)
@@ -112,10 +114,14 @@ module Ruby
         first = group.first
         AST::Module.new(
           package: first.package,
-          imports: group.flat_map(&:imports),
+          imports: merge_imports(group),
           rules: group.flat_map(&:rules),
           location: first.location
         )
+      end
+
+      def merge_imports(group)
+        group.flat_map(&:imports).uniq { |import| [import.path, import.alias_name] }
       end
 
       def rule_indexer

@@ -289,6 +289,7 @@ end
 
 # rubocop:enable Metrics/BlockLength
 
+# rubocop:disable Metrics/BlockLength
 RSpec.describe "Ruby::Rego::Compiler#compile_set" do
   let(:compiler) { Ruby::Rego::Compiler.new }
 
@@ -321,4 +322,25 @@ RSpec.describe "Ruby::Rego::Compiler#compile_set" do
     mod = set.module_for(%w[shared foo])
     expect(mod.imports.length).to eq(2)
   end
+
+  it "de-duplicates an identical import shared across same-package files" do
+    set = compiler.compile_set(
+      "one.rego" => "package shared\nimport data.lib\nfoo := 1\n",
+      "two.rego" => "package shared\nimport data.lib\nbar := 2\n"
+    )
+
+    mod = set.module_for(%w[shared foo])
+    expect(mod.imports.length).to eq(1)
+    expect(mod.rule_names).to contain_exactly("foo", "bar")
+  end
+
+  it "still rejects genuinely conflicting aliases across same-package files" do
+    expect do
+      compiler.compile_set(
+        "one.rego" => "package shared\nimport data.foo as helper\nx := helper\n",
+        "two.rego" => "package shared\nimport data.bar as helper\ny := helper\n"
+      )
+    end.to raise_error(Ruby::Rego::CompilationError, /import alias/i)
+  end
 end
+# rubocop:enable Metrics/BlockLength
