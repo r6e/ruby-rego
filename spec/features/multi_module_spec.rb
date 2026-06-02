@@ -113,13 +113,16 @@ RSpec.describe "Multi-module edge cases" do
     Ruby::Rego::Evaluator.for_policy_set(set, input: input, data: {}).evaluate(query)
   end
 
-  # The compiler intentionally defers complete-rule conflict detection to
-  # evaluation time (RuleGroup#ensure_complete_rule_consistency is not wired
-  # into RuleGroup#validate). compile_set succeeds; evaluation raises
-  # Ruby::Rego::EvaluationError when the conflicting rules both match.
-  # Wiring compile-time detection would require changing compiler logic that
-  # the plan explicitly marks out of scope.
-  pending "raises when same-package files define conflicting complete rules (deferred to eval time as EvaluationError)"
+  it "raises at evaluation time when same-package files define conflicting complete rules" do
+    set = compiler.compile_set(
+      "one.rego" => "package shared\nallow := true\n",
+      "two.rego" => "package shared\nallow := false\n"
+    )
+
+    expect do
+      Ruby::Rego::Evaluator.for_policy_set(set, input: {}, data: {}).evaluate("data.shared.allow")
+    end.to raise_error(Ruby::Rego::EvaluationError)
+  end
 
   it "isolates same-named imports across modules" do
     result = evaluate(
