@@ -14,7 +14,7 @@ group :development, :test do
   gem "rake", "~> 13.4"
   gem "reek", "~> 6.3"
   gem "rspec", "~> 3.13"
-  gem "rubocop", "~> 1.85"
+  gem "rubocop", "~> 1.87"
   gem "rubycritic", "~> 5.0"
   gem "ruby-lsp-rspec", require: false
   gem "simplecov", "~> 0.22"
