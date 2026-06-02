@@ -142,3 +142,25 @@ RSpec.describe Ruby::Rego::Policy do
 end
 
 # rubocop:enable Metrics/BlockLength
+
+RSpec.describe "Ruby::Rego multi-module public API" do
+  let(:modules) do
+    {
+      "authz.rego" => "package acme.authz\nallow if data.acme.users.is_admin\n",
+      "users.rego" => "package acme.users\nis_admin if input.user == \"root\"\n"
+    }
+  end
+
+  it "compile_modules returns a CompiledPolicySet" do
+    expect(Ruby::Rego.compile_modules(modules)).to be_a(Ruby::Rego::CompiledPolicySet)
+  end
+
+  it "compile still returns a CompiledModule" do
+    expect(Ruby::Rego.compile("package a\nallow := true\n")).to be_a(Ruby::Rego::CompiledModule)
+  end
+
+  it "evaluate_modules resolves cross-package references" do
+    result = Ruby::Rego.evaluate_modules(modules, input: { "user" => "root" }, query: "data.acme.authz.allow")
+    expect(result.value.to_ruby).to be(true)
+  end
+end
