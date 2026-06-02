@@ -36,6 +36,26 @@ RSpec.describe Ruby::Rego::CompiledPolicySet do
     set = described_class.new([compiled(%w[acme authz])])
     expect(set.package_keys).to eq(["acme.authz"])
   end
+
+  it "raises when two modules share a package path" do
+    expect do
+      described_class.new([compiled(%w[acme authz]), compiled(%w[acme authz])])
+    end.to raise_error(ArgumentError, /Duplicate package key: acme.authz/)
+  end
+
+  it "returns nil when keys exactly equal a package path" do
+    set = described_class.new([compiled(%w[acme authz])])
+    expect(set.module_for(%w[acme authz])).to be_nil
+  end
+
+  it "finds the longest prefix regardless of insertion order" do
+    parent = compiled(%w[acme])
+    child = compiled(%w[acme authz])
+    set = described_class.new([child, parent])
+
+    expect(set.module_for(%w[acme authz allow])).to be(child)
+    expect(set.module_for(%w[acme other])).to be(parent)
+  end
 end
 
 # rubocop:enable Metrics/BlockLength

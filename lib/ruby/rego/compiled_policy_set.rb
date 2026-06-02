@@ -7,7 +7,12 @@ module Ruby
       # @param modules [Array<CompiledModule>] compiled modules
       def initialize(modules)
         by_key = {} # @type var by_key: Hash[String, CompiledModule]
-        modules.each { |mod| by_key[mod.package_path.join(".")] = mod }
+        modules.each do |mod|
+          key = mod.package_path.join(".")
+          raise ArgumentError, "Duplicate package key: #{key}" if by_key.key?(key)
+
+          by_key[key] = mod
+        end
         @modules_by_key = by_key.freeze
       end
 
