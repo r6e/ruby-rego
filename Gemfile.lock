@@ -224,7 +224,7 @@ GEM
     thread_safe (0.3.6)
     tsort (0.2.0)
     tty-which (0.5.0)
-    typeprof (0.31.1)
+    typeprof (0.32.0)
       prism (>= 1.4.0)
       rbs (>= 3.6.0)
     tzinfo (2.0.6)
@@ -260,7 +260,7 @@ DEPENDENCIES
   rubycritic (~> 5.0)
   simplecov (~> 0.22)
   steep (~> 2.0)
-  typeprof (~> 0.23)
+  typeprof (~> 0.32)
   yard (~> 0.9)
 
 BUNDLED WITH
