@@ -271,6 +271,7 @@ module Ruby
       end
 
       def evaluate_policy_set_rules
+        detect_package_rule_conflicts
         tree = {} # @type var tree: Hash[String, untyped]
         module_contexts.each do |context|
           rules_value = evaluate_module_rules(context)
@@ -279,6 +280,46 @@ module Ruby
           assign_package_subtree(tree, context.compiled_module.package_path, rules_value)
         end
         Value.from_ruby(tree)
+      end
+
+      # Reject any rule whose full path (package path + rule name) is a prefix of,
+      # or equal to, another module's package path. Such a path cannot be both a
+      # rule value and a package namespace, matching OPA's conflict semantics. The
+      # check is order- and value-shape-independent, unlike a per-node assembly guard.
+      def detect_package_rule_conflicts
+        package_paths = module_contexts.map { |context| context.compiled_module.package_path }
+        module_contexts.each do |context|
+          raise_conflicts_for_module(context, package_paths)
+        end
+      end
+
+      def raise_conflicts_for_module(context, package_paths)
+        package_path = context.compiled_module.package_path
+        context.compiled_module.rule_names.each do |rule_name|
+          rule_path = package_path + [rule_name]
+          conflicting = conflicting_package(rule_path, package_paths)
+          raise_package_rule_conflict(rule_path, conflicting) if conflicting
+        end
+      end
+
+      # :reek:UtilityFunction
+      def conflicting_package(rule_path, package_paths)
+        package_paths.find { |other| package_prefix?(rule_path, other) }
+      end
+
+      def raise_package_rule_conflict(rule_path, conflicting)
+        raise EvaluationError.new(
+          "Rule #{rule_path.join(".")} conflicts with package #{conflicting.join(".")}",
+          rule: nil,
+          location: nil
+        )
+      end
+
+      # :reek:UtilityFunction
+      # True when `prefix` is a (non-strict) prefix of `path` — i.e. the rule path
+      # is used as, or as an ancestor of, a package namespace.
+      def package_prefix?(prefix, path)
+        path.length >= prefix.length && path[0, prefix.length] == prefix
       end
 
       def evaluate_module_rules(context)
@@ -295,33 +336,13 @@ module Ruby
       def assign_package_subtree(tree, package_path, rules_value)
         node = tree # @type var node: untyped
         parent_segments = package_path[0...-1] || [] # @type var parent_segments: Array[String]
-        parent_segments.each do |segment|
-          node = descend_into_segment(node, segment, package_path)
-        end
-        merge_leaf_rules(node, package_path.last, rules_value)
-      end
-
-      # Hash-tree navigation intrinsically references the node accumulator.
-      # :reek:FeatureEnvy
-      def descend_into_segment(node, segment, package_path)
         empty = {} # @type var empty: Hash[String, untyped]
-        child = node[segment] || empty
-        raise_package_conflict(package_path, segment) unless child.is_a?(Hash)
-
-        node[segment] = child
-      end
-
-      def merge_leaf_rules(node, last, rules_value)
+        parent_segments.each do |segment|
+          node = (node[segment] ||= empty.dup)
+        end
+        last = package_path.last
         existing = node[last]
         node[last] = existing.is_a?(Hash) ? existing.merge(rules_value) : rules_value
-      end
-
-      def raise_package_conflict(package_path, segment)
-        raise EvaluationError.new(
-          "Package #{package_path.join(".")} conflicts with rule #{segment.inspect}",
-          rule: nil,
-          location: nil
-        )
       end
 
       def initialize_with_environment(compiled_module, environment)

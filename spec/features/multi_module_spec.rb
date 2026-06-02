@@ -200,12 +200,41 @@ RSpec.describe "Multi-module edge cases" do
     end
   end
 
-  it "raises a clear error when a rule name collides with a subpackage segment" do
+  it "raises on rule/subpackage collision regardless of module order (parent first)" do
     set = compiler.compile_set(
       "a.rego" => "package a\nb := 1\n",
       "abc.rego" => "package a.b.c\nd := 2\n"
     )
+    expect do
+      Ruby::Rego::Evaluator.for_policy_set(set, input: {}, data: {}).evaluate
+    end.to raise_error(Ruby::Rego::EvaluationError, /conflict/i)
+  end
 
+  it "raises on rule/subpackage collision regardless of module order (child first)" do
+    set = compiler.compile_set(
+      "abc.rego" => "package a.b.c\nd := 2\n",
+      "a.rego" => "package a\nb := 1\n"
+    )
+    expect do
+      Ruby::Rego::Evaluator.for_policy_set(set, input: {}, data: {}).evaluate
+    end.to raise_error(Ruby::Rego::EvaluationError, /conflict/i)
+  end
+
+  it "raises on rule/subpackage collision when the rule value is an object" do
+    set = compiler.compile_set(
+      "a.rego" => "package a\nb := {\"x\": 1}\n",
+      "abc.rego" => "package a.b.c\nd := 2\n"
+    )
+    expect do
+      Ruby::Rego::Evaluator.for_policy_set(set, input: {}, data: {}).evaluate
+    end.to raise_error(Ruby::Rego::EvaluationError, /conflict/i)
+  end
+
+  it "raises when a rule path equals a package path" do
+    set = compiler.compile_set(
+      "ab_rule.rego" => "package a\nb := 1\n",
+      "ab_pkg.rego" => "package a.b\nc := 2\n"
+    )
     expect do
       Ruby::Rego::Evaluator.for_policy_set(set, input: {}, data: {}).evaluate
     end.to raise_error(Ruby::Rego::EvaluationError, /conflict/i)

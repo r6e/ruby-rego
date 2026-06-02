@@ -1182,9 +1182,11 @@ module Ruby
       def evaluate_policy_set_rules: () -> Value
       def evaluate_module_rules: (Evaluator::ModuleContext context) -> Hash[String, untyped]
       def assign_package_subtree: (Hash[String, untyped] tree, Array[String] package_path, Hash[String, untyped] rules_value) -> void
-      def descend_into_segment: (Hash[String, untyped] node, String segment, Array[String] package_path) -> Hash[String, untyped]
-      def merge_leaf_rules: (Hash[String, untyped] node, String last, Hash[String, untyped] rules_value) -> Hash[String, untyped]
-      def raise_package_conflict: (Array[String] package_path, String segment) -> bot
+      def detect_package_rule_conflicts: () -> void
+      def raise_conflicts_for_module: (Evaluator::ModuleContext context, Array[Array[String]] package_paths) -> void
+      def conflicting_package: (Array[String] rule_path, Array[Array[String]] package_paths) -> Array[String]?
+      def raise_package_rule_conflict: (Array[String] rule_path, Array[String] conflicting) -> bot
+      def package_prefix?: (Array[String] prefix, Array[String] path) -> bool
       def evaluate_rules: () -> Hash[untyped, untyped]
       def include_rule_result: (Hash[String, Value] results, String name, Array[AST::Rule] rules) -> void
       def evaluate_query: (untyped query) -> [Value, Hash[String, Value]]
