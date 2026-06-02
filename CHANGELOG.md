@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Multi-module composition: `Ruby::Rego.compile_modules` / `evaluate_modules` compile
+  and evaluate a named set of modules with cross-package references and OPA-style
+  same-package merge.
 - Documentation refresh, architecture notes, and runnable examples.
 - YARD documentation for public APIs.
 

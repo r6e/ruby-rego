@@ -109,12 +109,40 @@ The CLI attempts to infer a validation query in this order: `deny`, `violations`
 
 Built-ins are currently limited to core categories: types, aggregates, strings, collections, and comparisons. See the builtins registry for the current list.
 
+### Multi-module composition
+
+`Ruby::Rego.compile_modules` and `Ruby::Rego.evaluate_modules` compile and evaluate a named set of Rego modules that reference each other across packages. Multiple files declaring the same package are merged OPA-style (rules and imports are unioned; identical shared imports are de-duplicated). Per-module import scoping is preserved.
+
+```ruby
+require "ruby/rego"
+
+modules = {
+  "authz.rego" => <<~REGO,
+    package acme.authz
+    allow if data.acme.users.is_admin
+  REGO
+  "users.rego" => <<~REGO
+    package acme.users
+    is_admin if input.user == "root"
+  REGO
+}
+
+result = Ruby::Rego.evaluate_modules(modules, input: {"user" => "root"}, query: "data.acme.authz.allow")
+puts result.value.to_ruby  # => true
+```
+
+The CLI remains single-file only.
+
 ### Known limitations
 
 - Not full OPA spec coverage yet.
 - No non-standard destructuring extensions (e.g., rest elements or partial-object remainder capture).
 - Advanced `with` semantics, partial evaluation, and additional built-ins are still in progress.
 - Performance work is ongoing; expect lower throughput than OPA.
+- Cross-package function calls are not supported (e.g., calling `data.a.f(x)` from another package); within-package calls work normally.
+- No cross-module cycle detection: a cyclic reference across packages will stack-overflow rather than fail at compile time.
+- Querying a bare package path (e.g., `query: "data.acme.authz"`) does not return the package's aggregated document; query a specific rule path instead.
+- Conflicting complete rules within a merged package surface as an evaluation-time error, not a compile-time error.
 
 ## Performance and benchmarks
 

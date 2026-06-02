@@ -28,7 +28,7 @@ annotations — these ripple structurally and are not "just more functions").
   (no non-standard rest/partial-object extensions).
 - 🟡 Broader `with` keyword support across evaluator paths.
 - 🟡 Expanded built-in function set (see "Built-in function backlog" below).
-- ⬜ **Multi-module composition (top priority).** Today `compile(source)` takes a
+- ✅ **Multi-module composition (top priority).** Today `compile(source)` takes a
   single source string and produces one `CompiledModule` with one package path;
   the evaluator consumes exactly one module. Real OPA usage composes many `.rego`
   files into a single `data` namespace where one package references another
@@ -73,8 +73,9 @@ this is volume, not difficulty. Highest compatibility-per-effort first:
 
 ## Known limitations
 
-- Single-module only: cannot evaluate a set of policy files that reference each
-  other across packages (see Phase 2 multi-module item).
+- Cross-package function calls are not supported; within-package calls work normally.
+- No cross-module cycle detection: cyclic cross-package references stack-overflow
+  rather than fail at compile time.
 - `with` modifiers are limited and may reset memoization caches.
 - No partial evaluation, JSON Schema, or annotation support.
 - Performance is slower than OPA for heavy comprehensions.
