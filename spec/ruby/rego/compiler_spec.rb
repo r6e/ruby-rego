@@ -288,3 +288,37 @@ RSpec.describe Ruby::Rego::Compiler do
 end
 
 # rubocop:enable Metrics/BlockLength
+
+RSpec.describe "Ruby::Rego::Compiler#compile_set" do
+  let(:compiler) { Ruby::Rego::Compiler.new }
+
+  it "compiles distinct packages into a set" do
+    set = compiler.compile_set(
+      "a.rego" => "package a\nallow := true\n",
+      "b.rego" => "package b\ndeny := false\n"
+    )
+
+    expect(set).to be_a(Ruby::Rego::CompiledPolicySet)
+    expect(set.package_keys).to contain_exactly("a", "b")
+  end
+
+  it "merges rules from files sharing a package" do
+    set = compiler.compile_set(
+      "one.rego" => "package shared\nfoo := 1\n",
+      "two.rego" => "package shared\nbar := 2\n"
+    )
+
+    mod = set.module_for(%w[shared foo])
+    expect(mod.rule_names).to contain_exactly("foo", "bar")
+  end
+
+  it "merges imports from files sharing a package" do
+    set = compiler.compile_set(
+      "one.rego" => "package shared\nimport data.x\nfoo := 1\n",
+      "two.rego" => "package shared\nimport data.y\nbar := 2\n"
+    )
+
+    mod = set.module_for(%w[shared foo])
+    expect(mod.imports.length).to eq(2)
+  end
+end

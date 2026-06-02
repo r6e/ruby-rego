@@ -2,11 +2,14 @@
 
 require_relative "ast"
 require_relative "compiled_module"
+require_relative "compiled_policy_set"
 require_relative "call_name"
 require_relative "errors"
 require_relative "environment"
 require_relative "builtins/registry"
 require_relative "evaluator/variable_collector"
+require_relative "lexer"
+require_relative "parser"
 
 module Ruby
   # Rego compilation helpers.
@@ -36,6 +39,16 @@ module Ruby
           dependency_graph: dependency_graph
         )
         CompiledModuleBuilder.build(ast_module, artifacts)
+      end
+
+      # Compile a named set of module sources into a policy set.
+      #
+      # @param modules [Hash{String => String}] map of name => Rego source
+      # @return [CompiledPolicySet] compiled policy set
+      def compile_set(modules)
+        ast_modules = parse_named_modules(modules)
+        merged = merge_modules_by_package(ast_modules)
+        CompiledPolicySet.new(merged.map { |ast_module| compile(ast_module) })
       end
 
       # Index rules by name.
@@ -75,6 +88,34 @@ module Ruby
         safety_checker.check_rules(rules_by_name, safe_names: safe_names)
         default_rule_validator.check(rules_by_name)
         rules_by_name
+      end
+
+      def parse_named_modules(modules)
+        modules.map do |name, source|
+          ErrorHandling.wrap(name.to_s) do
+            tokens = Lexer.new(source).tokenize
+            Parser.new(tokens).parse
+          end
+        end
+      end
+
+      def merge_modules_by_package(ast_modules)
+        grouped = ast_modules.group_by { |ast_module| ast_module.package.path }
+        grouped.map do |_path, group|
+          next group.first if group.length == 1
+
+          merge_group(group)
+        end
+      end
+
+      def merge_group(group)
+        first = group.first
+        AST::Module.new(
+          package: first.package,
+          imports: group.flat_map(&:imports),
+          rules: group.flat_map(&:rules),
+          location: first.location
+        )
       end
 
       def rule_indexer
