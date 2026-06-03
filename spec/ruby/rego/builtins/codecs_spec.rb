@@ -36,6 +36,16 @@ RSpec.describe "encoding builtins" do
       expect(result).to eq(expected)
       expect(result).not_to include("<", ">", "&")
     end
+
+    it "escapes the U+2028/U+2029 separators (matching OPA)" do
+      result = registry.call("json.marshal", ["\u2028\u2029"]).to_ruby
+      expect(result).to eq(format('"\u%<ls>04x\u%<ps>04x"', ls: 0x2028, ps: 0x2029))
+    end
+
+    it "is undefined for a non-finite number rather than raising" do
+      expect(registry.call("json.marshal", [Ruby::Rego::NumberValue.new(Float::INFINITY)]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 
   describe "json.unmarshal" do

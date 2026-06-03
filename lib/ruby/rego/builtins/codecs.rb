@@ -46,6 +46,14 @@ module Ruby
         # @return [Ruby::Rego::StringValue]
         def self.json_marshal(value)
           StringValue.new(escape_html(JSON.generate(jsonify(value.to_ruby))))
+        rescue JSON::GeneratorError => e
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Cannot marshal value to JSON: #{e.message}",
+            expected: "JSON-serializable value",
+            actual: "non-finite number",
+            context: "json.marshal",
+            location: nil
+          )
         end
 
         # @param value [Ruby::Rego::Value]
