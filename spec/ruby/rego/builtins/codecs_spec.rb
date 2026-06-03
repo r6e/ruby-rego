@@ -25,6 +25,11 @@ RSpec.describe "encoding builtins" do
       expect(registry.call("json.marshal", [Set.new(%w[a b aa])]).to_ruby).to eq('["a","aa","b"]')
     end
 
+    it "orders a set of objects lexicographically by sorted pairs, not by key count (matching OPA)" do
+      set = Set.new([{ "a" => 1, "b" => 1 }, { "z" => 1 }])
+      expect(registry.call("json.marshal", [set]).to_ruby).to eq('[{"a":1,"b":1},{"z":1}]')
+    end
+
     it "HTML-escapes <, > and & like Go's encoding/json (matching OPA)" do
       result = registry.call("json.marshal", ["<a>&b"]).to_ruby
       expected = format('"\u%<lt>04xa\u%<gt>04x\u%<amp>04xb"', lt: "<".ord, gt: ">".ord, amp: "&".ord)
