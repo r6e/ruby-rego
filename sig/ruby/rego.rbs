@@ -346,9 +346,9 @@ module Ruby
         REGEX_TIMEOUT_SECONDS: Float
 
         def self.register!: () -> BuiltinRegistry
-        def self.match: (Value pattern_value, Value string_value) -> Value
+        def self.match: (Value pattern_value, Value string_value) -> BooleanValue
         def self.is_valid: (Value pattern_value) -> BooleanValue
-        def self.split: (Value pattern_value, Value string_value) -> Value
+        def self.split: (Value pattern_value, Value string_value) -> ArrayValue
         def self.find_n: (Value pattern_value, Value string_value, Value number_value) -> ArrayValue
 
         private

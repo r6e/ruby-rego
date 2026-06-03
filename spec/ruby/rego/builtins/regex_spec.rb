@@ -100,9 +100,21 @@ RSpec.describe "regex builtins" do
     # Ruby 3.x's engine resists the classic catastrophic patterns, so the timeout is
     # defense-in-depth. This verifies the guard converts a match timeout into an
     # undefined result (rather than aborting evaluation) deterministically.
-    it "yields undefined when a match times out" do
+    it "yields undefined when regex.match times out" do
       allow_any_instance_of(Regexp).to receive(:match?).and_raise(Regexp::TimeoutError)
       expect(registry.call("regex.match", %w[a aaaa])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    # split/find_n drive iteration through Regexp#match (not #match?), so stub that
+    # path too to confirm the shared guard covers all three matching builtins.
+    it "yields undefined when regex.split times out" do
+      allow_any_instance_of(Regexp).to receive(:match).and_raise(Regexp::TimeoutError)
+      expect(registry.call("regex.split", %w[a aaaa])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "yields undefined when regex.find_n times out" do
+      allow_any_instance_of(Regexp).to receive(:match).and_raise(Regexp::TimeoutError)
+      expect(registry.call("regex.find_n", ["a", "aaaa", -1])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 end
