@@ -51,6 +51,11 @@ RSpec.describe "encoding builtins" do
       deep = (1..200).reduce(1) { |acc, _| [acc] }
       expect(registry.call("json.marshal", [deep])).to be_a(Ruby::Rego::UndefinedValue)
     end
+
+    it "is undefined for a set containing NaN rather than raising on the sort" do
+      expect(registry.call("json.marshal", [Set.new([Float::NAN, 1.0])]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 
   describe "json.unmarshal" do

@@ -46,9 +46,11 @@ module Ruby
         # @return [Ruby::Rego::StringValue]
         def self.json_marshal(value)
           StringValue.new(escape_html(JSON.generate(jsonify(value.to_ruby))))
-        rescue JSON::JSONError => e
-          # Non-finite numbers (GeneratorError) and over-deep nesting (NestingError,
-          # a DoS safeguard) yield undefined rather than aborting evaluation.
+        rescue JSON::JSONError, ArgumentError => e
+          # Values that cannot be marshaled to JSON yield undefined rather than
+          # aborting evaluation: non-finite numbers (JSON::GeneratorError), over-deep
+          # nesting (JSON::NestingError, a DoS safeguard), and a NaN inside a set,
+          # which makes set-ordering's comparison raise ArgumentError.
           raise Ruby::Rego::BuiltinArgumentError.new(
             "Cannot marshal value to JSON: #{e.message}",
             expected: "finite, depth-bounded JSON value",
