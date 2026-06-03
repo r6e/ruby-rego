@@ -46,6 +46,11 @@ RSpec.describe "encoding builtins" do
       expect(registry.call("json.marshal", [Ruby::Rego::NumberValue.new(Float::INFINITY)]))
         .to be_a(Ruby::Rego::UndefinedValue)
     end
+
+    it "is undefined for an over-deeply-nested value rather than raising" do
+      deep = (1..200).reduce(1) { |acc, _| [acc] }
+      expect(registry.call("json.marshal", [deep])).to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 
   describe "json.unmarshal" do
