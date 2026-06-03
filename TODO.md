@@ -77,8 +77,9 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
   evaluator-wide limitation (OPA bounds this via a nesting limit). Affects any deep
   value, not just `json.marshal`; a shared depth guard would convert it to a clean
   error/undefined.
-- ⬜ Object: `object.union`, `object.union_n`, `object.filter`, `json.patch`,
-  `json.filter`, `json.remove`.
+- 🟡 Object: ✅ `object.union`, `object.union_n`, `object.filter` (plus object-keys
+  support for `object.filter`/`object.remove`); ⬜ `json.patch`, `json.filter`,
+  `json.remove` (JSON path / RFC 6902 operations).
 - ⬜ Strings: `replace`, `trim_prefix`, `trim_suffix`, substring `count`,
   regex-backed splits.
 - ⬜ Glob: `glob.match`, `glob.quote_meta`.

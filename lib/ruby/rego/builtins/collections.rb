@@ -27,6 +27,9 @@ module Ruby
           "object.get" => { arity: 3, handler: :object_get },
           "object.keys" => { arity: 1, handler: :object_keys },
           "object.remove" => { arity: 2, handler: :object_remove },
+          "object.union" => { arity: 2, handler: :object_union },
+          "object.union_n" => { arity: 1, handler: :object_union_n },
+          "object.filter" => { arity: 2, handler: :object_filter },
           "union" => { arity: 2, handler: :union },
           "intersection" => { arity: 2, handler: :intersection },
           "set_diff" => { arity: 2, handler: :set_diff }
@@ -100,6 +103,26 @@ module Ruby
         # @return [Ruby::Rego::ObjectValue]
         def self.object_remove(object, keys)
           ObjectOps.object_remove(object, keys)
+        end
+
+        # @param left [Ruby::Rego::Value]
+        # @param right [Ruby::Rego::Value]
+        # @return [Ruby::Rego::ObjectValue]
+        def self.object_union(left, right)
+          ObjectOps.object_union(left, right)
+        end
+
+        # @param array [Ruby::Rego::Value]
+        # @return [Ruby::Rego::ObjectValue]
+        def self.object_union_n(array)
+          ObjectOps.object_union_n(array)
+        end
+
+        # @param object [Ruby::Rego::Value]
+        # @param keys [Ruby::Rego::Value]
+        # @return [Ruby::Rego::ObjectValue]
+        def self.object_filter(object, keys)
+          ObjectOps.object_filter(object, keys)
         end
 
         # @param left [Ruby::Rego::Value]

@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Object built-ins: `object.union` (deep merge, second operand wins), `object.union_n`,
+  and `object.filter`, matching OPA semantics. `object.filter`/`object.remove` now also
+  accept an object as the keys collection (using its keys).
 - Encoding built-ins: `json.marshal` (sorted keys, sets as sorted arrays,
   Go-style HTML escaping), `json.unmarshal`, `json.is_valid`, `base64`
   encode/decode/is_valid, `base64url` encode/decode, `hex` encode/decode, and
