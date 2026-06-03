@@ -74,6 +74,10 @@ module Ruby
             ObjectValue.new(obj.value.select { |key, _value| keep.include?(normalize_object_key(key)) })
           end
 
+          # Backs the polymorphic `union` builtin for two objects: a strict shallow
+          # merge that RAISES on a conflicting key. Distinct from `object_union`
+          # above (OPA's object.union), which is a deep merge where the right wins.
+          #
           # @param left [Ruby::Rego::Value]
           # @param right [Ruby::Rego::Value]
           # @return [Ruby::Rego::ObjectValue]

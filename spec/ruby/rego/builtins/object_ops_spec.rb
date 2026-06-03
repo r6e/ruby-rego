@@ -26,6 +26,10 @@ RSpec.describe "object builtins" do
     it "is undefined for a non-object operand" do
       expect(registry.call("object.union", [{ "a" => 1 }, 5])).to be_a(Ruby::Rego::UndefinedValue)
     end
+
+    it "replaces array values rather than merging them (matching OPA)" do
+      expect(registry.call("object.union", [{ "a" => [1, 2] }, { "a" => [3, 4] }]).to_ruby).to eq("a" => [3, 4])
+    end
   end
 
   describe "object.union_n" do
@@ -40,6 +44,10 @@ RSpec.describe "object builtins" do
 
     it "is undefined when an element is not an object" do
       expect(registry.call("object.union_n", [[{ "a" => 1 }, 5]])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined when the argument is not an array" do
+      expect(registry.call("object.union_n", [5])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 
@@ -60,6 +68,14 @@ RSpec.describe "object builtins" do
     it "skips keys absent from the object and preserves nested values" do
       expect(registry.call("object.filter", [{ "a" => { "x" => 1 }, "b" => 2 }, %w[a z]]).to_ruby)
         .to eq("a" => { "x" => 1 })
+    end
+
+    it "returns an empty object when filtering an empty object" do
+      expect(registry.call("object.filter", [{}, %w[a]]).to_ruby).to eq({})
+    end
+
+    it "is undefined for a non-object first argument" do
+      expect(registry.call("object.filter", [5, %w[a]])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 
