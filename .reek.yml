@@ -91,6 +91,8 @@ detectors:
   NestedIterators:
     exclude:
       - Ruby::Rego::Evaluator::RuleEvaluator
+      # Idiomatic any-over-any membership test; short-circuits on both axes.
+      - Ruby::Rego::Builtins::Strings#self.any_pair_match?
   UncommunicativeVariableName:
     accept:
       - e

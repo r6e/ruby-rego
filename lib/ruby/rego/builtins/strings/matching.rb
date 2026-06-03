@@ -31,8 +31,9 @@ module Ruby
           BooleanValue.new(any_pair_match?(searches, bases) { |candidate, affix| candidate.end_with?(affix) })
         end
 
+        # Short-circuits on both axes (unlike materializing the full product).
         def self.any_pair_match?(searches, bases, &predicate)
-          searches.product(bases).any? { |candidate, affix| predicate.call(candidate, affix) }
+          searches.any? { |candidate| bases.any? { |affix| predicate.call(candidate, affix) } }
         end
         private_class_method :any_pair_match?
       end

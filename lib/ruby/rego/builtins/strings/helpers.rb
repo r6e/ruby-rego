@@ -61,6 +61,9 @@ module Ruby
         # Non-string keys or values raise (yielding an undefined result), matching OPA's
         # `object[string: string]` argument typing.
         #
+        # @param value [Ruby::Rego::Value]
+        # @param name [String]
+        # @return [Hash{String => String}]
         # :reek:TooManyStatements
         def self.string_hash(value, name:)
           Base.assert_type(value, expected: ObjectValue, context: name)
