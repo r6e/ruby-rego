@@ -30,6 +30,14 @@ RSpec.describe "object builtins" do
     it "replaces array values rather than merging them (matching OPA)" do
       expect(registry.call("object.union", [{ "a" => [1, 2] }, { "a" => [3, 4] }]).to_ruby).to eq("a" => [3, 4])
     end
+
+    it "does not mutate its operands" do
+      left = Ruby::Rego::ObjectValue.new("a" => Ruby::Rego::ObjectValue.new("x" => 1))
+      right = Ruby::Rego::ObjectValue.new("a" => Ruby::Rego::ObjectValue.new("y" => 2))
+      registry.call("object.union", [left, right])
+      expect(left.to_ruby).to eq("a" => { "x" => 1 })
+      expect(right.to_ruby).to eq("a" => { "y" => 2 })
+    end
   end
 
   describe "object.union_n" do
