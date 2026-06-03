@@ -419,8 +419,8 @@ module Ruby
         def self.trim_prefix: (Value string, Value prefix) -> StringValue
         def self.trim_suffix: (Value string, Value suffix) -> StringValue
         def self.replace: (Value string, Value old, Value replacement) -> StringValue
-        def self.string_reverse: (Value string) -> StringValue
-        def self.string_count: (Value string, Value search) -> NumberValue
+        def self.strings_reverse: (Value string) -> StringValue
+        def self.strings_count: (Value string, Value search) -> NumberValue
         def self.indexof_n: (Value string, Value search) -> ArrayValue
 
         private

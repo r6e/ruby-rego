@@ -33,6 +33,11 @@ RSpec.describe "string extra builtins" do
     it "removes a present suffix" do
       expect(registry.call("trim_suffix", %w[foobar bar]).to_ruby).to eq("foo")
     end
+
+    it "is undefined for non-string arguments" do
+      expect(registry.call("trim_prefix", [1, "foo"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("trim_suffix", ["foobar", 2])).to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 
   describe "strings.reverse" do
@@ -54,8 +59,13 @@ RSpec.describe "string extra builtins" do
   end
 
   describe "indexof_n" do
-    it "returns all non-overlapping match indices" do
+    it "returns all match indices" do
       expect(registry.call("indexof_n", %w[aXbXc X]).to_ruby).to eq([1, 3])
+    end
+
+    it "includes overlapping matches (matching OPA)" do
+      expect(registry.call("indexof_n", %w[aaa aa]).to_ruby).to eq([0, 1])
+      expect(registry.call("indexof_n", %w[aaaa aa]).to_ruby).to eq([0, 1, 2])
     end
 
     it "returns an empty array when there is no match" do

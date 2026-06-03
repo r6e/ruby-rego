@@ -42,8 +42,8 @@ module Ruby
           "trim_prefix" => { arity: 2, handler: :trim_prefix },
           "trim_suffix" => { arity: 2, handler: :trim_suffix },
           "replace" => { arity: 3, handler: :replace },
-          "strings.reverse" => { arity: 1, handler: :string_reverse },
-          "strings.count" => { arity: 2, handler: :string_count },
+          "strings.reverse" => { arity: 1, handler: :strings_reverse },
+          "strings.count" => { arity: 2, handler: :strings_count },
           "indexof_n" => { arity: 2, handler: :indexof_n }
         }.freeze
 

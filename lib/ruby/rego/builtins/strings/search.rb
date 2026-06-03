@@ -59,19 +59,20 @@ module Ruby
         end
 
         # Counts non-overlapping occurrences of `search` in `string` (OPA's
-        # strings.count). An empty search counts as the string length plus one.
+        # strings.count). An empty search counts as the codepoint count plus one.
         #
         # @param string [Ruby::Rego::Value]
         # @param search [Ruby::Rego::Value]
         # @return [Ruby::Rego::NumberValue]
-        def self.string_count(string, search)
+        def self.strings_count(string, search)
           haystack, needle = string_pair(
             string, search, left_context: "strings.count string", right_context: "strings.count search"
           )
-          NumberValue.new(haystack.scan(Regexp.new(Regexp.escape(needle))).size)
+          NumberValue.new(haystack.scan(needle).size)
         end
 
-        # All non-overlapping start indices (by character) of `search` in `string`.
+        # All start indices (by character) of `search` in `string`, including
+        # overlapping matches (matching OPA: indexof_n("aaa","aa") => [0,1]).
         # An empty search yields an undefined result (matching OPA).
         #
         # @param string [Ruby::Rego::Value]
@@ -90,7 +91,7 @@ module Ruby
           position = 0
           while (found = haystack.index(needle, position))
             indices << found
-            position = found + needle.length
+            position = found + 1
           end
           indices
         end

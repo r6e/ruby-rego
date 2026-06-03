@@ -19,9 +19,11 @@ module Ruby
           StringValue.new(text.gsub(old_text) { new_text })
         end
 
+        # Reverses by Unicode codepoint (not grapheme cluster), matching OPA.
+        #
         # @param string [Ruby::Rego::Value]
         # @return [Ruby::Rego::StringValue]
-        def self.string_reverse(string)
+        def self.strings_reverse(string)
           StringValue.new(string_value(string, context: "strings.reverse").reverse)
         end
       end
