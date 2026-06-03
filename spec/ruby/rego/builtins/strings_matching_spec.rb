@@ -48,6 +48,15 @@ RSpec.describe "strings.replace_n / any_prefix_match / any_suffix_match" do
       expect(registry.call("strings.replace_n", [{ "a" => "X" }, ""]).to_ruby).to eq("")
     end
 
+    # Deliberate divergence from OPA: an empty key is inserted at codepoint boundaries,
+    # not byte boundaries. OPA (byte-based Go strings.Replacer) would split the emoji's
+    # UTF-8 bytes and emit invalid UTF-8 ("-a-" + dashes between each emoji byte + "-b-");
+    # this keeps the multibyte character intact and the output valid UTF-8.
+    it "inserts an empty key at codepoint boundaries, not byte boundaries" do
+      expect(registry.call("strings.replace_n", [{ "" => "-" }, "a😀b"]).to_ruby)
+        .to eq("-a-😀-b-")
+    end
+
     it "is undefined for a non-string value in the patterns object" do
       expect(registry.call("strings.replace_n", [{ "a" => 1 }, "a"]))
         .to be_a(Ruby::Rego::UndefinedValue)

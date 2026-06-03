@@ -145,6 +145,7 @@ The CLI remains single-file only.
 - No cross-module cycle detection: a cyclic reference across packages will stack-overflow rather than fail at compile time.
 - Querying a bare package path (e.g., `query: "data.acme.authz"`) does not return the package's aggregated document; query a specific rule path instead.
 - Conflicting complete rules within a merged package surface as an evaluation-time error, not a compile-time error.
+- `strings.replace_n` scans by Unicode codepoint rather than byte. This differs from OPA only for an empty (`""`) key applied to multibyte text: OPA (byte-based) inserts the replacement between a character's bytes and yields invalid UTF-8, while this implementation inserts only at codepoint boundaries to keep output valid. All non-empty keys behave identically to OPA.
 
 ## Performance and benchmarks
 

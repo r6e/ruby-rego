@@ -25,12 +25,19 @@ module Ruby
         private_class_method :array_values
 
         def self.string_array(value, name:)
-          array_values(value, name: name).map.with_index do |element, index|
+          string_elements(array_values(value, name: name), name: name)
+        end
+        private_class_method :string_array
+
+        # Asserts each element is a string and returns the underlying Ruby strings.
+        # Shared by string_array (arrays) and string_set (sets).
+        def self.string_elements(elements, name:)
+          elements.map.with_index do |element, index|
             Base.assert_type(element, expected: StringValue, context: "#{name} element #{index}")
             element.value
           end
         end
-        private_class_method :string_array
+        private_class_method :string_elements
 
         # Coerces a string, array, or set argument into an Array of Ruby strings.
         # Non-string elements raise (yielding an undefined result), matching OPA's
@@ -46,10 +53,7 @@ module Ruby
         private_class_method :string_collection
 
         def self.string_set(value, name:)
-          value.value.map.with_index do |element, index|
-            Base.assert_type(element, expected: StringValue, context: "#{name} element #{index}")
-            element.value
-          end
+          string_elements(value.value, name: name)
         end
         private_class_method :string_set
 

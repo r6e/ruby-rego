@@ -449,6 +449,7 @@ module Ruby
         def self.string_value: (Value value, context: String) -> String
         def self.array_values: (Value value, name: String) -> Array[Value]
         def self.string_array: (Value value, name: String) -> Array[String]
+        def self.string_elements: (Enumerable[Value] elements, name: String) -> Array[String]
         def self.string_collection: (Value value, name: String) -> Array[String]
         def self.string_set: (Value value, name: String) -> Array[String]
         def self.string_hash: (Value value, name: String) -> Hash[String, String]

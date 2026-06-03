@@ -28,9 +28,14 @@ module Ruby
         end
 
         # Replaces occurrences of each key in `patterns` with its value, matching OPA's
-        # `strings.replace_n` (a faithful port of Go's `strings.Replacer`): keys are
-        # applied in ascending sort order with a single left-to-right pass, replaced text
-        # is never rescanned, and on overlapping matches the earliest-sorted key wins.
+        # `strings.replace_n` (modeled on Go's `strings.Replacer`): keys are applied in
+        # ascending sort order with a single left-to-right pass, replaced text is never
+        # rescanned, and on overlapping matches the earliest-sorted key wins.
+        #
+        # One deliberate divergence from OPA: scanning is by Unicode codepoint, not byte.
+        # This matters only for an empty ("") key against multibyte text — OPA (byte-based)
+        # inserts the replacement between a character's bytes, producing invalid UTF-8,
+        # whereas this inserts only at codepoint boundaries, keeping the output valid UTF-8.
         #
         # @param patterns [Ruby::Rego::Value] object of string keys to string replacements
         # @param value [Ruby::Rego::Value]
