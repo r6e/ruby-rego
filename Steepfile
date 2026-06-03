@@ -6,6 +6,7 @@ target :lib do
   library "json"
   library "base64"
   library "cgi"
+  library "digest"
   library "optparse"
   library "psych"
   library "yaml"

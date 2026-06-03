@@ -86,7 +86,8 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
   already shipped.
 - ⬜ Glob: `glob.match`, `glob.quote_meta`.
 - ⬜ Time: `time.now_ns`, `time.parse_rfc3339_ns`, `time.date`, `time.add_date`, etc.
-- ⬜ Crypto: `crypto.md5`, `crypto.sha1`, `crypto.sha256`, `crypto.hmac.*`.
+- 🟡 Crypto: ✅ `crypto.md5`, `crypto.sha1`, `crypto.sha256`; ⬜ `crypto.hmac.*`,
+  ⬜ `crypto.x509.*`.
 - ⬜ Net/CIDR: `net.cidr_contains`, `net.cidr_intersects`, `net.cidr_merge`.
 - ⬜ Bits: `bits.and`, `bits.or`, `bits.xor`, `bits.lsh`, `bits.rsh`.
 - ⬜ Misc: `uuid.rfc4122`, `semver.compare`, `semver.is_valid`, `units.parse*`,
