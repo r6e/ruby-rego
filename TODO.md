@@ -100,7 +100,9 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
 - 🟡 Crypto: ✅ `crypto.md5`, `crypto.sha1`, `crypto.sha256`; ⬜ `crypto.hmac.*`,
   ⬜ `crypto.x509.*`.
 - ⬜ Net/CIDR: `net.cidr_contains`, `net.cidr_intersects`, `net.cidr_merge`.
-- ⬜ Bits: `bits.and`, `bits.or`, `bits.xor`, `bits.lsh`, `bits.rsh`.
+- ✅ Bits: `bits.and`, `bits.or`, `bits.xor`, `bits.negate`, `bits.lsh`, `bits.rsh`
+  (`bits.lsh` caps result size as a DoS guard; parser accepts `and`/`or` as dotted
+  reference segments so the builtins are callable from source).
 - ⬜ Misc: `uuid.rfc4122`, `semver.compare`, `semver.is_valid`, `units.parse*`,
   `graph.reachable`, `walk`.
 

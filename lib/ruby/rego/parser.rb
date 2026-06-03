@@ -19,10 +19,19 @@ module Ruby
     # :reek:RepeatedConditional
     # :reek:DataClump
     class Parser
-      IDENTIFIER_TOKEN_TYPES = [TokenType::IDENT, TokenType::DATA, TokenType::INPUT].freeze
+      # `and`/`or` are keywords here (this evaluator's non-standard infix operators),
+      # but OPA permits keywords as reference segments after a dot. Allowing them as
+      # identifier tokens lets references/paths like `bits.and` and `bits.or` parse;
+      # the infix-operator path is unaffected (it only triggers in operator position,
+      # never immediately after a dot).
+      IDENTIFIER_TOKEN_TYPES = [
+        TokenType::IDENT, TokenType::DATA, TokenType::INPUT, TokenType::AND, TokenType::OR
+      ].freeze
       IDENTIFIER_TOKEN_NAMES = {
         TokenType::DATA => "data",
-        TokenType::INPUT => "input"
+        TokenType::INPUT => "input",
+        TokenType::AND => "and",
+        TokenType::OR => "or"
       }.freeze
       BINARY_OPERATOR_MAP = {
         TokenType::ASSIGN => :assign,

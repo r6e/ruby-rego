@@ -354,6 +354,27 @@ module Ruby
         def self.range_elements: (Integer start_bound, Integer end_bound) -> Array[Integer]
       end
 
+      module Bits
+        extend RegistryHelpers
+
+        BITS_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        MAX_LSH_RESULT_BITS: Integer
+
+        def self.register!: () -> BuiltinRegistry
+        def self.bits_and: (Value left, Value right) -> NumberValue
+        def self.bits_or: (Value left, Value right) -> NumberValue
+        def self.bits_xor: (Value left, Value right) -> NumberValue
+        def self.negate: (Value value) -> NumberValue
+        def self.lsh: (Value value, Value shift) -> NumberValue
+        def self.rsh: (Value value, Value shift) -> NumberValue
+
+        private
+
+        def self.integer: (Value value, String context) -> Integer
+        def self.shift_amount: (Value value, String context) -> Integer
+        def self.ensure_lsh_within_limit: (Integer base, Integer amount) -> void
+      end
+
       module Regex
         extend RegistryHelpers
 

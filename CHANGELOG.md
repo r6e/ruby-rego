@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Bitwise built-ins: `bits.and`, `bits.or`, `bits.xor`, `bits.negate`, `bits.lsh`,
+  and `bits.rsh`, matching OPA (two's-complement infinite precision; integer-valued
+  floats accepted, non-integers and negative shift counts yield undefined). A left
+  shift whose result would exceed 2^25 bits (~4 MB) yields undefined rather than
+  exhausting memory — a deliberate DoS guard, the only divergence from OPA, affecting
+  only `bits.lsh`. Parsing now accepts `and`/`or` as reference segments after a dot so
+  `bits.and` / `bits.or` are callable from Rego source.
 - String built-ins: `strings.replace_n` (modeled on Go's `strings.Replacer`: keys
   applied in ascending sort order, single pass, replaced text not rescanned,
   earliest-sorted key wins on overlap), and `strings.any_prefix_match` /
