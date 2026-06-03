@@ -9,7 +9,9 @@ module Ruby
   module Rego
     module Builtins
       # Built-in cryptographic hashing helpers (crypto.md5, crypto.sha1, crypto.sha256).
-      # Digests are computed over the UTF-8 bytes of the input string, matching OPA.
+      # Digests are computed over the bytes of the input string. Values from JSON/Rego
+      # input are UTF-8, so this matches OPA; a caller-supplied non-UTF-8 Ruby String
+      # (outside the documented input contract) is hashed as its own bytes.
       module Crypto
         extend RegistryHelpers
 
