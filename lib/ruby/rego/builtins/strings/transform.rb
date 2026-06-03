@@ -26,6 +26,56 @@ module Ruby
         def self.strings_reverse(string)
           StringValue.new(string_value(string, context: "strings.reverse").reverse)
         end
+
+        # Replaces occurrences of each key in `patterns` with its value, matching OPA's
+        # `strings.replace_n` (modeled on Go's `strings.Replacer`): keys are applied in
+        # ascending sort order with a single left-to-right pass, replaced text is never
+        # rescanned, and on overlapping matches the earliest-sorted key wins.
+        #
+        # One deliberate divergence from OPA: scanning is by Unicode codepoint, not byte.
+        # This matters only for an empty ("") key against multibyte text — OPA (byte-based)
+        # inserts the replacement between a character's bytes, producing invalid UTF-8,
+        # whereas this inserts only at codepoint boundaries, keeping the output valid UTF-8.
+        #
+        # @param patterns [Ruby::Rego::Value] object of string keys to string replacements
+        # @param value [Ruby::Rego::Value]
+        # @return [Ruby::Rego::StringValue]
+        def self.replace_n(patterns, value)
+          mapping = string_hash(patterns, name: "strings.replace_n patterns")
+          text = string_value(value, context: "strings.replace_n value")
+          StringValue.new(apply_replace_n(text, mapping))
+        end
+
+        # Single-pass replacer mirroring Go's strings.Replacer Replace loop: gaps are
+        # flushed lazily via `last`, and `prev_empty` prevents an empty-key match from
+        # looping at the same position.
+        #
+        # :reek:TooManyStatements
+        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+        def self.apply_replace_n(text, mapping)
+          keys = mapping.keys.sort
+          out = +""
+          last = 0
+          index = 0
+          prev_empty = false
+          length = text.length
+          while index <= length
+            # Earliest-sorted key that prefixes the remainder wins (Go's highest priority);
+            # the empty key is skipped right after a zero-width match to avoid looping.
+            match = keys.find { |key| !(key.empty? && prev_empty) && text[index, key.length] == key }
+            prev_empty = match ? match.empty? : false
+            if match
+              out << text[last...index].to_s << mapping.fetch(match)
+              index += match.length
+              last = index
+            else
+              index += 1
+            end
+          end
+          out << text[last..].to_s
+        end
+        # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+        private_class_method :apply_replace_n
       end
     end
   end

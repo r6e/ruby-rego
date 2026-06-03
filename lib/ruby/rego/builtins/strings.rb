@@ -15,6 +15,7 @@ require_relative "strings/split"
 require_relative "strings/substring"
 require_relative "strings/trim"
 require_relative "strings/transform"
+require_relative "strings/matching"
 
 module Ruby
   module Rego
@@ -44,7 +45,10 @@ module Ruby
           "replace" => { arity: 3, handler: :replace },
           "strings.reverse" => { arity: 1, handler: :strings_reverse },
           "strings.count" => { arity: 2, handler: :strings_count },
-          "indexof_n" => { arity: 2, handler: :indexof_n }
+          "indexof_n" => { arity: 2, handler: :indexof_n },
+          "strings.replace_n" => { arity: 2, handler: :replace_n },
+          "strings.any_prefix_match" => { arity: 2, handler: :any_prefix_match },
+          "strings.any_suffix_match" => { arity: 2, handler: :any_suffix_match }
         }.freeze
 
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
