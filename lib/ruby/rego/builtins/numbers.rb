@@ -3,6 +3,7 @@
 require_relative "base"
 require_relative "registry"
 require_relative "registry_helpers"
+require_relative "numeric_helpers"
 
 module Ruby
   module Rego
@@ -19,6 +20,12 @@ module Ruby
           "numbers.range" => { arity: 2, handler: :range }
         }.freeze
 
+        # Upper bound on `numbers.range` length. OPA halts large ranges via context
+        # cancellation; this pure-Ruby evaluator has no such escape valve, so an
+        # untrusted policy could otherwise force unbounded allocation. Exceeding the
+        # limit yields an undefined result rather than exhausting memory.
+        MAX_RANGE_SIZE = 1_000_000
+
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
         def self.register!
           registry = BuiltinRegistry.instance
@@ -31,7 +38,7 @@ module Ruby
         # @param value [Ruby::Rego::Value]
         # @return [Ruby::Rego::NumberValue]
         def self.abs(value)
-          NumberValue.new(numeric(value, "abs").abs)
+          NumberValue.new(normalize(numeric(value, "abs").abs))
         end
 
         # @param value [Ruby::Rego::Value]
@@ -59,38 +66,65 @@ module Ruby
         #
         # @param start_value [Ruby::Rego::Value]
         # @param end_value [Ruby::Rego::Value]
-        # @return [Ruby::Rego::ArrayValue, Ruby::Rego::UndefinedValue]
+        # @return [Ruby::Rego::ArrayValue]
         def self.range(start_value, end_value)
-          start_bound = integer_bound(start_value, "numbers.range")
-          end_bound = integer_bound(end_value, "numbers.range")
-          return UndefinedValue.new unless start_bound && end_bound
+          start_bound = NumericHelpers.integer_value(start_value, context: "numbers.range")
+          end_bound = NumericHelpers.integer_value(end_value, context: "numbers.range")
+          ensure_range_within_limit(start_bound, end_bound)
 
           ArrayValue.new(range_elements(start_bound, end_bound).map { |number| NumberValue.new(number) })
         end
 
+        # Extracts a finite numeric value, rejecting non-finite floats (Infinity,
+        # NaN) so that round/ceil/floor never raise FloatDomainError and abs never
+        # produces an unrepresentable result.
+        #
         # @param value [Ruby::Rego::Value]
         # @param context [String]
         # @return [Numeric]
         def self.numeric(value, context)
           Base.assert_type(value, expected: NumberValue, context: context)
-          value.value
+          number = value.value
+          return number unless number.is_a?(Float) && !number.finite?
+
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Expected a finite number",
+            expected: "finite number",
+            actual: number,
+            context: context,
+            location: nil
+          )
         end
         private_class_method :numeric
 
-        # Returns the integer value of a numeric bound, or nil when it is not an
-        # integer value (a fractional float, infinity, or NaN).
+        # Normalizes an integer-valued float to an Integer, matching OPA's numeric
+        # output (e.g. abs(-2.0) => 2, not 2.0). Non-integer floats are preserved.
         #
-        # @param value [Ruby::Rego::Value]
-        # @param context [String]
-        # @return [Integer, nil]
-        def self.integer_bound(value, context)
-          number = numeric(value, context)
-          return number if number.is_a?(Integer)
-          return number.to_i if number.is_a?(Float) && number.finite? && (number % 1).zero?
+        # @param number [Numeric]
+        # @return [Numeric]
+        def self.normalize(number)
+          return number.to_i if number.is_a?(Float) && number.modulo(1).zero?
 
-          nil
+          number
         end
-        private_class_method :integer_bound
+        private_class_method :normalize
+
+        # @param start_bound [Integer]
+        # @param end_bound [Integer]
+        # @return [void]
+        def self.ensure_range_within_limit(start_bound, end_bound)
+          size = (end_bound - start_bound).abs + 1
+          return if size <= MAX_RANGE_SIZE
+
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "numbers.range size #{size} exceeds maximum #{MAX_RANGE_SIZE}",
+            expected: "size <= #{MAX_RANGE_SIZE}",
+            actual: size,
+            context: "numbers.range",
+            location: nil
+          )
+        end
+        private_class_method :ensure_range_within_limit
 
         # @param start_bound [Integer]
         # @param end_bound [Integer]

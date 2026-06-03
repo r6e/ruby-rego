@@ -322,18 +322,20 @@ module Ruby
         extend RegistryHelpers
 
         NUMBER_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        MAX_RANGE_SIZE: Integer
 
         def self.register!: () -> BuiltinRegistry
         def self.abs: (Value value) -> NumberValue
         def self.round: (Value value) -> NumberValue
         def self.ceil: (Value value) -> NumberValue
         def self.floor: (Value value) -> NumberValue
-        def self.range: (Value start_value, Value end_value) -> (ArrayValue | UndefinedValue)
+        def self.range: (Value start_value, Value end_value) -> ArrayValue
 
         private
 
         def self.numeric: (Value value, String context) -> Numeric
-        def self.integer_bound: (Value value, String context) -> Integer?
+        def self.normalize: (Numeric number) -> Numeric
+        def self.ensure_range_within_limit: (Integer start_bound, Integer end_bound) -> void
         def self.range_elements: (Integer start_bound, Integer end_bound) -> Array[Integer]
       end
 

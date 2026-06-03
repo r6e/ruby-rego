@@ -12,8 +12,16 @@ RSpec.describe "numeric builtins" do
       expect(registry.call("abs", [4]).to_ruby).to eq(4)
     end
 
+    it "normalizes an integer-valued float result to an integer (matching OPA)" do
+      expect(registry.call("abs", [-2.0]).to_ruby).to eql(2)
+    end
+
     it "is undefined for a non-number argument" do
       expect(registry.call("abs", ["x"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined for a non-finite argument" do
+      expect(registry.call("abs", [Float::INFINITY])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 
@@ -33,6 +41,11 @@ RSpec.describe "numeric builtins" do
 
     it "is undefined for a non-number argument" do
       expect(registry.call("round", ["x"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined (not a crash) for a non-finite argument" do
+      expect(registry.call("round", [Float::INFINITY])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("round", [Float::NAN])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 
@@ -84,6 +97,12 @@ RSpec.describe "numeric builtins" do
 
     it "is undefined for a non-number bound" do
       expect(registry.call("numbers.range", ["a", 3])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined when the range exceeds the maximum size (allocation guard)" do
+      max = Ruby::Rego::Builtins::Numbers::MAX_RANGE_SIZE
+      expect(registry.call("numbers.range", [1, max + 1])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("numbers.range", [-1, max])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 end
