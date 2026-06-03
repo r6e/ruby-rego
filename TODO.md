@@ -61,9 +61,18 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
 - 🟡 Regex: ✅ `regex.match`, `regex.is_valid`, `regex.split`, `regex.find_n`;
   ⬜ `regex.replace` (needs Go `$1` → Ruby template translation),
   ⬜ `regex.find_all_string_submatch_n`, `regex.template_match`, `regex.globs_match`.
-- 🟡 Encoding: ✅ `json.marshal`/`json.unmarshal`/`json.is_valid`, `base64`/`base64url`
-  encode/decode, `hex` encode/decode, `urlquery` encode/decode; ⬜ `yaml.*`,
-  ⬜ `urlquery.encode_object`/`decode_object`, ⬜ `base64url.encode_no_pad`.
+- 🟡 Encoding: ✅ `json.marshal`/`json.unmarshal`/`json.is_valid`, `base64`
+  encode/decode/is_valid, `base64url` encode/decode, `hex` encode/decode,
+  `urlquery` encode/decode; ⬜ `yaml.*`, ⬜ `urlquery.encode_object`/`decode_object`,
+  ⬜ `base64url.encode_no_pad`.
+
+## Refactoring follow-ups
+
+- Extract a shared `Builtins::StringHelpers.string_value` (mirroring
+  `NumericHelpers.integer_value`) and migrate `codecs.rb` + `regex.rb`'s duplicated
+  private `string_arg`. Do both call sites together — not a partial extraction.
+- Declare `json` as a runtime dependency in the gemspec (used by lib but undeclared;
+  pre-dates the encoding batch).
 - ⬜ Object: `object.union`, `object.union_n`, `object.filter`, `json.patch`,
   `json.filter`, `json.remove`.
 - ⬜ Strings: `replace`, `trim_prefix`, `trim_suffix`, substring `count`,

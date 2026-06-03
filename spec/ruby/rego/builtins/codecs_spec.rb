@@ -19,6 +19,18 @@ RSpec.describe "encoding builtins" do
       expect(registry.call("json.marshal", [Set.new([3, 1, 2])]).to_ruby).to eq("[1,2,3]")
       expect(registry.call("json.marshal", [{ "s" => Set.new([3, 1, 2]) }]).to_ruby).to eq('{"s":[1,2,3]}')
     end
+
+    it "orders composite set elements element-wise, not by serialized string (matching OPA)" do
+      expect(registry.call("json.marshal", [Set.new([[2], [10]])]).to_ruby).to eq("[[2],[10]]")
+      expect(registry.call("json.marshal", [Set.new(%w[a b aa])]).to_ruby).to eq('["a","aa","b"]')
+    end
+
+    it "HTML-escapes <, > and & like Go's encoding/json (matching OPA)" do
+      result = registry.call("json.marshal", ["<a>&b"]).to_ruby
+      expected = format('"\u%<lt>04xa\u%<gt>04x\u%<amp>04xb"', lt: "<".ord, gt: ">".ord, amp: "&".ord)
+      expect(result).to eq(expected)
+      expect(result).not_to include("<", ">", "&")
+    end
   end
 
   describe "json.unmarshal" do
