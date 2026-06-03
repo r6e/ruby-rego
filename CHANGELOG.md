@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Encoding built-ins: `json.marshal` (sorted keys, sets as sorted arrays,
+  Go-style HTML escaping), `json.unmarshal`, `json.is_valid`, `base64`
+  encode/decode/is_valid, `base64url` encode/decode, `hex` encode/decode, and
+  `urlquery` encode/decode, matching OPA semantics. Invalid decoder input yields
+  an undefined result; non-finite numbers and JSON nested beyond Ruby's default
+  depth (a DoS safeguard) also yield undefined rather than raising. Adds `base64`,
+  `cgi`, and `json` as runtime dependencies.
 - Regex built-ins: `regex.match`, `regex.is_valid`, `regex.split`, and
   `regex.find_n`. `regex.split` matches Go's trailing/zero-width/empty-input
   semantics; invalid patterns yield an undefined result. Patterns compile with

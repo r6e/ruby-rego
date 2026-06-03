@@ -29,6 +29,9 @@ detectors:
       # keep-trailing / zero-width rules).
       - Ruby::Rego::Builtins::Regex#self.each_match
       - Ruby::Rego::Builtins::Regex#self.split_segments
+      # Recursive JSON normalization and OPA set-ordering: type-dispatch case folds.
+      - Ruby::Rego::Builtins::Codecs#self.jsonify
+      - Ruby::Rego::Builtins::Codecs#self.json_sort_key
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
       - Ruby::Rego::CompiledPolicySet
