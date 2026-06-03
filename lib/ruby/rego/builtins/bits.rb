@@ -92,19 +92,14 @@ module Ruby
         # Shift amounts must be non-negative (Go's big.Int Lsh/Rsh take a uint); a
         # negative amount yields an undefined result.
         def self.shift_amount(value, context)
-          amount = integer(value, context)
-          return amount if amount >= 0
-
-          raise Ruby::Rego::BuiltinArgumentError.new(
-            "negative shift amount",
-            expected: "shift >= 0",
-            actual: amount,
-            context: context,
-            location: nil
-          )
+          NumericHelpers.non_negative_integer(value, context: context)
         end
         private_class_method :shift_amount
 
+        # `base.bit_length + amount` upper-bounds the result's magnitude in bits
+        # (exact for positive bases; a slight over-estimate for negative bases, which
+        # errs toward rejecting — acceptable for a DoS guard). Checked before shifting
+        # so an oversized result is never allocated.
         def self.ensure_lsh_within_limit(base, amount)
           return if base.zero?
 
