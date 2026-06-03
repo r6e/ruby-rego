@@ -57,6 +57,52 @@ module Ruby
           index = haystack_text.index(needle_text)
           NumberValue.new(index || -1)
         end
+
+        # Counts non-overlapping occurrences of `search` in `string` (OPA's
+        # strings.count). An empty search counts as the codepoint count plus one.
+        #
+        # @param string [Ruby::Rego::Value]
+        # @param search [Ruby::Rego::Value]
+        # @return [Ruby::Rego::NumberValue]
+        def self.strings_count(string, search)
+          haystack, needle = string_pair(
+            string, search, left_context: "strings.count string", right_context: "strings.count search"
+          )
+          NumberValue.new(haystack.scan(needle).size)
+        end
+
+        # All start indices (by character) of `search` in `string`, including
+        # overlapping matches (matching OPA: indexof_n("aaa","aa") => [0,1]).
+        # An empty search yields an undefined result (matching OPA).
+        #
+        # @param string [Ruby::Rego::Value]
+        # @param search [Ruby::Rego::Value]
+        # @return [Ruby::Rego::ArrayValue]
+        def self.indexof_n(string, search)
+          haystack, needle = string_pair(
+            string, search, left_context: "indexof_n string", right_context: "indexof_n search"
+          )
+          raise_empty_search("indexof_n") if needle.empty?
+          ArrayValue.new(match_indices(haystack, needle).map { |index| NumberValue.new(index) })
+        end
+
+        def self.match_indices(haystack, needle)
+          indices = [] # @type var indices: Array[Integer]
+          position = 0
+          while (found = haystack.index(needle, position))
+            indices << found
+            position = found + 1
+          end
+          indices
+        end
+        private_class_method :match_indices
+
+        def self.raise_empty_search(context)
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Empty search string", expected: "non-empty search string", actual: "", context: context, location: nil
+          )
+        end
+        private_class_method :raise_empty_search
       end
     end
   end

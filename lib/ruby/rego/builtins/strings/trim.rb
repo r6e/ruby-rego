@@ -32,6 +32,26 @@ module Ruby
           StringValue.new(string_value(string, context: "trim_space").strip)
         end
 
+        # @param string [Ruby::Rego::Value]
+        # @param prefix [Ruby::Rego::Value]
+        # @return [Ruby::Rego::StringValue]
+        def self.trim_prefix(string, prefix)
+          text, prefix_text = string_pair(
+            string, prefix, left_context: "trim_prefix string", right_context: "trim_prefix prefix"
+          )
+          StringValue.new(text.delete_prefix(prefix_text))
+        end
+
+        # @param string [Ruby::Rego::Value]
+        # @param suffix [Ruby::Rego::Value]
+        # @return [Ruby::Rego::StringValue]
+        def self.trim_suffix(string, suffix)
+          text, suffix_text = string_pair(
+            string, suffix, left_context: "trim_suffix string", right_context: "trim_suffix suffix"
+          )
+          StringValue.new(text.delete_suffix(suffix_text))
+        end
+
         def self.trim_with_cutset(string, cutset, context)
           StringValue.new(trimmed_text(string, cutset, context))
         end
