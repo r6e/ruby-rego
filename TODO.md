@@ -52,13 +52,15 @@ annotations — these ripple structurally and are not "just more functions").
 
 ## Built-in function backlog
 
-~51 of OPA's ~210 builtins are implemented (types, aggregates, numbers, strings,
-collections, comparisons). The registry pattern makes additions mechanical;
-this is volume, not difficulty. Highest compatibility-per-effort first:
+~55 of OPA's ~210 builtins are implemented (types, aggregates, numbers, regex,
+strings, collections, comparisons). The registry pattern makes additions
+mechanical; this is volume, not difficulty. Highest compatibility-per-effort first:
 
 - 🟡 Numeric: ✅ `abs`, `round`, `ceil`, `floor`, `numbers.range`; ⬜ `rand.intn`
   (stateful/seeded — deferred), ⬜ `numbers.range_step`.
-- ⬜ Regex: `regex.match`, `regex.find_n`, `regex.split`, `regex.replace`, etc.
+- 🟡 Regex: ✅ `regex.match`, `regex.is_valid`, `regex.split`, `regex.find_n`;
+  ⬜ `regex.replace` (needs Go `$1` → Ruby template translation),
+  ⬜ `regex.find_all_string_submatch_n`, `regex.template_match`, `regex.globs_match`.
 - ⬜ Encoding: `json.marshal`/`json.unmarshal`, `yaml.*`, `base64*`, `hex`, `urlquery`.
 - ⬜ Object: `object.union`, `object.union_n`, `object.filter`, `json.patch`,
   `json.filter`, `json.remove`.

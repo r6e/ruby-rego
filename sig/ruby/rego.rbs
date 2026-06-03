@@ -339,6 +339,31 @@ module Ruby
         def self.range_elements: (Integer start_bound, Integer end_bound) -> Array[Integer]
       end
 
+      module Regex
+        extend RegistryHelpers
+
+        REGEX_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        REGEX_TIMEOUT_SECONDS: Float
+
+        def self.register!: () -> BuiltinRegistry
+        def self.match: (Value pattern_value, Value string_value) -> BooleanValue
+        def self.is_valid: (Value pattern_value) -> BooleanValue
+        def self.split: (Value pattern_value, Value string_value) -> ArrayValue
+        def self.find_n: (Value pattern_value, Value string_value, Value number_value) -> ArrayValue
+
+        private
+
+        def self.matches_for: (Value pattern_value, Value string_value, String context) -> Array[String]
+        def self.string_arg: (Value value, String context) -> String
+        def self.string_array: (Array[String] values) -> ArrayValue
+        def self.compile: (Value pattern_value, String context) -> Regexp
+        def self.guarded: [T] (String context) { () -> T } -> T
+        def self.each_match: (Regexp regexp, String string) { (MatchData) -> void } -> void
+        def self.advance: (MatchData found) -> Integer
+        def self.full_matches: (Regexp regexp, String string) -> Array[String]
+        def self.split_segments: (Regexp regexp, String string) -> Array[String]
+      end
+
       module Strings
         extend RegistryHelpers
 
