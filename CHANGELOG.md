@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Glob built-ins: `glob.match` (wildcards `*`/`**`/`?`, character classes `[...]`/`[!...]`,
+  brace alternation `{a,b}` with nesting, escaping, and OPA delimiter semantics — a null
+  delimiters argument means "no delimiters", an empty array defaults to `["."]`) and
+  `glob.quote_meta`. Matching is by Unicode codepoint; malformed patterns yield undefined.
+  Patterns are compiled to an anchored Ruby Regexp under the regex timeout guard. This
+  implements correct glob semantics and intentionally does **not** reproduce known bugs in
+  OPA's matcher (gobwas/glob): multi-range classes like `[A-Za-z]` work (gobwas #47), `?`
+  and `[...]` match non-ASCII characters (gobwas #41), and `?`/`[!...]` require exactly one
+  character instead of also matching the empty string. Well-formed ASCII patterns behave
+  identically to OPA.
 - Bitwise built-ins: `bits.and`, `bits.or`, `bits.xor`, `bits.negate`, `bits.lsh`,
   and `bits.rsh`, matching OPA (two's-complement infinite precision; integer-valued
   floats accepted, non-integers and negative shift counts yield undefined). A left

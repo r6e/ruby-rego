@@ -375,6 +375,53 @@ module Ruby
         def self.ensure_lsh_within_limit: (Integer base, Integer amount) -> void
       end
 
+      module Glob
+        extend RegistryHelpers
+
+        GLOB_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        QUOTE_META_PATTERN: Regexp
+        DEFAULT_DELIMITERS: Array[String]
+        GLOB_TIMEOUT_SECONDS: Float
+
+        def self.register!: () -> BuiltinRegistry
+        def self.match: (Value pattern, Value delimiters, Value value) -> BooleanValue
+        def self.quote_meta: (Value pattern) -> StringValue
+
+        private
+
+        def self.string_arg: (Value value, String context) -> String
+        def self.separators: (Value value) -> Array[String]
+        def self.delimiter_char: (Value element) -> String
+        def self.compile: (String pattern, Array[String] seps) -> Regexp
+        def self.raise_glob_error: (String message, String actual) -> bot
+
+        class GlobCompiler
+          MAX_BRACE_NESTING: Integer
+
+          @chars: Array[String]
+          @nonsep: String
+          @brace_depth: Integer
+
+          def initialize: (String pattern, Array[String] seps) -> void
+          def compile: () -> String
+
+          private
+
+          def non_delimiter_class: (Array[String] seps) -> String
+          def translate: (Integer pos, top_level: bool) -> [String, Integer]
+          def translate_token: (String char, Integer pos) -> [String, Integer]
+          def star: (Integer pos) -> String
+          def star_width: (Integer pos) -> Integer
+          def escape_literal: (Integer pos) -> [String, Integer]
+          def translate_brace: (Integer pos) -> [String, Integer]
+          def translate_class: (Integer pos) -> [String, Integer]
+          def class_body: (Array[String] chars) -> String
+          def class_range: (String low, String high) -> String
+          def escape_in_class: (String char) -> String
+          def raise_malformed: () -> bot
+        end
+      end
+
       module Regex
         extend RegistryHelpers
 
