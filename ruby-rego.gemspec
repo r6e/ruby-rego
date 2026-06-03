@@ -42,6 +42,7 @@ Gem::Specification.new do |spec|
   # encoding builtins).
   spec.add_dependency "base64"
   spec.add_dependency "cgi"
+  spec.add_dependency "digest"
   spec.add_dependency "json"
 
   # For more information and examples about making a new gem, check out our

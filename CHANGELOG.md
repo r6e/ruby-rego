@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Crypto built-ins: `crypto.md5`, `crypto.sha1`, and `crypto.sha256` (hex digests of
+  the input string's bytes; values from JSON/Rego input are UTF-8, matching OPA). Adds
+  `digest` as a runtime dependency.
 - String built-ins: `replace` (literal, non-overlapping), `trim_prefix`, `trim_suffix`,
   `strings.reverse`, `strings.count`, and `indexof_n`, matching OPA semantics
   (`indexof_n` is undefined for an empty search).

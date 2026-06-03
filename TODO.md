@@ -77,6 +77,18 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
   evaluator-wide limitation (OPA bounds this via a nesting limit). Affects any deep
   value, not just `json.marshal`; a shared depth guard would convert it to a clean
   error/undefined.
+- Normalize string encoding at the value-ingestion boundary (`StringValue#initialize`
+  / `Value.from_ruby`) so non-UTF-8 Ruby Strings supplied via the public `input:` API
+  behave OPA-faithfully. OPA strings are always UTF-8 (input is JSON); a caller-built
+  non-UTF-8 Ruby String currently hashes/encodes its own bytes, diverging from OPA for
+  the same logical characters. This is **not** crypto-specific — it affects every string
+  builtin identically (`crypto.*`, `base64.encode`, `hex.encode`, `urlquery.encode`,
+  `strings.*`). Because normalization at ingestion also changes string **equality,
+  hashing, and object-key identity** evaluator-wide, it needs its own design + full
+  panel across those surfaces, with an explicit decision on binary/`ASCII-8BIT` input
+  (which has no OPA equivalent — transcode-and-undefined vs. hash-raw-bytes). Low
+  severity: unreachable through the JSON/Rego input path; requires a hand-built
+  non-UTF-8 Ruby String.
 - 🟡 Object: ✅ `object.union`, `object.union_n`, `object.filter` (plus object-keys
   support for `object.filter`/`object.remove`); ⬜ `json.patch`, `json.filter`,
   `json.remove` (JSON path / RFC 6902 operations).
@@ -86,7 +98,8 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
   already shipped.
 - ⬜ Glob: `glob.match`, `glob.quote_meta`.
 - ⬜ Time: `time.now_ns`, `time.parse_rfc3339_ns`, `time.date`, `time.add_date`, etc.
-- ⬜ Crypto: `crypto.md5`, `crypto.sha1`, `crypto.sha256`, `crypto.hmac.*`.
+- 🟡 Crypto: ✅ `crypto.md5`, `crypto.sha1`, `crypto.sha256`; ⬜ `crypto.hmac.*`,
+  ⬜ `crypto.x509.*`.
 - ⬜ Net/CIDR: `net.cidr_contains`, `net.cidr_intersects`, `net.cidr_merge`.
 - ⬜ Bits: `bits.and`, `bits.or`, `bits.xor`, `bits.lsh`, `bits.rsh`.
 - ⬜ Misc: `uuid.rfc4122`, `semver.compare`, `semver.is_valid`, `units.parse*`,

@@ -107,7 +107,7 @@ The CLI attempts to infer a validation query in this order: `deny`, `violations`
 
 ### Built-in functions
 
-Built-ins are currently limited to core categories: types, aggregates, numbers (`abs`, `round`, `ceil`, `floor`, `numbers.range`), regex (`regex.match`, `regex.is_valid`, `regex.split`, `regex.find_n`), encoding (`json.marshal`, `json.unmarshal`, `json.is_valid`, `base64` encode/decode/is_valid, `base64url` encode/decode, `hex` encode/decode, `urlquery` encode/decode), strings (including `replace`, `trim_prefix`/`trim_suffix`, `strings.reverse`/`count`, `indexof_n`), collections (including `object.get`/`keys`/`remove`/`union`/`union_n`/`filter`), and comparisons. See the builtins registry for the current list.
+Built-ins are currently limited to core categories: types, aggregates, numbers (`abs`, `round`, `ceil`, `floor`, `numbers.range`), regex (`regex.match`, `regex.is_valid`, `regex.split`, `regex.find_n`), encoding (`json.marshal`, `json.unmarshal`, `json.is_valid`, `base64` encode/decode/is_valid, `base64url` encode/decode, `hex` encode/decode, `urlquery` encode/decode), strings (including `replace`, `trim_prefix`/`trim_suffix`, `strings.reverse`/`count`, `indexof_n`), collections (including `object.get`/`keys`/`remove`/`union`/`union_n`/`filter`), crypto (`crypto.md5`/`sha1`/`sha256`), and comparisons. See the builtins registry for the current list.
 
 Regex built-ins compile patterns with Ruby's regex engine (Onigmo), not Go's RE2. Common patterns behave identically to OPA; constructs Ruby accepts but RE2 rejects (lookahead, backreferences) are treated as valid here, so `regex.is_valid` reflects Ruby's notion of validity.
 

@@ -300,6 +300,21 @@ module Ruby
         def self.register_type_name: (BuiltinRegistry registry) -> void
       end
 
+      module Crypto
+        extend RegistryHelpers
+
+        CRYPTO_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.md5: (Value value) -> StringValue
+        def self.sha1: (Value value) -> StringValue
+        def self.sha256: (Value value) -> StringValue
+
+        private
+
+        def self.string_value: (Value value, String context) -> String
+      end
+
       module Aggregates
         AGGREGATE_FUNCTIONS: Hash[String, Symbol]
 
