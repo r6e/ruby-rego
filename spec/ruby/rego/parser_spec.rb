@@ -329,6 +329,26 @@ RSpec.describe Ruby::Rego::Parser do
       expect(expr.path[2].value).to be_a(Ruby::Rego::AST::NumberLiteral)
     end
 
+    it "parses keyword tokens (and/or) as reference segments after a dot" do
+      expr = parse_expression("bits.and")
+
+      expect(expr).to be_a(Ruby::Rego::AST::Reference)
+      expect(expr.base.name).to eq("bits")
+      expect(expr.path.length).to eq(1)
+      expect(expr.path[0]).to be_a(Ruby::Rego::AST::DotRefArg)
+      expect(expr.path[0].value).to eq("and")
+
+      or_expr = parse_expression("bits.or")
+      expect(or_expr.path[0].value).to eq("or")
+    end
+
+    it "still parses and/or as infix operators in operator position" do
+      expr = parse_expression("x or y")
+
+      expect(expr).to be_a(Ruby::Rego::AST::BinaryOp)
+      expect(expr.operator).to eq(:or)
+    end
+
     it "parses composite literals" do
       array = parse_expression("[1, true, \"a\"]")
       object = parse_expression("{\"a\": 1, \"b\": 2}")

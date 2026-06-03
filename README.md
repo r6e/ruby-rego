@@ -107,7 +107,7 @@ The CLI attempts to infer a validation query in this order: `deny`, `violations`
 
 ### Built-in functions
 
-Built-ins are currently limited to core categories: types, aggregates, numbers (`abs`, `round`, `ceil`, `floor`, `numbers.range`), regex (`regex.match`, `regex.is_valid`, `regex.split`, `regex.find_n`), encoding (`json.marshal`, `json.unmarshal`, `json.is_valid`, `base64` encode/decode/is_valid, `base64url` encode/decode, `hex` encode/decode, `urlquery` encode/decode), strings (including `replace`, `strings.replace_n`, `trim_prefix`/`trim_suffix`, `strings.reverse`/`count`, `indexof_n`, `strings.any_prefix_match`/`any_suffix_match`), collections (including `object.get`/`keys`/`remove`/`union`/`union_n`/`filter`), crypto (`crypto.md5`/`sha1`/`sha256`), and comparisons. See the builtins registry for the current list.
+Built-ins are currently limited to core categories: types, aggregates, numbers (`abs`, `round`, `ceil`, `floor`, `numbers.range`), bits (`bits.and`/`or`/`xor`/`negate`/`lsh`/`rsh`), regex (`regex.match`, `regex.is_valid`, `regex.split`, `regex.find_n`), encoding (`json.marshal`, `json.unmarshal`, `json.is_valid`, `base64` encode/decode/is_valid, `base64url` encode/decode, `hex` encode/decode, `urlquery` encode/decode), strings (including `replace`, `strings.replace_n`, `trim_prefix`/`trim_suffix`, `strings.reverse`/`count`, `indexof_n`, `strings.any_prefix_match`/`any_suffix_match`), collections (including `object.get`/`keys`/`remove`/`union`/`union_n`/`filter`), crypto (`crypto.md5`/`sha1`/`sha256`), and comparisons. See the builtins registry for the current list.
 
 Regex built-ins compile patterns with Ruby's regex engine (Onigmo), not Go's RE2. Common patterns behave identically to OPA; constructs Ruby accepts but RE2 rejects (lookahead, backreferences) are treated as valid here, so `regex.is_valid` reflects Ruby's notion of validity.
 
@@ -146,6 +146,8 @@ The CLI remains single-file only.
 - Querying a bare package path (e.g., `query: "data.acme.authz"`) does not return the package's aggregated document; query a specific rule path instead.
 - Conflicting complete rules within a merged package surface as an evaluation-time error, not a compile-time error.
 - `strings.replace_n` scans by Unicode codepoint rather than byte. This differs from OPA only for an empty (`""`) key applied to multibyte text: OPA (byte-based) inserts the replacement between a character's bytes and yields invalid UTF-8, while this implementation inserts only at codepoint boundaries to keep output valid. All non-empty keys behave identically to OPA.
+- `bits.lsh` yields undefined when the result would exceed 2^25 bits (~4 MB), a DoS guard against unbounded allocation from an untrusted shift amount. OPA computes arbitrarily large shifts (slowly); this is the only divergence and affects only left shifts.
+- Reference segments after a dot may use the keywords `and`/`or` (e.g. `bits.and`), in addition to `data`/`input`. OPA permits any keyword as a dotted segment; the other keywords (`if`, `every`, `in`, `with`, etc.) are not yet accepted in that position here.
 
 ## Performance and benchmarks
 
