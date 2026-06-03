@@ -71,6 +71,12 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
 - Extract a shared `Builtins::StringHelpers.string_value` (mirroring
   `NumericHelpers.integer_value`) and migrate `codecs.rb` + `regex.rb`'s duplicated
   private `string_arg`. Do both call sites together — not a partial extraction.
+- Bound recursion depth in the Value layer (`Value.from_ruby`/`to_ruby`) and other
+  recursive evaluator paths. Extremely deeply-nested input (~10k+ levels) currently
+  raises an uncatchable `SystemStackError` at value construction — a pre-existing,
+  evaluator-wide limitation (OPA bounds this via a nesting limit). Affects any deep
+  value, not just `json.marshal`; a shared depth guard would convert it to a clean
+  error/undefined.
 - ⬜ Object: `object.union`, `object.union_n`, `object.filter`, `json.patch`,
   `json.filter`, `json.remove`.
 - ⬜ Strings: `replace`, `trim_prefix`, `trim_suffix`, substring `count`,
