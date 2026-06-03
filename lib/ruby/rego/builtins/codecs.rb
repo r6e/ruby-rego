@@ -125,10 +125,18 @@ module Ruby
           StringValue.new(CGI.escape(string_arg(value, "urlquery.encode")))
         end
 
+        # OPA (Go's url.QueryUnescape) rejects malformed percent-escapes; CGI.unescape
+        # passes them through, so they are validated and rejected to match OPA.
+        #
         # @param value [Ruby::Rego::Value]
         # @return [Ruby::Rego::StringValue]
         def self.urlquery_decode(value)
-          StringValue.new(CGI.unescape(string_arg(value, "urlquery.decode")))
+          string = string_arg(value, "urlquery.decode")
+          decoded("urlquery.decode") do
+            raise ArgumentError, "invalid percent-encoding" if string.match?(/%(?![0-9a-fA-F]{2})/)
+
+            StringValue.new(CGI.unescape(string))
+          end
         end
 
         # @param value [Ruby::Rego::Value]

@@ -4,6 +4,7 @@ PATH
     ruby-rego (0.1.0)
       base64
       cgi
+      json
 
 GEM
   remote: https://rubygems.org/

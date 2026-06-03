@@ -71,8 +71,6 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
 - Extract a shared `Builtins::StringHelpers.string_value` (mirroring
   `NumericHelpers.integer_value`) and migrate `codecs.rb` + `regex.rb`'s duplicated
   private `string_arg`. Do both call sites together — not a partial extraction.
-- Declare `json` as a runtime dependency in the gemspec (used by lib but undeclared;
-  pre-dates the encoding batch).
 - ⬜ Object: `object.union`, `object.union_n`, `object.filter`, `json.patch`,
   `json.filter`, `json.remove`.
 - ⬜ Strings: `replace`, `trim_prefix`, `trim_suffix`, substring `count`,

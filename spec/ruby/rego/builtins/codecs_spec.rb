@@ -66,6 +66,17 @@ RSpec.describe "encoding builtins" do
     end
   end
 
+  describe "base64.is_valid" do
+    it "reports validity for standard base64" do
+      expect(registry.call("base64.is_valid", ["aGVsbG8="]).to_ruby).to be(true)
+      expect(registry.call("base64.is_valid", ["not!base64"]).to_ruby).to be(false)
+    end
+
+    it "treats unpadded input as invalid (matching OPA strict decode)" do
+      expect(registry.call("base64.is_valid", ["aGVsbG8"]).to_ruby).to be(false)
+    end
+  end
+
   describe "base64url.encode / base64url.decode" do
     it "uses the URL-safe alphabet with padding" do
       expect(registry.call("base64url.encode", ["hi>?>"]).to_ruby).to eq("aGk-Pz4=")
@@ -96,6 +107,11 @@ RSpec.describe "encoding builtins" do
 
     it "decodes query encoding" do
       expect(registry.call("urlquery.decode", ["a+b%26c"]).to_ruby).to eq("a b&c")
+    end
+
+    it "is undefined for a malformed percent-escape (matching OPA)" do
+      expect(registry.call("urlquery.decode", ["%ZZ"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("urlquery.decode", ["%2"])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 
