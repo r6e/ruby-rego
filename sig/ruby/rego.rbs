@@ -416,8 +416,17 @@ module Ruby
         def self.trim_left: (Value string, Value cutset) -> StringValue
         def self.trim_right: (Value string, Value cutset) -> StringValue
         def self.trim_space: (Value string) -> StringValue
+        def self.trim_prefix: (Value string, Value prefix) -> StringValue
+        def self.trim_suffix: (Value string, Value suffix) -> StringValue
+        def self.replace: (Value string, Value old, Value replacement) -> StringValue
+        def self.string_reverse: (Value string) -> StringValue
+        def self.string_count: (Value string, Value search) -> NumberValue
+        def self.indexof_n: (Value string, Value search) -> ArrayValue
 
         private
+
+        def self.match_indices: (String haystack, String needle) -> Array[Integer]
+        def self.raise_empty_search: (String context) -> bot
 
         def self.string_value: (Value value, context: String) -> String
         def self.array_values: (Value value, name: String) -> Array[Value]

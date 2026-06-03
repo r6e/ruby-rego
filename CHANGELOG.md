@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- String built-ins: `replace` (literal, non-overlapping), `trim_prefix`, `trim_suffix`,
+  `strings.reverse`, `strings.count`, and `indexof_n`, matching OPA semantics
+  (`indexof_n` is undefined for an empty search).
 - Object built-ins: `object.union` (deep merge, second operand wins), `object.union_n`,
   and `object.filter`, matching OPA semantics. `object.filter`/`object.remove` now also
   accept an object as the keys collection (using its keys).

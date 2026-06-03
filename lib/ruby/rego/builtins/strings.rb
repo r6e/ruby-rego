@@ -14,6 +14,7 @@ require_relative "strings/formatting"
 require_relative "strings/split"
 require_relative "strings/substring"
 require_relative "strings/trim"
+require_relative "strings/transform"
 
 module Ruby
   module Rego
@@ -37,7 +38,13 @@ module Ruby
           "trim" => { arity: 2, handler: :trim },
           "trim_left" => { arity: 2, handler: :trim_left },
           "trim_right" => { arity: 2, handler: :trim_right },
-          "trim_space" => { arity: 1, handler: :trim_space }
+          "trim_space" => { arity: 1, handler: :trim_space },
+          "trim_prefix" => { arity: 2, handler: :trim_prefix },
+          "trim_suffix" => { arity: 2, handler: :trim_suffix },
+          "replace" => { arity: 3, handler: :replace },
+          "strings.reverse" => { arity: 1, handler: :string_reverse },
+          "strings.count" => { arity: 2, handler: :string_count },
+          "indexof_n" => { arity: 2, handler: :indexof_n }
         }.freeze
 
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
