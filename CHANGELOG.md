@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Encoding built-ins: `json.marshal` (sorted keys, sets as sorted arrays),
+  `json.unmarshal`, `json.is_valid`, `base64`/`base64url` encode and decode,
+  `hex` encode and decode, and `urlquery` encode and decode, matching OPA
+  semantics. Invalid decoder input yields an undefined result.
 - Regex built-ins: `regex.match`, `regex.is_valid`, `regex.split`, and
   `regex.find_n`. `regex.split` matches Go's trailing/zero-width/empty-input
   semantics; invalid patterns yield an undefined result. Patterns compile with

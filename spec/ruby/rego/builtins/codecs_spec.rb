@@ -1,0 +1,91 @@
+# frozen_string_literal: true
+
+# rubocop:disable Metrics/BlockLength
+
+RSpec.describe "encoding builtins" do
+  let(:registry) { Ruby::Rego::Builtins::BuiltinRegistry.instance }
+
+  describe "json.marshal" do
+    it "sorts object keys and emits compact JSON (matching OPA)" do
+      value = { "b" => 1, "a" => [2, 3], "c" => true }
+      expect(registry.call("json.marshal", [value]).to_ruby).to eq('{"a":[2,3],"b":1,"c":true}')
+    end
+
+    it "marshals scalars and arrays" do
+      expect(registry.call("json.marshal", [[1, "x", nil]]).to_ruby).to eq('[1,"x",null]')
+    end
+
+    it "marshals a set as a sorted array (matching OPA)" do
+      expect(registry.call("json.marshal", [Set.new([3, 1, 2])]).to_ruby).to eq("[1,2,3]")
+      expect(registry.call("json.marshal", [{ "s" => Set.new([3, 1, 2]) }]).to_ruby).to eq('{"s":[1,2,3]}')
+    end
+  end
+
+  describe "json.unmarshal" do
+    it "parses JSON into a value" do
+      expect(registry.call("json.unmarshal", ['{"x":[1,2]}']).to_ruby).to eq("x" => [1, 2])
+    end
+
+    it "is undefined for invalid JSON" do
+      expect(registry.call("json.unmarshal", ["{bad}"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
+  describe "json.is_valid" do
+    it "reports validity" do
+      expect(registry.call("json.is_valid", ['{"x":1}']).to_ruby).to be(true)
+      expect(registry.call("json.is_valid", ["{bad}"]).to_ruby).to be(false)
+    end
+  end
+
+  describe "base64.encode / base64.decode" do
+    it "round-trips standard base64 with padding" do
+      expect(registry.call("base64.encode", ["hello"]).to_ruby).to eq("aGVsbG8=")
+      expect(registry.call("base64.decode", ["aGVsbG8="]).to_ruby).to eq("hello")
+    end
+
+    it "is undefined when decoding unpadded standard base64 (matching OPA)" do
+      expect(registry.call("base64.decode", ["aGVsbG8"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
+  describe "base64url.encode / base64url.decode" do
+    it "uses the URL-safe alphabet with padding" do
+      expect(registry.call("base64url.encode", ["hi>?>"]).to_ruby).to eq("aGk-Pz4=")
+      expect(registry.call("base64url.decode", ["aGk-Pz4="]).to_ruby).to eq("hi>?>")
+    end
+
+    it "decodes unpadded URL-safe input (matching OPA's lenient decode)" do
+      expect(registry.call("base64url.decode", ["aGk-Pz4"]).to_ruby).to eq("hi>?>")
+    end
+  end
+
+  describe "hex.encode / hex.decode" do
+    it "round-trips lowercase hex" do
+      expect(registry.call("hex.encode", ["hi"]).to_ruby).to eq("6869")
+      expect(registry.call("hex.decode", ["6869"]).to_ruby).to eq("hi")
+    end
+
+    it "is undefined for non-hex or odd-length input" do
+      expect(registry.call("hex.decode", ["zz"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("hex.decode", ["686"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
+  describe "urlquery.encode / urlquery.decode" do
+    it "percent-encodes like Go's url.QueryEscape (space to +)" do
+      expect(registry.call("urlquery.encode", ["a b&c=d"]).to_ruby).to eq("a+b%26c%3Dd")
+    end
+
+    it "decodes query encoding" do
+      expect(registry.call("urlquery.decode", ["a+b%26c"]).to_ruby).to eq("a b&c")
+    end
+  end
+
+  it "is undefined for non-string arguments" do
+    expect(registry.call("base64.encode", [123])).to be_a(Ruby::Rego::UndefinedValue)
+    expect(registry.call("hex.encode", [[]])).to be_a(Ruby::Rego::UndefinedValue)
+  end
+end
+
+# rubocop:enable Metrics/BlockLength

@@ -52,16 +52,18 @@ annotations — these ripple structurally and are not "just more functions").
 
 ## Built-in function backlog
 
-~55 of OPA's ~210 builtins are implemented (types, aggregates, numbers, regex,
-strings, collections, comparisons). The registry pattern makes additions
-mechanical; this is volume, not difficulty. Highest compatibility-per-effort first:
+~66 of OPA's ~210 builtins are implemented (types, aggregates, numbers, regex,
+encoding, strings, collections, comparisons). The registry pattern makes
+additions mechanical; this is volume, not difficulty. Highest compat-per-effort first:
 
 - 🟡 Numeric: ✅ `abs`, `round`, `ceil`, `floor`, `numbers.range`; ⬜ `rand.intn`
   (stateful/seeded — deferred), ⬜ `numbers.range_step`.
 - 🟡 Regex: ✅ `regex.match`, `regex.is_valid`, `regex.split`, `regex.find_n`;
   ⬜ `regex.replace` (needs Go `$1` → Ruby template translation),
   ⬜ `regex.find_all_string_submatch_n`, `regex.template_match`, `regex.globs_match`.
-- ⬜ Encoding: `json.marshal`/`json.unmarshal`, `yaml.*`, `base64*`, `hex`, `urlquery`.
+- 🟡 Encoding: ✅ `json.marshal`/`json.unmarshal`/`json.is_valid`, `base64`/`base64url`
+  encode/decode, `hex` encode/decode, `urlquery` encode/decode; ⬜ `yaml.*`,
+  ⬜ `urlquery.encode_object`/`decode_object`, ⬜ `base64url.encode_no_pad`.
 - ⬜ Object: `object.union`, `object.union_n`, `object.filter`, `json.patch`,
   `json.filter`, `json.remove`.
 - ⬜ Strings: `replace`, `trim_prefix`, `trim_suffix`, substring `count`,
