@@ -4,6 +4,7 @@ require_relative "../base"
 require_relative "../../errors"
 require_relative "../../value"
 
+# rubocop:disable Metrics/ModuleLength
 module Ruby
   module Rego
     module Builtins
@@ -38,6 +39,41 @@ module Ruby
             ObjectValue.new(filtered)
           end
 
+          # Deep-merges two objects with the second operand winning conflicts
+          # (OPA's object.union). Nested objects merge recursively; any other
+          # conflict or type mismatch takes the second operand's value.
+          #
+          # @param left [Ruby::Rego::Value]
+          # @param right [Ruby::Rego::Value]
+          # @return [Ruby::Rego::ObjectValue]
+          def self.object_union(left, right)
+            merged = deep_union(
+              object_value(left, name: "object.union").value,
+              object_value(right, name: "object.union").value
+            )
+            ObjectValue.new(merged)
+          end
+
+          # @param array [Ruby::Rego::Value]
+          # @return [Ruby::Rego::ObjectValue]
+          def self.object_union_n(array)
+            Base.assert_type(array, expected: ArrayValue, context: "object.union_n")
+            seed = {} # @type var seed: Hash[untyped, Value]
+            merged = array.value.reduce(seed) do |acc, element|
+              deep_union(acc, object_value(element, name: "object.union_n element").value)
+            end
+            ObjectValue.new(merged)
+          end
+
+          # @param object [Ruby::Rego::Value]
+          # @param keys [Ruby::Rego::Value]
+          # @return [Ruby::Rego::ObjectValue]
+          def self.object_filter(object, keys)
+            obj = object_value(object, name: "object.filter object")
+            keep = key_collection(keys, name: "object.filter keys")
+            ObjectValue.new(obj.value.select { |key, _value| keep.include?(normalize_object_key(key)) })
+          end
+
           # @param left [Ruby::Rego::Value]
           # @param right [Ruby::Rego::Value]
           # @return [Ruby::Rego::ObjectValue]
@@ -68,11 +104,35 @@ module Ruby
           def self.key_values(keys, name:)
             return array_key_values(keys) if keys.is_a?(ArrayValue)
             return values_from_set(keys) if keys.is_a?(SetValue)
+            return keys.value.keys if keys.is_a?(ObjectValue)
 
-            Base.assert_type(keys, expected: [ArrayValue, SetValue], context: name)
+            Base.assert_type(keys, expected: [ArrayValue, SetValue, ObjectValue], context: name)
             []
           end
           private_class_method :key_values
+
+          # Deep-merges two key->Value hashes; the right hash wins, recursing only
+          # when both sides hold objects (mirrors OPA's object.union).
+          #
+          # @param left [Hash{String => Ruby::Rego::Value}]
+          # @param right [Hash{String => Ruby::Rego::Value}]
+          # @return [Hash{String => Ruby::Rego::Value}]
+          def self.deep_union(left, right)
+            right.each_with_object(left.dup) do |(key, right_value), merged|
+              merged[key] = merge_value(merged[key], right_value)
+            end
+          end
+          private_class_method :deep_union
+
+          # @param left_value [Ruby::Rego::Value, nil]
+          # @param right_value [Ruby::Rego::Value]
+          # @return [Ruby::Rego::Value]
+          def self.merge_value(left_value, right_value)
+            return right_value unless left_value.is_a?(ObjectValue) && right_value.is_a?(ObjectValue)
+
+            ObjectValue.new(deep_union(left_value.value, right_value.value))
+          end
+          private_class_method :merge_value
 
           def self.array_key_values(keys)
             keys.value
@@ -118,3 +178,4 @@ module Ruby
     end
   end
 end
+# rubocop:enable Metrics/ModuleLength

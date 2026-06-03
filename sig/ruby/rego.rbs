@@ -454,6 +454,9 @@ module Ruby
         def self.object_get: (Value object, Value key, Value default) -> Value
         def self.object_keys: (Value object) -> SetValue
         def self.object_remove: (Value object, Value keys) -> ObjectValue
+        def self.object_union: (Value left, Value right) -> ObjectValue
+        def self.object_union_n: (Value array) -> ObjectValue
+        def self.object_filter: (Value object, Value keys) -> ObjectValue
         def self.union: (Value left, Value right) -> Value
         def self.intersection: (Value left, Value right) -> SetValue
         def self.set_diff: (Value left, Value right) -> SetValue
@@ -486,6 +489,9 @@ module Ruby
         def self.object_get: (Value object, Value key, Value default) -> Value
         def self.object_keys: (Value object) -> SetValue
         def self.object_remove: (Value object, Value keys) -> ObjectValue
+        def self.object_union: (Value left, Value right) -> ObjectValue
+        def self.object_union_n: (Value array) -> ObjectValue
+        def self.object_filter: (Value object, Value keys) -> ObjectValue
         def self.union_objects: (Value left, Value right) -> ObjectValue
 
         private
@@ -493,7 +499,9 @@ module Ruby
         def self.object_value: (Value value, name: String) -> ObjectValue
         def self.normalize_object_key: (untyped key) -> untyped
         def self.key_collection: (Value keys, name: String) -> Set[untyped]
-        def self.key_values: (Value keys, name: String) -> Array[Value]
+        def self.deep_union: (Hash[untyped, Value] left, Hash[untyped, Value] right) -> Hash[untyped, Value]
+        def self.merge_value: (Value? left_value, Value right_value) -> Value
+        def self.key_values: (Value keys, name: String) -> Array[untyped]
         def self.array_key_values: (ArrayValue keys) -> Array[Value]
         def self.values_from_set: (SetValue keys) -> Array[Value]
         def self.merge_objects: (Hash[untyped, Value] left_obj, Hash[untyped, Value] right_obj) -> Hash[untyped, Value]
