@@ -25,6 +25,8 @@ detectors:
       - Ruby::Rego::Evaluator::ReferenceResolver
   TooManyStatements:
     exclude:
+      # Faithful port of Go's regexp.Split algorithm (keep-trailing / zero-width rules).
+      - Ruby::Rego::Builtins::Regex#self.split_segments
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
       - Ruby::Rego::CompiledPolicySet
