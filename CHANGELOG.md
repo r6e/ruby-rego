@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- String built-ins: `strings.replace_n` (a faithful port of Go's `strings.Replacer`:
+  keys applied in ascending sort order, single pass, replaced text not rescanned,
+  earliest-sorted key wins on overlap), and `strings.any_prefix_match` /
+  `strings.any_suffix_match` (each argument may be a string, array, or set of strings),
+  all matching OPA.
 - Crypto built-ins: `crypto.md5`, `crypto.sha1`, and `crypto.sha256` (hex digests of
   the input string's bytes; values from JSON/Rego input are UTF-8, matching OPA). Adds
   `digest` as a runtime dependency.

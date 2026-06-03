@@ -92,10 +92,9 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
 - 🟡 Object: ✅ `object.union`, `object.union_n`, `object.filter` (plus object-keys
   support for `object.filter`/`object.remove`); ⬜ `json.patch`, `json.filter`,
   `json.remove` (JSON path / RFC 6902 operations).
-- 🟡 Strings: ✅ `replace`, `trim_prefix`, `trim_suffix`, `strings.count`,
-  `strings.reverse`, `indexof_n`; ⬜ `strings.replace_n`, `strings.any_prefix_match`/
-  `any_suffix_match`, regex-backed `regex.split` already shipped, `strings.substring`
-  already shipped.
+- ✅ Strings: `replace`, `trim_prefix`, `trim_suffix`, `strings.count`,
+  `strings.reverse`, `indexof_n`, `strings.replace_n`, `strings.any_prefix_match`,
+  `strings.any_suffix_match`, regex-backed `regex.split`, and `strings.substring`.
 - ⬜ Glob: `glob.match`, `glob.quote_meta`.
 - ⬜ Time: `time.now_ns`, `time.parse_rfc3339_ns`, `time.date`, `time.add_date`, etc.
 - 🟡 Crypto: ✅ `crypto.md5`, `crypto.sha1`, `crypto.sha256`; ⬜ `crypto.hmac.*`,

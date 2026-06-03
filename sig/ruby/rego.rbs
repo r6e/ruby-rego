@@ -437,6 +437,9 @@ module Ruby
         def self.strings_reverse: (Value string) -> StringValue
         def self.strings_count: (Value string, Value search) -> NumberValue
         def self.indexof_n: (Value string, Value search) -> ArrayValue
+        def self.replace_n: (Value patterns, Value value) -> StringValue
+        def self.any_prefix_match: (Value search, Value base) -> BooleanValue
+        def self.any_suffix_match: (Value search, Value base) -> BooleanValue
 
         private
 
@@ -446,6 +449,12 @@ module Ruby
         def self.string_value: (Value value, context: String) -> String
         def self.array_values: (Value value, name: String) -> Array[Value]
         def self.string_array: (Value value, name: String) -> Array[String]
+        def self.string_collection: (Value value, name: String) -> Array[String]
+        def self.string_set: (Value value, name: String) -> Array[String]
+        def self.string_hash: (Value value, name: String) -> Hash[String, String]
+        def self.assert_string_key: (untyped key, name: String) -> void
+        def self.apply_replace_n: (String text, Hash[String, String] mapping) -> String
+        def self.any_pair_match?: (Array[String] searches, Array[String] bases) { (String, String) -> boolish } -> bool
         def self.ensure_base: (Integer base_value) -> void
         def self.trim_with_cutset: (Value string, Value cutset, Hash[Symbol, untyped] context) -> StringValue
         def self.base_encode: (Integer number_value, Integer base_value) -> String
