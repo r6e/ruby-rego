@@ -47,8 +47,13 @@ RSpec.describe "regex builtins" do
       expect(registry.call("regex.split", ["[,;]", "a,b;c"]).to_ruby).to eq(%w[a b c])
     end
 
-    it "handles a zero-width pattern like OPA (no trailing empty)" do
+    it "handles an all-zero-width pattern like OPA (no non-empty match precedes an empty one)" do
       expect(registry.call("regex.split", ["x*", "abc"]).to_ruby).to eq(%w[a b c])
+    end
+
+    it "drops an empty segment from an empty match abutting a non-empty match (matching OPA)" do
+      expect(registry.call("regex.split", ["a*", "baab"]).to_ruby).to eq(%w[b b])
+      expect(registry.call("regex.split", ["a*", "xaay"]).to_ruby).to eq(%w[x y])
     end
 
     it "returns a single empty string for empty input (matching OPA)" do
@@ -81,8 +86,23 @@ RSpec.describe "regex builtins" do
       expect(registry.call("regex.find_n", ["a(b)c", "abc abc", -1]).to_ruby).to eq(%w[abc abc])
     end
 
+    it "skips an empty match abutting a preceding non-empty match (matching OPA)" do
+      expect(registry.call("regex.find_n", ["a*", "xaay", -1]).to_ruby).to eq(["", "aa", ""])
+      expect(registry.call("regex.find_n", ["a*", "baa", -1]).to_ruby).to eq(["", "aa"])
+    end
+
     it "is undefined for an invalid pattern" do
       expect(registry.call("regex.find_n", ["a(b", "x", -1])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
+  describe "ReDoS guard" do
+    # Ruby 3.x's engine resists the classic catastrophic patterns, so the timeout is
+    # defense-in-depth. This verifies the guard converts a match timeout into an
+    # undefined result (rather than aborting evaluation) deterministically.
+    it "yields undefined when a match times out" do
+      allow_any_instance_of(Regexp).to receive(:match?).and_raise(Regexp::TimeoutError)
+      expect(registry.call("regex.match", %w[a aaaa])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 end

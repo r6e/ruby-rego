@@ -8,7 +8,9 @@ All notable changes to this project will be documented in this file.
   `regex.find_n`. `regex.split` matches Go's trailing/zero-width/empty-input
   semantics; invalid patterns yield an undefined result. Patterns compile with
   Ruby's regex engine (Onigmo) rather than Go's RE2, so RE2-incompatible
-  constructs (lookahead, backreferences) are treated as valid.
+  constructs (lookahead, backreferences) are treated as valid. A per-match
+  timeout (RUBY_REGO_REGEX_TIMEOUT, default 1s) yields an undefined result
+  instead of hanging on pathological backtracking.
 - Numeric built-ins: `abs`, `round`, `ceil`, `floor`, and `numbers.range`,
   matching OPA semantics (round half away from zero; `numbers.range` accepts
   integer-valued bounds and is undefined for a non-integer bound). Non-finite

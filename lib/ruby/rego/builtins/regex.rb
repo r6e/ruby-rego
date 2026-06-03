@@ -5,7 +5,7 @@ require_relative "registry"
 require_relative "registry_helpers"
 require_relative "numeric_helpers"
 
-# rubocop:disable Naming/PredicatePrefix
+# rubocop:disable Naming/PredicatePrefix, Metrics/ModuleLength
 module Ruby
   module Rego
     module Builtins
@@ -24,6 +24,12 @@ module Ruby
           "regex.find_n" => { arity: 3, handler: :find_n }
         }.freeze
 
+        # Per-match wall-clock budget. OPA's RE2 engine is linear-time and immune to
+        # catastrophic backtracking; Ruby's Onigmo engine is not, so a hostile pattern
+        # or input could otherwise hang the evaluator. Exceeding the budget yields an
+        # undefined result. Override with RUBY_REGO_REGEX_TIMEOUT (seconds).
+        REGEX_TIMEOUT_SECONDS = ENV.fetch("RUBY_REGO_REGEX_TIMEOUT", "1.0").to_f
+
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
         def self.register!
           registry = BuiltinRegistry.instance
@@ -38,7 +44,8 @@ module Ruby
         # @return [Ruby::Rego::BooleanValue]
         def self.match(pattern_value, string_value)
           regexp = compile(pattern_value, "regex.match")
-          BooleanValue.new(regexp.match?(string_arg(string_value, "regex.match")))
+          string = string_arg(string_value, "regex.match")
+          guarded("regex.match") { BooleanValue.new(regexp.match?(string)) }
         end
 
         # @param pattern_value [Ruby::Rego::Value]
@@ -59,7 +66,8 @@ module Ruby
         # @return [Ruby::Rego::ArrayValue]
         def self.split(pattern_value, string_value)
           regexp = compile(pattern_value, "regex.split")
-          string_array(split_segments(regexp, string_arg(string_value, "regex.split")))
+          string = string_arg(string_value, "regex.split")
+          guarded("regex.split") { string_array(split_segments(regexp, string)) }
         end
 
         # @param pattern_value [Ruby::Rego::Value]
@@ -67,11 +75,23 @@ module Ruby
         # @param number_value [Ruby::Rego::Value]
         # @return [Ruby::Rego::ArrayValue]
         def self.find_n(pattern_value, string_value, number_value)
-          regexp = compile(pattern_value, "regex.find_n")
-          matches = full_matches(regexp, string_arg(string_value, "regex.find_n"))
+          matches = matches_for(pattern_value, string_value, "regex.find_n")
           limit = NumericHelpers.integer_value(number_value, context: "regex.find_n")
           string_array(limit.negative? ? matches : matches.first(limit))
         end
+
+        # Compiles, validates, and runs an all-matches scan under the timeout guard.
+        #
+        # @param pattern_value [Ruby::Rego::Value]
+        # @param string_value [Ruby::Rego::Value]
+        # @param context [String]
+        # @return [Array<String>]
+        def self.matches_for(pattern_value, string_value, context)
+          regexp = compile(pattern_value, context)
+          string = string_arg(string_value, context)
+          guarded(context) { full_matches(regexp, string) }
+        end
+        private_class_method :matches_for
 
         # @param value [Ruby::Rego::Value]
         # @param context [String]
@@ -94,7 +114,7 @@ module Ruby
         # @return [Regexp]
         def self.compile(pattern_value, context)
           pattern = string_arg(pattern_value, context)
-          Regexp.new(pattern)
+          Regexp.new(pattern, timeout: REGEX_TIMEOUT_SECONDS)
         rescue RegexpError => e
           raise Ruby::Rego::BuiltinArgumentError.new(
             "Invalid regular expression: #{e.message}",
@@ -106,6 +126,24 @@ module Ruby
         end
         private_class_method :compile
 
+        # Converts a match-timeout (catastrophic backtracking) into an undefined
+        # result instead of hanging the evaluator.
+        #
+        # @param context [String]
+        # @return [Ruby::Rego::Value]
+        def self.guarded(context)
+          yield
+        rescue Regexp::TimeoutError
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Regex evaluation timed out",
+            expected: "completion within #{REGEX_TIMEOUT_SECONDS}s",
+            actual: "timeout",
+            context: context,
+            location: nil
+          )
+        end
+        private_class_method :guarded
+
         # Yields each successive MatchData, advancing past zero-width matches so the
         # iteration terminates (mirrors String#scan's match positions).
         #
@@ -116,8 +154,12 @@ module Ruby
         def self.each_match(regexp, string)
           position = 0
           length = string.length
+          previous_end = -1
           while position <= length && (found = regexp.match(string, position))
-            yield found
+            start = found.begin(0) || 0
+            finish = found.end(0) || 0
+            yield found unless finish == start && start == previous_end
+            previous_end = finish
             position = advance(found)
           end
         end
@@ -171,6 +213,6 @@ module Ruby
     end
   end
 end
-# rubocop:enable Naming/PredicatePrefix
+# rubocop:enable Naming/PredicatePrefix, Metrics/ModuleLength
 
 Ruby::Rego::Builtins::Regex.register!
