@@ -116,11 +116,12 @@ module Ruby
           private_class_method :key_values
 
           # Deep-merges two key->Value hashes; the right hash wins, recursing only
-          # when both sides hold objects (mirrors OPA's object.union).
+          # when both sides hold objects (mirrors OPA's object.union). Object keys
+          # are arbitrary scalars (Rego allows non-string keys), not only strings.
           #
-          # @param left [Hash{String => Ruby::Rego::Value}]
-          # @param right [Hash{String => Ruby::Rego::Value}]
-          # @return [Hash{String => Ruby::Rego::Value}]
+          # @param left [Hash{Object => Ruby::Rego::Value}]
+          # @param right [Hash{Object => Ruby::Rego::Value}]
+          # @return [Hash{Object => Ruby::Rego::Value}]
           def self.deep_union(left, right)
             right.each_with_object(left.dup) do |(key, right_value), merged|
               merged[key] = merge_value(merged[key], right_value)
