@@ -53,6 +53,7 @@ module Ruby
         private_class_method :string_collection
 
         def self.string_set(value, name:)
+          Base.assert_type(value, expected: SetValue, context: name)
           string_elements(value.value, name: name)
         end
         private_class_method :string_set
