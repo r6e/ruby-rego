@@ -344,6 +344,42 @@ module Ruby
         def self.string_value: (Value value, String context) -> String
       end
 
+      module Semver
+        extend RegistryHelpers
+
+        SEMVER_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        MAX_COMPONENT: Integer
+        IDENTIFIERS: Regexp
+        NUMERIC: Regexp
+
+        class Version
+          attr_accessor major: Integer
+          attr_accessor minor: Integer
+          attr_accessor patch: Integer
+          attr_accessor prerelease: Array[String]
+          def initialize: (Integer major, Integer minor, Integer patch, Array[String] prerelease) -> void
+          def []: (Symbol field) -> Integer
+        end
+
+        def self.register!: () -> BuiltinRegistry
+        def self.is_valid: (Value value) -> BooleanValue
+        def self.compare: (Value a_value, Value b_value) -> NumberValue
+
+        private
+
+        def self.version_arg: (Value value, String context) -> Version
+        def self.parse: (String string) -> Version?
+        def self.build_version: (String core, String prerelease) -> Version?
+        def self.valid_identifiers?: (String string) -> bool
+        def self.component: (String string) -> Integer?
+        def self.compare_versions: (Version first, Version second) -> Integer
+        def self.compare_prerelease: (Array[String] first, Array[String] second) -> Integer
+        def self.compare_identifier: (String first, String second) -> Integer
+        def self.numeric_identifier: (String identifier) -> Integer?
+        def self.raise_invalid_version: (String context) -> bot
+        def self.string_value: (Value value, String context) -> String
+      end
+
       module Aggregates
         AGGREGATE_FUNCTIONS: Hash[String, Symbol]
 
