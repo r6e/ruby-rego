@@ -20,6 +20,11 @@ module Ruby
       # subject they match per line here but only at the string ends in OPA), and the
       # `\b`/`\w`/`\d`/`\s` classes are Unicode-aware in Onigmo but ASCII-only in RE2
       # (so they match non-ASCII word characters here but not in OPA).
+      #
+      # Argument-type contract follows OPA: match/split/find_n/replace are partial — a
+      # non-string (or invalid-encoding) argument yields undefined — whereas is_valid is
+      # total over runtime values, returning false for a non-string, invalid-encoding, or
+      # over-length argument and true/false for a valid/invalid pattern string.
       module Regex
         extend RegistryHelpers
 
