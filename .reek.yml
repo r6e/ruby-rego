@@ -18,6 +18,9 @@ detectors:
     exclude:
       - Ruby::Rego::Lexer
       - Ruby::Rego::Evaluator::OperatorEvaluator
+      # Regex carries several independent anti-DoS bound constants (timeout, source
+      # length, output/work caps) plus character classes — each a distinct guard.
+      - Ruby::Rego::Builtins::Regex
   TooManyInstanceVariables:
     exclude:
       - Ruby::Rego::Lexer
@@ -29,6 +32,9 @@ detectors:
       # keep-trailing / zero-width rules).
       - Ruby::Rego::Builtins::Regex#self.each_match
       - Ruby::Rego::Builtins::Regex#self.split_segments
+      - Ruby::Rego::Builtins::Regex#self.replace
+      # Char-scanning port of Go's regexp.Expand replacement-template parser.
+      - Ruby::Rego::Builtins::Regex::GoTemplate
       # Recursive JSON normalization and OPA set-ordering: type-dispatch case folds.
       - Ruby::Rego::Builtins::Codecs#self.jsonify
       - Ruby::Rego::Builtins::Codecs#self.json_sort_key
@@ -54,6 +60,8 @@ detectors:
       - Ruby::Rego::WithModifiers::WithModifierBuiltinOverride
       # Character-scanning glob->regex compiler; repeated index arithmetic is inherent.
       - Ruby::Rego::Builtins::Glob::GlobCompiler
+      # Char-scanning port of Go's regexp.Expand replacement-template parser.
+      - Ruby::Rego::Builtins::Regex::GoTemplate
   UtilityFunction:
     exclude:
       - Ruby::Rego::Lexer
@@ -62,6 +70,8 @@ detectors:
       - Ruby::Rego::Unifier
       # Module-merge helpers (parse_source, merge_imports) are pure AST transforms.
       - Ruby::Rego::Compiler
+      # Pure helpers of the Go Expand template parser (extract/reference/named_submatch).
+      - Ruby::Rego::Builtins::Regex::GoTemplate
   FeatureEnvy:
     exclude:
       - Ruby::Rego::Lexer
@@ -73,17 +83,22 @@ detectors:
       - Ruby::Rego::Compiler
       # Package-key indexing builds a local accumulator over the module list.
       - Ruby::Rego::CompiledPolicySet
+      # The Go Expand template parser scans into local literal/segment accumulators.
+      - Ruby::Rego::Builtins::Regex::GoTemplate
   ControlParameter:
     exclude:
       - Ruby::Rego::Lexer
       - Ruby::Rego::Evaluator::RuleEvaluator
       - Ruby::Rego::Unifier
       - Ruby::Rego::WithModifiers::WithModifierBuiltinOverride
+      # resolve dispatches on the segment kind produced by the template parser.
+      - Ruby::Rego::Builtins::Regex::GoTemplate
   NilCheck:
     exclude:
       - Ruby::Rego::Lexer
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Unifier
+      - Ruby::Rego::Builtins::Regex::GoTemplate
   RepeatedConditional:
     exclude:
       - Ruby::Rego::Lexer

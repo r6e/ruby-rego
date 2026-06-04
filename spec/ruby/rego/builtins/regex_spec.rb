@@ -22,6 +22,19 @@ RSpec.describe "regex builtins" do
     it "is undefined for a non-string argument" do
       expect(registry.call("regex.match", [1, "x"])).to be_a(Ruby::Rego::UndefinedValue)
     end
+
+    it "accepts Go's (?P<name>) named-group syntax" do
+      expect(registry.call("regex.match", ['(?P<n>\d+)', "id-42"]).to_ruby).to be(true)
+    end
+
+    it "is undefined for an over-length pattern (shared anti-DoS cap)" do
+      # The source-length cap lives in translate_named_groups, so it applies to every
+      # built-in that compiles a pattern, not just regex.replace.
+      big = "a" * 2_000_000
+      expect(registry.call("regex.match", [big, "x"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("regex.split", [big, "x"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("regex.find_n", [big, "x", 1])).to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 
   describe "regex.is_valid" do
@@ -34,6 +47,26 @@ RSpec.describe "regex builtins" do
     # lookahead is considered valid here whereas OPA (RE2) reports false.
     it "considers Ruby-valid lookahead patterns valid (documented RE2 divergence)" do
       expect(registry.call("regex.is_valid", ["(?=foo)"]).to_ruby).to be(true)
+    end
+
+    it "rejects a Unicode-named group, matching OPA/RE2" do
+      expect(registry.call("regex.is_valid", ["(?P<cafe>x)"]).to_ruby).to be(true)
+      expect(registry.call("regex.is_valid", ["(?P<café>x)"]).to_ruby).to be(false)
+    end
+
+    it "returns false (not undefined) for an over-length pattern (anti-DoS cap)" do
+      # OPA, with no length cap, reports a large-but-valid pattern valid; the gem rejects
+      # it as false rather than processing it, keeping is_valid total over strings.
+      expect(registry.call("regex.is_valid", ["a" * 2_000_000]).to_ruby).to be(false)
+    end
+
+    it "returns false (not undefined) for a non-string argument, matching OPA at runtime" do
+      # OPA's regex.is_valid is total over runtime values: a non-string yields false
+      # (verified via input-driven opa eval), unlike regex.match/split/find_n which are
+      # undefined on a non-string. A literal non-string is a separate compile-time error.
+      [123, true, [1, 2], { "k" => 1 }, nil].each do |arg|
+        expect(registry.call("regex.is_valid", [arg]).to_ruby).to be(false)
+      end
     end
   end
 

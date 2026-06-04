@@ -9,11 +9,22 @@ require_relative "numeric_helpers"
 module Ruby
   module Rego
     module Builtins
-      # Built-in regex helpers (regex.match, regex.is_valid, regex.split, regex.find_n).
+      # Built-in regex helpers (regex.match, regex.is_valid, regex.split, regex.find_n,
+      # regex.replace).
       #
       # Patterns are compiled with Ruby's regex engine (Onigmo), not Go's RE2.
       # Common patterns behave identically to OPA; constructs that Ruby accepts but
-      # RE2 rejects (lookahead, backreferences) are treated as valid here.
+      # RE2 rejects (lookahead, backreferences) are treated as valid here. Two engine
+      # differences are silent divergences shared by every regex built-in: the `^`/`$`
+      # anchors are line anchors in Onigmo but text anchors in RE2 (so on a multi-line
+      # subject they match per line here but only at the string ends in OPA), and the
+      # `\b`/`\w`/`\d`/`\s` classes are Unicode-aware in Onigmo but ASCII-only in RE2
+      # (so they match non-ASCII word characters here but not in OPA).
+      #
+      # Argument-type contract follows OPA: match/split/find_n/replace are partial — a
+      # non-string (or invalid-encoding) argument yields undefined — whereas is_valid is
+      # total over runtime values, returning false for a non-string, invalid-encoding, or
+      # over-length argument and true/false for a valid/invalid pattern string.
       module Regex
         extend RegistryHelpers
 
@@ -21,14 +32,48 @@ module Ruby
           "regex.match" => { arity: 2, handler: :match },
           "regex.is_valid" => { arity: 1, handler: :is_valid },
           "regex.split" => { arity: 2, handler: :split },
-          "regex.find_n" => { arity: 3, handler: :find_n }
+          "regex.find_n" => { arity: 3, handler: :find_n },
+          "regex.replace" => { arity: 3, handler: :replace }
         }.freeze
 
-        # Per-match wall-clock budget. OPA's RE2 engine is linear-time and immune to
-        # catastrophic backtracking; Ruby's Onigmo engine is not, so a hostile pattern
-        # or input could otherwise hang the evaluator. Exceeding the budget yields an
-        # undefined result. Override with RUBY_REGO_REGEX_TIMEOUT (seconds).
+        # Wall-clock budget for one regex builtin operation. OPA's RE2 engine is linear-time
+        # and immune to catastrophic backtracking; Ruby's Onigmo engine is not, so a hostile
+        # pattern or input could otherwise hang the evaluator. Applied two ways: as the
+        # per-match engine timeout (`Regexp.new(timeout:)`, interrupts a single catastrophic
+        # search) and as an aggregate deadline across the match loop (a cheap-per-match
+        # pattern over a long subject is O(matches) engine scans, which the per-match timeout
+        # — reset each search — does not bound). Either path yields undefined. Override with
+        # RUBY_REGO_REGEX_TIMEOUT (seconds).
         REGEX_TIMEOUT_SECONDS = ENV.fetch("RUBY_REGO_REGEX_TIMEOUT", "1.0").to_f
+
+        # Upper bound on `regex.replace` output. The per-match engine timeout does not
+        # cover template expansion in the gsub block, so many cheap matches with a large
+        # replacement template could otherwise expand output super-linearly (matches x
+        # template length). Exceeding this yields undefined — a deliberate anti-DoS
+        # divergence from OPA, in the same spirit as the regex timeout above.
+        MAX_REPLACE_OUTPUT = 32_000_000
+
+        # Upper bound on total template-segment expansions (matches x template segments).
+        # Output size alone is insufficient: references that resolve to empty (an
+        # out-of-range `$9` or unknown `${name}`) do CPU work per segment while emitting
+        # nothing, so a large template over many matches would otherwise run unbounded
+        # under the output cap. Exceeding this yields undefined.
+        MAX_REPLACE_WORK = 32_000_000
+
+        # Maximum byte length of a pattern or replacement template. Both are split into a
+        # character array (`String#chars`) up front — an uninterruptible O(n) C call that no
+        # cooperative deadline can bound (the same category as compile cost) — before the
+        # per-element processing runs. An oversized source is rejected here by an O(1)
+        # bytesize check rather than materialized; the resulting char array then bounds the
+        # downstream scan/parse/expand loops, which are all O(source). ~1000x any real
+        # pattern or template; exceeding it yields undefined.
+        MAX_REGEX_SOURCE = 1_000_000
+
+        # A single RE2 group-name character (`[A-Za-z0-9_]`). Used to scan a `(?P<name>` /
+        # `(?<name>` header forward one identifier char at a time, which bounds the scan to
+        # the name's length and stops at the first non-identifier — keeping pattern
+        # preprocessing linear even for adversarial input like `(?P<` repeated with no `>`.
+        GROUP_NAME_CHAR = /[A-Za-z0-9_]/
 
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
         def self.register!
@@ -51,11 +96,29 @@ module Ruby
         # @param pattern_value [Ruby::Rego::Value]
         # @return [Ruby::Rego::BooleanValue]
         def self.is_valid(pattern_value)
-          Regexp.new(string_arg(pattern_value, "regex.is_valid"))
-          BooleanValue.new(true)
-        rescue RegexpError
-          BooleanValue.new(false)
+          # OPA's regex.is_valid is total over runtime values: a non-string argument is
+          # `false`, not undefined (unlike the other regex built-ins, which type-error to
+          # undefined). An over-length pattern is also rejected as not-valid rather than
+          # processed (anti-DoS cap; OPA, having no cap, reports a large valid pattern true).
+          return BooleanValue.new(false) unless pattern_value.is_a?(StringValue)
+
+          pattern = pattern_value.value
+          valid = pattern.valid_encoding? && !source_too_long?(pattern) && compilable?(pattern)
+          BooleanValue.new(valid)
         end
+
+        # True when the (translated) pattern compiles. Within-cap only — the caller guards
+        # length first, so translate_named_groups cannot raise here.
+        #
+        # @param pattern [String]
+        # @return [Boolean]
+        def self.compilable?(pattern)
+          Regexp.new(translate_named_groups(pattern, "regex.is_valid").first)
+          true
+        rescue RegexpError
+          false
+        end
+        private_class_method :compilable?
 
         # Splits a string on a pattern, matching Go's regexp.Split (n = -1):
         # leading/trailing empty segments are kept, a zero-width match does not
@@ -80,6 +143,81 @@ module Ruby
           string_array(limit.negative? ? matches : matches.first(limit))
         end
 
+        # Replaces every match of `pattern` in `string` with `replacement`, expanding
+        # Go's Expand template syntax in the replacement (`$1`/`${name}`/`$$`), matching
+        # OPA's `regex.replace`. A backslash is a literal; only `$` is special.
+        #
+        # @param string_value [Ruby::Rego::Value]
+        # @param pattern_value [Ruby::Rego::Value]
+        # @param replacement_value [Ruby::Rego::Value]
+        # @return [Ruby::Rego::StringValue]
+        def self.replace(string_value, pattern_value, replacement_value)
+          regexp, names = compile_pattern(string_arg(pattern_value, "regex.replace"), "regex.replace")
+          string = string_arg(string_value, "regex.replace")
+          replacement = string_arg(replacement_value, "regex.replace")
+          assert_source_length(replacement, "regex.replace")
+          template = GoTemplate.new(replacement, names)
+          guarded("regex.replace") { StringValue.new(expand_all(string, regexp, template)) }
+        end
+
+        # Replaces every match with its expanded template via gsub (a single linear scan),
+        # but applies Go/RE2's match rule: a zero-width match immediately after a non-empty
+        # one is skipped (Ruby's gsub would otherwise emit it). Two budgets are threaded
+        # through the loop: `remaining` bounds total output characters, and `work` bounds
+        # total template-segment expansions (matches x segments) so references that resolve
+        # to empty — doing CPU work while emitting nothing — cannot run unbounded under the
+        # output cap alone.
+        # :reek:TooManyStatements
+        # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+        def self.expand_all(string, regexp, template)
+          remaining = MAX_REPLACE_OUTPUT
+          work = MAX_REPLACE_WORK
+          deadline = match_deadline
+          previous_end = -1
+          string.gsub(regexp) do |matched|
+            # Regexp.last_match is always set inside a gsub block that fired; the guard
+            # only narrows the MatchData? type for the type checker.
+            match = Regexp.last_match
+            next "" if skip_zero_width?(match, previous_end)
+
+            check_deadline(deadline)
+            work -= template.segment_count
+            raise_replace_work_exceeded if work.negative?
+            expansion = match ? template.expand(match, remaining) : matched
+            remaining -= expansion.length
+            previous_end = match.byteoffset(0).last if match
+            expansion
+          end
+        end
+        # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+        private_class_method :expand_all
+
+        # The work-budget counterpart to GoTemplate's output cap: raised when the total
+        # number of template-segment expansions exceeds MAX_REPLACE_WORK, yielding an
+        # undefined result. Deliberate anti-DoS divergence from OPA.
+        def self.raise_replace_work_exceeded
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "regex.replace exceeds the maximum work budget",
+            expected: "at most #{MAX_REPLACE_WORK} template-segment expansions",
+            actual: "exceeded",
+            context: "regex.replace",
+            location: nil
+          )
+        end
+        private_class_method :raise_replace_work_exceeded
+
+        # Go/RE2 drops a zero-width match that begins exactly where the previous match
+        # ended; Ruby's gsub keeps it. Byte offsets are used (O(1)); character offsets
+        # (begin/end) would cost O(position) per match, making a long zero-width scan
+        # quadratic.
+        def self.skip_zero_width?(match, previous_end)
+          return false unless match
+
+          start, finish = match.byteoffset(0)
+          finish == start && start == previous_end
+        end
+        private_class_method :skip_zero_width?
+
         # Compiles, validates, and runs an all-matches scan under the timeout guard.
         #
         # @param pattern_value [Ruby::Rego::Value]
@@ -98,9 +236,50 @@ module Ruby
         # @return [String]
         def self.string_arg(value, context)
           Base.assert_type(value, expected: StringValue, context: context)
-          value.value
+          string = value.value
+          return string if string.valid_encoding?
+
+          # Matching on an invalid-encoding string raises rather than returning a clean
+          # result. OPA never sees these (JSON input is valid UTF-8); they reach the
+          # public Ruby API only. Until string encoding is normalised at the value-
+          # ingestion boundary (a deferred refactor noted in TODO.md), reject them here.
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Invalid string encoding",
+            expected: "valid #{string.encoding} string",
+            actual: "invalid byte sequence",
+            context: context,
+            location: nil
+          )
         end
         private_class_method :string_arg
+
+        # Rejects a pattern or replacement template longer than MAX_REGEX_SOURCE before it is
+        # split into a character array (an uninterruptible O(n) C call). O(1) bytesize check
+        # (bytesize >= length, so this also bounds the codepoint count); exceeding yields
+        # undefined.
+        #
+        # @param source [String]
+        # @param context [String]
+        # @return [void]
+        def self.assert_source_length(source, context)
+          return unless source_too_long?(source)
+
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Regex source exceeds the maximum length",
+            expected: "at most #{MAX_REGEX_SOURCE} bytes",
+            actual: "#{source.bytesize} bytes",
+            context: context,
+            location: nil
+          )
+        end
+        private_class_method :assert_source_length
+
+        # @param source [String]
+        # @return [Boolean]
+        def self.source_too_long?(source)
+          source.bytesize > MAX_REGEX_SOURCE
+        end
+        private_class_method :source_too_long?
 
         # @param values [Array<String>]
         # @return [Ruby::Rego::ArrayValue]
@@ -113,24 +292,123 @@ module Ruby
         # @param context [String]
         # @return [Regexp]
         def self.compile(pattern_value, context)
-          pattern = string_arg(pattern_value, context)
-          Regexp.new(pattern, timeout: REGEX_TIMEOUT_SECONDS)
+          compile_pattern(string_arg(pattern_value, context), context).first
+        end
+        private_class_method :compile
+
+        # Translates Go named groups and compiles the result, returning the compiled
+        # Regexp together with the named-group index map (empty when there are none).
+        #
+        # @param pattern [String] the original (untranslated) pattern source
+        # @param context [String]
+        # @return [[Regexp, Hash{String => Integer}]]
+        def self.compile_pattern(pattern, context)
+          translated, names = translate_named_groups(pattern, context)
+          [compile_source(translated, pattern, context), names]
+        end
+        private_class_method :compile_pattern
+
+        # Compiles an already-translated pattern source, reporting the original pattern
+        # on failure.
+        def self.compile_source(source, original, context)
+          Regexp.new(source, timeout: REGEX_TIMEOUT_SECONDS)
         rescue RegexpError => e
           raise Ruby::Rego::BuiltinArgumentError.new(
             "Invalid regular expression: #{e.message}",
             expected: "valid regular expression",
-            actual: pattern,
+            actual: original,
             context: context,
             location: nil
           )
         end
-        private_class_method :compile
+        private_class_method :compile_source
+
+        # Rewrites Go's named groups `(?P<name>...)` to plain capturing groups `(...)` and
+        # returns [translated_pattern, name_to_index]. RE2 numbers named and unnamed groups
+        # in one left-to-right space and resolves `${name}` references through it, so the
+        # pattern keeps plain captures (Ruby's engine renumbers if it sees a named group)
+        # and named references resolve through the returned index map. A name must be an
+        # RE2 identifier (`[A-Za-z0-9_]+`); a Unicode name is left untranslated so the
+        # `(?P<` form fails to compile (yielding undefined), matching RE2. An escaped
+        # `\(?P<` or one inside a character class is left untouched.
+        # :reek:TooManyStatements
+        # :reek:DuplicateMethodCall
+        # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
+        def self.translate_named_groups(pattern, context)
+          assert_source_length(pattern, context)
+          out = +""
+          names = {} # @type var names: Hash[String, Integer]
+          chars = pattern.chars
+          pos = 0
+          in_class = false
+          group_index = 0
+          while pos < chars.length
+            char = chars[pos]
+            if char == "\\"
+              out << char << chars[pos + 1].to_s
+              pos += 2
+            elsif in_class
+              in_class = false if char == "]"
+              out << char
+              pos += 1
+            elsif (named = named_group_at(chars, pos))
+              name, consumed = named
+              group_index += 1
+              # A duplicate name resolves to its first occurrence (matching OPA/RE2).
+              names[name] ||= group_index
+              out << "("
+              pos += consumed
+            else
+              in_class = true if char == "["
+              group_index += 1 if char == "(" && chars[pos + 1] != "?"
+              out << char
+              pos += 1
+            end
+          end
+          [out, names]
+        end
+        # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
+        private_class_method :translate_named_groups
+
+        # If `chars` at `pos` opens a named group — RE2 accepts both `(?P<name>` and the
+        # synonym `(?<name>` — returns `[name, consumed]` (consumed = full header length
+        # through the `>`); otherwise nil (the position is handled literally). The name is
+        # scanned forward one `[A-Za-z0-9_]` character at a time and must be terminated by
+        # `>`; this enforces the RE2-identifier rule and keeps the scan O(name length) — a
+        # non-identifier first char stops it at once, so a pattern of many `(?P<` with no
+        # `>` stays linear, and lookbehind `(?<=`/`(?<!` (first char `=`/`!`) and empty
+        # `(?<>` fall through to nil (left untranslated; OPA rejects them too).
+        # :reek:TooManyStatements
+        # :reek:DuplicateMethodCall
+        def self.named_group_at(chars, pos)
+          name_start = named_group_name_start(chars, pos)
+          return nil unless name_start
+
+          cursor = name_start
+          cursor += 1 while GROUP_NAME_CHAR.match?(chars[cursor])
+          return nil unless cursor > name_start && chars[cursor] == ">"
+
+          [chars[name_start, cursor - name_start].to_a.join, cursor - pos + 1]
+        end
+        private_class_method :named_group_at
+
+        # Offset of the name within a `(?P<name>` (4) or `(?<name>` (3) header at `pos`,
+        # or nil when `pos` does not open a named group.
+        def self.named_group_name_start(chars, pos)
+          header = chars[pos, 4]
+          return nil unless header
+          return pos + 4 if header == ["(", "?", "P", "<"]
+
+          header[0, 3] == ["(", "?", "<"] ? pos + 3 : nil
+        end
+        private_class_method :named_group_name_start
 
         # Converts a match-timeout (catastrophic backtracking) into an undefined
         # result instead of hanging the evaluator.
         #
         # @param context [String]
         # @return [Ruby::Rego::Value]
+        # rubocop:disable Metrics/MethodLength
         def self.guarded(context)
           yield
         rescue Regexp::TimeoutError
@@ -141,8 +419,40 @@ module Ruby
             context: context,
             location: nil
           )
+        rescue EncodingError => e
+          # Incompatible pattern/subject encodings surface here as an undefined result.
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Regex encoding error: #{e.message}",
+            expected: "compatible string encodings",
+            actual: e.class.name,
+            context: context,
+            location: nil
+          )
         end
+        # rubocop:enable Metrics/MethodLength
         private_class_method :guarded
+
+        # Monotonic timestamp REGEX_TIMEOUT_SECONDS in the future, used as an aggregate
+        # deadline for a whole match loop (the per-match engine timeout resets each search
+        # and so cannot bound a cheap-per-match pattern over a long subject).
+        #
+        # @return [Float]
+        def self.match_deadline
+          Process.clock_gettime(Process::CLOCK_MONOTONIC) + REGEX_TIMEOUT_SECONDS
+        end
+        private_class_method :match_deadline
+
+        # Raises (caught by `guarded` → undefined) once the aggregate deadline has passed.
+        # Cheap O(1) cooperative check; safe, unlike thread-based Timeout.
+        #
+        # @param deadline [Float]
+        # @return [void]
+        def self.check_deadline(deadline)
+          return if Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+
+          raise Regexp::TimeoutError, "regex evaluation exceeded #{REGEX_TIMEOUT_SECONDS}s"
+        end
+        private_class_method :check_deadline
 
         # Yields each successive MatchData, advancing past zero-width matches so the
         # iteration terminates (mirrors String#scan's match positions).
@@ -151,11 +461,14 @@ module Ruby
         # @param string [String]
         # @yieldparam [MatchData]
         # @return [void]
+        # rubocop:disable Metrics/MethodLength
         def self.each_match(regexp, string)
           position = 0
           length = string.length
           previous_end = -1
+          deadline = match_deadline
           while position <= length && (found = regexp.match(string, position))
+            check_deadline(deadline)
             start = found.begin(0) || 0
             finish = found.end(0) || 0
             yield found unless finish == start && start == previous_end
@@ -163,6 +476,7 @@ module Ruby
             position = advance(found)
           end
         end
+        # rubocop:enable Metrics/MethodLength
         private_class_method :each_match
 
         # @param found [MatchData]
@@ -209,6 +523,141 @@ module Ruby
         end
         # rubocop:enable Metrics/CyclomaticComplexity, Metrics/MethodLength
         private_class_method :split_segments
+
+        # Parses a Go `regexp.Expand` replacement template once, then expands it against
+        # each match. `$name`/`${name}` reference a submatch (numeric name = numbered
+        # group, `$0` = whole match; an unknown or out-of-range reference expands to the
+        # empty string), `$$` is a literal `$`, a `$` not followed by a valid name is a
+        # literal `$`, and every other character (including backslash) is a literal.
+        class GoTemplate
+          # Go's Expand reads a name as Unicode letters, digits, and underscore.
+          NAME_CHAR = /[\p{L}\p{Nd}_]/
+
+          # Number of parsed segments; the caller charges this per match against the
+          # work budget, since each expansion loops exactly this many segments. The
+          # template length is capped (MAX_REGEX_SOURCE) before construction, so parse and
+          # per-match expand are both O(capped template) — no separate time bound needed.
+          attr_reader :segment_count
+
+          # Callers MUST cap the template length (Regex.assert_source_length) before
+          # constructing — `parse` materializes `template.chars`, an uninterruptible O(n)
+          # call. `replace` is the only caller and does so.
+          #
+          # @param template [String]
+          # @param names [Hash{String => Integer}] named group -> capture index
+          def initialize(template, names)
+            @names = names
+            @segments = parse(template.chars)
+            @segment_count = @segments.length
+          end
+
+          # Expands the template against `match`, raising once accumulated output would
+          # exceed `budget` so a single expansion cannot exhaust memory.
+          #
+          # @param match [MatchData]
+          # @param budget [Integer]
+          # @return [String]
+          def expand(match, budget)
+            out = +""
+            @segments.each do |kind, value|
+              out << resolve(kind, value, match)
+              raise_output_too_large(budget) if out.length > budget
+            end
+            out
+          end
+
+          private
+
+          # Returns [[kind, value], ...] where kind is :literal, :index, or :name.
+          # :reek:TooManyStatements
+          # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+          def parse(chars)
+            segments = [] # @type var segments: Array[[Symbol, String | Integer]]
+            literal = +""
+            pos = 0
+            while pos < chars.length
+              if chars[pos] != "$"
+                literal << chars[pos]
+                pos += 1
+                next
+              end
+              if chars[pos + 1] == "$"
+                literal << "$"
+                pos += 2
+                next
+              end
+              name, next_pos = extract(chars, pos)
+              if name.nil?
+                literal << "$"
+                pos += 1
+                next
+              end
+              unless literal.empty?
+                segments << [:literal, literal]
+                literal = +""
+              end
+              segments << reference(name)
+              pos = next_pos
+            end
+            segments << [:literal, literal] unless literal.empty?
+            segments
+          end
+          # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+
+          # Extracts a `$name`/`${name}` reference name starting at the `$` in `chars`.
+          # Returns [name, next_pos], or [nil, _] when the `$` is not a valid reference.
+          # :reek:TooManyStatements
+          def extract(chars, pos)
+            cursor = pos + 1
+            braced = chars[cursor] == "{"
+            cursor += 1 if braced
+            start = cursor
+            cursor += 1 while NAME_CHAR.match?(chars[cursor])
+            name = chars[start...cursor].to_a.join
+            return [nil, pos] if name.empty?
+            return [nil, pos] if braced && chars[cursor] != "}"
+
+            [name, braced ? cursor + 1 : cursor]
+          end
+
+          # A purely-numeric name is a numbered group; otherwise a named group. Matching
+          # Go's Expand, a multi-digit name with a leading zero (e.g. `01`) is treated as
+          # a (typically unknown) named group, not index 1.
+          def reference(name)
+            numeric_index?(name) ? [:index, name.to_i] : [:name, name]
+          end
+
+          # A non-negative integer with no leading zero (Go treats a leading-zero name
+          # like `01` as a named, typically unknown, reference rather than index 1).
+          def numeric_index?(name)
+            name.match?(/\A(?:0|[1-9]\d*)\z/)
+          end
+
+          def resolve(kind, value, match)
+            case kind
+            when :literal then value.to_s
+            when :index then match[value.to_i].to_s
+            else named_submatch(match, value.to_s)
+            end
+          end
+
+          # Named references resolve through the capture-index map (the pattern's named
+          # groups were rewritten to plain captures). An unknown name expands to empty.
+          def named_submatch(match, name)
+            index = @names[name]
+            index ? match[index].to_s : ""
+          end
+
+          def raise_output_too_large(budget)
+            raise Ruby::Rego::BuiltinArgumentError.new(
+              "regex.replace output exceeds the maximum size",
+              expected: "remaining output budget of #{budget} characters",
+              actual: "exceeded",
+              context: "regex.replace",
+              location: nil
+            )
+          end
+        end
       end
     end
   end
