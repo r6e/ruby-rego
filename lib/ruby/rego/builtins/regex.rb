@@ -14,10 +14,12 @@ module Ruby
       #
       # Patterns are compiled with Ruby's regex engine (Onigmo), not Go's RE2.
       # Common patterns behave identically to OPA; constructs that Ruby accepts but
-      # RE2 rejects (lookahead, backreferences) are treated as valid here. The `^`/`$`
-      # anchors are line anchors in Onigmo but text anchors in RE2, so on a multi-line
-      # subject they match per line here but only at the string ends in OPA — a silent
-      # divergence shared by every regex built-in.
+      # RE2 rejects (lookahead, backreferences) are treated as valid here. Two engine
+      # differences are silent divergences shared by every regex built-in: the `^`/`$`
+      # anchors are line anchors in Onigmo but text anchors in RE2 (so on a multi-line
+      # subject they match per line here but only at the string ends in OPA), and the
+      # `\b`/`\w`/`\d`/`\s` classes are Unicode-aware in Onigmo but ASCII-only in RE2
+      # (so they match non-ASCII word characters here but not in OPA).
       module Regex
         extend RegistryHelpers
 
@@ -41,6 +43,13 @@ module Ruby
         # template length). Exceeding this yields undefined — a deliberate anti-DoS
         # divergence from OPA, in the same spirit as the regex timeout above.
         MAX_REPLACE_OUTPUT = 32_000_000
+
+        # Upper bound on total template-segment expansions (matches x template segments).
+        # Output size alone is insufficient: references that resolve to empty (an
+        # out-of-range `$9` or unknown `${name}`) do CPU work per segment while emitting
+        # nothing, so a large template over many matches would otherwise run unbounded
+        # under the output cap. Exceeding this yields undefined.
+        MAX_REPLACE_WORK = 32_000_000
 
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
         def self.register!
@@ -112,12 +121,16 @@ module Ruby
 
         # Replaces every match with its expanded template via gsub (a single linear scan),
         # but applies Go/RE2's match rule: a zero-width match immediately after a non-empty
-        # one is skipped (Ruby's gsub would otherwise emit it). The remaining output budget
-        # is threaded into each expansion so a single match cannot build a huge string
-        # before the bound is checked.
+        # one is skipped (Ruby's gsub would otherwise emit it). Two budgets are threaded
+        # through the loop: `remaining` bounds total output characters, and `work` bounds
+        # total template-segment expansions (matches x segments) so references that resolve
+        # to empty — doing CPU work while emitting nothing — cannot run unbounded under the
+        # output cap alone.
         # :reek:TooManyStatements
+        # rubocop:disable Metrics/MethodLength
         def self.expand_all(string, regexp, template)
           remaining = MAX_REPLACE_OUTPUT
+          work = MAX_REPLACE_WORK
           previous_end = -1
           string.gsub(regexp) do |matched|
             # Regexp.last_match is always set inside a gsub block that fired; the guard
@@ -125,13 +138,30 @@ module Ruby
             match = Regexp.last_match
             next "" if skip_zero_width?(match, previous_end)
 
+            work -= template.segment_count
+            raise_replace_work_exceeded if work.negative?
             expansion = match ? template.expand(match, remaining) : matched
             remaining -= expansion.length
             previous_end = match.byteoffset(0).last if match
             expansion
           end
         end
+        # rubocop:enable Metrics/MethodLength
         private_class_method :expand_all
+
+        # The work-budget counterpart to GoTemplate's output cap: raised when the total
+        # number of template-segment expansions exceeds MAX_REPLACE_WORK, yielding an
+        # undefined result. Deliberate anti-DoS divergence from OPA.
+        def self.raise_replace_work_exceeded
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "regex.replace exceeds the maximum work budget",
+            expected: "at most #{MAX_REPLACE_WORK} template-segment expansions",
+            actual: "exceeded",
+            context: "regex.replace",
+            location: nil
+          )
+        end
+        private_class_method :raise_replace_work_exceeded
 
         # Go/RE2 drops a zero-width match that begins exactly where the previous match
         # ended; Ruby's gsub keeps it. Byte offsets are used (O(1)); character offsets
@@ -376,11 +406,16 @@ module Ruby
           # Go's Expand reads a name as Unicode letters, digits, and underscore.
           NAME_CHAR = /[\p{L}\p{Nd}_]/
 
+          # Number of parsed segments; the caller charges this per match against the
+          # work budget, since each expansion loops exactly this many segments.
+          attr_reader :segment_count
+
           # @param template [String]
           # @param names [Hash{String => Integer}] named group -> capture index
           def initialize(template, names)
             @names = names
             @segments = parse(template.chars)
+            @segment_count = @segments.length
           end
 
           # Expands the template against `match`, raising once accumulated output would

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "timeout"
+
 # rubocop:disable Metrics/BlockLength
 RSpec.describe "regex.replace" do
   let(:registry) { Ruby::Rego::Builtins::BuiltinRegistry.instance }
@@ -134,6 +136,25 @@ RSpec.describe "regex.replace" do
     string = "a" * 100_000
     template = "$0" * 100_000
     expect(registry.call("regex.replace", [string, ".+", template])).to be_a(Ruby::Rego::UndefinedValue)
+  end
+
+  it "bounds empty-reference work that produces no output (DoS guard)" do
+    # Each out-of-range $9 resolves to "", so the output budget never trips, yet every
+    # match still loops all template segments: matches x segments work with zero output.
+    # The work budget must catch this in bounded time.
+    string = "a" * 40_000
+    template = "$9" * 20_000
+    result = nil
+    expect do
+      Timeout.timeout(20) { result = registry.call("regex.replace", [string, "a", template]) }
+    end.not_to raise_error
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
+  end
+
+  it "still expands a legitimate large-but-bounded replacement" do
+    string = "a" * 1_000
+    result = registry.call("regex.replace", [string, "a", "[$0]"])
+    expect(result.value).to eq("[a]" * 1_000)
   end
 end
 # rubocop:enable Metrics/BlockLength

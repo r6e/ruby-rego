@@ -12,10 +12,12 @@ All notable changes to this project will be documented in this file.
   plain captures and `${name}` references resolve through a name→index map, so named and
   unnamed groups share one RE2-style numbering space (mixed groups and numbered references
   work); names must be RE2 identifiers and a Unicode name is rejected (matching RE2). The
-  translation skips `(?P<` inside a character class or after a backslash. As an anti-DoS
-  guard, a `regex.replace` whose expanded output would exceed ~32M characters yields
-  undefined. An invalid-encoding string argument to a regex built-in now yields undefined
-  rather than raising.
+  translation skips `(?P<` inside a character class or after a backslash. As anti-DoS
+  guards, a `regex.replace` yields undefined when either its expanded output would exceed
+  ~32M characters or its total template-segment expansions (matches × template segments)
+  would exceed ~32M — the latter bounds CPU even when references resolve to empty and emit
+  no output, which the output cap alone does not catch. An invalid-encoding string argument
+  to a regex built-in now yields undefined rather than raising.
 
 - Glob built-ins: `glob.match` (wildcards `*`/`**`/`?`, character classes `[...]`/`[!...]`,
   brace alternation `{a,b}` with nesting, escaping, and OPA delimiter semantics — a null
