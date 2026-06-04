@@ -322,6 +322,26 @@ module Ruby
         def self.string_value: (Value value, String context) -> String
       end
 
+      module Net
+        extend RegistryHelpers
+
+        NET_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.cidr_contains: (Value cidr_value, Value other_value) -> BooleanValue
+        def self.cidr_intersects: (Value cidr1_value, Value cidr2_value) -> BooleanValue
+        def self.cidr_is_valid: (Value value) -> BooleanValue
+
+        private
+
+        def self.cidr_arg: (Value value, String context) -> IPAddr
+        def self.addr_arg: (Value value, String context) -> IPAddr
+        def self.parse_cidr: (String string) -> IPAddr?
+        def self.parse_addr: (String string) -> IPAddr?
+        def self.raise_invalid_addr: (String context) -> void
+        def self.string_value: (Value value, String context) -> String
+      end
+
       module Aggregates
         AGGREGATE_FUNCTIONS: Hash[String, Symbol]
 

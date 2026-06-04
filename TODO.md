@@ -103,7 +103,8 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
 - ⬜ Time: `time.now_ns`, `time.parse_rfc3339_ns`, `time.date`, `time.add_date`, etc.
 - 🟡 Crypto: ✅ `crypto.md5`, `crypto.sha1`, `crypto.sha256`, `crypto.hmac.md5`/`sha1`/
   `sha256`/`sha512`, `crypto.hmac.equal`; ⬜ `crypto.x509.*`.
-- ⬜ Net/CIDR: `net.cidr_contains`, `net.cidr_intersects`, `net.cidr_merge`.
+- 🟡 Net/CIDR: ✅ `net.cidr_contains`, `net.cidr_intersects`, `net.cidr_is_valid`;
+  ⬜ `net.cidr_merge`, `net.cidr_expand` (needs a DoS cap), `net.cidr_contains_matches`.
 - ✅ Bits: `bits.and`, `bits.or`, `bits.xor`, `bits.negate`, `bits.lsh`, `bits.rsh`
   (`bits.lsh` caps result size as a DoS guard; parser accepts `and`/`or` as dotted
   reference segments so the builtins are callable from source).
