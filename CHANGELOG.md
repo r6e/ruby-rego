@@ -8,11 +8,14 @@ All notable changes to this project will be documented in this file.
   template syntax (`$1`/`${name}` submatch references, `$0` whole match, `$$` literal `$`;
   unknown or out-of-range references — including a multi-digit leading-zero reference like
   `$01` — expand to the empty string), and a backslash is a literal. Go's `(?P<name>...)`
-  named-group syntax is now translated to Ruby's `(?<name>...)` across the regex built-ins
-  so named groups compile (the translation skips `(?P<` inside a character class or after a
-  backslash). As an anti-DoS guard, a `regex.replace` whose expanded output would exceed
-  ~32M characters yields undefined. An invalid-encoding string argument to a regex built-in
-  now yields undefined rather than raising.
+  named-group syntax is supported across the regex built-ins: named groups are rewritten to
+  plain captures and `${name}` references resolve through a name→index map, so named and
+  unnamed groups share one RE2-style numbering space (mixed groups and numbered references
+  work); names must be RE2 identifiers and a Unicode name is rejected (matching RE2). The
+  translation skips `(?P<` inside a character class or after a backslash. As an anti-DoS
+  guard, a `regex.replace` whose expanded output would exceed ~32M characters yields
+  undefined. An invalid-encoding string argument to a regex built-in now yields undefined
+  rather than raising.
 
 - Glob built-ins: `glob.match` (wildcards `*`/`**`/`?`, character classes `[...]`/`[!...]`,
   brace alternation `{a,b}` with nesting, escaping, and OPA delimiter semantics — a null

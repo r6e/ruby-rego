@@ -59,7 +59,8 @@ module Ruby
         # @param pattern_value [Ruby::Rego::Value]
         # @return [Ruby::Rego::BooleanValue]
         def self.is_valid(pattern_value)
-          Regexp.new(translate_named_groups(string_arg(pattern_value, "regex.is_valid")))
+          translated, = translate_named_groups(string_arg(pattern_value, "regex.is_valid"))
+          Regexp.new(translated)
           BooleanValue.new(true)
         rescue RegexpError
           BooleanValue.new(false)
@@ -97,9 +98,11 @@ module Ruby
         # @param replacement_value [Ruby::Rego::Value]
         # @return [Ruby::Rego::StringValue]
         def self.replace(string_value, pattern_value, replacement_value)
-          regexp = compile(pattern_value, "regex.replace")
+          pattern = string_arg(pattern_value, "regex.replace")
+          translated, names = translate_named_groups(pattern)
+          regexp = compile_source(translated, pattern, "regex.replace")
           string = string_arg(string_value, "regex.replace")
-          template = GoTemplate.new(string_arg(replacement_value, "regex.replace"))
+          template = GoTemplate.new(string_arg(replacement_value, "regex.replace"), names)
           guarded("regex.replace") { StringValue.new(expand_all(string, regexp, template)) }
         end
 
@@ -167,31 +170,45 @@ module Ruby
         # @param context [String]
         # @return [Regexp]
         def self.compile(pattern_value, context)
-          pattern = translate_named_groups(string_arg(pattern_value, context))
-          Regexp.new(pattern, timeout: REGEX_TIMEOUT_SECONDS)
+          pattern = string_arg(pattern_value, context)
+          translated, = translate_named_groups(pattern)
+          compile_source(translated, pattern, context)
+        end
+        private_class_method :compile
+
+        # Compiles an already-translated pattern source, reporting the original pattern
+        # on failure.
+        def self.compile_source(source, original, context)
+          Regexp.new(source, timeout: REGEX_TIMEOUT_SECONDS)
         rescue RegexpError => e
           raise Ruby::Rego::BuiltinArgumentError.new(
             "Invalid regular expression: #{e.message}",
             expected: "valid regular expression",
-            actual: pattern,
+            actual: original,
             context: context,
             location: nil
           )
         end
-        private_class_method :compile
+        private_class_method :compile_source
 
-        # Translates Go's named-group syntax `(?P<name>...)` to Ruby's `(?<name>...)` so
-        # OPA patterns with named groups compile (Ruby's Onigmo rejects the `(?P<` form).
-        # Only an actual group-open `(?P<` is rewritten: an escaped `\(?P<` or a `(?P<`
-        # inside a character class is left untouched so the pattern's meaning is preserved.
+        # Rewrites Go's named groups `(?P<name>...)` to plain capturing groups `(...)` and
+        # returns [translated_pattern, name_to_index]. RE2 numbers named and unnamed groups
+        # in one left-to-right space and resolves `${name}` references through it, so the
+        # pattern keeps plain captures (Ruby's engine renumbers if it sees a named group)
+        # and named references resolve through the returned index map. A name must be an
+        # RE2 identifier (`[A-Za-z0-9_]+`); a Unicode name is left untranslated so the
+        # `(?P<` form fails to compile (yielding undefined), matching RE2. An escaped
+        # `\(?P<` or one inside a character class is left untouched.
         # :reek:TooManyStatements
         # :reek:DuplicateMethodCall
         # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
         def self.translate_named_groups(pattern)
           out = +""
+          names = {} # @type var names: Hash[String, Integer]
           chars = pattern.chars
           pos = 0
           in_class = false
+          group_index = 0
           while pos < chars.length
             char = chars[pos]
             if char == "\\"
@@ -201,35 +218,38 @@ module Ruby
               in_class = false if char == "]"
               out << char
               pos += 1
-            elsif char == "["
-              in_class = true
-              out << char
-              pos += 1
-            elsif chars[pos, 4] == ["(", "?", "P", "<"] && rewritable_group_name?(chars, pos + 4)
-              out << "(?<"
-              pos += 4
+            elsif (name_length = named_group_at(chars, pos))
+              group_index += 1
+              # A duplicate name resolves to its first occurrence (matching OPA/RE2).
+              names[chars[pos + 4, name_length].to_a.join] ||= group_index
+              out << "("
+              pos += 5 + name_length
             else
+              in_class = true if char == "["
+              group_index += 1 if char == "(" && chars[pos + 1] != "?"
               out << char
               pos += 1
             end
           end
-          out
+          [out, names]
         end
         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
         private_class_method :translate_named_groups
 
-        # True if the group name starting at `pos` is one Ruby's engine accepts (an
-        # ASCII letter/underscore followed by ASCII word characters, then `>`). Names
-        # RE2 allows but Ruby cannot represent — Unicode names, or digit-leading names —
-        # are left untranslated so the pattern fails to compile (yielding undefined),
-        # rather than being silently accepted with different semantics.
-        def self.rewritable_group_name?(chars, pos)
-          relative_end = chars[pos..]&.index(">")
-          return false unless relative_end&.positive?
+        # If `chars` at `pos` opens a `(?P<name>` group with an RE2-identifier name,
+        # returns the name length; otherwise nil (so the position is handled literally).
+        # :reek:TooManyStatements
+        def self.named_group_at(chars, pos)
+          return nil unless chars[pos, 4] == ["(", "?", "P", "<"]
 
-          chars[pos, relative_end].to_a.join.match?(/\A[A-Za-z_][A-Za-z0-9_]*\z/)
+          name_start = pos + 4
+          relative_end = chars[name_start..]&.index(">")
+          return nil unless relative_end&.positive?
+
+          name = chars[name_start, relative_end].to_a.join
+          name.match?(/\A[A-Za-z0-9_]+\z/) ? relative_end : nil
         end
-        private_class_method :rewritable_group_name?
+        private_class_method :named_group_at
 
         # Converts a match-timeout (catastrophic backtracking) into an undefined
         # result instead of hanging the evaluator.
@@ -336,7 +356,9 @@ module Ruby
           NAME_CHAR = /[\p{L}\p{Nd}_]/
 
           # @param template [String]
-          def initialize(template)
+          # @param names [Hash{String => Integer}] named group -> capture index
+          def initialize(template, names)
+            @names = names
             @segments = parse(template.chars)
           end
 
@@ -428,11 +450,11 @@ module Ruby
             end
           end
 
-          # An unknown named group raises IndexError in Ruby; Go expands it to empty.
+          # Named references resolve through the capture-index map (the pattern's named
+          # groups were rewritten to plain captures). An unknown name expands to empty.
           def named_submatch(match, name)
-            match[name].to_s
-          rescue IndexError
-            ""
+            index = @names[name]
+            index ? match[index].to_s : ""
           end
 
           def raise_output_too_large(budget)

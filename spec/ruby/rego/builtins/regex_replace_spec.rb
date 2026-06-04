@@ -81,6 +81,18 @@ RSpec.describe "regex.replace" do
     expect(replace("foo123", '(?P<w>[a-z]+)(?P<d>\d+)', "${d}-${w}")).to eq("123-foo")
   end
 
+  it "numbers named and unnamed groups in one RE2-style space (mixed groups)" do
+    # Onigmo would renumber when a named group is present; the name->index map keeps a
+    # single left-to-right numbering, matching OPA/RE2.
+    expect(replace("ab", "(?P<x>a)(b)", "$2-${x}")).to eq("b-a")
+    expect(replace("abc", "(a)(?P<x>b)(c)", "$1$2$3")).to eq("abc")
+  end
+
+  it "supports digit-leading and duplicate names like RE2" do
+    expect(replace("ab", "(?P<1a>a)(b)", "${1a}-$2")).to eq("a-b")
+    expect(replace("ab", "(?P<dup>a)(?P<dup>b)", "${dup}")).to eq("a") # first occurrence
+  end
+
   it "matches an empty pattern between every character" do
     expect(replace("abc", "", "-")).to eq("-a-b-c-")
   end
