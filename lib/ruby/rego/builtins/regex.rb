@@ -14,7 +14,10 @@ module Ruby
       #
       # Patterns are compiled with Ruby's regex engine (Onigmo), not Go's RE2.
       # Common patterns behave identically to OPA; constructs that Ruby accepts but
-      # RE2 rejects (lookahead, backreferences) are treated as valid here.
+      # RE2 rejects (lookahead, backreferences) are treated as valid here. The `^`/`$`
+      # anchors are line anchors in Onigmo but text anchors in RE2, so on a multi-line
+      # subject they match per line here but only at the string ends in OPA — a silent
+      # divergence shared by every regex built-in.
       module Regex
         extend RegistryHelpers
 
@@ -107,28 +110,40 @@ module Ruby
           guarded("regex.replace") { StringValue.new(expand_all(string, regexp, template)) }
         end
 
-        # Replaces every match with its expanded template, driven through `each_match` so
-        # the same Go/RE2 match positions used by `find_n`/`split` apply (a zero-width
-        # match immediately after a non-empty one is skipped, unlike Ruby's gsub). The
-        # remaining output budget is threaded into each expansion so a single match cannot
-        # build a huge string before the bound is checked.
+        # Replaces every match with its expanded template via gsub (a single linear scan),
+        # but applies Go/RE2's match rule: a zero-width match immediately after a non-empty
+        # one is skipped (Ruby's gsub would otherwise emit it). The remaining output budget
+        # is threaded into each expansion so a single match cannot build a huge string
+        # before the bound is checked.
         # :reek:TooManyStatements
-        # rubocop:disable Metrics/MethodLength
         def self.expand_all(string, regexp, template)
-          out = +""
-          cursor = 0
           remaining = MAX_REPLACE_OUTPUT
-          each_match(regexp, string) do |found|
-            out << (string[cursor...(found.begin(0) || 0)] || "")
-            expansion = template.expand(found, remaining)
-            out << expansion
+          previous_end = -1
+          string.gsub(regexp) do |matched|
+            # Regexp.last_match is always set inside a gsub block that fired; the guard
+            # only narrows the MatchData? type for the type checker.
+            match = Regexp.last_match
+            next "" if skip_zero_width?(match, previous_end)
+
+            expansion = match ? template.expand(match, remaining) : matched
             remaining -= expansion.length
-            cursor = found.end(0) || 0
+            previous_end = match.byteoffset(0).last if match
+            expansion
           end
-          out << (string[cursor..] || "")
         end
-        # rubocop:enable Metrics/MethodLength
         private_class_method :expand_all
+
+        # Go/RE2 drops a zero-width match that begins exactly where the previous match
+        # ended; Ruby's gsub keeps it. Byte offsets are used (O(1)); character offsets
+        # (begin/end) would cost O(position) per match, making a long zero-width scan
+        # quadratic.
+        def self.skip_zero_width?(match, previous_end)
+          return false unless match
+
+          start, finish = match.byteoffset(0)
+          finish == start && start == previous_end
+        end
+        private_class_method :skip_zero_width?
 
         # Compiles, validates, and runs an all-matches scan under the timeout guard.
         #
