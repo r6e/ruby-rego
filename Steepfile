@@ -7,6 +7,7 @@ target :lib do
   library "base64"
   library "cgi"
   library "digest"
+  library "openssl"
   library "optparse"
   library "psych"
   library "yaml"

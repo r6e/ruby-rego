@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Crypto built-ins: `crypto.hmac.md5`, `crypto.hmac.sha1`, `crypto.hmac.sha256`,
+  `crypto.hmac.sha512`, and `crypto.hmac.equal`, matching OPA. The HMAC digests take
+  `(message, key)` (OPA's argument order, the reverse of Ruby's
+  `OpenSSL::HMAC.hexdigest`) and return a lowercase hex digest; a non-string message or
+  key yields undefined. `crypto.hmac.equal` is a constant-time comparison
+  (`OpenSSL.secure_compare`) returning a boolean — `false` for unequal-length inputs
+  (matching Go's `hmac.Equal`), undefined for a non-string argument. Adds `openssl` as a
+  runtime dependency.
+
 - Regex built-in: `regex.replace`, matching OPA. The replacement value uses Go's `Expand`
   template syntax (`$1`/`${name}` submatch references, `$0` whole match, `$$` literal `$`;
   unknown or out-of-range references — including a multi-digit leading-zero reference like

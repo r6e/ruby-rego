@@ -304,14 +304,21 @@ module Ruby
         extend RegistryHelpers
 
         CRYPTO_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        HMAC_ALGORITHMS: Hash[String, String]
 
         def self.register!: () -> BuiltinRegistry
         def self.md5: (Value value) -> StringValue
         def self.sha1: (Value value) -> StringValue
         def self.sha256: (Value value) -> StringValue
+        def self.hmac_md5: (Value message_value, Value key_value) -> StringValue
+        def self.hmac_sha1: (Value message_value, Value key_value) -> StringValue
+        def self.hmac_sha256: (Value message_value, Value key_value) -> StringValue
+        def self.hmac_sha512: (Value message_value, Value key_value) -> StringValue
+        def self.hmac_equal: (Value mac1_value, Value mac2_value) -> BooleanValue
 
         private
 
+        def self.hmac: (Value message_value, Value key_value, String context) -> StringValue
         def self.string_value: (Value value, String context) -> String
       end
 

@@ -39,11 +39,12 @@ Gem::Specification.new do |spec|
 
   # Default gems that became separately installable in newer Rubies; the library
   # requires them at load time (json across the evaluator/CLI; base64/cgi for the
-  # encoding builtins).
+  # encoding builtins; digest/openssl for the crypto builtins).
   spec.add_dependency "base64"
   spec.add_dependency "cgi"
   spec.add_dependency "digest"
   spec.add_dependency "json"
+  spec.add_dependency "openssl"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
