@@ -24,10 +24,14 @@ module Ruby
       # (gobwas #47); `?` matches non-ASCII characters consistently by codepoint even
       # mid-pattern, where OPA's `?` still fails on non-ASCII in a sequence (gobwas #41);
       # `?`/`[!...]` require exactly one character rather than also matching the empty
-      # string; and malformed or degenerate patterns — unclosed class or brace, reversed
-      # range, the empty group `{}` — yield an undefined result, whereas OPA's matcher
-      # leniently accepts some of them (e.g. an unterminated `{a,b` or an empty `{}`).
+      # string; and the gem rejects two degenerate brace forms that OPA leniently accepts
+      # — an unterminated `{a,b` and an empty `{}` — yielding undefined. Other malformed
+      # patterns (unclosed class, reversed range) yield undefined consistent with OPA.
       # Outside these corrections, well-formed patterns behave identically to OPA.
+      #
+      # To stay bounded on untrusted input, three caps yield undefined rather than
+      # hang/exhaust memory: more than MAX_DELIMITERS delimiters, brace nesting deeper
+      # than MAX_BRACE_NESTING, or a compiled source larger than MAX_COMPILED_SIZE.
       module Glob
         extend RegistryHelpers
 
@@ -223,7 +227,7 @@ module Ruby
 
           # Translates a `{a,b,...}` group into `(?:a|b|...)`, recursing per alternative.
           # :reek:TooManyStatements
-          # rubocop:disable Metrics/MethodLength
+          # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
           def translate_brace(pos)
             @brace_depth += 1
             raise_malformed if @brace_depth > MAX_BRACE_NESTING
@@ -232,7 +236,11 @@ module Ruby
             loop do
               source, pos = translate(pos, top_level: false)
               alternatives << source
-              raise_malformed if pos >= @chars.length
+              # Count each alternative (plus its `|`) so a brace dominated by empty
+              # alternatives (e.g. `{,,,...}`) still trips the compile-size guard rather
+              # than building an unbounded alternation.
+              @size += source.length + 1
+              raise_malformed if pos >= @chars.length || @size > MAX_COMPILED_SIZE
 
               break if @chars[pos] == "}"
 
@@ -243,7 +251,7 @@ module Ruby
             @brace_depth -= 1
             ["(?:#{alternatives.join("|")})", pos + 1]
           end
-          # rubocop:enable Metrics/MethodLength
+          # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
           # Translates `[...]` / `[!...]` into a regex character class. Scans into
           # [char, escaped?] elements so a backslash escapes the next character (so e.g.

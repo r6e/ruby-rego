@@ -15,9 +15,12 @@ All notable changes to this project will be documented in this file.
   restrictive single-range grammar (gobwas #47), `?` matches non-ASCII characters
   consistently by codepoint even mid-pattern where OPA's `?` still fails on non-ASCII in a
   sequence (gobwas #41), `?`/`[!...]` require exactly one character instead of also
-  matching the empty string, and malformed/degenerate patterns (unclosed class/brace,
-  reversed range, empty `{}`) yield undefined where OPA leniently accepts some. Outside
-  these corrections, well-formed patterns behave identically to OPA.
+  matching the empty string, and two degenerate brace forms OPA leniently accepts (an
+  unterminated `{a,b` and an empty `{}`) yield undefined. Outside these corrections,
+  well-formed patterns behave identically to OPA. To stay bounded on untrusted input,
+  patterns with more than 65,536 delimiters, brace nesting deeper than 100, or a compiled
+  regex source over 1 MB yield undefined (DoS guards, analogous to the `numbers.range`
+  and `bits.lsh` caps).
 - Bitwise built-ins: `bits.and`, `bits.or`, `bits.xor`, `bits.negate`, `bits.lsh`,
   and `bits.rsh`, matching OPA (two's-complement infinite precision; integer-valued
   floats accepted, non-integers and negative shift counts yield undefined). A left

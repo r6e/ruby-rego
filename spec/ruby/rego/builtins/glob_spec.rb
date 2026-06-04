@@ -183,6 +183,18 @@ RSpec.describe "glob builtins" do
       expect(registry.call("glob.match", [pattern, delimiters, "x"]))
         .to be_a(Ruby::Rego::UndefinedValue)
     end
+
+    it "is undefined for an oversized delimiter array (DoS guard)" do
+      delimiters = Array.new(Ruby::Rego::Builtins::Glob::MAX_DELIMITERS + 1, ".")
+      expect(registry.call("glob.match", ["a", delimiters, "a"]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined for a brace with pathologically many empty alternatives (DoS guard)" do
+      pattern = "{#{"," * 5_000_000}}"
+      expect(registry.call("glob.match", [pattern, ["."], "x"]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 
   describe "glob.quote_meta" do
