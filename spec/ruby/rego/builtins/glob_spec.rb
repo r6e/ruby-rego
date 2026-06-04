@@ -154,10 +154,12 @@ RSpec.describe "glob builtins" do
       expect(match("[!0-9]", nil, "")).to be(false)
     end
 
-    it "rejects malformed/degenerate braces that OPA leniently accepts" do
-      # OPA matches an unterminated brace group and an empty {}; standard glob does not.
+    it "rejects degenerate patterns that OPA leniently accepts" do
+      # OPA matches an unterminated brace group, an empty {}, and a trailing/lone
+      # backslash (escape of nothing); standard glob treats them as malformed.
       expect(registry.call("glob.match", ["{a,b", [], "a"])).to be_a(Ruby::Rego::UndefinedValue)
       expect(registry.call("glob.match", ["{}", [], ""])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("glob.match", ["a\\", ["."], "a"])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 

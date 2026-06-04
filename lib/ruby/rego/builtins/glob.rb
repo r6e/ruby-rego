@@ -24,10 +24,11 @@ module Ruby
       # (gobwas #47); `?` matches non-ASCII characters consistently by codepoint even
       # mid-pattern, where OPA's `?` still fails on non-ASCII in a sequence (gobwas #41);
       # `?`/`[!...]` require exactly one character rather than also matching the empty
-      # string; and the gem rejects two degenerate brace forms that OPA leniently accepts
-      # — an unterminated `{a,b` and an empty `{}` — yielding undefined. Other malformed
-      # patterns (unclosed class, reversed range) yield undefined consistent with OPA.
-      # Outside these corrections, well-formed patterns behave identically to OPA.
+      # string; and the gem yields undefined for degenerate forms that OPA leniently
+      # accepts — an unterminated `{a,b`, an empty `{}`, and a trailing or lone backslash.
+      # Other malformed patterns (unclosed class, reversed range) yield undefined
+      # consistent with OPA. Outside these corrections, well-formed patterns behave
+      # identically to OPA.
       #
       # To stay bounded on untrusted input, three caps yield undefined rather than
       # hang/exhaust memory: more than MAX_DELIMITERS delimiters, brace nesting deeper
@@ -236,9 +237,11 @@ module Ruby
             loop do
               source, pos = translate(pos, top_level: false)
               alternatives << source
-              # Count each alternative (plus its `|`) so a brace dominated by empty
-              # alternatives (e.g. `{,,,...}`) still trips the compile-size guard rather
-              # than building an unbounded alternation.
+              # `translate` already added each alternative's token sizes to @size; the
+              # `+ 1` per alternative (for its `|` joiner) is what makes a brace dominated
+              # by empty alternatives (e.g. `{,,,...}`, which add nothing in `translate`)
+              # still trip the compile-size guard rather than building an unbounded
+              # alternation. The re-added `source.length` is harmless extra conservatism.
               @size += source.length + 1
               raise_malformed if pos >= @chars.length || @size > MAX_COMPILED_SIZE
 

@@ -15,8 +15,9 @@ All notable changes to this project will be documented in this file.
   restrictive single-range grammar (gobwas #47), `?` matches non-ASCII characters
   consistently by codepoint even mid-pattern where OPA's `?` still fails on non-ASCII in a
   sequence (gobwas #41), `?`/`[!...]` require exactly one character instead of also
-  matching the empty string, and two degenerate brace forms OPA leniently accepts (an
-  unterminated `{a,b` and an empty `{}`) yield undefined. Outside these corrections,
+  matching the empty string, and degenerate forms OPA leniently accepts (an unterminated
+  `{a,b`, an empty `{}`, and a trailing or lone backslash) yield undefined. Outside these
+  corrections,
   well-formed patterns behave identically to OPA. To stay bounded on untrusted input,
   patterns with more than 65,536 delimiters, brace nesting deeper than 100, or a compiled
   regex source over 1 MB yield undefined (DoS guards, analogous to the `numbers.range`
