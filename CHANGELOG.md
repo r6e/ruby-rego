@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Encoding built-ins: `base64url.encode_no_pad` (base64url without `=` padding),
+  `urlquery.encode_object`, and `urlquery.decode_object`, matching OPA. `encode_object`
+  encodes an object as a query string (keys sorted; a string value emits one pair, an
+  array value one pair per element keeping order, a set value sorted and de-duplicated;
+  keys and values are escaped); a non-object, non-string key, or value that is not a string
+  or string array/set yields undefined. `decode_object` parses a query string into an
+  object mapping each key to its array of values; a malformed percent-escape (in any key or
+  value) yields undefined. Reuses the existing `urlquery.encode`/`decode` escaping
+  primitives; no new dependency.
+
 - SemVer built-ins: `semver.is_valid` and `semver.compare`, matching OPA (which vendors
   coreos/go-semver). A version is `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]`; the parser is
   lenient like OPA's (accepts a leading lowercase `v` and leading zeros), and each numeric

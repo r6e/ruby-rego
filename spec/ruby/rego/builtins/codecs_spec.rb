@@ -139,6 +139,73 @@ RSpec.describe "encoding builtins" do
     expect(registry.call("base64.encode", [123])).to be_a(Ruby::Rego::UndefinedValue)
     expect(registry.call("hex.encode", [[]])).to be_a(Ruby::Rego::UndefinedValue)
   end
+
+  # Values below verified against `opa eval` 1.17.
+  describe "base64url.encode_no_pad" do
+    it "encodes without padding (matching OPA)" do
+      expect(registry.call("base64url.encode_no_pad", ["hello world"]).to_ruby).to eq("aGVsbG8gd29ybGQ")
+      expect(registry.call("base64url.encode_no_pad", ["foobar"]).to_ruby).to eq("Zm9vYmFy")
+      expect(registry.call("base64url.encode_no_pad", [""]).to_ruby).to eq("")
+    end
+
+    it "is undefined for a non-string argument" do
+      expect(registry.call("base64url.encode_no_pad", [7])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
+  describe "urlquery.encode_object" do
+    it "sorts keys, expands arrays, and escapes keys and values" do
+      expect(registry.call("urlquery.encode_object", [{ "b" => "2", "a" => "1", "c" => "3" }]).to_ruby)
+        .to eq("a=1&b=2&c=3")
+      expect(registry.call("urlquery.encode_object", [{ "k" => %w[v1 v2] }]).to_ruby).to eq("k=v1&k=v2")
+      expect(registry.call("urlquery.encode_object", [{ "key with space" => "a&b=c", "x" => "y/z" }]).to_ruby)
+        .to eq("key+with+space=a%26b%3Dc&x=y%2Fz")
+      expect(registry.call("urlquery.encode_object", [{ "b" => "2", "a" => %w[x y], "c" => "" }]).to_ruby)
+        .to eq("a=x&a=y&b=2&c=")
+    end
+
+    it "sorts and de-duplicates a set value (matching OPA)" do
+      expect(registry.call("urlquery.encode_object", [{ "k" => Set["z", "a", "m"] }]).to_ruby).to eq("k=a&k=m&k=z")
+    end
+
+    it "emits nothing for an empty object or empty array value" do
+      expect(registry.call("urlquery.encode_object", [{}]).to_ruby).to eq("")
+      expect(registry.call("urlquery.encode_object", [{ "k" => [] }]).to_ruby).to eq("")
+    end
+
+    it "is undefined for a non-object or a non-string/array-of-strings value" do
+      expect(registry.call("urlquery.encode_object", [7])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("urlquery.encode_object", [{ "k" => 5 }])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("urlquery.encode_object", [{ "k" => [true] }])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("urlquery.encode_object", [{ "k" => ["a", 1] }])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("urlquery.encode_object", [{ "k" => { "x" => "y" } }])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("urlquery.encode_object", [{ "k" => nil }])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
+  describe "urlquery.decode_object" do
+    it "decodes a query string to an object of value arrays" do
+      expect(registry.call("urlquery.decode_object", ["a=1&b=2"]).to_ruby).to eq("a" => ["1"], "b" => ["2"])
+      expect(registry.call("urlquery.decode_object", ["k=v1&k=v2&j=x"]).to_ruby)
+        .to eq("k" => %w[v1 v2], "j" => ["x"])
+      expect(registry.call("urlquery.decode_object", [""]).to_ruby).to eq({})
+    end
+
+    it "treats a key with no value as empty, and unescapes + and percent escapes" do
+      expect(registry.call("urlquery.decode_object", ["a&b=2"]).to_ruby).to eq("a" => [""], "b" => ["2"])
+      expect(registry.call("urlquery.decode_object", ["a=hello%20world&b=x+y"]).to_ruby)
+        .to eq("a" => ["hello world"], "b" => ["x y"])
+    end
+
+    it "is undefined for a malformed percent-escape in key or value (matching OPA)" do
+      expect(registry.call("urlquery.decode_object", ["a=%2"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("urlquery.decode_object", ["%2=b"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined for a non-string argument" do
+      expect(registry.call("urlquery.decode_object", [123])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
 end
 
 # rubocop:enable Metrics/BlockLength
