@@ -6,6 +6,7 @@ PATH
       cgi
       digest
       json
+      openssl
 
 GEM
   remote: https://rubygems.org/
@@ -116,6 +117,7 @@ GEM
     minitest (6.0.6)
       drb (~> 2.0)
       prism (~> 1.5)
+    openssl (4.0.0)
     ostruct (0.6.3)
     parallel (2.1.0)
     parser (3.3.11.1)
@@ -242,7 +244,6 @@ GEM
 
 PLATFORMS
   arm64-darwin-25
-  ruby
 
 DEPENDENCIES
   benchmark-ips (~> 2.15)

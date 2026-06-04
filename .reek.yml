@@ -119,8 +119,13 @@ detectors:
       - Ruby::Rego::Evaluator::ExpressionDispatch#handler_for
   UncommunicativeMethodName:
     exclude:
-      # Hash-algorithm names (md5/sha1/sha256) are intrinsic OPA built-in names;
-      # the embedded digits are domain identifiers, not poor naming.
+      # Hash-algorithm names (md5/sha1/sha256, and the keyed hmac_* variants) are
+      # intrinsic OPA built-in names; the embedded digits are domain identifiers, not
+      # poor naming.
       - Ruby::Rego::Builtins::Crypto#self.md5
       - Ruby::Rego::Builtins::Crypto#self.sha1
       - Ruby::Rego::Builtins::Crypto#self.sha256
+      - Ruby::Rego::Builtins::Crypto#self.hmac_md5
+      - Ruby::Rego::Builtins::Crypto#self.hmac_sha1
+      - Ruby::Rego::Builtins::Crypto#self.hmac_sha256
+      - Ruby::Rego::Builtins::Crypto#self.hmac_sha512
