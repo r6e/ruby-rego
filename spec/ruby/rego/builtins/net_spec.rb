@@ -45,6 +45,9 @@ RSpec.describe "net builtins" do
     it "stays reflexive for the degenerate IPv4-mapped /80..95 band (diverges from OPA per go#51906)" do
       expect(registry.call("net.cidr_contains", ["::ffff:10.0.0.0/80", "::ffff:10.0.0.0/80"]).to_ruby).to be(true)
       expect(registry.call("net.cidr_contains", ["::ffff:10.0.0.0/95", "::ffff:10.0.0.0/95"]).to_ruby).to be(true)
+      # band edges (/79 below, /96 at/above the ::ffff: marker) match OPA — both reflexive
+      expect(registry.call("net.cidr_contains", ["::ffff:10.0.0.0/79", "::ffff:10.0.0.0/79"]).to_ruby).to be(true)
+      expect(registry.call("net.cidr_contains", ["::ffff:10.0.0.0/96", "::ffff:10.0.0.0/96"]).to_ruby).to be(true)
     end
 
     it "accepts a leading-zero prefix length like OPA (/08 == /8)" do
@@ -114,6 +117,8 @@ RSpec.describe "net builtins" do
       expect(registry.call("net.cidr_is_valid", ["10/8"]).to_ruby).to be(false)
       expect(registry.call("net.cidr_is_valid", ["not-a-cidr"]).to_ruby).to be(false)
       expect(registry.call("net.cidr_is_valid", [""]).to_ruby).to be(false)
+      # leading-zero octets (octal-style) are rejected by both IPAddr and OPA/Go
+      expect(registry.call("net.cidr_is_valid", ["010.0.0.0/8"]).to_ruby).to be(false)
     end
 
     # Forms IPAddr accepts but OPA/Go reject (verified against opa eval).
