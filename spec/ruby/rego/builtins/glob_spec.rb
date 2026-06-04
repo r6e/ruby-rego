@@ -81,6 +81,17 @@ RSpec.describe "glob builtins" do
     it "matches a delimiter character listed in a class" do
       expect(match("x[.]y", ["."], "x.y")).to be(true)
     end
+
+    it "honors a backslash escape inside a class" do
+      expect(match('[\\]]', ["."], "]")).to be(true)
+      expect(match('[a\\-z]', ["."], "-")).to be(true)
+      expect(match('[a\\-z]', ["."], "b")).to be(false)
+    end
+
+    it "treats && in a class as literal characters (not regex intersection)" do
+      expect(match("[a&&b]", ["."], "&")).to be(true)
+      expect(match("[a&&b]", ["."], "a")).to be(true)
+    end
   end
 
   describe "glob.match brace alternation" do
@@ -111,17 +122,19 @@ RSpec.describe "glob builtins" do
   # OPA's matcher (gobwas/glob). These cases return a useful result here but are wrong
   # or undefined in OPA. See gobwas/glob issues #41, #47, #66.
   describe "glob.match (intentional corrections of known OPA/gobwas bugs)" do
-    it "supports character classes with multiple ranges (gobwas #47)" do
-      # OPA returns undefined for these; standard glob accepts them.
-      expect(match("[A-Za-z]", ["."], "B")).to be(true)
+    it "uses standard character-class semantics (gobwas #47)" do
+      # OPA's restrictive grammar rejects multi-range classes (undefined) and reads a
+      # range mixed with literals as literal characters; standard glob handles both.
+      expect(match("[A-Za-z]", ["."], "B")).to be(true) # OPA: undefined
       expect(match("[A-Za-z]", ["."], "7")).to be(false)
-      expect(match("[a-z0-9]", ["."], "5")).to be(true)
+      expect(match("[a-z0-9]", ["."], "5")).to be(true) # OPA: undefined
       expect(match("[a-zA-Z0-9]", ["."], "Z")).to be(true)
+      expect(match("[a0-9]", ["."], "5")).to be(true)   # OPA: false (reads a,0,-,9 literally)
     end
 
-    it "matches non-ASCII characters with ? and classes (gobwas #41)" do
-      # OPA's ? and [] do not match characters outside ASCII.
-      expect(match("[ö]", ["."], "ö")).to be(true)
+    it "matches non-ASCII characters under ? consistently by codepoint (gobwas #41)" do
+      # OPA 1.17 matches [ö] and a standalone ?, but ? in a sequence still fails on
+      # non-ASCII (both of these return false in OPA); this matches them by codepoint.
       expect(match("ångstr?m", ["."], "ångström")).to be(true)
       expect(match("a?c", ["."], "a😀c")).to be(true)
     end
@@ -156,6 +169,16 @@ RSpec.describe "glob builtins" do
 
     it "leaves non-glob characters unescaped" do
       expect(registry.call("glob.quote_meta", ["a-b,c.d"]).to_ruby).to eq("a-b,c.d")
+    end
+
+    it "escapes a backslash" do
+      expect(registry.call("glob.quote_meta", ['a\\b']).to_ruby).to eq('a\\\\b')
+    end
+
+    it "round-trips: match(quote_meta(s), d, s) is true for metacharacters" do
+      raw = 'a*b?c[d]{e}\\f'
+      quoted = registry.call("glob.quote_meta", [raw]).to_ruby
+      expect(match(quoted, ["."], raw)).to be(true)
     end
   end
 

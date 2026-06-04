@@ -410,12 +410,13 @@ module Ruby
           def non_delimiter_class: (Array[String] seps) -> String
           def translate: (Integer pos, top_level: bool) -> [String, Integer]
           def translate_token: (String char, Integer pos) -> [String, Integer]
-          def star: (Integer pos) -> String
-          def star_width: (Integer pos) -> Integer
+          def star: (Integer pos) -> [String, Integer]
           def escape_literal: (Integer pos) -> [String, Integer]
           def translate_brace: (Integer pos) -> [String, Integer]
           def translate_class: (Integer pos) -> [String, Integer]
-          def class_body: (Array[String] chars) -> String
+          def scan_class_element: (Array[[String, bool]] elements, Integer pos) -> Integer
+          def class_body: (Array[[String, bool]] elements) -> String
+          def range_separator?: ([String, bool]? element) -> bool
           def class_range: (String low, String high) -> String
           def escape_in_class: (String char) -> String
           def raise_malformed: () -> bot

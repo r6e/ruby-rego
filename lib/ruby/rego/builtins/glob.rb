@@ -21,11 +21,13 @@ module Ruby
       # yield an undefined result.
       #
       # This implements correct glob semantics rather than reproducing known bugs in
-      # OPA's matcher (gobwas/glob). Specifically, unlike OPA: character classes may use
-      # multiple ranges such as `[A-Za-z]` (gobwas #47); `?` and `[...]` match non-ASCII
-      # characters by Unicode codepoint (gobwas #41); and `?`/`[!...]` require exactly one
-      # character rather than also matching the empty string. Well-formed ASCII patterns
-      # behave identically to OPA.
+      # OPA's matcher (gobwas/glob). Specifically, unlike OPA: character classes use
+      # standard semantics — multiple ranges and ranges mixed with literals, e.g.
+      # `[A-Za-z]` and `[a0-9]` — instead of gobwas's restrictive single-range grammar
+      # (gobwas #47); `?` matches non-ASCII characters consistently by codepoint even
+      # mid-pattern, where OPA's `?` still fails on non-ASCII in a sequence (gobwas #41);
+      # and `?`/`[!...]` require exactly one character rather than also matching the empty
+      # string. Well-formed ASCII patterns behave identically to OPA.
       module Glob
         extend RegistryHelpers
 
@@ -34,8 +36,9 @@ module Ruby
           "glob.quote_meta" => { arity: 1, handler: :quote_meta }
         }.freeze
 
-        # Glob metacharacters escaped by glob.quote_meta (matching gobwas QuoteMeta).
-        QUOTE_META_PATTERN = /[*?\[\]{}]/
+        # Glob metacharacters escaped by glob.quote_meta (matching gobwas QuoteMeta):
+        # the wildcards/class/brace characters plus the escape character itself.
+        QUOTE_META_PATTERN = /[*?\[\]{}\\]/
         DEFAULT_DELIMITERS = ["."].freeze
 
         # Per-match timeout (shared knob with the regex builtins) guarding against
@@ -173,7 +176,7 @@ module Ruby
           # :reek:TooManyStatements
           def translate_token(char, pos)
             case char
-            when "*" then [star(pos), pos + star_width(pos)]
+            when "*" then star(pos)
             when "?" then [@nonsep, pos + 1]
             when "[" then translate_class(pos)
             when "{" then translate_brace(pos)
@@ -182,12 +185,13 @@ module Ruby
             end
           end
 
+          # `**` (superstar) crosses delimiters; a single `*` does not. Returns the
+          # regex source and the number of pattern characters consumed.
+          # :reek:FeatureEnvy
           def star(pos)
-            @chars[pos + 1] == "*" ? '[\s\S]*' : "#{@nonsep}*"
-          end
+            return ['[\s\S]*', pos + 2] if @chars[pos + 1] == "*"
 
-          def star_width(pos)
-            @chars[pos + 1] == "*" ? 2 : 1
+            ["#{@nonsep}*", pos + 1]
           end
 
           # Translates `\x` into a literal x. A trailing backslash is malformed.
@@ -221,38 +225,50 @@ module Ruby
           end
           # rubocop:enable Metrics/MethodLength
 
-          # Translates `[...]` / `[!...]` into a regex character class.
+          # Translates `[...]` / `[!...]` into a regex character class. Scans into
+          # [char, escaped?] elements so a backslash escapes the next character (so e.g.
+          # `[\]]` is a class matching a literal `]`, not an unterminated class).
           # :reek:TooManyStatements
           def translate_class(pos)
             pos += 1
             negate = @chars[pos] == "!"
             pos += 1 if negate
-            body = [] # @type var body: Array[String]
-            while pos < @chars.length && @chars[pos] != "]"
-              body << @chars[pos]
-              pos += 1
-            end
-            raise_malformed if pos >= @chars.length || body.empty?
+            elements = [] # @type var elements: Array[[String, bool]]
+            pos = scan_class_element(elements, pos) while pos < @chars.length && @chars[pos] != "]"
+            raise_malformed if pos >= @chars.length || elements.empty?
 
-            ["[#{"^" if negate}#{class_body(body)}]", pos + 1]
+            ["[#{"^" if negate}#{class_body(elements)}]", pos + 1]
           end
 
-          # Converts raw class characters into regex class source, expanding `a-z`
-          # ranges and escaping specials. Reversed or dangling ranges are malformed.
+          # Appends one class element, consuming `\x` as an escaped literal.
+          def scan_class_element(elements, pos)
+            if @chars[pos] == "\\"
+              raise_malformed if pos + 1 >= @chars.length
+
+              elements << [@chars[pos + 1], true]
+              return pos + 2
+            end
+            elements << [@chars[pos], false]
+            pos + 1
+          end
+
+          # Converts class elements into regex class source, expanding `a-z` ranges and
+          # escaping specials. Only an unescaped `-` between two elements forms a range;
+          # reversed or dangling ranges are malformed.
           # :reek:TooManyStatements
           # :reek:FeatureEnvy
           # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
-          def class_body(chars)
+          def class_body(elements)
             out = +""
             index = 0
-            while index < chars.length
-              if chars[index + 1] == "-" && index + 2 < chars.length
-                out << class_range(chars[index], chars[index + 2])
+            while index < elements.length
+              if range_separator?(elements[index + 1]) && index + 2 < elements.length
+                out << class_range(elements[index][0], elements[index + 2][0])
                 index += 3
-              elsif chars[index + 1] == "-"
+              elsif range_separator?(elements[index + 1])
                 raise_malformed # dangling range, e.g. [a-]
               else
-                out << escape_in_class(chars[index])
+                out << escape_in_class(elements[index][0])
                 index += 1
               end
             end
@@ -260,16 +276,23 @@ module Ruby
           end
           # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
+          # An unescaped `-` element acts as a range separator.
+          # :reek:UtilityFunction
+          def range_separator?(element)
+            element == ["-", false]
+          end
+
           def class_range(low, high)
             raise_malformed if low.ord > high.ord
 
             "#{escape_in_class(low)}-#{escape_in_class(high)}"
           end
 
-          # Escapes a character for use inside a regex character class.
+          # Escapes a character for use inside a regex character class. `&` is escaped
+          # too so `&&` cannot trigger Onigmo character-class intersection.
           # :reek:UtilityFunction
           def escape_in_class(char)
-            char.gsub(/[\\\]\^\-\[]/) { |meta| "\\#{meta}" }
+            char.gsub(/[\\\]\^\-\[&]/) { |meta| "\\#{meta}" }
           end
 
           def raise_malformed
