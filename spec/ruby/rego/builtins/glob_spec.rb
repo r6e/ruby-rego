@@ -195,6 +195,12 @@ RSpec.describe "glob builtins" do
       expect(registry.call("glob.match", [pattern, ["."], "x"]))
         .to be_a(Ruby::Rego::UndefinedValue)
     end
+
+    it "is undefined for a pathologically large character class (DoS guard)" do
+      pattern = "[#{"a" * 5_000_000}]"
+      expect(registry.call("glob.match", [pattern, ["."], "a"]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 
   describe "glob.quote_meta" do

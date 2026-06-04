@@ -257,16 +257,23 @@ module Ruby
           # [char, escaped?] elements so a backslash escapes the next character (so e.g.
           # `[\]]` is a class matching a literal `]`, not an unterminated class).
           # :reek:TooManyStatements
+          # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity
           def translate_class(pos)
             pos += 1
             negate = @chars[pos] == "!"
             pos += 1 if negate
             elements = [] # @type var elements: Array[[String, bool]]
-            pos = scan_class_element(elements, pos) while pos < @chars.length && @chars[pos] != "]"
+            while pos < @chars.length && @chars[pos] != "]"
+              pos = scan_class_element(elements, pos)
+              # Bound the class scan so one enormous class can't build a huge element
+              # array before the per-token compile-size guard applies.
+              raise_malformed if elements.length > MAX_COMPILED_SIZE
+            end
             raise_malformed if pos >= @chars.length || elements.empty?
 
             ["[#{"^" if negate}#{class_body(elements)}]", pos + 1]
           end
+          # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity
 
           # Appends one class element, consuming `\x` as an escaped literal.
           def scan_class_element(elements, pos)
