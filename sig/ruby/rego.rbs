@@ -381,6 +381,7 @@ module Ruby
         GLOB_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
         QUOTE_META_PATTERN: Regexp
         DEFAULT_DELIMITERS: Array[String]
+        MAX_DELIMITERS: Integer
         GLOB_TIMEOUT_SECONDS: Float
 
         def self.register!: () -> BuiltinRegistry

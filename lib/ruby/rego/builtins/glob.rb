@@ -17,17 +17,17 @@ module Ruby
       # everything), an empty array defaults to `["."]`, and a non-empty array lists the
       # single-character delimiters.
       #
-      # Malformed patterns (unclosed class/brace, reversed range, empty `{}`) yield an
-      # undefined result.
-      #
       # This implements correct glob semantics rather than reproducing known bugs in
       # OPA's matcher (gobwas/glob). Specifically, unlike OPA: character classes use
       # standard semantics — multiple ranges and ranges mixed with literals, e.g.
       # `[A-Za-z]` and `[a0-9]` — instead of gobwas's restrictive single-range grammar
       # (gobwas #47); `?` matches non-ASCII characters consistently by codepoint even
       # mid-pattern, where OPA's `?` still fails on non-ASCII in a sequence (gobwas #41);
-      # and `?`/`[!...]` require exactly one character rather than also matching the empty
-      # string. Outside these corrections, well-formed patterns behave identically to OPA.
+      # `?`/`[!...]` require exactly one character rather than also matching the empty
+      # string; and malformed or degenerate patterns — unclosed class or brace, reversed
+      # range, the empty group `{}` — yield an undefined result, whereas OPA's matcher
+      # leniently accepts some of them (e.g. an unterminated `{a,b` or an empty `{}`).
+      # Outside these corrections, well-formed patterns behave identically to OPA.
       module Glob
         extend RegistryHelpers
 
@@ -36,10 +36,17 @@ module Ruby
           "glob.quote_meta" => { arity: 1, handler: :quote_meta }
         }.freeze
 
-        # Glob metacharacters escaped by glob.quote_meta (matching gobwas QuoteMeta):
-        # the wildcards/class/brace characters plus the escape character itself.
+        # Metacharacters escaped by glob.quote_meta, matching OPA: the wildcards, class,
+        # and brace characters plus the escape character itself. (OPA does not escape the
+        # `,` that raw gobwas QuoteMeta does — verified against opa eval.)
         QUOTE_META_PATTERN = /[*?\[\]{}\\]/
         DEFAULT_DELIMITERS = ["."].freeze
+
+        # Upper bound on the delimiter count. The non-delimiter character class is built
+        # once from the delimiters, so an enormous delimiter array would do O(n) work
+        # before the per-token compile-size guard applies; a count far above any real use
+        # is rejected as undefined.
+        MAX_DELIMITERS = 1 << 16
 
         # Per-match timeout (shared knob with the regex builtins) guarding against
         # catastrophic backtracking on an untrusted compiled pattern.
@@ -87,7 +94,10 @@ module Ruby
           return [] if value.is_a?(NullValue)
 
           Base.assert_type(value, expected: ArrayValue, context: "glob.match delimiters")
-          chars = value.value.map { |element| delimiter_char(element) }
+          elements = value.value
+          count = elements.length
+          raise_glob_error("too many delimiters", count.to_s) if count > MAX_DELIMITERS
+          chars = elements.map { |element| delimiter_char(element) }
           chars.empty? ? DEFAULT_DELIMITERS : chars
         end
         private_class_method :separators

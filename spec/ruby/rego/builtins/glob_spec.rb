@@ -153,6 +153,12 @@ RSpec.describe "glob builtins" do
       expect(match("?", nil, "")).to be(false)
       expect(match("[!0-9]", nil, "")).to be(false)
     end
+
+    it "rejects malformed/degenerate braces that OPA leniently accepts" do
+      # OPA matches an unterminated brace group and an empty {}; standard glob does not.
+      expect(registry.call("glob.match", ["{a,b", [], "a"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("glob.match", ["{}", [], ""])).to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 
   describe "glob.match invalid input" do
