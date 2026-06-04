@@ -437,6 +437,7 @@ module Ruby
         def self.is_valid: (Value pattern_value) -> BooleanValue
         def self.split: (Value pattern_value, Value string_value) -> ArrayValue
         def self.find_n: (Value pattern_value, Value string_value, Value number_value) -> ArrayValue
+        def self.replace: (Value string_value, Value pattern_value, Value replacement_value) -> StringValue
 
         private
 
@@ -444,11 +445,29 @@ module Ruby
         def self.string_arg: (Value value, String context) -> String
         def self.string_array: (Array[String] values) -> ArrayValue
         def self.compile: (Value pattern_value, String context) -> Regexp
+        def self.translate_named_groups: (String pattern) -> String
         def self.guarded: [T] (String context) { () -> T } -> T
         def self.each_match: (Regexp regexp, String string) { (MatchData) -> void } -> void
         def self.advance: (MatchData found) -> Integer
         def self.full_matches: (Regexp regexp, String string) -> Array[String]
         def self.split_segments: (Regexp regexp, String string) -> Array[String]
+
+        class GoTemplate
+          NAME_CHAR: Regexp
+
+          @segments: Array[[Symbol, String | Integer]]
+
+          def initialize: (String template) -> void
+          def expand: (MatchData match) -> String
+
+          private
+
+          def parse: (Array[String] chars) -> Array[[Symbol, String | Integer]]
+          def extract: (Array[String] chars, Integer pos) -> [String?, Integer]
+          def reference: (String name) -> [Symbol, String | Integer]
+          def resolve: (Symbol kind, String | Integer value, MatchData match) -> String
+          def named_submatch: (MatchData match, String name) -> String
+        end
       end
 
       module Codecs

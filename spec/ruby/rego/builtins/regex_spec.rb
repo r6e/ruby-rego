@@ -22,6 +22,10 @@ RSpec.describe "regex builtins" do
     it "is undefined for a non-string argument" do
       expect(registry.call("regex.match", [1, "x"])).to be_a(Ruby::Rego::UndefinedValue)
     end
+
+    it "accepts Go's (?P<name>) named-group syntax" do
+      expect(registry.call("regex.match", ['(?P<n>\d+)', "id-42"]).to_ruby).to be(true)
+    end
   end
 
   describe "regex.is_valid" do

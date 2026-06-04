@@ -21,7 +21,8 @@ module Ruby
           "regex.match" => { arity: 2, handler: :match },
           "regex.is_valid" => { arity: 1, handler: :is_valid },
           "regex.split" => { arity: 2, handler: :split },
-          "regex.find_n" => { arity: 3, handler: :find_n }
+          "regex.find_n" => { arity: 3, handler: :find_n },
+          "regex.replace" => { arity: 3, handler: :replace }
         }.freeze
 
         # Per-match wall-clock budget. OPA's RE2 engine is linear-time and immune to
@@ -51,7 +52,7 @@ module Ruby
         # @param pattern_value [Ruby::Rego::Value]
         # @return [Ruby::Rego::BooleanValue]
         def self.is_valid(pattern_value)
-          Regexp.new(string_arg(pattern_value, "regex.is_valid"))
+          Regexp.new(translate_named_groups(string_arg(pattern_value, "regex.is_valid")))
           BooleanValue.new(true)
         rescue RegexpError
           BooleanValue.new(false)
@@ -78,6 +79,26 @@ module Ruby
           matches = matches_for(pattern_value, string_value, "regex.find_n")
           limit = NumericHelpers.integer_value(number_value, context: "regex.find_n")
           string_array(limit.negative? ? matches : matches.first(limit))
+        end
+
+        # Replaces every match of `pattern` in `string` with `replacement`, expanding
+        # Go's Expand template syntax in the replacement (`$1`/`${name}`/`$$`), matching
+        # OPA's `regex.replace`. A backslash is a literal; only `$` is special.
+        #
+        # @param string_value [Ruby::Rego::Value]
+        # @param pattern_value [Ruby::Rego::Value]
+        # @param replacement_value [Ruby::Rego::Value]
+        # @return [Ruby::Rego::StringValue]
+        def self.replace(string_value, pattern_value, replacement_value)
+          regexp = compile(pattern_value, "regex.replace")
+          string = string_arg(string_value, "regex.replace")
+          template = GoTemplate.new(string_arg(replacement_value, "regex.replace"))
+          guarded("regex.replace") do
+            StringValue.new(string.gsub(regexp) do |matched|
+              match = Regexp.last_match
+              match ? template.expand(match) : matched
+            end)
+          end
         end
 
         # Compiles, validates, and runs an all-matches scan under the timeout guard.
@@ -113,7 +134,7 @@ module Ruby
         # @param context [String]
         # @return [Regexp]
         def self.compile(pattern_value, context)
-          pattern = string_arg(pattern_value, context)
+          pattern = translate_named_groups(string_arg(pattern_value, context))
           Regexp.new(pattern, timeout: REGEX_TIMEOUT_SECONDS)
         rescue RegexpError => e
           raise Ruby::Rego::BuiltinArgumentError.new(
@@ -125,6 +146,13 @@ module Ruby
           )
         end
         private_class_method :compile
+
+        # Translates Go's named-group syntax `(?P<name>...)` to Ruby's `(?<name>...)` so
+        # OPA patterns with named groups compile (Ruby's Onigmo rejects the `(?P<` form).
+        def self.translate_named_groups(pattern)
+          pattern.gsub("(?P<", "(?<")
+        end
+        private_class_method :translate_named_groups
 
         # Converts a match-timeout (catastrophic backtracking) into an undefined
         # result instead of hanging the evaluator.
@@ -209,6 +237,100 @@ module Ruby
         end
         # rubocop:enable Metrics/CyclomaticComplexity, Metrics/MethodLength
         private_class_method :split_segments
+
+        # Parses a Go `regexp.Expand` replacement template once, then expands it against
+        # each match. `$name`/`${name}` reference a submatch (numeric name = numbered
+        # group, `$0` = whole match; an unknown or out-of-range reference expands to the
+        # empty string), `$$` is a literal `$`, a `$` not followed by a valid name is a
+        # literal `$`, and every other character (including backslash) is a literal.
+        class GoTemplate
+          NAME_CHAR = /[A-Za-z0-9_]/
+
+          # @param template [String]
+          def initialize(template)
+            @segments = parse(template.chars)
+          end
+
+          # @param match [MatchData]
+          # @return [String]
+          def expand(match)
+            @segments.map { |kind, value| resolve(kind, value, match) }.join
+          end
+
+          private
+
+          # Returns [[kind, value], ...] where kind is :literal, :index, or :name.
+          # :reek:TooManyStatements
+          # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+          def parse(chars)
+            segments = [] # @type var segments: Array[[Symbol, String | Integer]]
+            literal = +""
+            pos = 0
+            while pos < chars.length
+              if chars[pos] != "$"
+                literal << chars[pos]
+                pos += 1
+                next
+              end
+              if chars[pos + 1] == "$"
+                literal << "$"
+                pos += 2
+                next
+              end
+              name, next_pos = extract(chars, pos)
+              if name.nil?
+                literal << "$"
+                pos += 1
+                next
+              end
+              unless literal.empty?
+                segments << [:literal, literal]
+                literal = +""
+              end
+              segments << reference(name)
+              pos = next_pos
+            end
+            segments << [:literal, literal] unless literal.empty?
+            segments
+          end
+          # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+
+          # Extracts a `$name`/`${name}` reference name starting at the `$` in `chars`.
+          # Returns [name, next_pos], or [nil, _] when the `$` is not a valid reference.
+          # :reek:TooManyStatements
+          def extract(chars, pos)
+            cursor = pos + 1
+            braced = chars[cursor] == "{"
+            cursor += 1 if braced
+            start = cursor
+            cursor += 1 while NAME_CHAR.match?(chars[cursor])
+            name = chars[start...cursor].to_a.join
+            return [nil, pos] if name.empty?
+            return [nil, pos] if braced && chars[cursor] != "}"
+
+            [name, braced ? cursor + 1 : cursor]
+          end
+
+          # A purely-numeric name is a numbered group; otherwise a named group.
+          def reference(name)
+            name.match?(/\A\d+\z/) ? [:index, name.to_i] : [:name, name]
+          end
+
+          def resolve(kind, value, match)
+            case kind
+            when :literal then value.to_s
+            when :index then match[value.to_i].to_s
+            else named_submatch(match, value.to_s)
+            end
+          end
+
+          # An unknown named group raises IndexError in Ruby; Go expands it to empty.
+          def named_submatch(match, name)
+            match[name].to_s
+          rescue IndexError
+            ""
+          end
+        end
       end
     end
   end

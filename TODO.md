@@ -58,9 +58,10 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
 
 - 🟡 Numeric: ✅ `abs`, `round`, `ceil`, `floor`, `numbers.range`; ⬜ `rand.intn`
   (stateful/seeded — deferred), ⬜ `numbers.range_step`.
-- 🟡 Regex: ✅ `regex.match`, `regex.is_valid`, `regex.split`, `regex.find_n`;
-  ⬜ `regex.replace` (needs Go `$1` → Ruby template translation),
-  ⬜ `regex.find_all_string_submatch_n`, `regex.template_match`, `regex.globs_match`.
+- 🟡 Regex: ✅ `regex.match`, `regex.is_valid`, `regex.split`, `regex.find_n`,
+  `regex.replace` (Go `Expand` template syntax; Go `(?P<name>)` named groups translated
+  to Ruby `(?<name>)`); ⬜ `regex.find_all_string_submatch_n`, `regex.template_match`,
+  `regex.globs_match`.
 - 🟡 Encoding: ✅ `json.marshal`/`json.unmarshal`/`json.is_valid`, `base64`
   encode/decode/is_valid, `base64url` encode/decode, `hex` encode/decode,
   `urlquery` encode/decode; ⬜ `yaml.*`, ⬜ `urlquery.encode_object`/`decode_object`,

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Regex built-in: `regex.replace`, matching OPA. The replacement value uses Go's `Expand`
+  template syntax (`$1`/`${name}` submatch references, `$0` whole match, `$$` literal `$`;
+  unknown or out-of-range references expand to the empty string), and a backslash is a
+  literal. Go's `(?P<name>...)` named-group syntax is now translated to Ruby's
+  `(?<name>...)` across the regex built-ins so named groups compile.
+
 - Glob built-ins: `glob.match` (wildcards `*`/`**`/`?`, character classes `[...]`/`[!...]`,
   brace alternation `{a,b}` with nesting, escaping, and OPA delimiter semantics — a null
   delimiters argument means "no delimiters", an empty array defaults to `["."]`) and
