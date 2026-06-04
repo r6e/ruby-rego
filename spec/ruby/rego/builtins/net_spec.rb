@@ -37,6 +37,20 @@ RSpec.describe "net builtins" do
         .to be_a(Ruby::Rego::UndefinedValue)
     end
 
+    # An IPv4-mapped IPv6 CIDR whose prefix (80..95) cuts through the `::ffff:` marker is a
+    # degenerate input: IPAddr masks it to `::/prefix`, so the gem stays self-consistent
+    # (a network contains itself). OPA inherits golang/go#51906 here and is non-reflexive
+    # (returns false). We keep the reflexive result and document the divergence rather than
+    # reproduce the upstream Go inconsistency.
+    it "stays reflexive for the degenerate IPv4-mapped /80..95 band (diverges from OPA per go#51906)" do
+      expect(registry.call("net.cidr_contains", ["::ffff:10.0.0.0/80", "::ffff:10.0.0.0/80"]).to_ruby).to be(true)
+      expect(registry.call("net.cidr_contains", ["::ffff:10.0.0.0/95", "::ffff:10.0.0.0/95"]).to_ruby).to be(true)
+    end
+
+    it "accepts a leading-zero prefix length like OPA (/08 == /8)" do
+      expect(registry.call("net.cidr_contains", ["10.0.0.0/08", "10.1.2.3"]).to_ruby).to be(true)
+    end
+
     it "is undefined when the first argument is not a cidr (bare IP or garbage)" do
       expect(registry.call("net.cidr_contains", ["10.0.0.1", "10.0.0.1"])).to be_a(Ruby::Rego::UndefinedValue)
       expect(registry.call("net.cidr_contains", ["not-cidr", "10.0.0.1"])).to be_a(Ruby::Rego::UndefinedValue)
@@ -86,6 +100,12 @@ RSpec.describe "net builtins" do
 
     it "accepts a cidr with host bits set" do
       expect(registry.call("net.cidr_is_valid", ["192.168.0.5/24"]).to_ruby).to be(true)
+    end
+
+    it "accepts a leading-zero prefix length like OPA (/08, /008, /00)" do
+      expect(registry.call("net.cidr_is_valid", ["10.0.0.0/08"]).to_ruby).to be(true)
+      expect(registry.call("net.cidr_is_valid", ["10.0.0.0/008"]).to_ruby).to be(true)
+      expect(registry.call("net.cidr_is_valid", ["2001:db8::/00"]).to_ruby).to be(true)
     end
 
     it "is false for a bare IP (no prefix), bad mask, abbreviated, or garbage" do

@@ -338,6 +338,7 @@ module Ruby
         def self.addr_arg: (Value value, String context) -> IPAddr
         def self.parse_cidr: (String string) -> IPAddr?
         def self.parse_addr: (String string) -> IPAddr?
+        def self.canonical_source: (String string) -> String?
         def self.normalize: (IPAddr addr) -> IPAddr
         def self.raise_invalid_addr: (String context) -> bot
         def self.string_value: (Value value, String context) -> String

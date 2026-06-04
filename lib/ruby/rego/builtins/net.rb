@@ -15,6 +15,16 @@ module Ruby
       # invalid argument, matching OPA; cidr_is_valid is total over runtime values (a
       # non-string yields false, like regex.is_valid). Addresses are parsed by IPAddr,
       # which is linear in the input length, so there is no unbounded cost.
+      #
+      # Parsing is reconciled with OPA/Go: forms IPAddr accepts but OPA rejects (a
+      # dotted-decimal netmask, a scoped `%zone` or bracketed `[..]` address) are rejected,
+      # and a leading-zero prefix length (`/08`) is accepted as `/8` (IPAddr rejects it, OPA
+      # accepts). One intentional divergence remains: an IPv4-mapped IPv6 CIDR whose prefix
+      # falls in 80..95 cuts through the `::ffff:` marker — a degenerate input where OPA
+      # inherits golang/go#51906 and cidr_contains is non-reflexive. The gem masks such an
+      # input to `::/prefix` and stays reflexive (a network contains itself) rather than
+      # reproduce the upstream Go inconsistency. Prefixes >= 96 (genuine mapped addresses)
+      # are normalised to native IPv4 to match OPA.
       module Net
         extend RegistryHelpers
 
@@ -105,24 +115,42 @@ module Ruby
         private_class_method :parse_cidr
 
         # Parses an IP or CIDR with IPAddr, returning nil for any input OPA would reject.
-        # Beyond IPAddr's own validation (rescued via IPAddr::Error), three forms IPAddr
-        # accepts but OPA/Go reject are screened out: a non-ASCII-compatible or
+        # Beyond IPAddr's own validation (rescued via IPAddr::Error), forms IPAddr handles
+        # differently from OPA/Go are reconciled first: a non-ASCII-compatible or
         # invalid-encoding string (which would make IPAddr raise a bare ArgumentError, not
-        # IPAddr::Error), a scoped/zone (`%`) or bracketed (`[]`) address, and a
-        # dotted-decimal netmask (the suffix after `/` must be an integer prefix length).
+        # IPAddr::Error) and a scoped/zone (`%`) or bracketed (`[]`) address are rejected,
+        # and the prefix length is canonicalised by `canonical_source`.
         #
         # @param string [String]
         # @return [IPAddr, nil]
         def self.parse_addr(string)
           return nil unless string.encoding.ascii_compatible? && string.valid_encoding?
           return nil if string.match?(/[%\[\]]/)
-          return nil if string.include?("/") && !string.split("/", 2).last.match?(/\A\d+\z/)
 
-          IPAddr.new(string)
+          source = canonical_source(string)
+
+          IPAddr.new(source) if source
         rescue IPAddr::Error
           nil
         end
         private_class_method :parse_addr
+
+        # Reconciles the `/prefix` suffix with OPA/Go before handing it to IPAddr: returns
+        # nil when the suffix is non-integer (a dotted-decimal netmask, which OPA rejects),
+        # and strips leading zeros otherwise (OPA accepts `/08` as `/8`, but IPAddr rejects
+        # a leading-zero prefix). A string without a prefix is returned unchanged.
+        #
+        # @param string [String]
+        # @return [String, nil]
+        def self.canonical_source(string)
+          return string unless string.include?("/")
+
+          addr, prefix = string.split("/", 2)
+          return nil unless prefix&.match?(/\A\d+\z/)
+
+          "#{addr}/#{prefix.to_i}"
+        end
+        private_class_method :canonical_source
 
         # Normalizes an IPv4-mapped IPv6 address (e.g. `::ffff:10.0.0.0/120`) to its native
         # IPv4 form so cross-notation comparisons match OPA, which treats the mapped and
