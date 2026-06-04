@@ -17,8 +17,8 @@ All notable changes to this project will be documented in this file.
   sequence (gobwas #41), `?`/`[!...]` require exactly one character instead of also
   matching the empty string, and degenerate forms OPA leniently accepts (an unterminated
   `{a,b`, an empty `{}`, and a trailing or lone backslash) yield undefined. Outside these
-  corrections,
-  well-formed patterns behave identically to OPA. To stay bounded on untrusted input,
+  corrections, well-formed patterns behave identically to OPA. To stay bounded on
+  untrusted input,
   patterns with more than 65,536 delimiters, brace nesting deeper than 100, or a compiled
   regex source over 1 MB yield undefined (DoS guards, analogous to the `numbers.range`
   and `bits.lsh` caps).
