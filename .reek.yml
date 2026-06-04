@@ -18,6 +18,9 @@ detectors:
     exclude:
       - Ruby::Rego::Lexer
       - Ruby::Rego::Evaluator::OperatorEvaluator
+      # Regex carries several independent anti-DoS bound constants (timeout, source
+      # length, output/work caps) plus character classes — each a distinct guard.
+      - Ruby::Rego::Builtins::Regex
   TooManyInstanceVariables:
     exclude:
       - Ruby::Rego::Lexer

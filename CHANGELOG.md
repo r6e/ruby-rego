@@ -12,11 +12,16 @@ All notable changes to this project will be documented in this file.
   built-ins: named groups are rewritten to
   plain captures and `${name}` references resolve through a name→index map, so named and
   unnamed groups share one RE2-style numbering space (mixed groups and numbered references
-  work); names must be RE2 identifiers and a Unicode name is rejected (matching RE2). The
+  work); names must be RE2 identifiers for `${name}` resolution. A non-identifier (e.g.
+  Unicode) name is rejected in the `(?P<…>` form (matching RE2 → undefined), but the
+  `(?<…>` form is Onigmo-native and accepts such a name per the superset policy below, so
+  the two synonyms diverge for non-identifier names. The
   translation skips `(?P<`/`(?<` inside a character class or after a backslash, leaves
   lookbehind `(?<=`/`(?<!` untranslated, and scans each
   group name in linear time so an adversarial pattern (many `(?P<` with no closing `>`)
-  cannot cause quadratic preprocessing. As anti-DoS guards, the regex timeout
+  cannot cause quadratic preprocessing. As anti-DoS guards, a pattern or replacement
+  template longer than ~1M bytes is rejected up front (each is split into a character
+  array before processing — an uninterruptible operation no timeout can bound); the regex timeout
   (`RUBY_REGO_REGEX_TIMEOUT`, default 1s) now also applies as an aggregate deadline across
   the whole match loop (so a cheap-per-match pattern over a long subject — O(n) scans per
   match — yields undefined instead of running quadratically; this bounds `regex.match`,

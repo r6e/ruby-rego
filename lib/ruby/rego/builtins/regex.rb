@@ -55,6 +55,15 @@ module Ruby
         # under the output cap. Exceeding this yields undefined.
         MAX_REPLACE_WORK = 32_000_000
 
+        # Maximum byte length of a pattern or replacement template. Both are split into a
+        # character array (`String#chars`) up front — an uninterruptible O(n) C call that no
+        # cooperative deadline can bound (the same category as compile cost) — before the
+        # per-element processing runs. An oversized source is rejected here by an O(1)
+        # bytesize check rather than materialized; the resulting char array then bounds the
+        # downstream scan/parse/expand loops, which are all O(source). ~1000x any real
+        # pattern or template; exceeding it yields undefined.
+        MAX_REGEX_SOURCE = 1_000_000
+
         # A single RE2 group-name character (`[A-Za-z0-9_]`). Used to scan a `(?P<name>` /
         # `(?<name>` header forward one identifier char at a time, which bounds the scan to
         # the name's length and stops at the first non-identifier — keeping pattern
@@ -123,7 +132,9 @@ module Ruby
         def self.replace(string_value, pattern_value, replacement_value)
           regexp, names = compile_pattern(string_arg(pattern_value, "regex.replace"), "regex.replace")
           string = string_arg(string_value, "regex.replace")
-          template = GoTemplate.new(string_arg(replacement_value, "regex.replace"), names)
+          replacement = string_arg(replacement_value, "regex.replace")
+          assert_source_length(replacement, "regex.replace")
+          template = GoTemplate.new(replacement, names)
           guarded("regex.replace") { StringValue.new(expand_all(string, regexp, template)) }
         end
 
@@ -220,6 +231,28 @@ module Ruby
         end
         private_class_method :string_arg
 
+        # Rejects a pattern or replacement template longer than MAX_REGEX_SOURCE before it is
+        # split into a character array (an uninterruptible O(n) C call). O(1) bytesize check
+        # (bytesize >= length, so this also bounds the codepoint count); exceeding yields
+        # undefined.
+        #
+        # @param source [String]
+        # @param context [String]
+        # @return [void]
+        def self.assert_source_length(source, context)
+          size = source.bytesize
+          return if size <= MAX_REGEX_SOURCE
+
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Regex source exceeds the maximum length",
+            expected: "at most #{MAX_REGEX_SOURCE} bytes",
+            actual: "#{size} bytes",
+            context: context,
+            location: nil
+          )
+        end
+        private_class_method :assert_source_length
+
         # @param values [Array<String>]
         # @return [Ruby::Rego::ArrayValue]
         def self.string_array(values)
@@ -274,6 +307,7 @@ module Ruby
         # :reek:DuplicateMethodCall
         # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
         def self.translate_named_groups(pattern)
+          assert_source_length(pattern, "regex")
           out = +""
           names = {} # @type var names: Hash[String, Integer]
           chars = pattern.chars
@@ -472,7 +506,9 @@ module Ruby
           NAME_CHAR = /[\p{L}\p{Nd}_]/
 
           # Number of parsed segments; the caller charges this per match against the
-          # work budget, since each expansion loops exactly this many segments.
+          # work budget, since each expansion loops exactly this many segments. The
+          # template length is capped (MAX_REGEX_SOURCE) before construction, so parse and
+          # per-match expand are both O(capped template) — no separate time bound needed.
           attr_reader :segment_count
 
           # @param template [String]

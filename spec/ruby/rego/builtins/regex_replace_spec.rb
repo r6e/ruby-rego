@@ -174,6 +174,27 @@ RSpec.describe "regex.replace" do
     expect(result.value).to eq("[a]" * 1_000)
   end
 
+  it "rejects an over-length replacement template in O(1) (DoS guard)" do
+    # A huge template is split into a char array (String#chars) before parsing — an
+    # uninterruptible C call. Even with empty-resolving refs (no output, low work) it must
+    # be rejected by the up-front length cap, not materialized.
+    template = "${z}" * 8_000_000 # 32M chars, well over the source cap
+    result = nil
+    expect do
+      Timeout.timeout(5) { result = registry.call("regex.replace", ["a", "a", template]) }
+    end.not_to raise_error
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
+  end
+
+  it "rejects an over-length pattern in O(1) (DoS guard)" do
+    pattern = "a" * 8_000_000 # over the source cap; shared by every regex built-in
+    result = nil
+    expect do
+      Timeout.timeout(5) { result = registry.call("regex.replace", ["a", pattern, "x"]) }
+    end.not_to raise_error
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
+  end
+
   it "bounds aggregate match-scan cost across the loop (DoS guard)" do
     # A pattern that is cheap per match but does O(n) engine work per match over O(n)
     # matches is O(n^2): the per-match engine timeout resets each search, so only an

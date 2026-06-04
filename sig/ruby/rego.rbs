@@ -432,6 +432,7 @@ module Ruby
         REGEX_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
         REGEX_TIMEOUT_SECONDS: Float
         GROUP_NAME_CHAR: Regexp
+        MAX_REGEX_SOURCE: Integer
         MAX_REPLACE_OUTPUT: Integer
         MAX_REPLACE_WORK: Integer
 
@@ -449,6 +450,7 @@ module Ruby
         def self.raise_replace_work_exceeded: () -> bot
         def self.skip_zero_width?: (MatchData? match, Integer previous_end) -> bool
         def self.string_arg: (Value value, String context) -> String
+        def self.assert_source_length: (String source, String context) -> void
         def self.string_array: (Array[String] values) -> ArrayValue
         def self.compile: (Value pattern_value, String context) -> Regexp
         def self.compile_pattern: (String pattern, String context) -> [Regexp, Hash[String, Integer]]
