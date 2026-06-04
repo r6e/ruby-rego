@@ -64,6 +64,13 @@ RSpec.describe "regex.replace" do
     expect(replace("P", "[(?P<]", "Z")).to eq("Z")
   end
 
+  it "reads a reference name as Unicode letters/digits (Go rule)" do
+    # A Unicode name is consumed into the (unknown) reference and expands to empty.
+    expect(replace("abc", "(b)", "$é")).to eq("ac")
+    expect(replace("abc", "(b)", "${café}")).to eq("ac")
+    expect(replace("abc", "(b)", "$１")).to eq("ac") # fullwidth digit -> named -> empty
+  end
+
   it "expands an unknown named submatch to empty" do
     expect(replace("abc", "b", "$nope")).to eq("ac")
   end
@@ -101,6 +108,13 @@ RSpec.describe "regex.replace" do
     string = "a" * 50_000
     template = "$0" * 10_000
     expect(registry.call("regex.replace", [string, "a", template])).to be_a(Ruby::Rego::UndefinedValue)
+  end
+
+  it "bounds a single match's expansion, not just the cumulative total (DoS guard)" do
+    # One match whose template repeats a large whole-match must not build unboundedly.
+    string = "a" * 100_000
+    template = "$0" * 100_000
+    expect(registry.call("regex.replace", [string, ".+", template])).to be_a(Ruby::Rego::UndefinedValue)
   end
 end
 # rubocop:enable Metrics/BlockLength

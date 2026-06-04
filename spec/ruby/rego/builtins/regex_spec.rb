@@ -39,6 +39,11 @@ RSpec.describe "regex builtins" do
     it "considers Ruby-valid lookahead patterns valid (documented RE2 divergence)" do
       expect(registry.call("regex.is_valid", ["(?=foo)"]).to_ruby).to be(true)
     end
+
+    it "rejects a Unicode-named group, matching OPA/RE2" do
+      expect(registry.call("regex.is_valid", ["(?P<cafe>x)"]).to_ruby).to be(true)
+      expect(registry.call("regex.is_valid", ["(?P<café>x)"]).to_ruby).to be(false)
+    end
   end
 
   describe "regex.split" do

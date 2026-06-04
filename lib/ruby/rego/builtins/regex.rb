@@ -104,33 +104,22 @@ module Ruby
         end
 
         # Runs the gsub-based replacement, bounding total expanded output so a hostile
-        # match-count x template-length combination cannot exhaust memory.
+        # match-count x template-length combination cannot exhaust memory. The remaining
+        # budget is threaded into each expansion so a single match cannot build a huge
+        # string before the bound is checked.
         # :reek:TooManyStatements
         def self.expand_all(string, regexp, template)
-          emitted = 0
+          remaining = MAX_REPLACE_OUTPUT
           string.gsub(regexp) do |matched|
             # Regexp.last_match is always set inside a gsub block that fired; the guard
             # only narrows the MatchData? type for the type checker.
             match = Regexp.last_match
-            expansion = match ? template.expand(match) : matched
-            emitted += expansion.length
-            raise_output_too_large if emitted > MAX_REPLACE_OUTPUT
-
+            expansion = match ? template.expand(match, remaining) : matched
+            remaining -= expansion.length
             expansion
           end
         end
         private_class_method :expand_all
-
-        def self.raise_output_too_large
-          raise Ruby::Rego::BuiltinArgumentError.new(
-            "regex.replace output exceeds maximum #{MAX_REPLACE_OUTPUT}",
-            expected: "output <= #{MAX_REPLACE_OUTPUT} characters",
-            actual: "exceeded",
-            context: "regex.replace",
-            location: nil
-          )
-        end
-        private_class_method :raise_output_too_large
 
         # Compiles, validates, and runs an all-matches scan under the timeout guard.
         #
@@ -155,8 +144,8 @@ module Ruby
 
           # Matching on an invalid-encoding string raises rather than returning a clean
           # result. OPA never sees these (JSON input is valid UTF-8); they reach the
-          # public Ruby API only. Until encoding is normalised at the value-ingestion
-          # boundary (tracked in TODO), reject them here as undefined.
+          # public Ruby API only. Until string encoding is normalised at the value-
+          # ingestion boundary (a deferred refactor noted in TODO.md), reject them here.
           raise Ruby::Rego::BuiltinArgumentError.new(
             "Invalid string encoding",
             expected: "valid #{string.encoding} string",
@@ -197,7 +186,7 @@ module Ruby
         # inside a character class is left untouched so the pattern's meaning is preserved.
         # :reek:TooManyStatements
         # :reek:DuplicateMethodCall
-        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+        # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
         def self.translate_named_groups(pattern)
           out = +""
           chars = pattern.chars
@@ -216,7 +205,7 @@ module Ruby
               in_class = true
               out << char
               pos += 1
-            elsif chars[pos, 4] == ["(", "?", "P", "<"]
+            elsif chars[pos, 4] == ["(", "?", "P", "<"] && rewritable_group_name?(chars, pos + 4)
               out << "(?<"
               pos += 4
             else
@@ -226,8 +215,21 @@ module Ruby
           end
           out
         end
-        # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+        # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
         private_class_method :translate_named_groups
+
+        # True if the group name starting at `pos` is one Ruby's engine accepts (an
+        # ASCII letter/underscore followed by ASCII word characters, then `>`). Names
+        # RE2 allows but Ruby cannot represent — Unicode names, or digit-leading names —
+        # are left untranslated so the pattern fails to compile (yielding undefined),
+        # rather than being silently accepted with different semantics.
+        def self.rewritable_group_name?(chars, pos)
+          relative_end = chars[pos..]&.index(">")
+          return false unless relative_end&.positive?
+
+          chars[pos, relative_end].to_a.join.match?(/\A[A-Za-z_][A-Za-z0-9_]*\z/)
+        end
+        private_class_method :rewritable_group_name?
 
         # Converts a match-timeout (catastrophic backtracking) into an undefined
         # result instead of hanging the evaluator.
@@ -330,17 +332,27 @@ module Ruby
         # empty string), `$$` is a literal `$`, a `$` not followed by a valid name is a
         # literal `$`, and every other character (including backslash) is a literal.
         class GoTemplate
-          NAME_CHAR = /[A-Za-z0-9_]/
+          # Go's Expand reads a name as Unicode letters, digits, and underscore.
+          NAME_CHAR = /[\p{L}\p{Nd}_]/
 
           # @param template [String]
           def initialize(template)
             @segments = parse(template.chars)
           end
 
+          # Expands the template against `match`, raising once accumulated output would
+          # exceed `budget` so a single expansion cannot exhaust memory.
+          #
           # @param match [MatchData]
+          # @param budget [Integer]
           # @return [String]
-          def expand(match)
-            @segments.map { |kind, value| resolve(kind, value, match) }.join
+          def expand(match, budget)
+            out = +""
+            @segments.each do |kind, value|
+              out << resolve(kind, value, match)
+              raise_output_too_large(budget) if out.length > budget
+            end
+            out
           end
 
           private
@@ -421,6 +433,16 @@ module Ruby
             match[name].to_s
           rescue IndexError
             ""
+          end
+
+          def raise_output_too_large(budget)
+            raise Ruby::Rego::BuiltinArgumentError.new(
+              "regex.replace output exceeds maximum",
+              expected: "output within #{budget} characters of the limit",
+              actual: "exceeded",
+              context: "regex.replace",
+              location: nil
+            )
           end
         end
       end
