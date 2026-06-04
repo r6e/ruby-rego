@@ -431,6 +431,7 @@ module Ruby
 
         REGEX_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
         REGEX_TIMEOUT_SECONDS: Float
+        MAX_REPLACE_OUTPUT: Integer
 
         def self.register!: () -> BuiltinRegistry
         def self.match: (Value pattern_value, Value string_value) -> BooleanValue
@@ -442,6 +443,8 @@ module Ruby
         private
 
         def self.matches_for: (Value pattern_value, Value string_value, String context) -> Array[String]
+        def self.expand_all: (String string, Regexp regexp, GoTemplate template) -> String
+        def self.raise_output_too_large: () -> bot
         def self.string_arg: (Value value, String context) -> String
         def self.string_array: (Array[String] values) -> ArrayValue
         def self.compile: (Value pattern_value, String context) -> Regexp
@@ -465,6 +468,7 @@ module Ruby
           def parse: (Array[String] chars) -> Array[[Symbol, String | Integer]]
           def extract: (Array[String] chars, Integer pos) -> [String?, Integer]
           def reference: (String name) -> [Symbol, String | Integer]
+          def numeric_index?: (String name) -> bool
           def resolve: (Symbol kind, String | Integer value, MatchData match) -> String
           def named_submatch: (MatchData match, String name) -> String
         end

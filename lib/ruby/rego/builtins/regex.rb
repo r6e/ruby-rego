@@ -31,6 +31,13 @@ module Ruby
         # undefined result. Override with RUBY_REGO_REGEX_TIMEOUT (seconds).
         REGEX_TIMEOUT_SECONDS = ENV.fetch("RUBY_REGO_REGEX_TIMEOUT", "1.0").to_f
 
+        # Upper bound on `regex.replace` output. The per-match engine timeout does not
+        # cover template expansion in the gsub block, so many cheap matches with a large
+        # replacement template could otherwise expand output super-linearly (matches x
+        # template length). Exceeding this yields undefined — a deliberate anti-DoS
+        # divergence from OPA, in the same spirit as the regex timeout above.
+        MAX_REPLACE_OUTPUT = 32_000_000
+
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
         def self.register!
           registry = BuiltinRegistry.instance
@@ -93,13 +100,37 @@ module Ruby
           regexp = compile(pattern_value, "regex.replace")
           string = string_arg(string_value, "regex.replace")
           template = GoTemplate.new(string_arg(replacement_value, "regex.replace"))
-          guarded("regex.replace") do
-            StringValue.new(string.gsub(regexp) do |matched|
-              match = Regexp.last_match
-              match ? template.expand(match) : matched
-            end)
+          guarded("regex.replace") { StringValue.new(expand_all(string, regexp, template)) }
+        end
+
+        # Runs the gsub-based replacement, bounding total expanded output so a hostile
+        # match-count x template-length combination cannot exhaust memory.
+        # :reek:TooManyStatements
+        def self.expand_all(string, regexp, template)
+          emitted = 0
+          string.gsub(regexp) do |matched|
+            # Regexp.last_match is always set inside a gsub block that fired; the guard
+            # only narrows the MatchData? type for the type checker.
+            match = Regexp.last_match
+            expansion = match ? template.expand(match) : matched
+            emitted += expansion.length
+            raise_output_too_large if emitted > MAX_REPLACE_OUTPUT
+
+            expansion
           end
         end
+        private_class_method :expand_all
+
+        def self.raise_output_too_large
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "regex.replace output exceeds maximum #{MAX_REPLACE_OUTPUT}",
+            expected: "output <= #{MAX_REPLACE_OUTPUT} characters",
+            actual: "exceeded",
+            context: "regex.replace",
+            location: nil
+          )
+        end
+        private_class_method :raise_output_too_large
 
         # Compiles, validates, and runs an all-matches scan under the timeout guard.
         #
@@ -119,7 +150,20 @@ module Ruby
         # @return [String]
         def self.string_arg(value, context)
           Base.assert_type(value, expected: StringValue, context: context)
-          value.value
+          string = value.value
+          return string if string.valid_encoding?
+
+          # Matching on an invalid-encoding string raises rather than returning a clean
+          # result. OPA never sees these (JSON input is valid UTF-8); they reach the
+          # public Ruby API only. Until encoding is normalised at the value-ingestion
+          # boundary (tracked in TODO), reject them here as undefined.
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Invalid string encoding",
+            expected: "valid #{string.encoding} string",
+            actual: "invalid byte sequence",
+            context: context,
+            location: nil
+          )
         end
         private_class_method :string_arg
 
@@ -149,9 +193,40 @@ module Ruby
 
         # Translates Go's named-group syntax `(?P<name>...)` to Ruby's `(?<name>...)` so
         # OPA patterns with named groups compile (Ruby's Onigmo rejects the `(?P<` form).
+        # Only an actual group-open `(?P<` is rewritten: an escaped `\(?P<` or a `(?P<`
+        # inside a character class is left untouched so the pattern's meaning is preserved.
+        # :reek:TooManyStatements
+        # :reek:DuplicateMethodCall
+        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         def self.translate_named_groups(pattern)
-          pattern.gsub("(?P<", "(?<")
+          out = +""
+          chars = pattern.chars
+          pos = 0
+          in_class = false
+          while pos < chars.length
+            char = chars[pos]
+            if char == "\\"
+              out << char << chars[pos + 1].to_s
+              pos += 2
+            elsif in_class
+              in_class = false if char == "]"
+              out << char
+              pos += 1
+            elsif char == "["
+              in_class = true
+              out << char
+              pos += 1
+            elsif chars[pos, 4] == ["(", "?", "P", "<"]
+              out << "(?<"
+              pos += 4
+            else
+              out << char
+              pos += 1
+            end
+          end
+          out
         end
+        # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
         private_class_method :translate_named_groups
 
         # Converts a match-timeout (catastrophic backtracking) into an undefined
@@ -159,6 +234,7 @@ module Ruby
         #
         # @param context [String]
         # @return [Ruby::Rego::Value]
+        # rubocop:disable Metrics/MethodLength
         def self.guarded(context)
           yield
         rescue Regexp::TimeoutError
@@ -169,7 +245,17 @@ module Ruby
             context: context,
             location: nil
           )
+        rescue EncodingError => e
+          # Incompatible pattern/subject encodings surface here as an undefined result.
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Regex encoding error: #{e.message}",
+            expected: "compatible string encodings",
+            actual: e.class.name,
+            context: context,
+            location: nil
+          )
         end
+        # rubocop:enable Metrics/MethodLength
         private_class_method :guarded
 
         # Yields each successive MatchData, advancing past zero-width matches so the
@@ -311,9 +397,15 @@ module Ruby
             [name, braced ? cursor + 1 : cursor]
           end
 
-          # A purely-numeric name is a numbered group; otherwise a named group.
+          # A purely-numeric name is a numbered group; otherwise a named group. Matching
+          # Go's Expand, a multi-digit name with a leading zero (e.g. `01`) is treated as
+          # a (typically unknown) named group, not index 1.
           def reference(name)
-            name.match?(/\A\d+\z/) ? [:index, name.to_i] : [:name, name]
+            numeric_index?(name) ? [:index, name.to_i] : [:name, name]
+          end
+
+          def numeric_index?(name)
+            name.match?(/\A\d+\z/) && !(name.length > 1 && name.start_with?("0"))
           end
 
           def resolve(kind, value, match)

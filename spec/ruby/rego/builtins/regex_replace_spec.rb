@@ -53,6 +53,17 @@ RSpec.describe "regex.replace" do
     expect(replace("abc", "(b)", "$2")).to eq("ac")
   end
 
+  it "treats a leading-zero numeric reference as an unknown named group (Go rule)" do
+    expect(replace("abc", "(b)", "$01")).to eq("ac")    # "01" -> named -> unknown -> empty
+    expect(replace("abc", "(b)", "$00")).to eq("ac")
+    expect(replace("abc", "(b)", "$0")).to eq("abc")    # single 0 stays the whole match
+  end
+
+  it "does not rewrite (?P< that appears inside a character class" do
+    # The named-group translation must not corrupt a class containing those literals.
+    expect(replace("P", "[(?P<]", "Z")).to eq("Z")
+  end
+
   it "expands an unknown named submatch to empty" do
     expect(replace("abc", "b", "$nope")).to eq("ac")
   end
@@ -79,6 +90,17 @@ RSpec.describe "regex.replace" do
   it "is undefined for a non-string argument" do
     expect(registry.call("regex.replace", ["a", "a", 1])).to be_a(Ruby::Rego::UndefinedValue)
     expect(registry.call("regex.replace", [1, "a", "b"])).to be_a(Ruby::Rego::UndefinedValue)
+  end
+
+  it "is undefined for an invalid-encoding string (reaches only the Ruby API)" do
+    bad = "\xFF\xFE".dup.force_encoding("UTF-8")
+    expect(registry.call("regex.replace", [bad, "a", "x"])).to be_a(Ruby::Rego::UndefinedValue)
+  end
+
+  it "is undefined when the expanded output would be too large (DoS guard)" do
+    string = "a" * 50_000
+    template = "$0" * 10_000
+    expect(registry.call("regex.replace", [string, "a", template])).to be_a(Ruby::Rego::UndefinedValue)
   end
 end
 # rubocop:enable Metrics/BlockLength
