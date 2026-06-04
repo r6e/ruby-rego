@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Net/CIDR built-ins: `net.cidr_contains`, `net.cidr_intersects`, and `net.cidr_is_valid`,
+  matching OPA. Backed by Ruby's `IPAddr` (IPv4 and IPv6). A cidr requires a prefix length
+  (a bare IP is not a cidr); host bits beyond the prefix are masked. `cidr_contains(cidr,
+  ip_or_cidr)` and `cidr_intersects(cidr, cidr)` return a boolean and yield undefined for a
+  non-string or invalid argument (and false across address families). `cidr_is_valid` is
+  total over runtime values — a non-string or non-CIDR string yields `false` (not
+  undefined), like `regex.is_valid`. Parsing is reconciled with OPA/Go: a dotted-decimal
+  netmask, a scoped (`%zone`) or bracketed (`[..]`) address is rejected, and a leading-zero
+  prefix (`/08`) is accepted as `/8`. IPv4-mapped IPv6 addresses are normalised to their
+  native IPv4 form to match OPA. One intentional divergence: an IPv4-mapped IPv6 CIDR with
+  a prefix in 80..95 (which cuts through the `::ffff:` marker) is a degenerate input where
+  OPA inherits golang/go#51906 and `cidr_contains` is non-reflexive; the gem keeps the
+  reflexive result instead of reproducing the upstream Go inconsistency. Adds `ipaddr` as a
+  runtime dependency.
+
 - Crypto built-ins: `crypto.hmac.md5`, `crypto.hmac.sha1`, `crypto.hmac.sha256`,
   `crypto.hmac.sha512`, and `crypto.hmac.equal`, matching OPA. The HMAC digests take
   `(message, key)` (OPA's argument order, the reverse of Ruby's

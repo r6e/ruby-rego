@@ -39,10 +39,11 @@ Gem::Specification.new do |spec|
 
   # Default gems that became separately installable in newer Rubies; the library
   # requires them at load time (json across the evaluator/CLI; base64/cgi for the
-  # encoding builtins; digest/openssl for the crypto builtins).
+  # encoding builtins; digest/openssl for the crypto builtins; ipaddr for the net builtins).
   spec.add_dependency "base64"
   spec.add_dependency "cgi"
   spec.add_dependency "digest"
+  spec.add_dependency "ipaddr"
   spec.add_dependency "json"
   spec.add_dependency "openssl"
 
