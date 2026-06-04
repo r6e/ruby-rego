@@ -99,6 +99,19 @@ RSpec.describe "regex.replace" do
     expect(replace("xbc", "(?:x)(b)(c)", "$1")).to eq("b")
   end
 
+  it "recognizes the RE2 (?<name>) synonym for (?P<name>)" do
+    # RE2/OPA accept both; named and unnamed groups share one left-to-right numbering.
+    expect(replace("xy", "(?<a>x)(?P<b>y)", "${a}|${b}|$1|$2")).to eq("x|y|x|y")
+    expect(replace("xy", "(?<a>x)(y)", "$1$2")).to eq("xy")
+  end
+
+  it "does not treat lookbehind (?<=...) as a named group" do
+    # `(?<=a)` is a lookbehind, not a capture; OPA (RE2) rejects lookbehind, but the gem
+    # accepts it via Onigmo (documented superset). Either way it is not a named group, so
+    # numbering is unaffected.
+    expect(replace("ab", "(?<=a)(b)", "[$1]")).to eq("a[b]")
+  end
+
   it "matches an empty pattern between every character" do
     expect(replace("abc", "", "-")).to eq("-a-b-c-")
   end
@@ -159,6 +172,19 @@ RSpec.describe "regex.replace" do
     string = "a" * 1_000
     result = registry.call("regex.replace", [string, "a", "[$0]"])
     expect(result.value).to eq("[a]" * 1_000)
+  end
+
+  it "bounds aggregate match-scan cost across the loop (DoS guard)" do
+    # A pattern that is cheap per match but does O(n) engine work per match over O(n)
+    # matches is O(n^2): the per-match engine timeout resets each search, so only an
+    # aggregate deadline across the gsub loop catches it. (Uses lookahead — a documented
+    # Onigmo superset over RE2 — but the bound is on the loop, not the syntax.)
+    string = "a" * 60_000
+    result = nil
+    expect do
+      Timeout.timeout(15) { result = registry.call("regex.replace", [string, "(?=a*$)a", "x"]) }
+    end.not_to raise_error
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 
   it "preprocesses a degenerate (?P< pattern in linear time (no quadratic scan)" do

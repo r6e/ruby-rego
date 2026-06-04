@@ -454,8 +454,11 @@ module Ruby
         def self.compile_pattern: (String pattern, String context) -> [Regexp, Hash[String, Integer]]
         def self.compile_source: (String source, String original, String context) -> Regexp
         def self.translate_named_groups: (String pattern) -> [String, Hash[String, Integer]]
-        def self.named_group_at: (Array[String] chars, Integer pos) -> String?
+        def self.named_group_at: (Array[String] chars, Integer pos) -> [String, Integer]?
+        def self.named_group_name_start: (Array[String] chars, Integer pos) -> Integer?
         def self.guarded: [T] (String context) { () -> T } -> T
+        def self.match_deadline: () -> Float
+        def self.check_deadline: (Float deadline) -> void
         def self.each_match: (Regexp regexp, String string) { (MatchData) -> void } -> void
         def self.advance: (MatchData found) -> Integer
         def self.full_matches: (Regexp regexp, String string) -> Array[String]

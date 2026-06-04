@@ -31,10 +31,14 @@ module Ruby
           "regex.replace" => { arity: 3, handler: :replace }
         }.freeze
 
-        # Per-match wall-clock budget. OPA's RE2 engine is linear-time and immune to
-        # catastrophic backtracking; Ruby's Onigmo engine is not, so a hostile pattern
-        # or input could otherwise hang the evaluator. Exceeding the budget yields an
-        # undefined result. Override with RUBY_REGO_REGEX_TIMEOUT (seconds).
+        # Wall-clock budget for one regex builtin operation. OPA's RE2 engine is linear-time
+        # and immune to catastrophic backtracking; Ruby's Onigmo engine is not, so a hostile
+        # pattern or input could otherwise hang the evaluator. Applied two ways: as the
+        # per-match engine timeout (`Regexp.new(timeout:)`, interrupts a single catastrophic
+        # search) and as an aggregate deadline across the match loop (a cheap-per-match
+        # pattern over a long subject is O(matches) engine scans, which the per-match timeout
+        # — reset each search — does not bound). Either path yields undefined. Override with
+        # RUBY_REGO_REGEX_TIMEOUT (seconds).
         REGEX_TIMEOUT_SECONDS = ENV.fetch("RUBY_REGO_REGEX_TIMEOUT", "1.0").to_f
 
         # Upper bound on `regex.replace` output. The per-match engine timeout does not
@@ -44,18 +48,18 @@ module Ruby
         # divergence from OPA, in the same spirit as the regex timeout above.
         MAX_REPLACE_OUTPUT = 32_000_000
 
-        # A single RE2 group-name character (`[A-Za-z0-9_]`). Used to scan a `(?P<name>`
-        # header forward one identifier char at a time, which bounds the scan to the name's
-        # length and stops at the first non-identifier — keeping pattern preprocessing
-        # linear even for adversarial input like `(?P<` repeated with no closing `>`.
-        GROUP_NAME_CHAR = /[A-Za-z0-9_]/
-
         # Upper bound on total template-segment expansions (matches x template segments).
         # Output size alone is insufficient: references that resolve to empty (an
         # out-of-range `$9` or unknown `${name}`) do CPU work per segment while emitting
         # nothing, so a large template over many matches would otherwise run unbounded
         # under the output cap. Exceeding this yields undefined.
         MAX_REPLACE_WORK = 32_000_000
+
+        # A single RE2 group-name character (`[A-Za-z0-9_]`). Used to scan a `(?P<name>` /
+        # `(?<name>` header forward one identifier char at a time, which bounds the scan to
+        # the name's length and stops at the first non-identifier — keeping pattern
+        # preprocessing linear even for adversarial input like `(?P<` repeated with no `>`.
+        GROUP_NAME_CHAR = /[A-Za-z0-9_]/
 
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
         def self.register!
@@ -131,10 +135,11 @@ module Ruby
         # to empty — doing CPU work while emitting nothing — cannot run unbounded under the
         # output cap alone.
         # :reek:TooManyStatements
-        # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
         def self.expand_all(string, regexp, template)
           remaining = MAX_REPLACE_OUTPUT
           work = MAX_REPLACE_WORK
+          deadline = match_deadline
           previous_end = -1
           string.gsub(regexp) do |matched|
             # Regexp.last_match is always set inside a gsub block that fired; the guard
@@ -142,6 +147,7 @@ module Ruby
             match = Regexp.last_match
             next "" if skip_zero_width?(match, previous_end)
 
+            check_deadline(deadline)
             work -= template.segment_count
             raise_replace_work_exceeded if work.negative?
             expansion = match ? template.expand(match, remaining) : matched
@@ -150,7 +156,7 @@ module Ruby
             expansion
           end
         end
-        # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
         private_class_method :expand_all
 
         # The work-budget counterpart to GoTemplate's output cap: raised when the total
@@ -283,12 +289,13 @@ module Ruby
               in_class = false if char == "]"
               out << char
               pos += 1
-            elsif (name = named_group_at(chars, pos))
+            elsif (named = named_group_at(chars, pos))
+              name, consumed = named
               group_index += 1
               # A duplicate name resolves to its first occurrence (matching OPA/RE2).
               names[name] ||= group_index
               out << "("
-              pos += 5 + name.length
+              pos += consumed
             else
               in_class = true if char == "["
               group_index += 1 if char == "(" && chars[pos + 1] != "?"
@@ -301,25 +308,38 @@ module Ruby
         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
         private_class_method :translate_named_groups
 
-        # If `chars` at `pos` opens a `(?P<name>` group with an RE2-identifier name,
-        # returns the name; otherwise nil (so the position is handled literally). The name
-        # is scanned forward one `[A-Za-z0-9_]` character at a time and must be terminated
-        # by `>`; this both enforces the RE2-identifier rule and keeps the scan O(name
-        # length) — a non-identifier char (including the `(` of a following group) stops it
-        # at once, so a pattern of many `(?P<` with no `>` stays linear, not quadratic.
+        # If `chars` at `pos` opens a named group — RE2 accepts both `(?P<name>` and the
+        # synonym `(?<name>` — returns `[name, consumed]` (consumed = full header length
+        # through the `>`); otherwise nil (the position is handled literally). The name is
+        # scanned forward one `[A-Za-z0-9_]` character at a time and must be terminated by
+        # `>`; this enforces the RE2-identifier rule and keeps the scan O(name length) — a
+        # non-identifier first char stops it at once, so a pattern of many `(?P<` with no
+        # `>` stays linear, and lookbehind `(?<=`/`(?<!` (first char `=`/`!`) and empty
+        # `(?<>` fall through to nil (left untranslated; OPA rejects them too).
         # :reek:TooManyStatements
         # :reek:DuplicateMethodCall
         def self.named_group_at(chars, pos)
-          return nil unless chars[pos, 4] == ["(", "?", "P", "<"]
+          name_start = named_group_name_start(chars, pos)
+          return nil unless name_start
 
-          name_start = pos + 4
           cursor = name_start
           cursor += 1 while GROUP_NAME_CHAR.match?(chars[cursor])
           return nil unless cursor > name_start && chars[cursor] == ">"
 
-          chars[name_start, cursor - name_start].to_a.join
+          [chars[name_start, cursor - name_start].to_a.join, cursor - pos + 1]
         end
         private_class_method :named_group_at
+
+        # Offset of the name within a `(?P<name>` (4) or `(?<name>` (3) header at `pos`,
+        # or nil when `pos` does not open a named group.
+        def self.named_group_name_start(chars, pos)
+          header = chars[pos, 4]
+          return nil unless header
+          return pos + 4 if header == ["(", "?", "P", "<"]
+
+          header[0, 3] == ["(", "?", "<"] ? pos + 3 : nil
+        end
+        private_class_method :named_group_name_start
 
         # Converts a match-timeout (catastrophic backtracking) into an undefined
         # result instead of hanging the evaluator.
@@ -350,6 +370,28 @@ module Ruby
         # rubocop:enable Metrics/MethodLength
         private_class_method :guarded
 
+        # Monotonic timestamp REGEX_TIMEOUT_SECONDS in the future, used as an aggregate
+        # deadline for a whole match loop (the per-match engine timeout resets each search
+        # and so cannot bound a cheap-per-match pattern over a long subject).
+        #
+        # @return [Float]
+        def self.match_deadline
+          Process.clock_gettime(Process::CLOCK_MONOTONIC) + REGEX_TIMEOUT_SECONDS
+        end
+        private_class_method :match_deadline
+
+        # Raises (caught by `guarded` → undefined) once the aggregate deadline has passed.
+        # Cheap O(1) cooperative check; safe, unlike thread-based Timeout.
+        #
+        # @param deadline [Float]
+        # @return [void]
+        def self.check_deadline(deadline)
+          return if Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+
+          raise Regexp::TimeoutError, "regex evaluation exceeded #{REGEX_TIMEOUT_SECONDS}s"
+        end
+        private_class_method :check_deadline
+
         # Yields each successive MatchData, advancing past zero-width matches so the
         # iteration terminates (mirrors String#scan's match positions).
         #
@@ -357,11 +399,14 @@ module Ruby
         # @param string [String]
         # @yieldparam [MatchData]
         # @return [void]
+        # rubocop:disable Metrics/MethodLength
         def self.each_match(regexp, string)
           position = 0
           length = string.length
           previous_end = -1
+          deadline = match_deadline
           while position <= length && (found = regexp.match(string, position))
+            check_deadline(deadline)
             start = found.begin(0) || 0
             finish = found.end(0) || 0
             yield found unless finish == start && start == previous_end
@@ -369,6 +414,7 @@ module Ruby
             position = advance(found)
           end
         end
+        # rubocop:enable Metrics/MethodLength
         private_class_method :each_match
 
         # @param found [MatchData]
@@ -513,8 +559,10 @@ module Ruby
             numeric_index?(name) ? [:index, name.to_i] : [:name, name]
           end
 
+          # A non-negative integer with no leading zero (Go treats a leading-zero name
+          # like `01` as a named, typically unknown, reference rather than index 1).
           def numeric_index?(name)
-            name.match?(/\A\d+\z/) && !(name.length > 1 && name.start_with?("0"))
+            name.match?(/\A(?:0|[1-9]\d*)\z/)
           end
 
           def resolve(kind, value, match)

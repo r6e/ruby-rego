@@ -8,14 +8,20 @@ All notable changes to this project will be documented in this file.
   template syntax (`$1`/`${name}` submatch references, `$0` whole match, `$$` literal `$`;
   unknown or out-of-range references — including a multi-digit leading-zero reference like
   `$01` — expand to the empty string), and a backslash is a literal. Go's `(?P<name>...)`
-  named-group syntax is supported across the regex built-ins: named groups are rewritten to
+  named-group syntax — and RE2's `(?<name>...)` synonym — are supported across the regex
+  built-ins: named groups are rewritten to
   plain captures and `${name}` references resolve through a name→index map, so named and
   unnamed groups share one RE2-style numbering space (mixed groups and numbered references
   work); names must be RE2 identifiers and a Unicode name is rejected (matching RE2). The
-  translation skips `(?P<` inside a character class or after a backslash, and scans each
+  translation skips `(?P<`/`(?<` inside a character class or after a backslash, leaves
+  lookbehind `(?<=`/`(?<!` untranslated, and scans each
   group name in linear time so an adversarial pattern (many `(?P<` with no closing `>`)
-  cannot cause quadratic preprocessing. As anti-DoS
-  guards, a `regex.replace` yields undefined when either its expanded output would exceed
+  cannot cause quadratic preprocessing. As anti-DoS guards, the regex timeout
+  (`RUBY_REGO_REGEX_TIMEOUT`, default 1s) now also applies as an aggregate deadline across
+  the whole match loop (so a cheap-per-match pattern over a long subject — O(n) scans per
+  match — yields undefined instead of running quadratically; this bounds `regex.match`,
+  `regex.find_n`, `regex.split`, and `regex.replace`), and a `regex.replace` additionally
+  yields undefined when either its expanded output would exceed
   ~32M characters or its total template-segment expansions (matches × template segments)
   would exceed ~32M — the latter bounds CPU even when references resolve to empty and emit
   no output, which the output cap alone does not catch. An invalid-encoding string argument
