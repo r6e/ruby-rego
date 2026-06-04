@@ -9,7 +9,8 @@ require_relative "numeric_helpers"
 module Ruby
   module Rego
     module Builtins
-      # Built-in regex helpers (regex.match, regex.is_valid, regex.split, regex.find_n).
+      # Built-in regex helpers (regex.match, regex.is_valid, regex.split, regex.find_n,
+      # regex.replace).
       #
       # Patterns are compiled with Ruby's regex engine (Onigmo), not Go's RE2.
       # Common patterns behave identically to OPA; constructs that Ruby accepts but
