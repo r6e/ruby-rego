@@ -358,7 +358,6 @@ module Ruby
           attr_accessor patch: Integer
           attr_accessor prerelease: Array[String]
           def initialize: (Integer major, Integer minor, Integer patch, Array[String] prerelease) -> void
-          def []: (Symbol field) -> Integer
         end
 
         def self.register!: () -> BuiltinRegistry
@@ -371,11 +370,10 @@ module Ruby
         def self.parse: (String string) -> Version?
         def self.build_version: (String core, String prerelease) -> Version?
         def self.valid_identifiers?: (String string) -> bool
-        def self.component: (String string) -> Integer?
+        def self.bounded_integer: (String string) -> Integer?
         def self.compare_versions: (Version first, Version second) -> Integer
         def self.compare_prerelease: (Array[String] first, Array[String] second) -> Integer
         def self.compare_identifier: (String first, String second) -> Integer
-        def self.numeric_identifier: (String identifier) -> Integer?
         def self.raise_invalid_version: (String context) -> bot
         def self.string_value: (Value value, String context) -> String
       end

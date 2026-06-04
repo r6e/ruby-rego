@@ -16,11 +16,12 @@ module Ruby
       # yields undefined for a non-string or invalid version. Build metadata is ignored when
       # comparing; precedence follows SemVer §11.
       #
-      # Intentional divergence: OPA's semver.compare infinite-loops when two numeric
-      # prerelease identifiers are equal in value but differ textually via leading zeros
-      # (e.g. "1.0.0-01" vs "1.0.0-1") — an upstream coreos/go-semver bug. This
-      # implementation compares such identifiers numerically (they are equal), terminates,
-      # and returns the correct SemVer result instead of hanging.
+      # Intentional divergence: OPA's semver.compare infinite-loops while comparing two
+      # numeric prerelease identifiers in a few cases — most visibly when they are equal in
+      # value but differ textually via leading zeros (e.g. "1.0.0-01" vs "1.0.0-1"), and
+      # also when one straddles the 64-bit boundary — an upstream coreos/go-semver bug. This
+      # implementation compares prerelease identifiers numerically and terminates on every
+      # input, returning the correct SemVer result instead of hanging.
       module Semver
         extend RegistryHelpers
 
@@ -106,7 +107,7 @@ module Ruby
           parts = core.split(".", 3)
           return nil unless parts.length == 3
 
-          major, minor, patch = parts.map { |part| component(part) }
+          major, minor, patch = parts.map { |part| bounded_integer(part) }
           return nil unless major && minor && patch
 
           Version.new(major, minor, patch, prerelease.split("."))
@@ -120,24 +121,27 @@ module Ruby
         end
         private_class_method :valid_identifiers?
 
-        # A numeric component as an Integer, or nil if non-numeric or out of 64-bit range.
+        # Parses a non-negative integer string bounded to a signed 64-bit value, returning
+        # nil when it is non-numeric or out of range. Used both for numeric core components
+        # (where out-of-range is invalid) and for classifying prerelease identifiers (where
+        # an out-of-range numeric string is treated as a string identifier).
         #
         # @param string [String]
         # @return [Integer, nil]
-        def self.component(string)
+        def self.bounded_integer(string)
           return nil unless string.match?(NUMERIC)
 
           number = string.to_i
           number <= MAX_COMPONENT ? number : nil
         end
-        private_class_method :component
+        private_class_method :bounded_integer
 
         # @param first [Version]
         # @param second [Version]
         # @return [Integer] -1, 0, or 1
         def self.compare_versions(first, second)
-          %i[major minor patch].each do |field|
-            order = first[field] <=> second[field]
+          [first.major <=> second.major, first.minor <=> second.minor,
+           first.patch <=> second.patch].each do |order|
             return order unless order.zero?
           end
           compare_prerelease(first.prerelease, second.prerelease)
@@ -177,8 +181,8 @@ module Ruby
         # @param second [String]
         # @return [Integer]
         def self.compare_identifier(first, second)
-          first_num = numeric_identifier(first)
-          second_num = numeric_identifier(second)
+          first_num = bounded_integer(first)
+          second_num = bounded_integer(second)
           return first_num <=> second_num if first_num && second_num
           return -1 if first_num
           return 1 if second_num
@@ -186,16 +190,6 @@ module Ruby
           first <=> second
         end
         private_class_method :compare_identifier
-
-        # @param identifier [String]
-        # @return [Integer, nil]
-        def self.numeric_identifier(identifier)
-          return nil unless identifier.match?(NUMERIC)
-
-          number = identifier.to_i
-          number <= MAX_COMPONENT ? number : nil
-        end
-        private_class_method :numeric_identifier
 
         # @param context [String]
         # @return [void]
