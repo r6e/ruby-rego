@@ -38,6 +38,10 @@ detectors:
       # Recursive JSON normalization and OPA set-ordering: type-dispatch case folds.
       - Ruby::Rego::Builtins::Codecs#self.jsonify
       - Ruby::Rego::Builtins::Codecs#self.json_sort_key
+      # Faithful SemVer parse / §11 precedence steps.
+      - Ruby::Rego::Builtins::Semver#self.build_version
+      - Ruby::Rego::Builtins::Semver#self.compare_prerelease
+      - Ruby::Rego::Builtins::Semver#self.compare_identifier
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
       - Ruby::Rego::CompiledPolicySet

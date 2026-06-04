@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- SemVer built-ins: `semver.is_valid` and `semver.compare`, matching OPA (which vendors
+  coreos/go-semver). A version is `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]`; the parser is
+  lenient like OPA's (accepts a leading lowercase `v` and leading zeros), and each numeric
+  component must fit in a signed 64-bit integer. `is_valid` is total over runtime values (a
+  non-string yields `false`); `compare(a, b)` returns `-1`/`0`/`1` (build metadata ignored,
+  SemVer §11 precedence) and yields undefined for a non-string or invalid version.
+  Hand-rolled (no new dependency). One intentional divergence: OPA's `semver.compare`
+  infinite-loops when two numeric prerelease identifiers are equal in value but differ
+  textually via leading zeros (e.g. `1.0.0-01` vs `1.0.0-1`) — an upstream coreos/go-semver
+  bug; this implementation compares them numerically (equal), terminates, and returns the
+  correct result instead of hanging.
+
 - Net/CIDR built-ins: `net.cidr_contains`, `net.cidr_intersects`, and `net.cidr_is_valid`,
   matching OPA. Backed by Ruby's `IPAddr` (IPv4 and IPv6). A cidr requires a prefix length
   (a bare IP is not a cidr); host bits beyond the prefix are masked. `cidr_contains(cidr,

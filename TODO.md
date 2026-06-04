@@ -108,8 +108,9 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
 - ✅ Bits: `bits.and`, `bits.or`, `bits.xor`, `bits.negate`, `bits.lsh`, `bits.rsh`
   (`bits.lsh` caps result size as a DoS guard; parser accepts `and`/`or` as dotted
   reference segments so the builtins are callable from source).
-- ⬜ Misc: `uuid.rfc4122`, `semver.compare`, `semver.is_valid`, `units.parse*`,
-  `graph.reachable`, `walk`.
+- 🟡 Misc: ✅ `semver.compare`, `semver.is_valid` (hand-rolled SemVer §11; implements a
+  correct, terminating comparison rather than reproducing OPA's leading-zero-prerelease
+  compare hang); ⬜ `uuid.rfc4122`, `units.parse*`, `graph.reachable`, `walk`.
 
 ## Known limitations
 
