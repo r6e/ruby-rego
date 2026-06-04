@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Glob built-ins: `glob.match` (wildcards `*`/`**`/`?`, character classes `[...]`/`[!...]`,
+  brace alternation `{a,b}` with nesting, escaping, and OPA delimiter semantics — a null
+  delimiters argument means "no delimiters", an empty array defaults to `["."]`) and
+  `glob.quote_meta`. Matching is by Unicode codepoint; malformed patterns yield undefined.
+  Patterns are compiled to an anchored Ruby Regexp under the regex timeout guard. This
+  implements correct glob semantics and intentionally does **not** reproduce known bugs in
+  OPA's matcher (gobwas/glob): character classes use standard semantics (multiple ranges
+  and ranges mixed with literals, e.g. `[A-Za-z]` and `[a0-9]`) rather than gobwas's
+  restrictive single-range grammar (gobwas #47), `?` matches non-ASCII characters
+  consistently by codepoint even mid-pattern where OPA's `?` still fails on non-ASCII in a
+  sequence (gobwas #41), `?`/`[!...]` require exactly one character instead of also
+  matching the empty string, and degenerate forms OPA leniently accepts (an unterminated
+  `{a,b`, an empty `{}`, and a trailing or lone backslash) yield undefined. Outside these
+  corrections, well-formed patterns behave identically to OPA. To stay bounded on
+  untrusted input,
+  patterns with more than 65,536 delimiters, brace nesting deeper than 100, or a compiled
+  regex source over 1 MB yield undefined (DoS guards, analogous to the `numbers.range`
+  and `bits.lsh` caps).
 - Bitwise built-ins: `bits.and`, `bits.or`, `bits.xor`, `bits.negate`, `bits.lsh`,
   and `bits.rsh`, matching OPA (two's-complement infinite precision; integer-valued
   floats accepted, non-integers and negative shift counts yield undefined). A left

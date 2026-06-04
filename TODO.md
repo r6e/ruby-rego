@@ -95,7 +95,9 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
 - ✅ Strings: `replace`, `trim_prefix`, `trim_suffix`, `strings.count`,
   `strings.reverse`, `indexof_n`, `strings.replace_n`, `strings.any_prefix_match`,
   `strings.any_suffix_match`, regex-backed `regex.split`, and `strings.substring`.
-- ⬜ Glob: `glob.match`, `glob.quote_meta`.
+- ✅ Glob: `glob.match`, `glob.quote_meta` (compiled to an anchored Ruby Regexp;
+  implements correct glob semantics rather than reproducing gobwas bugs #41/#47 — see
+  README known limitations).
 - ⬜ Time: `time.now_ns`, `time.parse_rfc3339_ns`, `time.date`, `time.add_date`, etc.
 - 🟡 Crypto: ✅ `crypto.md5`, `crypto.sha1`, `crypto.sha256`; ⬜ `crypto.hmac.*`,
   ⬜ `crypto.x509.*`.

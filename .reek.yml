@@ -52,6 +52,8 @@ detectors:
       - Ruby::Rego::Evaluator::RuleEvaluator
       - Ruby::Rego::Unifier
       - Ruby::Rego::WithModifiers::WithModifierBuiltinOverride
+      # Character-scanning glob->regex compiler; repeated index arithmetic is inherent.
+      - Ruby::Rego::Builtins::Glob::GlobCompiler
   UtilityFunction:
     exclude:
       - Ruby::Rego::Lexer
