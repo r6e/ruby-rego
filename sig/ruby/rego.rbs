@@ -449,7 +449,7 @@ module Ruby
         def self.compile: (Value pattern_value, String context) -> Regexp
         def self.compile_source: (String source, String original, String context) -> Regexp
         def self.translate_named_groups: (String pattern) -> [String, Hash[String, Integer]]
-        def self.named_group_at: (Array[String] chars, Integer pos) -> Integer?
+        def self.named_group_at: (Array[String] chars, Integer pos) -> String?
         def self.guarded: [T] (String context) { () -> T } -> T
         def self.each_match: (Regexp regexp, String string) { (MatchData) -> void } -> void
         def self.advance: (MatchData found) -> Integer

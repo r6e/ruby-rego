@@ -97,6 +97,13 @@ RSpec.describe "regex.replace" do
     expect(replace("abc", "", "-")).to eq("-a-b-c-")
   end
 
+  it "skips a zero-width match immediately after a non-empty one (Go/RE2)" do
+    # Ruby's gsub would emit the trailing empty match; Go/RE2 (and find_n/split here) skip it.
+    expect(replace("abc", ".*", "X")).to eq("X")
+    expect(replace("aaabbb", "a*", "X")).to eq("XbXbXbX")
+    expect(replace("abc", "a|", "X")).to eq("XbXcX")
+  end
+
   it "treats an unclosed or empty brace reference as a literal" do
     expect(replace("abc", "(b)", "${")).to eq("a${c")
     expect(replace("abc", "(b)", "${}")).to eq("a${}c")

@@ -107,22 +107,27 @@ module Ruby
           guarded("regex.replace") { StringValue.new(expand_all(string, regexp, template)) }
         end
 
-        # Runs the gsub-based replacement, bounding total expanded output so a hostile
-        # match-count x template-length combination cannot exhaust memory. The remaining
-        # budget is threaded into each expansion so a single match cannot build a huge
-        # string before the bound is checked.
+        # Replaces every match with its expanded template, driven through `each_match` so
+        # the same Go/RE2 match positions used by `find_n`/`split` apply (a zero-width
+        # match immediately after a non-empty one is skipped, unlike Ruby's gsub). The
+        # remaining output budget is threaded into each expansion so a single match cannot
+        # build a huge string before the bound is checked.
         # :reek:TooManyStatements
+        # rubocop:disable Metrics/MethodLength
         def self.expand_all(string, regexp, template)
+          out = +""
+          cursor = 0
           remaining = MAX_REPLACE_OUTPUT
-          string.gsub(regexp) do |matched|
-            # Regexp.last_match is always set inside a gsub block that fired; the guard
-            # only narrows the MatchData? type for the type checker.
-            match = Regexp.last_match
-            expansion = match ? template.expand(match, remaining) : matched
+          each_match(regexp, string) do |found|
+            out << (string[cursor...(found.begin(0) || 0)] || "")
+            expansion = template.expand(found, remaining)
+            out << expansion
             remaining -= expansion.length
-            expansion
+            cursor = found.end(0) || 0
           end
+          out << (string[cursor..] || "")
         end
+        # rubocop:enable Metrics/MethodLength
         private_class_method :expand_all
 
         # Compiles, validates, and runs an all-matches scan under the timeout guard.
@@ -219,12 +224,12 @@ module Ruby
               in_class = false if char == "]"
               out << char
               pos += 1
-            elsif (name_length = named_group_at(chars, pos))
+            elsif (name = named_group_at(chars, pos))
               group_index += 1
               # A duplicate name resolves to its first occurrence (matching OPA/RE2).
-              names[chars[pos + 4, name_length].to_a.join] ||= group_index
+              names[name] ||= group_index
               out << "("
-              pos += 5 + name_length
+              pos += 5 + name.length
             else
               in_class = true if char == "["
               group_index += 1 if char == "(" && chars[pos + 1] != "?"
@@ -238,7 +243,7 @@ module Ruby
         private_class_method :translate_named_groups
 
         # If `chars` at `pos` opens a `(?P<name>` group with an RE2-identifier name,
-        # returns the name length; otherwise nil (so the position is handled literally).
+        # returns the name; otherwise nil (so the position is handled literally).
         # :reek:TooManyStatements
         def self.named_group_at(chars, pos)
           return nil unless chars[pos, 4] == ["(", "?", "P", "<"]
@@ -248,7 +253,7 @@ module Ruby
           return nil unless relative_end&.positive?
 
           name = chars[name_start, relative_end].to_a.join
-          name.match?(/\A[A-Za-z0-9_]+\z/) ? relative_end : nil
+          name.match?(/\A[A-Za-z0-9_]+\z/) ? name : nil
         end
         private_class_method :named_group_at
 
@@ -460,8 +465,8 @@ module Ruby
 
           def raise_output_too_large(budget)
             raise Ruby::Rego::BuiltinArgumentError.new(
-              "regex.replace output exceeds maximum",
-              expected: "output within #{budget} characters of the limit",
+              "regex.replace output exceeds the maximum size",
+              expected: "remaining output budget of #{budget} characters",
               actual: "exceeded",
               context: "regex.replace",
               location: nil
