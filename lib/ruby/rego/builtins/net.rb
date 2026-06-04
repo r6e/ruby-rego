@@ -40,8 +40,8 @@ module Ruby
         # @param other_value [Ruby::Rego::Value]
         # @return [Ruby::Rego::BooleanValue]
         def self.cidr_contains(cidr_value, other_value)
-          cidr = cidr_arg(cidr_value, "net.cidr_contains")
-          other = addr_arg(other_value, "net.cidr_contains")
+          cidr = normalize(cidr_arg(cidr_value, "net.cidr_contains"))
+          other = normalize(addr_arg(other_value, "net.cidr_contains"))
           BooleanValue.new(cidr.include?(other))
         end
 
@@ -53,8 +53,8 @@ module Ruby
         # @param cidr2_value [Ruby::Rego::Value]
         # @return [Ruby::Rego::BooleanValue]
         def self.cidr_intersects(cidr1_value, cidr2_value)
-          first = cidr_arg(cidr1_value, "net.cidr_intersects")
-          second = cidr_arg(cidr2_value, "net.cidr_intersects")
+          first = normalize(cidr_arg(cidr1_value, "net.cidr_intersects"))
+          second = normalize(cidr_arg(cidr2_value, "net.cidr_intersects"))
           BooleanValue.new(first.include?(second) || second.include?(first))
         end
 
@@ -92,30 +92,49 @@ module Ruby
         end
         private_class_method :addr_arg
 
+        # Parses a CIDR (a prefix length must be present); nil otherwise. Delegates address
+        # validation to parse_addr, then requires the `/` — checked only after parse_addr
+        # succeeds, so `string` is known ASCII-compatible before `include?` runs.
+        #
         # @param string [String]
         # @return [IPAddr, nil]
         def self.parse_cidr(string)
-          return nil unless string.valid_encoding? && string.include?("/")
-
-          parse_addr(string)
+          addr = parse_addr(string)
+          addr if addr && string.include?("/")
         end
         private_class_method :parse_cidr
 
-        # Parses an address with IPAddr, returning nil for any malformed or invalid-encoding
-        # input. IPAddr raises IPAddr::Error subclasses for bad addresses; a non-UTF-8 string
-        # is rejected by the encoding guard before IPAddr (where it would raise a bare
-        # ArgumentError).
+        # Parses an IP or CIDR with IPAddr, returning nil for any input OPA would reject.
+        # Beyond IPAddr's own validation (rescued via IPAddr::Error), three forms IPAddr
+        # accepts but OPA/Go reject are screened out: a non-ASCII-compatible or
+        # invalid-encoding string (which would make IPAddr raise a bare ArgumentError, not
+        # IPAddr::Error), a scoped/zone (`%`) or bracketed (`[]`) address, and a
+        # dotted-decimal netmask (the suffix after `/` must be an integer prefix length).
         #
         # @param string [String]
         # @return [IPAddr, nil]
         def self.parse_addr(string)
-          return nil unless string.valid_encoding?
+          return nil unless string.encoding.ascii_compatible? && string.valid_encoding?
+          return nil if string.match?(/[%\[\]]/)
+          return nil if string.include?("/") && !string.split("/", 2).last.match?(/\A\d+\z/)
 
           IPAddr.new(string)
         rescue IPAddr::Error
           nil
         end
         private_class_method :parse_addr
+
+        # Normalizes an IPv4-mapped IPv6 address (e.g. `::ffff:10.0.0.0/120`) to its native
+        # IPv4 form so cross-notation comparisons match OPA, which treats the mapped and
+        # bare-IPv4 forms as equal. `ipv4_mapped?` is true only when the prefix covers the
+        # whole `::ffff:` (>= 96); below that OPA keeps it IPv6, and so do we (no-op).
+        #
+        # @param addr [IPAddr]
+        # @return [IPAddr]
+        def self.normalize(addr)
+          addr.ipv4_mapped? ? addr.native : addr
+        end
+        private_class_method :normalize
 
         # @param context [String]
         # @return [void]
