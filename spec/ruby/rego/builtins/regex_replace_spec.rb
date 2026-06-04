@@ -95,6 +95,10 @@ RSpec.describe "regex.replace" do
     expect(replace("ab", "(?P<dup>a)(?P<dup>b)", "${dup}")).to eq("a") # first occurrence
   end
 
+  it "does not number a non-capturing (?:...) group" do
+    expect(replace("xbc", "(?:x)(b)(c)", "$1")).to eq("b")
+  end
+
   it "matches an empty pattern between every character" do
     expect(replace("abc", "", "-")).to eq("-a-b-c-")
   end
@@ -155,6 +159,18 @@ RSpec.describe "regex.replace" do
     string = "a" * 1_000
     result = registry.call("regex.replace", [string, "a", "[$0]"])
     expect(result.value).to eq("[a]" * 1_000)
+  end
+
+  it "preprocesses a degenerate (?P< pattern in linear time (no quadratic scan)" do
+    # Many `(?P<` with no closing `>` must not trigger an O(n) rescan per occurrence
+    # during named-group translation. The pattern fails to compile, so the result is
+    # undefined — but it must arrive in bounded time, not after a quadratic burn.
+    pattern = "(?P<" * 100_000
+    result = nil
+    expect do
+      Timeout.timeout(10) { result = registry.call("regex.replace", ["abc", pattern, "x"]) }
+    end.not_to raise_error
+    expect(result).to be_a(Ruby::Rego::UndefinedValue)
   end
 end
 # rubocop:enable Metrics/BlockLength

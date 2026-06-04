@@ -44,6 +44,12 @@ module Ruby
         # divergence from OPA, in the same spirit as the regex timeout above.
         MAX_REPLACE_OUTPUT = 32_000_000
 
+        # A single RE2 group-name character (`[A-Za-z0-9_]`). Used to scan a `(?P<name>`
+        # header forward one identifier char at a time, which bounds the scan to the name's
+        # length and stops at the first non-identifier — keeping pattern preprocessing
+        # linear even for adversarial input like `(?P<` repeated with no closing `>`.
+        GROUP_NAME_CHAR = /[A-Za-z0-9_]/
+
         # Upper bound on total template-segment expansions (matches x template segments).
         # Output size alone is insufficient: references that resolve to empty (an
         # out-of-range `$9` or unknown `${name}`) do CPU work per segment while emitting
@@ -111,9 +117,7 @@ module Ruby
         # @param replacement_value [Ruby::Rego::Value]
         # @return [Ruby::Rego::StringValue]
         def self.replace(string_value, pattern_value, replacement_value)
-          pattern = string_arg(pattern_value, "regex.replace")
-          translated, names = translate_named_groups(pattern)
-          regexp = compile_source(translated, pattern, "regex.replace")
+          regexp, names = compile_pattern(string_arg(pattern_value, "regex.replace"), "regex.replace")
           string = string_arg(string_value, "regex.replace")
           template = GoTemplate.new(string_arg(replacement_value, "regex.replace"), names)
           guarded("regex.replace") { StringValue.new(expand_all(string, regexp, template)) }
@@ -221,11 +225,21 @@ module Ruby
         # @param context [String]
         # @return [Regexp]
         def self.compile(pattern_value, context)
-          pattern = string_arg(pattern_value, context)
-          translated, = translate_named_groups(pattern)
-          compile_source(translated, pattern, context)
+          compile_pattern(string_arg(pattern_value, context), context).first
         end
         private_class_method :compile
+
+        # Translates Go named groups and compiles the result, returning the compiled
+        # Regexp together with the named-group index map (empty when there are none).
+        #
+        # @param pattern [String] the original (untranslated) pattern source
+        # @param context [String]
+        # @return [[Regexp, Hash{String => Integer}]]
+        def self.compile_pattern(pattern, context)
+          translated, names = translate_named_groups(pattern)
+          [compile_source(translated, pattern, context), names]
+        end
+        private_class_method :compile_pattern
 
         # Compiles an already-translated pattern source, reporting the original pattern
         # on failure.
@@ -288,17 +302,22 @@ module Ruby
         private_class_method :translate_named_groups
 
         # If `chars` at `pos` opens a `(?P<name>` group with an RE2-identifier name,
-        # returns the name; otherwise nil (so the position is handled literally).
+        # returns the name; otherwise nil (so the position is handled literally). The name
+        # is scanned forward one `[A-Za-z0-9_]` character at a time and must be terminated
+        # by `>`; this both enforces the RE2-identifier rule and keeps the scan O(name
+        # length) — a non-identifier char (including the `(` of a following group) stops it
+        # at once, so a pattern of many `(?P<` with no `>` stays linear, not quadratic.
         # :reek:TooManyStatements
+        # :reek:DuplicateMethodCall
         def self.named_group_at(chars, pos)
           return nil unless chars[pos, 4] == ["(", "?", "P", "<"]
 
           name_start = pos + 4
-          relative_end = chars[name_start..]&.index(">")
-          return nil unless relative_end&.positive?
+          cursor = name_start
+          cursor += 1 while GROUP_NAME_CHAR.match?(chars[cursor])
+          return nil unless cursor > name_start && chars[cursor] == ">"
 
-          name = chars[name_start, relative_end].to_a.join
-          name.match?(/\A[A-Za-z0-9_]+\z/) ? name : nil
+          chars[name_start, cursor - name_start].to_a.join
         end
         private_class_method :named_group_at
 

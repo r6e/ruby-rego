@@ -431,6 +431,7 @@ module Ruby
 
         REGEX_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
         REGEX_TIMEOUT_SECONDS: Float
+        GROUP_NAME_CHAR: Regexp
         MAX_REPLACE_OUTPUT: Integer
         MAX_REPLACE_WORK: Integer
 
@@ -450,6 +451,7 @@ module Ruby
         def self.string_arg: (Value value, String context) -> String
         def self.string_array: (Array[String] values) -> ArrayValue
         def self.compile: (Value pattern_value, String context) -> Regexp
+        def self.compile_pattern: (String pattern, String context) -> [Regexp, Hash[String, Integer]]
         def self.compile_source: (String source, String original, String context) -> Regexp
         def self.translate_named_groups: (String pattern) -> [String, Hash[String, Integer]]
         def self.named_group_at: (Array[String] chars, Integer pos) -> String?
