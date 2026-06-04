@@ -91,12 +91,25 @@ module Ruby
         # @param pattern_value [Ruby::Rego::Value]
         # @return [Ruby::Rego::BooleanValue]
         def self.is_valid(pattern_value)
-          translated, = translate_named_groups(string_arg(pattern_value, "regex.is_valid"))
-          Regexp.new(translated)
-          BooleanValue.new(true)
-        rescue RegexpError
-          BooleanValue.new(false)
+          pattern = string_arg(pattern_value, "regex.is_valid")
+          # An over-length pattern is rejected as not-valid rather than processed (the same
+          # anti-DoS cap as the other regex built-ins, applied here as `false` to keep
+          # is_valid total over strings). OPA, having no such cap, reports it valid.
+          BooleanValue.new(!source_too_long?(pattern) && compilable?(pattern))
         end
+
+        # True when the (translated) pattern compiles. Within-cap only — the caller guards
+        # length first, so translate_named_groups cannot raise here.
+        #
+        # @param pattern [String]
+        # @return [Boolean]
+        def self.compilable?(pattern)
+          Regexp.new(translate_named_groups(pattern, "regex.is_valid").first)
+          true
+        rescue RegexpError
+          false
+        end
+        private_class_method :compilable?
 
         # Splits a string on a pattern, matching Go's regexp.Split (n = -1):
         # leading/trailing empty segments are kept, a zero-width match does not
@@ -240,18 +253,24 @@ module Ruby
         # @param context [String]
         # @return [void]
         def self.assert_source_length(source, context)
-          size = source.bytesize
-          return if size <= MAX_REGEX_SOURCE
+          return unless source_too_long?(source)
 
           raise Ruby::Rego::BuiltinArgumentError.new(
             "Regex source exceeds the maximum length",
             expected: "at most #{MAX_REGEX_SOURCE} bytes",
-            actual: "#{size} bytes",
+            actual: "#{source.bytesize} bytes",
             context: context,
             location: nil
           )
         end
         private_class_method :assert_source_length
+
+        # @param source [String]
+        # @return [Boolean]
+        def self.source_too_long?(source)
+          source.bytesize > MAX_REGEX_SOURCE
+        end
+        private_class_method :source_too_long?
 
         # @param values [Array<String>]
         # @return [Ruby::Rego::ArrayValue]
@@ -275,7 +294,7 @@ module Ruby
         # @param context [String]
         # @return [[Regexp, Hash{String => Integer}]]
         def self.compile_pattern(pattern, context)
-          translated, names = translate_named_groups(pattern)
+          translated, names = translate_named_groups(pattern, context)
           [compile_source(translated, pattern, context), names]
         end
         private_class_method :compile_pattern
@@ -306,8 +325,8 @@ module Ruby
         # :reek:TooManyStatements
         # :reek:DuplicateMethodCall
         # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
-        def self.translate_named_groups(pattern)
-          assert_source_length(pattern, "regex")
+        def self.translate_named_groups(pattern, context)
+          assert_source_length(pattern, context)
           out = +""
           names = {} # @type var names: Hash[String, Integer]
           chars = pattern.chars
@@ -511,6 +530,10 @@ module Ruby
           # per-match expand are both O(capped template) — no separate time bound needed.
           attr_reader :segment_count
 
+          # Callers MUST cap the template length (Regex.assert_source_length) before
+          # constructing — `parse` materializes `template.chars`, an uninterruptible O(n)
+          # call. `replace` is the only caller and does so.
+          #
           # @param template [String]
           # @param names [Hash{String => Integer}] named group -> capture index
           def initialize(template, names)

@@ -451,11 +451,13 @@ module Ruby
         def self.skip_zero_width?: (MatchData? match, Integer previous_end) -> bool
         def self.string_arg: (Value value, String context) -> String
         def self.assert_source_length: (String source, String context) -> void
+        def self.source_too_long?: (String source) -> bool
+        def self.compilable?: (String pattern) -> bool
         def self.string_array: (Array[String] values) -> ArrayValue
         def self.compile: (Value pattern_value, String context) -> Regexp
         def self.compile_pattern: (String pattern, String context) -> [Regexp, Hash[String, Integer]]
         def self.compile_source: (String source, String original, String context) -> Regexp
-        def self.translate_named_groups: (String pattern) -> [String, Hash[String, Integer]]
+        def self.translate_named_groups: (String pattern, String context) -> [String, Hash[String, Integer]]
         def self.named_group_at: (Array[String] chars, Integer pos) -> [String, Integer]?
         def self.named_group_name_start: (Array[String] chars, Integer pos) -> Integer?
         def self.guarded: [T] (String context) { () -> T } -> T

@@ -26,6 +26,15 @@ RSpec.describe "regex builtins" do
     it "accepts Go's (?P<name>) named-group syntax" do
       expect(registry.call("regex.match", ['(?P<n>\d+)', "id-42"]).to_ruby).to be(true)
     end
+
+    it "is undefined for an over-length pattern (shared anti-DoS cap)" do
+      # The source-length cap lives in translate_named_groups, so it applies to every
+      # built-in that compiles a pattern, not just regex.replace.
+      big = "a" * 2_000_000
+      expect(registry.call("regex.match", [big, "x"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("regex.split", [big, "x"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("regex.find_n", [big, "x", 1])).to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 
   describe "regex.is_valid" do
@@ -43,6 +52,16 @@ RSpec.describe "regex builtins" do
     it "rejects a Unicode-named group, matching OPA/RE2" do
       expect(registry.call("regex.is_valid", ["(?P<cafe>x)"]).to_ruby).to be(true)
       expect(registry.call("regex.is_valid", ["(?P<café>x)"]).to_ruby).to be(false)
+    end
+
+    it "returns false (not undefined) for an over-length pattern (anti-DoS cap)" do
+      # OPA, with no length cap, reports a large-but-valid pattern valid; the gem rejects
+      # it as false rather than processing it, keeping is_valid total over strings.
+      expect(registry.call("regex.is_valid", ["a" * 2_000_000]).to_ruby).to be(false)
+    end
+
+    it "is undefined for a non-string argument (matching OPA)" do
+      expect(registry.call("regex.is_valid", [123])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 

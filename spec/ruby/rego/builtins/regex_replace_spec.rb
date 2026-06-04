@@ -105,6 +105,14 @@ RSpec.describe "regex.replace" do
     expect(replace("xy", "(?<a>x)(y)", "$1$2")).to eq("xy")
   end
 
+  it "accepts a non-identifier name in the Onigmo-native (?<...> form (superset)" do
+    # A non-identifier name is left untranslated; the (?P<...> form then fails to compile
+    # (→ undefined, matching RE2), but the (?<...> form is Onigmo-native, so the gem
+    # matches it where OPA is undefined — a documented superset divergence.
+    expect(replace("x", "(?<café>x)", "Q")).to eq("Q")
+    expect(registry.call("regex.replace", ["x", "(?P<café>x)", "Q"])).to be_a(Ruby::Rego::UndefinedValue)
+  end
+
   it "does not treat lookbehind (?<=...) as a named group" do
     # `(?<=a)` is a lookbehind, not a capture; OPA (RE2) rejects lookbehind, but the gem
     # accepts it via Onigmo (documented superset). Either way it is not a named group, so
