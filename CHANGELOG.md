@@ -30,7 +30,9 @@ All notable changes to this project will be documented in this file.
   ~32M characters or its total template-segment expansions (matches × template segments)
   would exceed ~32M — the latter bounds CPU even when references resolve to empty and emit
   no output, which the output cap alone does not catch. An invalid-encoding string argument
-  to a regex built-in now yields undefined rather than raising.
+  to a regex built-in now yields undefined rather than raising. `regex.is_valid` is now
+  total over runtime values like OPA's: a non-string argument yields `false` (not undefined,
+  unlike the other regex built-ins), and an over-length pattern yields `false`.
 
 - Glob built-ins: `glob.match` (wildcards `*`/`**`/`?`, character classes `[...]`/`[!...]`,
   brace alternation `{a,b}` with nesting, escaping, and OPA delimiter semantics — a null

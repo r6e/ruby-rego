@@ -91,11 +91,15 @@ module Ruby
         # @param pattern_value [Ruby::Rego::Value]
         # @return [Ruby::Rego::BooleanValue]
         def self.is_valid(pattern_value)
-          pattern = string_arg(pattern_value, "regex.is_valid")
-          # An over-length pattern is rejected as not-valid rather than processed (the same
-          # anti-DoS cap as the other regex built-ins, applied here as `false` to keep
-          # is_valid total over strings). OPA, having no such cap, reports it valid.
-          BooleanValue.new(!source_too_long?(pattern) && compilable?(pattern))
+          # OPA's regex.is_valid is total over runtime values: a non-string argument is
+          # `false`, not undefined (unlike the other regex built-ins, which type-error to
+          # undefined). An over-length pattern is also rejected as not-valid rather than
+          # processed (anti-DoS cap; OPA, having no cap, reports a large valid pattern true).
+          return BooleanValue.new(false) unless pattern_value.is_a?(StringValue)
+
+          pattern = pattern_value.value
+          valid = pattern.valid_encoding? && !source_too_long?(pattern) && compilable?(pattern)
+          BooleanValue.new(valid)
         end
 
         # True when the (translated) pattern compiles. Within-cap only — the caller guards

@@ -60,8 +60,13 @@ RSpec.describe "regex builtins" do
       expect(registry.call("regex.is_valid", ["a" * 2_000_000]).to_ruby).to be(false)
     end
 
-    it "is undefined for a non-string argument (matching OPA)" do
-      expect(registry.call("regex.is_valid", [123])).to be_a(Ruby::Rego::UndefinedValue)
+    it "returns false (not undefined) for a non-string argument, matching OPA at runtime" do
+      # OPA's regex.is_valid is total over runtime values: a non-string yields false
+      # (verified via input-driven opa eval), unlike regex.match/split/find_n which are
+      # undefined on a non-string. A literal non-string is a separate compile-time error.
+      [123, true, [1, 2], { "k" => 1 }, nil].each do |arg|
+        expect(registry.call("regex.is_valid", [arg]).to_ruby).to be(false)
+      end
     end
   end
 
