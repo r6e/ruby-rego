@@ -15,7 +15,8 @@ All notable changes to this project will be documented in this file.
   restrictive single-range grammar (gobwas #47), `?` matches non-ASCII characters
   consistently by codepoint even mid-pattern where OPA's `?` still fails on non-ASCII in a
   sequence (gobwas #41), and `?`/`[!...]` require exactly one character instead of also
-  matching the empty string. Well-formed ASCII patterns behave identically to OPA.
+  matching the empty string. Outside these corrections, well-formed patterns behave
+  identically to OPA.
 - Bitwise built-ins: `bits.and`, `bits.or`, `bits.xor`, `bits.negate`, `bits.lsh`,
   and `bits.rsh`, matching OPA (two's-complement infinite precision; integer-valued
   floats accepted, non-integers and negative shift counts yield undefined). A left

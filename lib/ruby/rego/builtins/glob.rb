@@ -17,8 +17,8 @@ module Ruby
       # everything), an empty array defaults to `["."]`, and a non-empty array lists the
       # single-character delimiters.
       #
-      # Malformed patterns (unclosed class/brace, reversed/dangling range, empty `{}`)
-      # yield an undefined result.
+      # Malformed patterns (unclosed class/brace, reversed range, empty `{}`) yield an
+      # undefined result.
       #
       # This implements correct glob semantics rather than reproducing known bugs in
       # OPA's matcher (gobwas/glob). Specifically, unlike OPA: character classes use
@@ -27,7 +27,7 @@ module Ruby
       # (gobwas #47); `?` matches non-ASCII characters consistently by codepoint even
       # mid-pattern, where OPA's `?` still fails on non-ASCII in a sequence (gobwas #41);
       # and `?`/`[!...]` require exactly one character rather than also matching the empty
-      # string. Well-formed ASCII patterns behave identically to OPA.
+      # string. Outside these corrections, well-formed patterns behave identically to OPA.
       module Glob
         extend RegistryHelpers
 
@@ -131,12 +131,19 @@ module Ruby
           # as a malformed pattern (undefined result).
           MAX_BRACE_NESTING = 100
 
+          # Bounds the generated regex source so a pattern cannot force a super-linear
+          # build at compile time. Each `*`/`?` re-emits the (delimiter-sized)
+          # non-delimiter class, so a long pattern over many delimiters would otherwise
+          # produce an O(pattern x delimiters) source before the match timeout applies.
+          MAX_COMPILED_SIZE = 1 << 20
+
           # @param pattern [String]
           # @param seps [Array[String]] delimiter characters (empty means "no delimiters")
           def initialize(pattern, seps)
             @chars = pattern.chars
             @nonsep = non_delimiter_class(seps)
             @brace_depth = 0
+            @size = 0
           end
 
           # @return [String] regex source (unanchored)
@@ -167,6 +174,9 @@ module Ruby
               break if !top_level && [",", "}"].include?(char)
 
               source, pos = translate_token(char, pos)
+              @size += source.length
+              raise_malformed if @size > MAX_COMPILED_SIZE
+
               parts << source
             end
             [parts.join, pos]
@@ -186,7 +196,7 @@ module Ruby
           end
 
           # `**` (superstar) crosses delimiters; a single `*` does not. Returns the
-          # regex source and the number of pattern characters consumed.
+          # regex source and the next position.
           # :reek:FeatureEnvy
           def star(pos)
             return ['[\s\S]*', pos + 2] if @chars[pos + 1] == "*"
@@ -252,21 +262,19 @@ module Ruby
             pos + 1
           end
 
-          # Converts class elements into regex class source, expanding `a-z` ranges and
-          # escaping specials. Only an unescaped `-` between two elements forms a range;
-          # reversed or dangling ranges are malformed.
-          # :reek:TooManyStatements
+          # Converts class elements into regex class source. An unescaped `-` between two
+          # elements forms an `a-z` range; any other `-` (leading, trailing, or escaped)
+          # is a literal character, matching standard glob. A reversed range is malformed.
           # :reek:FeatureEnvy
-          # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+          # :reek:TooManyStatements
+          # rubocop:disable Metrics/MethodLength
           def class_body(elements)
             out = +""
             index = 0
             while index < elements.length
-              if range_separator?(elements[index + 1]) && index + 2 < elements.length
+              if range_at?(elements, index)
                 out << class_range(elements[index][0], elements[index + 2][0])
                 index += 3
-              elsif range_separator?(elements[index + 1])
-                raise_malformed # dangling range, e.g. [a-]
               else
                 out << escape_in_class(elements[index][0])
                 index += 1
@@ -274,12 +282,12 @@ module Ruby
             end
             out
           end
-          # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+          # rubocop:enable Metrics/MethodLength
 
-          # An unescaped `-` element acts as a range separator.
+          # A range occupies three elements: a char, an unescaped `-`, and a high char.
           # :reek:UtilityFunction
-          def range_separator?(element)
-            element == ["-", false]
+          def range_at?(elements, index)
+            index + 2 < elements.length && elements[index + 1] == ["-", false]
           end
 
           def class_range(low, high)

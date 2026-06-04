@@ -92,6 +92,13 @@ RSpec.describe "glob builtins" do
       expect(match("[a&&b]", ["."], "&")).to be(true)
       expect(match("[a&&b]", ["."], "a")).to be(true)
     end
+
+    it "treats a trailing or leading dash in a class as a literal" do
+      expect(match("[abc-]", ["."], "-")).to be(true)
+      expect(match("[abc-]", ["."], "b")).to be(true)
+      expect(match("[abc-]", ["."], "d")).to be(false)
+      expect(match("[-a]", ["."], "-")).to be(true)
+    end
   end
 
   describe "glob.match brace alternation" do
@@ -120,7 +127,9 @@ RSpec.describe "glob builtins" do
 
   # ruby-rego implements correct glob semantics rather than reproducing known bugs in
   # OPA's matcher (gobwas/glob). These cases return a useful result here but are wrong
-  # or undefined in OPA. See gobwas/glob issues #41, #47, #66.
+  # or undefined in OPA: character-class grammar (gobwas #47), non-ASCII ? (gobwas #41),
+  # and the exactly-one-character requirement for ?/[!...] (a deliberate choice with no
+  # specific upstream issue).
   describe "glob.match (intentional corrections of known OPA/gobwas bugs)" do
     it "uses standard character-class semantics (gobwas #47)" do
       # OPA's restrictive grammar rejects multi-range classes (undefined) and reads a
@@ -158,6 +167,15 @@ RSpec.describe "glob builtins" do
     it "is undefined for pathologically deep brace nesting (DoS guard)" do
       pattern = "#{"{" * 5000}a#{"}" * 5000}"
       expect(registry.call("glob.match", [pattern, nil, "a"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined when the compiled pattern would be too large (DoS guard)" do
+      # Each ? re-emits the delimiter class, so a long pattern over many delimiters
+      # would otherwise build a huge regex source before the match timeout applies.
+      delimiters = ("a".."z").to_a + ("A".."Z").to_a
+      pattern = "?" * 100_000
+      expect(registry.call("glob.match", [pattern, delimiters, "x"]))
+        .to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 

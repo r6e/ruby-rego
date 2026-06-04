@@ -397,10 +397,12 @@ module Ruby
 
         class GlobCompiler
           MAX_BRACE_NESTING: Integer
+          MAX_COMPILED_SIZE: Integer
 
           @chars: Array[String]
           @nonsep: String
           @brace_depth: Integer
+          @size: Integer
 
           def initialize: (String pattern, Array[String] seps) -> void
           def compile: () -> String
@@ -416,7 +418,7 @@ module Ruby
           def translate_class: (Integer pos) -> [String, Integer]
           def scan_class_element: (Array[[String, bool]] elements, Integer pos) -> Integer
           def class_body: (Array[[String, bool]] elements) -> String
-          def range_separator?: ([String, bool]? element) -> bool
+          def range_at?: (Array[[String, bool]] elements, Integer index) -> bool
           def class_range: (String low, String high) -> String
           def escape_in_class: (String char) -> String
           def raise_malformed: () -> bot
