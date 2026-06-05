@@ -91,8 +91,8 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
   severity: unreachable through the JSON/Rego input path; requires a hand-built
   non-UTF-8 Ruby String.
 - 🟡 Object: ✅ `object.union`, `object.union_n`, `object.filter` (plus object-keys
-  support for `object.filter`/`object.remove`); ⬜ `json.patch`, `json.filter`,
-  `json.remove` (JSON path / RFC 6902 operations).
+  support for `object.filter`/`object.remove`), `json.filter`, `json.remove` (JSON path
+  projection/redaction); ⬜ `json.patch` (RFC 6902 operations).
 - ✅ Strings: `replace`, `trim_prefix`, `trim_suffix`, `strings.count`,
   `strings.reverse`, `indexof_n`, `strings.replace_n`, `strings.any_prefix_match`,
   `strings.any_suffix_match`, regex-backed `regex.split`, and `strings.substring`.

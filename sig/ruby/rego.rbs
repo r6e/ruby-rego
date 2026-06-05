@@ -595,6 +595,34 @@ module Ruby
         def self.json_sort_key: (untyped element) -> Array[untyped]
       end
 
+      module JsonPaths
+        extend RegistryHelpers
+
+        JSON_PATH_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        ARRAY_INDEX: Regexp
+
+        def self.register!: () -> BuiltinRegistry
+        def self.filter: (Value document_value, Value paths_value) -> untyped
+        def self.remove: (Value document_value, Value paths_value) -> untyped
+
+        private
+
+        def self.select: (untyped value, Hash[Symbol, untyped] node) -> untyped
+        def self.select_object: (Hash[untyped, untyped] hash, Hash[Symbol, untyped] node) -> Hash[untyped, untyped]
+        def self.select_array: (Array[untyped] array, Hash[Symbol, untyped] node) -> Array[untyped]
+        def self.prune: (untyped value, Hash[Symbol, untyped] node) -> untyped
+        def self.prune_object: (Hash[untyped, untyped] hash, Hash[Symbol, untyped] node) -> Hash[untyped, untyped]
+        def self.prune_array: (Array[untyped] array, Hash[Symbol, untyped] node) -> Array[untyped]
+        def self.array_index: (untyped segment, Integer length) -> Integer?
+        def self.object_document: (Value document_value, String context) -> Hash[untyped, untyped]
+        def self.path_trie: (Value paths_value, String context) -> Hash[Symbol, untyped]
+        def self.path_segments: (Value path, String context) -> Array[untyped]
+        def self.unescape_pointer: (String segment) -> String
+        def self.insert: (Hash[Symbol, untyped] root, Array[untyped] segments) -> void
+        def self.new_node: () -> Hash[Symbol, untyped]
+        def self.raise_invalid_path: (String context) -> bot
+      end
+
       module Strings
         extend RegistryHelpers
 

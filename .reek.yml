@@ -42,6 +42,8 @@ detectors:
       - Ruby::Rego::Builtins::Semver#self.build_version
       - Ruby::Rego::Builtins::Semver#self.compare_prerelease
       - Ruby::Rego::Builtins::Semver#self.compare_identifier
+      # Multi-index array removal: recurse-then-delete-descending in one pass.
+      - Ruby::Rego::Builtins::JsonPaths#self.prune_array
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
       - Ruby::Rego::CompiledPolicySet

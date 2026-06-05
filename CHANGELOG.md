@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- JSON path built-ins: `json.filter` and `json.remove`, matching OPA. Both take an object
+  document and an array of paths; each path is a `/`-separated string (JSON-pointer escaped:
+  `~1` is `/`, `~0` is `~`) or an array of literal segments, and a numeric string segment
+  indexes into an array. `json.filter` keeps only the listed paths (a terminal path keeps
+  the whole subtree, a path descending past a scalar keeps the scalar, a non-matching child
+  becomes an empty container); `json.remove` drops the listed paths (removing array elements
+  reindexes, and multiple indices under one array are removed against their original
+  positions). A non-object document, a non-array paths argument, or a path element that is
+  neither a string nor an array yields undefined. Pure structural rewrites of the parsed
+  value (linear in document size); hand-rolled, no new dependency.
+
 - Encoding built-ins: `base64url.encode_no_pad` (base64url without `=` padding),
   `urlquery.encode_object`, and `urlquery.decode_object`, matching OPA. `encode_object`
   encodes an object as a query string (keys sorted; a string value emits one pair, an
