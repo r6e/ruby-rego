@@ -15,7 +15,6 @@ module Ruby
         segment
       end
 
-      # :reek:TooManyStatements
       def parse_rule_head_args
         parse_parenthesized_expression_list(
           open_message: "Expected '(' after rule name.",
@@ -23,7 +22,6 @@ module Ruby
         )
       end
 
-      # :reek:TooManyStatements
       def parse_rule_head_key
         consume(TokenType::LBRACKET, "Expected '[' after rule name.")
         consume_newlines
@@ -47,7 +45,6 @@ module Ruby
         parse_query(TokenType::ELSE, TokenType::EOF, TokenType::NEWLINE, newline_delimiter: false)
       end
 
-      # :reek:TooManyStatements
       def parse_braced_rule_body
         advance
         consume_newlines

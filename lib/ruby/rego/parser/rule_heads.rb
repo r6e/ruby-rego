@@ -40,8 +40,8 @@ module Ruby
         build_rule_head(:partial_object, name, name_token, key: key, value: value)
       end
 
-      # :reek:UtilityFunction
       # :reek:LongParameterList
+      # :reek:UtilityFunction
       def build_rule_head(type, name, name_token, **attrs)
         { type: type, name: name, location: name_token.location }.merge(attrs)
       end
@@ -53,7 +53,6 @@ module Ruby
         parse_error("Rule head references require complete rule definitions.")
       end
 
-      # :reek:UtilityFunction
       def nested_rule_head(head, segments, name_token)
         return rule_head_path_builder(head, segments, name_token).call if segments.any?
 

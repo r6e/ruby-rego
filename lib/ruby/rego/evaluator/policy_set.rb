@@ -76,7 +76,6 @@ module Ruby
         end
       end
 
-      # :reek:UtilityFunction
       def conflicting_package(rule_path, package_paths)
         package_paths.find { |other| package_prefix?(rule_path, other) }
       end
@@ -89,7 +88,6 @@ module Ruby
         )
       end
 
-      # :reek:UtilityFunction
       # True when `prefix` is a (non-strict) prefix of `path` — i.e. the rule path
       # is used as, or as an ancestor of, a package namespace.
       def package_prefix?(prefix, path)

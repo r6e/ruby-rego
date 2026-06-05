@@ -9,7 +9,6 @@ module Ruby
     class Parser
       private
 
-      # :reek:TooManyStatements
       def parse_rule
         default_token = consume_default_keyword
         name_token = current_token

@@ -2,7 +2,6 @@
 
 module Ruby
   module Rego
-    # :reek:DataClump
     # Candidate-key enumeration for reference-pattern unification.
     class Unifier
       private

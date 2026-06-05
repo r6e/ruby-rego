@@ -58,7 +58,6 @@ module Ruby
           nil
         end
 
-        # :reek:TooManyStatements
         def self.normalize_object(value)
           return nil unless (pairs = object_pairs(value))
 
@@ -95,7 +94,6 @@ module Ruby
         end
 
         # :reek:LongParameterList
-        # :reek:TooManyStatements
         def self.unify_variable(variable, value, env, bindings)
           name = variable.name
           return [bindings] if name == "_"
@@ -106,7 +104,6 @@ module Ruby
           [bindings.merge(name => value)]
         end
 
-        # :reek:TooManyStatements
         # :reek:LongParameterList
         def self.candidate_keys_for(key_pattern, keys, env, bindings)
           if key_pattern.is_a?(AST::Variable)
@@ -126,14 +123,12 @@ module Ruby
         end
 
         # :reek:LongParameterList
-        # :reek:ControlParameter
         def self.match_scalar(pattern, resolved_value, env, bindings)
           pattern_value = scalar_pattern_value(pattern, env)
           pattern_value == resolved_value ? [bindings] : []
         end
 
         # :reek:LongParameterList
-        # :reek:TooManyStatements
         def self.bind_key_variable(key_pattern, candidate_key, bindings, env)
           return bindings unless key_pattern.is_a?(AST::Variable)
 

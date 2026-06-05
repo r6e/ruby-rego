@@ -11,9 +11,7 @@ module Ruby
         object_values.keys.reject { |key| used_keys.include?(key) }
       end
 
-      # :reek:TooManyStatements
       # :reek:LongParameterList
-      # :reek:FeatureEnvy
       # rubocop:disable Metrics/MethodLength
       def reduce_object_pairs(pattern_pairs, object_values, env, bindings)
         binding_sets = [ObjectBindingState.new(bindings: bindings, used_keys: Set.new)]
@@ -34,7 +32,6 @@ module Ruby
       # rubocop:enable Metrics/MethodLength
 
       # :reek:LongParameterList
-      # :reek:FeatureEnvy
       def unify_object_pair(key_pattern, value_pattern, object_values, env, state)
         available_keys = available_object_keys(object_values, state.used_keys)
         candidate_keys = Helpers.candidate_keys_for(key_pattern, available_keys, env, state.bindings)
@@ -46,7 +43,6 @@ module Ruby
       end
 
       # :reek:LongParameterList
-      # :reek:FeatureEnvy
       # rubocop:disable Metrics/ParameterLists
       def unify_object_candidate(candidate_key, key_pattern, value_pattern, object_values, env, state)
         return [] unless object_values.key?(candidate_key)

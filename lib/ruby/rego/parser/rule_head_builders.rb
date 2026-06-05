@@ -65,7 +65,6 @@ module Ruby
 
         # @param start_index [Integer]
         # @return [Integer, nil]
-        # :reek:FeatureEnvy
         def matching_index(start_index)
           depth = 0
 
