@@ -85,7 +85,6 @@ module Ruby
       end
 
       # :reek:LongParameterList
-      # :reek:FeatureEnvy
       def structured_unification(pattern, resolved_value, env, bindings)
         return Helpers.unify_variable(pattern, resolved_value, env, bindings) if pattern.is_a?(AST::Variable)
         return unify_reference(pattern, resolved_value, env, bindings) if pattern.is_a?(AST::Reference)
@@ -103,9 +102,7 @@ module Ruby
         Helpers.match_scalar(pattern, resolved_value, env, bindings)
       end
 
-      # :reek:TooManyStatements
       # :reek:LongParameterList
-      # :reek:FeatureEnvy
       # rubocop:disable Metrics/MethodLength
       def reduce_array_bindings(pattern_elems, elements, env, bindings)
         binding_sets = [bindings]

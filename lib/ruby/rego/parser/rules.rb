@@ -3,13 +3,9 @@
 module Ruby
   module Rego
     # Parsing helpers for rules and module declarations.
-    # :reek:TooManyMethods
-    # :reek:DataClump
-    # :reek:RepeatedConditional
     class Parser
       private
 
-      # :reek:TooManyStatements
       def parse_module
         consume_newlines
         package = parse_package
@@ -25,8 +21,6 @@ module Ruby
         AST::Module.new(package: package, imports: imports, rules: rules, location: package.location)
       end
 
-      # :reek:UncommunicativeVariableName
-      # :reek:TooManyStatements
       def parse_statement(imports, rules)
         consume_newlines
         return if at_end?
