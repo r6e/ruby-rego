@@ -241,12 +241,8 @@ module Ruby
         # @param context [String]
         # @return [void]
         def self.raise_invalid_path(context)
-          raise Ruby::Rego::BuiltinArgumentError.new(
-            "Invalid path",
-            expected: "a string or array path",
-            actual: "invalid",
-            context: context,
-            location: nil
+          Base.raise_argument_error(
+            "Invalid path", expected: "a string or array path", actual: "invalid", context: context
           )
         end
         private_class_method :raise_invalid_path

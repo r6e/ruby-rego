@@ -66,27 +66,32 @@ module Ruby
         end
         private_class_method :arity_valid?
 
-        def self.raise_builtin_arity_error(actual, expected, name)
-          context = name ? "builtin #{name}" : nil
-          expected_list = normalize_arity(expected)
+        # Raises a BuiltinArgumentError (caught by the registry and surfaced as undefined).
+        # The shared shape behind every builtin's argument-validation guard.
+        # :reek:LongParameterList
+        def self.raise_argument_error(message, expected:, actual:, context: nil)
           raise Ruby::Rego::BuiltinArgumentError.new(
-            "Wrong number of arguments",
-            expected: format_arity(expected_list),
-            actual: actual,
-            context: context,
-            location: nil
-          )
-        end
-        private_class_method :raise_builtin_arity_error
-
-        def self.raise_type_error(expected:, actual:, context: nil)
-          raise Ruby::Rego::BuiltinArgumentError.new(
-            "Type mismatch",
+            message,
             expected: expected,
             actual: actual,
             context: context,
             location: nil
           )
+        end
+
+        def self.raise_builtin_arity_error(actual, expected, name)
+          context = name ? "builtin #{name}" : nil
+          raise_argument_error(
+            "Wrong number of arguments",
+            expected: format_arity(normalize_arity(expected)),
+            actual: actual,
+            context: context
+          )
+        end
+        private_class_method :raise_builtin_arity_error
+
+        def self.raise_type_error(expected:, actual:, context: nil)
+          raise_argument_error("Type mismatch", expected: expected, actual: actual, context: context)
         end
         private_class_method :raise_type_error
       end

@@ -5,7 +5,6 @@ module Ruby
     class Evaluator
       # Evaluates comprehensions in isolated scopes.
       # :reek:TooManyMethods
-      # rubocop:disable Metrics/ClassLength
       class ComprehensionEvaluator
         # Tracks object keys for conflict detection.
         class ObjectAccumulator
@@ -34,6 +33,8 @@ module Ruby
         # Bundles object comprehension accumulation state.
         ObjectPairContext = Struct.new(:result_values, :accumulator)
         private_constant :ObjectPairContext
+
+        include LocalShadowing
 
         # @param expression_evaluator [ExpressionEvaluator]
         # @param environment [Environment]
@@ -156,27 +157,7 @@ module Ruby
           shadow_explicit_locals(explicit)
           shadow_unification_locals(details[:unification], explicit)
         end
-
-        def shadow_explicit_locals(names)
-          names.each { |name| bind_undefined(name) }
-        end
-
-        def shadow_unification_locals(names, explicit_names)
-          names.each do |name|
-            next if explicit_names.include?(name)
-            next unless environment.lookup(name).is_a?(UndefinedValue)
-
-            bind_undefined(name)
-          end
-        end
-
-        def bind_undefined(name)
-          return if Environment::RESERVED_NAMES.include?(name) || name == "_"
-
-          environment.bind(name, UndefinedValue.new)
-        end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end
