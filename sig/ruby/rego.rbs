@@ -214,6 +214,7 @@ module Ruby
         def self.assert_type: (untyped value, expected: Class | Array[Class], ?context: String?) -> void
         def self.to_ruby: (untyped value) -> untyped
         def self.to_value: (untyped value) -> Value
+        def self.raise_argument_error: (String message, expected: String, actual: String | Integer, ?context: String?) -> bot
 
         private
 
@@ -221,7 +222,6 @@ module Ruby
         def self.normalize_arity: (Integer | Array[Integer] expected) -> Array[Integer]
         def self.format_arity: (Array[Integer] expected_list) -> String
         def self.arity_valid?: (Integer actual, Integer | Array[Integer] expected) -> bool
-        def self.raise_argument_error: (String message, expected: String, actual: String | Integer, ?context: String?) -> bot
         def self.raise_builtin_arity_error: (Integer actual, Integer | Array[Integer] expected, String? name) -> bot
         def self.raise_type_error: (expected: String, actual: String, ?context: String?) -> bot
       end
