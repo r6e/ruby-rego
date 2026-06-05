@@ -9,7 +9,6 @@ module Ruby
     class Evaluator
       # Evaluates expressions to Rego values.
       # :reek:TooManyInstanceVariables
-      # :reek:DataClump
       # :reek:TooManyMethods
       # rubocop:disable Metrics/ClassLength
       class ExpressionEvaluator
@@ -123,115 +122,6 @@ module Ruby
           )
         end
 
-        def evaluate_variable(node)
-          name = node.name
-          return UndefinedValue.new if name == "_"
-
-          resolve_variable_name(name)
-        end
-
-        def resolve_variable_name(name)
-          resolve_reference_variable_key(name)
-        end
-
-        def resolve_reference_variable_key(name)
-          resolved = environment.lookup(name)
-          return resolved unless resolved.is_a?(UndefinedValue)
-          return resolved if environment.local_bound?(name)
-
-          resolve_import_or_rule(name, resolved)
-        end
-
-        def resolve_import_or_rule(name, fallback)
-          reference_resolver.resolve_import_variable(name) ||
-            reference_resolver.resolve_rule_variable(name) ||
-            fallback
-        end
-
-        def evaluate_reference(node)
-          reference_resolver.resolve(node)
-        end
-
-        def evaluate_array_literal(node)
-          elements = node.elements.map { |element| evaluate(element) }
-          ArrayValue.new(elements)
-        end
-
-        def evaluate_object_literal(node)
-          object_literal_evaluator.evaluate(node)
-        end
-
-        def evaluate_set_literal(node)
-          elements = node.elements.map { |element| evaluate(element) }
-          SetValue.new(elements)
-        end
-
-        # :reek:TooManyStatements
-        def evaluate_call(node)
-          name_node = node.name
-          name = self.class.call_name(name_node)
-          return UndefinedValue.new unless name
-
-          args = node.args.map { |arg| evaluate(arg) }
-          return UndefinedValue.new if args.any?(&:undefined?)
-
-          call_named_function(name, name_node, args)
-        end
-
-        def evaluate_user_function(name, args)
-          return UndefinedValue.new unless query_evaluator
-
-          query_evaluator.evaluate_function_call(name, args)
-        end
-        public :evaluate_user_function
-
-        def variable_known?(name)
-          variable_name = name.to_s
-          return false if wildcard_variable_name?(variable_name)
-          return true if locally_resolved_variable?(variable_name)
-
-          imported_or_rule_variable?(variable_name)
-        end
-        public :variable_known?
-
-        # :reek:UtilityFunction
-        def wildcard_variable_name?(name)
-          name == "_"
-        end
-
-        def locally_resolved_variable?(name)
-          resolved = environment.lookup(name)
-          !resolved.is_a?(UndefinedValue) || environment.local_bound?(name)
-        end
-
-        def imported_or_rule_variable?(name)
-          !!(reference_resolver.resolve_import_variable(name) ||
-            reference_resolver.resolve_rule_variable(name))
-        end
-
-        def evaluate_template_string(node)
-          rendered = node.parts.map do |part|
-            next part.value if part.is_a?(AST::StringLiteral)
-
-            format_template_value(evaluate(part))
-          end.join
-          StringValue.new(rendered)
-        end
-
-        def call_named_function(name, name_node, args)
-          registry = environment.builtin_registry
-          return registry.call(name, args) if registry.registered?(name)
-
-          function_name = function_name_for_call(name_node, name)
-          evaluate_user_function(function_name, args)
-        end
-
-        def function_name_for_call(name_node, fallback_name)
-          return fallback_name unless name_node.is_a?(AST::Reference)
-
-          reference_resolver.function_reference_name(name_node) || fallback_name
-        end
-
         def eval_array_comprehension(node)
           comprehension_evaluator.eval_array(node)
         end
@@ -265,177 +155,10 @@ module Ruby
           end
         end
 
-        # :reek:TooManyStatements
-        def evaluate_binary_op(node)
-          operator = node.operator
-          return evaluate_assignment(node) if operator == :assign
-          return evaluate_unification(node) if operator == :unify
-          return evaluate_logical_operator(node) if %i[and or].include?(operator)
-
-          left = evaluate(node.left)
-          right = evaluate(node.right)
-          OperatorEvaluator.apply(operator, left, right)
-        end
-
-        def raise_unknown_node(node)
-          node_class = node.class
-          raise EvaluationError.new("Unsupported AST node: #{node_class}", rule: nil, location: nil)
-        end
-
-        def evaluate_unary_op(node)
-          case node
-          in AST::UnaryOp[operator:, operand:]
-            if operator == :not && operand.is_a?(AST::Every)
-              raise EvaluationError.new("Negating every is not supported", rule: nil, location: operand.location)
-            end
-
-            OperatorEvaluator.apply_unary(operator, evaluate(operand))
-          end
-        end
-
-        def handle_unification_operator(node, env, yielder)
-          case node.operator
-          when :assign
-            yield_assignment_bindings(node, env, yielder)
-          when :unify
-            yield_unification_bindings(node, env, yielder)
-          else
-            yield_truthy_bindings(node, yielder)
-          end
-        end
-
-        def evaluate_logical_operator(node)
-          case node.operator
-          when :and then evaluate_and_operator(node)
-          when :or then evaluate_or_operator(node)
-          else UndefinedValue.new
-          end
-        end
-
-        # :reek:TooManyStatements
-        def evaluate_and_operator(node)
-          left_state = logical_state(evaluate(node.left))
-          return FALSE_VALUE if left_state == :falsy
-
-          right_state = logical_state(evaluate(node.right))
-          right_truthy = right_state == :truthy
-          right_falsy = right_state == :falsy
-          return TRUE_VALUE if left_state == :truthy && right_truthy
-          return FALSE_VALUE if right_falsy
-
-          UndefinedValue.new
-        end
-
-        # :reek:TooManyStatements
-        def evaluate_or_operator(node)
-          left_state = logical_state(evaluate(node.left))
-          return TRUE_VALUE if left_state == :truthy
-
-          right_state = logical_state(evaluate(node.right))
-          right_truthy = right_state == :truthy
-          right_falsy = right_state == :falsy
-          return TRUE_VALUE if right_truthy
-          return FALSE_VALUE if left_state == :falsy && right_falsy
-
-          UndefinedValue.new
-        end
-
-        # :reek:UtilityFunction
-        def logical_state(value)
-          return :undefined if value.undefined?
-
-          value.truthy? ? :truthy : :falsy
-        end
-
-        def every_body_succeeds?(body, bindings)
-          environment.with_bindings(bindings) do
-            query_evaluator.query_solutions(body, environment).any?
-          end
-        end
-
-        def every_bindings(variables, collection_value)
-          bindings_for_collection(variables, collection_value)
-        end
-
-        def bindings_for_collection(variables, collection_value)
-          case collection_value
-          when ArrayValue then array_bindings_for(variables, collection_value)
-          when SetValue then set_bindings_for(variables, collection_value)
-          when ObjectValue then object_bindings_for(variables, collection_value)
-          end
-        end
-
-        def array_bindings_for(variables, collection_value)
-          return nil unless [1, 2].include?(variables.length)
-
-          each_array_binding(variables, collection_value)
-        end
-
-        def set_bindings_for(variables, collection_value)
-          return nil unless variables.length == 1
-
-          each_set_binding(variables, collection_value)
-        end
-
-        def object_bindings_for(variables, collection_value)
-          return nil unless [1, 2].include?(variables.length)
-
-          each_object_binding(variables, collection_value)
-        end
-
-        def with_every_scope(node)
-          environment.push_scope
-          shadow_every_locals(node)
-          yield
-        ensure
-          environment.pop_scope
-        end
-
-        # :reek:TooManyStatements
-        def shadow_every_locals(node)
-          details = BoundVariableCollector.new.collect_details(node.body)
-          explicit = details[:explicit].dup
-          explicit.concat(every_variable_names(node))
-          explicit.uniq!
-          shadow_explicit_locals(explicit)
-          shadow_unification_locals(details[:unification], explicit)
-        end
-
-        # :reek:UtilityFunction
-        def every_variable_names(node)
-          [node.key_var, node.value_var].compact.map(&:name)
-        end
-
         def query_evaluator
           return @query_evaluator if @query_evaluator
 
           raise EvaluationError.new("Query evaluator not configured", rule: nil, location: nil)
-        end
-
-        def yield_assignment_bindings(node, env, yielder)
-          value = evaluate(node.right)
-          return if value.is_a?(UndefinedValue)
-
-          binding_sets = unifier.unify(node.left, value, env)
-          yielder << binding_sets.first if binding_sets.size == 1
-        end
-
-        def yield_unification_bindings(node, env, yielder)
-          unification_binding_sets(node, env).each { |bindings| yielder << bindings }
-        end
-
-        def yield_truthy_bindings(node, yielder)
-          value = evaluate(node)
-          empty_bindings = {} # @type var empty_bindings: Hash[String, Value]
-          yielder << empty_bindings if logical_state(value) == :truthy
-        end
-
-        def yield_reference_bindings(node, env, yielder)
-          reference_bindings_for(node, env).each do |(bindings, value)|
-            next unless logical_state(value) == :truthy
-
-            yielder << bindings
-          end
         end
 
         # :reek:TooManyStatements
@@ -452,3 +175,7 @@ module Ruby
     end
   end
 end
+
+require_relative "expression_evaluator/node_evaluation"
+require_relative "expression_evaluator/operators"
+require_relative "expression_evaluator/quantifiers"
