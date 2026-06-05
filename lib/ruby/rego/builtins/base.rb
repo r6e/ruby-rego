@@ -69,7 +69,7 @@ module Ruby
         # Raises a BuiltinArgumentError (caught by the registry and surfaced as undefined):
         # the shared `BuiltinArgumentError.new(..., location: nil)` construction. A builtin's
         # `raise_*` guard delegates here when its `expected`/`actual` are strings; guards that
-        # pass a Class, Array, or number build the error inline so this signature stays tight
+        # pass an Array or number build the error inline so this signature stays tight
         # (String message, String `expected`, String|Integer `actual`).
         # :reek:LongParameterList
         def self.raise_argument_error(message, expected:, actual:, context: nil)
