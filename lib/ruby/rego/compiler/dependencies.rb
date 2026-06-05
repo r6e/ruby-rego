@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "../ast"
+require_relative "rule_head"
+
 module Ruby
   # Rego compilation helpers.
   module Rego

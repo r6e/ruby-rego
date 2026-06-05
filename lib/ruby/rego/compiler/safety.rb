@@ -6,6 +6,8 @@ require_relative "../errors"
 require_relative "../environment"
 require_relative "../builtins/registry"
 require_relative "../evaluator/variable_collector"
+require_relative "rule_head"
+
 module Ruby
   # Rego compilation helpers.
   module Rego
@@ -275,7 +277,6 @@ module Ruby
         "Unsafe rule #{rule.name}: unbound variables #{unbound.sort.join(", ")}"
       end
     end
-    private_constant :SafetyChecker, :DefaultRuleCallName, :DefaultRuleValidator,
-                     :RuleSafetyContext, :RuleSafetySection, :RuleSafety
+    private_constant :SafetyChecker, :RuleSafetyContext, :RuleSafetySection, :RuleSafety
   end
 end
