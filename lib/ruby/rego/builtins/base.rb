@@ -67,7 +67,10 @@ module Ruby
         private_class_method :arity_valid?
 
         # Raises a BuiltinArgumentError (caught by the registry and surfaced as undefined).
-        # The shared shape behind every builtin's argument-validation guard.
+        # The shared shape behind every builtin's argument-validation guard. It absorbs the
+        # raisers whose `expected`/`actual` are strings (the per-builtin `raise_*` wrappers);
+        # call sites whose `expected`/`actual` are wider types (a Class or Array) keep their
+        # inline `BuiltinArgumentError.new` so this signature can stay tight.
         # :reek:LongParameterList
         def self.raise_argument_error(message, expected:, actual:, context: nil)
           raise Ruby::Rego::BuiltinArgumentError.new(
