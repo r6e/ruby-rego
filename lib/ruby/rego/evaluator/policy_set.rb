@@ -3,7 +3,6 @@
 module Ruby
   module Rego
     # Evaluates compiled Rego modules against input and data.
-    # :reek:InstanceVariableAssumption
     class Evaluator
       # Policy-set (multi-module) evaluation: module contexts, package-conflict detection, and subtree assignment.
 

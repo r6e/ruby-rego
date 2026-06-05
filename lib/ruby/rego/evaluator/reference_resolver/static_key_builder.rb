@@ -43,23 +43,6 @@ module Ruby
             nil
           end
         end
-
-        # @param environment [Environment]
-        # @param package_path [Array<String>]
-        # @param rule_value_provider [RuleValueProvider]
-        # @param memoization [Memoization::Store, nil]
-        def initialize(environment:, package_path:, rule_value_provider:, imports: [], memoization: nil)
-          @environment = environment
-          @package_path = package_path
-          @rule_value_provider = rule_value_provider
-          @memoization = memoization
-          @key_resolver = ReferenceKeyResolver.new(
-            environment: environment,
-            variable_resolver: method(:resolve_variable_key)
-          )
-          @import_map = build_import_map(imports)
-          @module_resolver = nil
-        end
       end
     end
   end

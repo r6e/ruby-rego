@@ -2,7 +2,6 @@
 
 module Ruby
   module Rego
-    # :reek:RepeatedConditional
     # Rule value/body parsing: head args/keys, braced and empty bodies, else clauses.
     class Parser
       private

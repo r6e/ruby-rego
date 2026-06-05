@@ -2,7 +2,6 @@
 
 module Ruby
   module Rego
-    # :reek:RepeatedConditional
     # Rule-head parsing: complete/contains/function/partial-object heads and head paths.
     # :reek:DataClump
     class Parser

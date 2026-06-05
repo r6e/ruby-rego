@@ -3,7 +3,7 @@
 module Ruby
   module Rego
     class Evaluator
-      # Import-reference resolution and the import lookup map.
+      # Bare-variable resolution (imports and rule names) and the import lookup map.
       class ReferenceResolver
         private
 
