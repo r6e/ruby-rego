@@ -174,6 +174,10 @@ module Ruby
         def self.urlquery_encode_object(value)
           Base.assert_type(value, expected: ObjectValue, context: "urlquery.encode_object")
           StringValue.new(query_pairs(value.value).join("&"))
+        rescue EncodingError
+          # A non-ASCII-compatible key/value (Ruby API only) makes CGI.escape raise; treat
+          # it as an invalid object rather than letting it escape.
+          raise_invalid_object
         end
 
         # @param pairs [Hash{Object => Ruby::Rego::Value}]
@@ -279,7 +283,10 @@ module Ruby
         # @return [Ruby::Rego::Value]
         def self.decoded(context)
           yield
-        rescue ArgumentError, JSON::ParserError => e
+        rescue ArgumentError, JSON::ParserError, EncodingError => e
+          # EncodingError covers a non-ASCII-compatible string (e.g. UTF-16 supplied via the
+          # Ruby API, never via JSON/Rego input) reaching a String/regex op — yield undefined
+          # rather than letting it escape as a hard error.
           raise Ruby::Rego::BuiltinArgumentError.new(
             "Invalid #{context} input: #{e.message}",
             expected: "valid #{context} input",

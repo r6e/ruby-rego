@@ -173,6 +173,17 @@ RSpec.describe "encoding builtins" do
       expect(registry.call("urlquery.encode_object", [{ "k" => [] }]).to_ruby).to eq("")
     end
 
+    it "leaves an unreserved tilde unescaped (matching OPA; stable since Ruby 3.3)" do
+      expect(registry.call("urlquery.encode_object", [{ "k" => "a~b" }]).to_ruby).to eq("k=a~b")
+    end
+
+    # A non-ASCII-compatible string (UTF-16, reachable only via the Ruby API) makes
+    # CGI.escape raise; it must yield undefined, not escape as a hard error.
+    it "is undefined for a non-ASCII-compatible string value (Ruby API only)" do
+      expect(registry.call("urlquery.encode_object", [{ "k" => "x".encode("UTF-16LE") }]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+    end
+
     it "is undefined for a non-object or a non-string/array-of-strings value" do
       expect(registry.call("urlquery.encode_object", [7])).to be_a(Ruby::Rego::UndefinedValue)
       expect(registry.call("urlquery.encode_object", [{ "k" => 5 }])).to be_a(Ruby::Rego::UndefinedValue)
@@ -210,6 +221,11 @@ RSpec.describe "encoding builtins" do
 
     it "is undefined for a non-string argument" do
       expect(registry.call("urlquery.decode_object", [123])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined for a non-ASCII-compatible string (Ruby API only)" do
+      expect(registry.call("urlquery.decode_object", ["a=1".encode("UTF-16LE")]))
+        .to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 end
