@@ -178,9 +178,14 @@ RSpec.describe "encoding builtins" do
     end
 
     # A non-ASCII-compatible string (UTF-16, reachable only via the Ruby API) makes
-    # CGI.escape raise; it must yield undefined, not escape as a hard error.
-    it "is undefined for a non-ASCII-compatible string value (Ruby API only)" do
+    # CGI.escape raise; it must yield undefined, not escape as a hard error. Covers a
+    # single key, a non-ASCII-content value, and the multi-key sort path (String#<=> always
+    # byte-compares two strings, so the sort itself never raises — CGI.escape is the only
+    # raise site, caught by the EncodingError rescue).
+    it "is undefined for a non-ASCII-compatible key or value (Ruby API only)" do
       expect(registry.call("urlquery.encode_object", [{ "k" => "x".encode("UTF-16LE") }]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("urlquery.encode_object", [{ "é".encode("UTF-16LE") => "1", "ü" => "2" }]))
         .to be_a(Ruby::Rego::UndefinedValue)
     end
 
