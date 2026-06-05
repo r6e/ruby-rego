@@ -44,6 +44,11 @@ module Ruby
           env.pop_scope
         end
 
+        # These shadow helpers thread an explicit +env+ (mirroring +with_query_scope+, which
+        # pushes/pops scope on the same parameter) rather than closing over +environment+.
+        # That is deliberate: Evaluator::LocalShadowing is the instance-+environment+ variant
+        # used by ExpressionEvaluator/ComprehensionEvaluator; unifying the two would require
+        # de-parameterizing the whole query cluster, not a mixin include.
         def shadow_query_locals(env, literals)
           details = BoundVariableCollector.new.collect_details(literals)
           explicit = details[:explicit]
