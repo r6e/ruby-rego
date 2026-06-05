@@ -202,6 +202,12 @@ RSpec.describe "encoding builtins" do
       expect(registry.call("urlquery.decode_object", ["%2=b"])).to be_a(Ruby::Rego::UndefinedValue)
     end
 
+    # Go's url.ParseQuery (since 1.17) rejects a literal ";"; an escaped %3B is fine.
+    it "is undefined for a literal semicolon but accepts an escaped one (matching OPA)" do
+      expect(registry.call("urlquery.decode_object", ["a=1;b=2"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("urlquery.decode_object", ["a=b%3Bc"]).to_ruby).to eq("a" => ["b;c"])
+    end
+
     it "is undefined for a non-string argument" do
       expect(registry.call("urlquery.decode_object", [123])).to be_a(Ruby::Rego::UndefinedValue)
     end

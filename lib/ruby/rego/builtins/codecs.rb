@@ -33,6 +33,10 @@ module Ruby
           "urlquery.decode_object" => { arity: 1, handler: :urlquery_decode_object }
         }.freeze
 
+        # A `%` not followed by two hex digits — a malformed percent-escape that OPA (Go's
+        # url.QueryUnescape) rejects but CGI.unescape would pass through.
+        MALFORMED_PERCENT = /%(?![0-9a-fA-F]{2})/
+
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
         def self.register!
           registry = BuiltinRegistry.instance
@@ -148,7 +152,7 @@ module Ruby
         def self.urlquery_decode(value)
           string = string_arg(value, "urlquery.decode")
           decoded("urlquery.decode") do
-            raise ArgumentError, "invalid percent-encoding" if string.match?(/%(?![0-9a-fA-F]{2})/)
+            raise ArgumentError, "invalid percent-encoding" if string.match?(MALFORMED_PERCENT)
 
             StringValue.new(CGI.unescape(string))
           end
@@ -157,8 +161,7 @@ module Ruby
         # @param value [Ruby::Rego::Value]
         # @return [Ruby::Rego::StringValue]
         def self.base64url_encode_no_pad(value)
-          encoded = Base64.urlsafe_encode64(string_arg(value, "base64url.encode_no_pad"), padding: false)
-          StringValue.new(encoded)
+          StringValue.new(Base64.urlsafe_encode64(string_arg(value, "base64url.encode_no_pad"), padding: false))
         end
 
         # Encodes an object as a query string, matching OPA (Go's url.Values.Encode): keys
@@ -233,14 +236,17 @@ module Ruby
 
         # Decodes a query string to an object mapping each key to its array of values,
         # matching OPA (Go's url.ParseQuery). Reuses urlquery.decode's percent validation
-        # and unescaping; a malformed percent-escape (in any key or value) yields undefined.
+        # and unescaping; a malformed percent-escape (in any key or value) yields undefined,
+        # as does a literal `;` — Go's ParseQuery rejects it as a separator (a `;` in a value
+        # must be percent-encoded).
         #
         # @param value [Ruby::Rego::Value]
         # @return [Ruby::Rego::ObjectValue]
         def self.urlquery_decode_object(value)
           string = string_arg(value, "urlquery.decode_object")
           decoded("urlquery.decode_object") do
-            raise ArgumentError, "invalid percent-encoding" if string.match?(/%(?![0-9a-fA-F]{2})/)
+            raise ArgumentError, "invalid percent-encoding" if string.match?(MALFORMED_PERCENT)
+            raise ArgumentError, "semicolon separator" if string.include?(";")
 
             ObjectValue.new(grouped_query(string))
           end
