@@ -67,10 +67,15 @@ module Ruby
         private_class_method :arity_valid?
 
         # Raises a BuiltinArgumentError (caught by the registry and surfaced as undefined).
-        # The shared shape behind every builtin's argument-validation guard. It absorbs the
-        # raisers whose `expected`/`actual` are strings (the per-builtin `raise_*` wrappers);
-        # call sites whose `expected`/`actual` are wider types (a Class or Array) keep their
-        # inline `BuiltinArgumentError.new` so this signature can stay tight.
+        # The shared shape extracted from the flay-flagged duplication: the per-builtin
+        # `raise_*` wrappers (json_paths/net/semver/strings search) plus Base's own type and
+        # arity raisers, which all repeated the identical `BuiltinArgumentError.new(...,
+        # location: nil)` call. The ~29 remaining inline `BuiltinArgumentError.new` sites are
+        # unique one-off raises, not duplication, so they stay inline (zero RubyCritic impact).
+        # A few of those also could not delegate without widening this signature anyway -
+        # e.g. `registry.rb` passes a Class/Array `expected`/`actual`, and the finite-number
+        # guard in `numbers.rb` passes a Float `actual` - so keeping the signature tight
+        # (String message, String `expected`, String|Integer `actual`) costs nothing here.
         # :reek:LongParameterList
         def self.raise_argument_error(message, expected:, actual:, context: nil)
           raise Ruby::Rego::BuiltinArgumentError.new(
