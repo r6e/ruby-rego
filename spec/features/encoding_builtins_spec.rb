@@ -14,8 +14,15 @@ ENCODING_BUILTINS_POLICY = <<~REGO
   hexed := hex.encode(input.secret)
 
   query := urlquery.encode(input.raw)
+
+  compact := base64url.encode_no_pad(input.secret)
+
+  params := urlquery.encode_object({"tag": {input.t1, input.t2}, "page": input.page})
+
+  parsed := urlquery.decode_object(input.query_string)
 REGO
 
+# rubocop:disable Metrics/BlockLength
 RSpec.describe "encoding builtins (integration)" do
   def evaluate(rule, input)
     Ruby::Rego.evaluate(ENCODING_BUILTINS_POLICY, input: input, query: "data.encoding.#{rule}")
@@ -43,4 +50,19 @@ RSpec.describe "encoding builtins (integration)" do
   it "url-query-encodes input" do
     expect(evaluate("query", { "raw" => "a b&c" }).value.to_ruby).to eq("a+b%26c")
   end
+
+  it "base64url-encodes without padding through the evaluator" do
+    expect(evaluate("compact", { "secret" => "hello world" }).value.to_ruby).to eq("aGVsbG8gd29ybGQ")
+  end
+
+  it "encodes an object (with a set literal) to a sorted query string through the evaluator" do
+    result = evaluate("params", { "t1" => "z", "t2" => "a", "page" => "2" })
+    expect(result.value.to_ruby).to eq("page=2&tag=a&tag=z")
+  end
+
+  it "decodes a query string to an object of value arrays through the evaluator" do
+    result = evaluate("parsed", { "query_string" => "k=v1&k=v2&j=x" })
+    expect(result.value.to_ruby).to eq("k" => %w[v1 v2], "j" => ["x"])
+  end
 end
+# rubocop:enable Metrics/BlockLength

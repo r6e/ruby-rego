@@ -64,9 +64,8 @@ additions mechanical; this is volume, not difficulty. Highest compat-per-effort 
   semantics); ⬜ `regex.find_all_string_submatch_n`, `regex.template_match`,
   `regex.globs_match`.
 - 🟡 Encoding: ✅ `json.marshal`/`json.unmarshal`/`json.is_valid`, `base64`
-  encode/decode/is_valid, `base64url` encode/decode, `hex` encode/decode,
-  `urlquery` encode/decode; ⬜ `yaml.*`, ⬜ `urlquery.encode_object`/`decode_object`,
-  ⬜ `base64url.encode_no_pad`.
+  encode/decode/is_valid, `base64url` encode/decode/`encode_no_pad`, `hex` encode/decode,
+  `urlquery` encode/decode/`encode_object`/`decode_object`; ⬜ `yaml.*`.
 
 ## Refactoring follow-ups
 

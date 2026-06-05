@@ -559,6 +559,7 @@ module Ruby
         extend RegistryHelpers
 
         CODEC_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        MALFORMED_PERCENT: Regexp
 
         def self.register!: () -> BuiltinRegistry
         def self.json_marshal: (Value value) -> StringValue
@@ -568,14 +569,23 @@ module Ruby
         def self.base64_decode: (Value value) -> StringValue
         def self.base64_is_valid: (Value value) -> BooleanValue
         def self.base64url_encode: (Value value) -> StringValue
+        def self.base64url_encode_no_pad: (Value value) -> StringValue
         def self.base64url_decode: (Value value) -> StringValue
         def self.hex_encode: (Value value) -> StringValue
         def self.hex_decode: (Value value) -> StringValue
         def self.urlquery_encode: (Value value) -> StringValue
+        def self.urlquery_encode_object: (Value value) -> StringValue
         def self.urlquery_decode: (Value value) -> StringValue
+        def self.urlquery_decode_object: (Value value) -> ObjectValue
 
         private
 
+        def self.query_pairs: (Hash[untyped, Value] pairs) -> Array[String]
+        def self.key_pairs: (String key, Value value) -> Array[String]
+        def self.query_values: (Value value) -> Array[String]?
+        def self.string_elements: (Array[Value] elements) -> Array[String]?
+        def self.raise_invalid_object: () -> bot
+        def self.grouped_query: (String string) -> Hash[String, Array[String]]
         def self.string_arg: (Value value, String context) -> String
         def self.decoded: [T] (String context) { () -> T } -> T
         def self.restore_padding: (String string) -> String
