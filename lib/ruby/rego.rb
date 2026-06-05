@@ -83,9 +83,7 @@ module Ruby
       # :reek:LongParameterList
       def evaluate(source, input: {}, data: {}, query: nil)
         compiled_module = compile(source)
-        ErrorHandling.wrap("evaluation") do
-          Evaluator.new(compiled_module, input: input, data: data).evaluate(query)
-        end
+        evaluate_query(query) { Evaluator.new(compiled_module, input: input, data: data) }
       end
 
       # Evaluate a named set of modules against input and data.
@@ -98,9 +96,15 @@ module Ruby
       # :reek:LongParameterList
       def evaluate_modules(modules, input: {}, data: {}, query: nil)
         policy_set = compile_modules(modules)
-        ErrorHandling.wrap("evaluation") do
-          Evaluator.for_policy_set(policy_set, input: input, data: data).evaluate(query)
-        end
+        evaluate_query(query) { Evaluator.for_policy_set(policy_set, input: input, data: data) }
+      end
+
+      private
+
+      # Runs +query+ against the evaluator built by the block, wrapping construction and
+      # evaluation in the shared "evaluation" error context.
+      def evaluate_query(query)
+        ErrorHandling.wrap("evaluation") { yield.evaluate(query) }
       end
     end
   end

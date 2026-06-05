@@ -34,6 +34,7 @@ module Ruby
 
         include AssignmentSupport
         include BindingHelpers
+        include LocalShadowing
 
         # @param environment [Environment]
         # @param reference_resolver [ReferenceResolver]
@@ -402,25 +403,6 @@ module Ruby
         # :reek:UtilityFunction
         def every_variable_names(node)
           [node.key_var, node.value_var].compact.map(&:name)
-        end
-
-        def shadow_explicit_locals(names)
-          names.each { |name| bind_undefined(name) }
-        end
-
-        def shadow_unification_locals(names, explicit_names)
-          names.each do |name|
-            next if explicit_names.include?(name)
-            next unless environment.lookup(name).is_a?(UndefinedValue)
-
-            bind_undefined(name)
-          end
-        end
-
-        def bind_undefined(name)
-          return if Environment::RESERVED_NAMES.include?(name) || name == "_"
-
-          environment.bind(name, UndefinedValue.new)
         end
 
         def query_evaluator

@@ -167,12 +167,9 @@ module Ruby
         # @param context [String]
         # @return [void]
         def self.raise_invalid_addr(context)
-          raise Ruby::Rego::BuiltinArgumentError.new(
+          Base.raise_argument_error(
             "Invalid CIDR or address",
-            expected: "a valid CIDR or address string",
-            actual: "unparseable",
-            context: context,
-            location: nil
+            expected: "a valid CIDR or address string", actual: "unparseable", context: context
           )
         end
         private_class_method :raise_invalid_addr

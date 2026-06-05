@@ -98,8 +98,8 @@ module Ruby
         private_class_method :match_indices
 
         def self.raise_empty_search(context)
-          raise Ruby::Rego::BuiltinArgumentError.new(
-            "Empty search string", expected: "non-empty search string", actual: "", context: context, location: nil
+          Base.raise_argument_error(
+            "Empty search string", expected: "non-empty search string", actual: "", context: context
           )
         end
         private_class_method :raise_empty_search

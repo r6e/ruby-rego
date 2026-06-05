@@ -4,7 +4,7 @@ require_relative "base"
 require_relative "registry"
 require_relative "registry_helpers"
 
-# rubocop:disable Naming/PredicatePrefix, Metrics/ModuleLength
+# rubocop:disable Naming/PredicatePrefix
 module Ruby
   module Rego
     module Builtins
@@ -194,12 +194,8 @@ module Ruby
         # @param context [String]
         # @return [void]
         def self.raise_invalid_version(context)
-          raise Ruby::Rego::BuiltinArgumentError.new(
-            "Invalid semantic version",
-            expected: "a valid SemVer string",
-            actual: "unparseable",
-            context: context,
-            location: nil
+          Base.raise_argument_error(
+            "Invalid semantic version", expected: "a valid SemVer string", actual: "unparseable", context: context
           )
         end
         private_class_method :raise_invalid_version
@@ -218,4 +214,4 @@ module Ruby
 end
 
 Ruby::Rego::Builtins::Semver.register!
-# rubocop:enable Naming/PredicatePrefix, Metrics/ModuleLength
+# rubocop:enable Naming/PredicatePrefix

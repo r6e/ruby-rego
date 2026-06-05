@@ -8,6 +8,10 @@ module Ruby
     def self.compile_modules: (Hash[String, String] modules) -> CompiledPolicySet
     def self.evaluate_modules: (Hash[String, String] modules, ?input: untyped, ?data: untyped, ?query: untyped) -> (Result | nil)
 
+    private
+
+    def self.evaluate_query: (untyped query) { () -> Evaluator } -> (Result | nil)
+
     type position = {
       line: Integer,
       column: Integer,
@@ -210,6 +214,7 @@ module Ruby
         def self.assert_type: (untyped value, expected: Class | Array[Class], ?context: String?) -> void
         def self.to_ruby: (untyped value) -> untyped
         def self.to_value: (untyped value) -> Value
+        def self.raise_argument_error: (String message, expected: String, actual: String | Integer, ?context: String?) -> bot
 
         private
 
@@ -217,8 +222,8 @@ module Ruby
         def self.normalize_arity: (Integer | Array[Integer] expected) -> Array[Integer]
         def self.format_arity: (Array[Integer] expected_list) -> String
         def self.arity_valid?: (Integer actual, Integer | Array[Integer] expected) -> bool
-        def self.raise_builtin_arity_error: (Integer actual, Integer | Array[Integer] expected, String? name) -> void
-        def self.raise_type_error: (expected: String, actual: String, ?context: String?) -> void
+        def self.raise_builtin_arity_error: (Integer actual, Integer | Array[Integer] expected, String? name) -> bot
+        def self.raise_type_error: (expected: String, actual: String, ?context: String?) -> bot
       end
 
       class BuiltinRegistry
@@ -1671,6 +1676,7 @@ module Ruby
       FALSE_VALUE: BooleanValue
 
       include Evaluator::AssignmentSupport
+      include Evaluator::LocalShadowing
 
       def initialize: (environment: Environment, reference_resolver: Evaluator::ReferenceResolver) -> void
       def attach_query_evaluator: (Evaluator::RuleEvaluator query_evaluator) -> void
@@ -1733,9 +1739,6 @@ module Ruby
       def with_every_scope: (AST::Every node) { () -> untyped } -> untyped
       def shadow_every_locals: (AST::Every node) -> void
       def every_variable_names: (AST::Every node) -> Array[String]
-      def shadow_explicit_locals: (Array[String] names) -> void
-      def shadow_unification_locals: (Array[String] names, Array[String] explicit_names) -> void
-      def bind_undefined: (String name) -> void
       def query_evaluator: () -> Evaluator::RuleEvaluator
       def raise_unknown_node: (untyped node) -> Value
 
@@ -1771,6 +1774,15 @@ module Ruby
       def bindings_for: (AST::Variable variable, untyped value) -> Hash[String, Value]
     end
 
+    module Evaluator::LocalShadowing
+      private
+
+      def environment: () -> Environment
+      def shadow_explicit_locals: (Array[String] names) -> void
+      def shadow_unification_locals: (Array[String] names, Array[String] explicit_names) -> void
+      def bind_undefined: (String name) -> void
+    end
+
     class Evaluator::ComprehensionEvaluator
       class ObjectAccumulator
         def initialize: () -> void
@@ -1787,6 +1799,8 @@ module Ruby
 
         def initialize: (Hash[Object, Value] result_values, ObjectAccumulator accumulator) -> void
       end
+
+      include Evaluator::LocalShadowing
 
       def initialize: (expression_evaluator: Evaluator::ExpressionEvaluator, environment: Environment) -> void
       def attach_query_evaluator: (Evaluator::RuleEvaluator query_evaluator) -> void
@@ -1807,9 +1821,6 @@ module Ruby
       def comprehension_solutions: (Array[untyped] body) -> Enumerator[Hash[String, Value]]
       def with_comprehension_scope: (Array[untyped] body) { () -> untyped } -> untyped
       def shadow_comprehension_locals: (Array[untyped] body) -> void
-      def shadow_explicit_locals: (Array[String] names) -> void
-      def shadow_unification_locals: (Array[String] names, Array[String] explicit_names) -> void
-      def bind_undefined: (String name) -> void
 
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
       attr_reader environment: Environment
