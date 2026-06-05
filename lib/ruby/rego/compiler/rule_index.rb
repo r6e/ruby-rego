@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../ast"
 require_relative "../compiled_module"
 require_relative "../errors"
+
 module Ruby
   # Rego compilation helpers.
   module Rego
