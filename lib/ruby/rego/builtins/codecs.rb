@@ -205,9 +205,6 @@ module Ruby
           remainder.zero? ? string : string + ("=" * (4 - remainder))
         end
         private_class_method :restore_padding
-
-        # Applies Go's encoding/json HTML escaping (OPA's json.Marshal keeps it on):
-        # <, >, & and the U+2028/U+2029 separators become \uXXXX inside string content.
       end
     end
   end

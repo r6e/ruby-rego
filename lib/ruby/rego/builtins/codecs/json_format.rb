@@ -5,6 +5,8 @@ module Ruby
     module Builtins
       # Built-in encoding/decoding helpers.
       module Codecs
+        # Applies Go's encoding/json HTML escaping (OPA's json.Marshal keeps it on):
+        # <, >, & and the U+2028/U+2029 separators become \uXXXX inside string content.
         #
         # @param json [String]
         # @return [String]

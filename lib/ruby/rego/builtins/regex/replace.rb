@@ -54,6 +54,18 @@ module Ruby
         # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
         private_class_method :expand_all
 
+        # Go/RE2 drops a zero-width match that begins exactly where the previous match
+        # ended; Ruby's gsub keeps it. Byte offsets are used (O(1)); character offsets
+        # (begin/end) would cost O(position) per match, making a long zero-width scan
+        # quadratic.
+        def self.skip_zero_width?(match, previous_end)
+          return false unless match
+
+          start, finish = match.byteoffset(0)
+          finish == start && start == previous_end
+        end
+        private_class_method :skip_zero_width?
+
         # The work-budget counterpart to GoTemplate's output cap: raised when the total
         # number of template-segment expansions exceeds MAX_REPLACE_WORK, yielding an
         # undefined result. Deliberate anti-DoS divergence from OPA.
