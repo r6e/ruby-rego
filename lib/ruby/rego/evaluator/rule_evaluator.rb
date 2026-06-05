@@ -5,7 +5,6 @@ module Ruby
     class Evaluator
       # Evaluates rule bodies and heads.
       # :reek:TooManyMethods
-      # :reek:DataClump
       class RuleEvaluator
         # Bundles query evaluation state to minimize parameter passing.
         QueryContext = Struct.new(:literals, :env)

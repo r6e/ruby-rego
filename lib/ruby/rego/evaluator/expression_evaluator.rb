@@ -9,7 +9,6 @@ module Ruby
     class Evaluator
       # Evaluates expressions to Rego values.
       # :reek:TooManyInstanceVariables
-      # :reek:DataClump
       # :reek:TooManyMethods
       # rubocop:disable Metrics/ClassLength
       class ExpressionEvaluator
