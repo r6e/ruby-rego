@@ -9,12 +9,14 @@ module Ruby
   module Rego
     module Builtins
       # JSON path projection/redaction helpers (json.filter, json.remove), matching OPA.
-      # Both take an object document and an array of paths; each path is a "/"-separated
-      # string (JSON-pointer escaped: `~1` is `/`, `~0` is `~`) or an array of literal
-      # segments. A numeric string segment indexes into an array. A non-object document or
-      # a non-array paths argument yields undefined, as does a path element that is neither
-      # a string nor an array. Operations are pure structural rewrites of the parsed value
-      # (linear in the document size), so there is no unbounded cost.
+      # Both take an object document and an array or set of paths; each path is a
+      # "/"-separated string (JSON-pointer escaped: `~1` is `/`, `~0` is `~`) or an array of
+      # literal segments. A leading run of slashes in a string path is stripped before
+      # splitting (so `/a/b` and `a/b` are equivalent); the empty string is an empty path. A
+      # numeric string segment indexes into an array. A non-object document, a paths
+      # argument that is neither an array nor a set, or a path element that is neither a
+      # string nor an array yields undefined. Operations are pure structural rewrites of the
+      # parsed value (linear in the document size), so there is no unbounded cost.
       #
       # json.filter keeps only the listed paths (a terminal path keeps the whole subtree; a
       # path that descends past a scalar keeps the scalar; a non-matching child becomes an
@@ -127,8 +129,10 @@ module Ruby
         end
         private_class_method :prune_object
 
-        # Recurses into non-terminal children first (positions unchanged), then deletes the
-        # terminal indices in descending order so the original positions are removed.
+        # Recurses into non-terminal children first (positions unchanged), then drops the
+        # terminal indices against those original positions. The drop is a single compacting
+        # pass (O(n)) rather than repeated `delete_at` (which is O(n^2) when many low indices
+        # are removed); `replace` preserves the array identity the parent frame holds.
         #
         # @param array [Array]
         # @param node [Hash]
@@ -141,8 +145,10 @@ module Ruby
 
             child[:terminal] ? terminal << index : prune(array[index], child)
           end
-          terminal.sort.reverse_each { |index| array.delete_at(index) }
-          array
+          return array if terminal.empty?
+
+          drop = terminal.to_set
+          array.replace(array.reject.with_index { |_, index| drop.include?(index) })
         end
         private_class_method :prune_array
 
@@ -172,7 +178,7 @@ module Ruby
         # @param context [String]
         # @return [Hash]
         def self.path_trie(paths_value, context)
-          Base.assert_type(paths_value, expected: ArrayValue, context: context)
+          Base.assert_type(paths_value, expected: [ArrayValue, SetValue], context: context)
           root = new_node
           paths_value.value.each { |path| insert(root, path_segments(path, context)) }
           root
@@ -185,12 +191,28 @@ module Ruby
         def self.path_segments(path, context)
           contents = path.value
           case path
-          when StringValue then contents.split("/", -1).map { |segment| unescape_pointer(segment) }
+          when StringValue then string_path_segments(contents)
           when ArrayValue then contents.map(&:to_ruby)
           else raise_invalid_path(context)
           end
         end
         private_class_method :path_segments
+
+        # Parses a "/"-separated string path the way OPA's parsePath does: an empty string is
+        # an empty path (no segments); otherwise a leading run of slashes is stripped and the
+        # remainder is split on "/" keeping internal and trailing empty segments (a wholly
+        # stripped string yields a single empty segment). Stripping happens on the raw string,
+        # before JSON-pointer unescaping.
+        #
+        # @param contents [String]
+        # @return [Array<String>]
+        def self.string_path_segments(contents)
+          return [] if contents.empty?
+
+          trimmed = contents.sub(%r{\A/+}, "")
+          (trimmed.empty? ? [""] : trimmed.split("/", -1)).map { |segment| unescape_pointer(segment) }
+        end
+        private_class_method :string_path_segments
 
         # @param segment [String]
         # @return [String]

@@ -617,6 +617,7 @@ module Ruby
         def self.object_document: (Value document_value, String context) -> Hash[untyped, untyped]
         def self.path_trie: (Value paths_value, String context) -> Hash[Symbol, untyped]
         def self.path_segments: (Value path, String context) -> Array[untyped]
+        def self.string_path_segments: (String contents) -> Array[String]
         def self.unescape_pointer: (String segment) -> String
         def self.insert: (Hash[Symbol, untyped] root, Array[untyped] segments) -> void
         def self.new_node: () -> Hash[Symbol, untyped]
