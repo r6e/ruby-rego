@@ -143,4 +143,40 @@ module RegoValidate
       @rule_name ||= query.to_s.split(".").last
     end
   end
+
+  # Resolves default queries based on available rules.
+  class DefaultQueryResolver
+    DEFAULT_RULE_NAMES = %w[deny violations violation errors error].freeze
+    FALLBACK_RULE_NAMES = %w[allow].freeze
+
+    # @param compiled_module [Ruby::Rego::CompiledModule]
+    def initialize(compiled_module)
+      @compiled_module = compiled_module
+      @rule_names = DEFAULT_RULE_NAMES + FALLBACK_RULE_NAMES
+    end
+
+    # @return [String, nil]
+    def resolve
+      rule_name = rule_names.find do |name|
+        rule_available?(name)
+      end
+      return nil unless rule_name
+
+      base = ["data", *package_path].join(".")
+      "#{base}.#{rule_name}"
+    end
+
+    private
+
+    attr_reader :compiled_module, :rule_names
+
+    def rule_available?(name)
+      compiled_module.has_rule?(name)
+    end
+
+    def package_path
+      compiled_module.package_path
+    end
+  end
+  private_constant :DefaultQueryResolver
 end
