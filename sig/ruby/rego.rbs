@@ -7,6 +7,9 @@ module Ruby
     def self.evaluate: (String source, ?input: untyped, ?data: untyped, ?query: untyped) -> (Result | nil)
     def self.compile_modules: (Hash[String, String] modules) -> CompiledPolicySet
     def self.evaluate_modules: (Hash[String, String] modules, ?input: untyped, ?data: untyped, ?query: untyped) -> (Result | nil)
+
+    private
+
     def self.evaluate_query: (untyped query) { () -> Evaluator } -> (Result | nil)
 
     type position = {
@@ -219,8 +222,8 @@ module Ruby
         def self.format_arity: (Array[Integer] expected_list) -> String
         def self.arity_valid?: (Integer actual, Integer | Array[Integer] expected) -> bool
         def self.raise_argument_error: (String message, expected: String, actual: String | Integer, ?context: String?) -> bot
-        def self.raise_builtin_arity_error: (Integer actual, Integer | Array[Integer] expected, String? name) -> void
-        def self.raise_type_error: (expected: String, actual: String, ?context: String?) -> void
+        def self.raise_builtin_arity_error: (Integer actual, Integer | Array[Integer] expected, String? name) -> bot
+        def self.raise_type_error: (expected: String, actual: String, ?context: String?) -> bot
       end
 
       class BuiltinRegistry
