@@ -4,7 +4,6 @@ module Ruby
   module Rego
     class Evaluator
       # Partial set/object rule evaluation and object-value merging.
-      # :reek:DataClump
       class RuleEvaluator
         private
 

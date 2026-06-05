@@ -115,6 +115,11 @@ module Ruby
 
           reference_resolver.function_reference_name(name_node) || fallback_name
         end
+
+        def raise_unknown_node(node)
+          node_class = node.class
+          raise EvaluationError.new("Unsupported AST node: #{node_class}", rule: nil, location: nil)
+        end
       end
     end
   end

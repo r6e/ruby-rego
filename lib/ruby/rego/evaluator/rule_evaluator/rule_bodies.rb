@@ -3,8 +3,7 @@
 module Ruby
   module Rego
     class Evaluator
-      # Rule-body value extraction: body solutions, else clauses, and value-with-body context.
-      # :reek:DataClump
+      # Rule-body iteration: body solutions, else clauses, and value-with-body context.
       class RuleEvaluator
         private
 
@@ -17,10 +16,6 @@ module Ruby
           else
             UndefinedValue.new
           end
-        end
-
-        def some_decl_truthy?(literal)
-          each_some_solution(literal).any?
         end
 
         # :reek:TooManyStatements

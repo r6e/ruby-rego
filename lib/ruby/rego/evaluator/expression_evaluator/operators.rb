@@ -20,11 +20,6 @@ module Ruby
           OperatorEvaluator.apply(operator, left, right)
         end
 
-        def raise_unknown_node(node)
-          node_class = node.class
-          raise EvaluationError.new("Unsupported AST node: #{node_class}", rule: nil, location: nil)
-        end
-
         def evaluate_unary_op(node)
           case node
           in AST::UnaryOp[operator:, operand:]
@@ -115,10 +110,6 @@ module Ruby
             yielder << bindings
           end
         end
-
-        # :reek:TooManyStatements
-        # :reek:UtilityFunction
-        # :reek:FeatureEnvy
       end
     end
   end

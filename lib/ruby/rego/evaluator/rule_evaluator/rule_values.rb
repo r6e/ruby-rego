@@ -3,8 +3,7 @@
 module Ruby
   module Rego
     class Evaluator
-      # Complete-rule value computation: body evaluation, else/default handling, conflict resolution.
-      # :reek:DataClump
+      # Complete-rule value entry, body-success predicates, and conflict resolution.
       class RuleEvaluator
         private
 
@@ -46,6 +45,10 @@ module Ruby
 
         def query_literal_truthy?(literal)
           eval_query([literal], environment).any?
+        end
+
+        def some_decl_truthy?(literal)
+          each_some_solution(literal).any?
         end
 
         def resolve_conflicts(values, name)

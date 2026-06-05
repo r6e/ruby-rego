@@ -3,9 +3,6 @@
 require "json"
 require_relative "../call_name"
 require_relative "template_value_formatter"
-require_relative "expression_evaluator/node_evaluation"
-require_relative "expression_evaluator/operators"
-require_relative "expression_evaluator/quantifiers"
 
 module Ruby
   module Rego
@@ -179,3 +176,7 @@ module Ruby
     end
   end
 end
+
+require_relative "expression_evaluator/node_evaluation"
+require_relative "expression_evaluator/operators"
+require_relative "expression_evaluator/quantifiers"
