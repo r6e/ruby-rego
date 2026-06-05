@@ -4,7 +4,6 @@ module Ruby
   module Rego
     module Builtins
       # Built-in regular-expression helpers (Onigmo engine).
-      # rubocop:disable Metrics/ModuleLength
       module Regex
         # @param pattern_value [Ruby::Rego::Value]
         # @param context [String]
@@ -121,7 +120,6 @@ module Ruby
         end
         private_class_method :named_group_name_start
       end
-      # rubocop:enable Metrics/ModuleLength
     end
   end
 end

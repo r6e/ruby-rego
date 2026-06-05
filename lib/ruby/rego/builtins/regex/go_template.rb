@@ -4,7 +4,6 @@ module Ruby
   module Rego
     module Builtins
       # Built-in regular-expression helpers (Onigmo engine).
-      # rubocop:disable Metrics/ModuleLength
       module Regex
         # Parses a Go `regexp.Expand` replacement template once, then expands it against
         # each match. `$name`/`${name}` reference a submatch (numeric name = numbered
@@ -141,7 +140,6 @@ module Ruby
           end
         end
       end
-      # rubocop:enable Metrics/ModuleLength
     end
   end
 end

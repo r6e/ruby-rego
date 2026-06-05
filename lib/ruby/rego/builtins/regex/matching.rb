@@ -4,7 +4,6 @@ module Ruby
   module Rego
     module Builtins
       # Built-in regular-expression helpers (Onigmo engine).
-      # rubocop:disable Metrics/ModuleLength
       module Regex
         # Converts a match-timeout (catastrophic backtracking) into an undefined
         # result instead of hanging the evaluator.
@@ -126,8 +125,32 @@ module Ruby
         end
         # rubocop:enable Metrics/CyclomaticComplexity, Metrics/MethodLength
         private_class_method :split_segments
+
+        # Go/RE2 drops a zero-width match that begins exactly where the previous match
+        # ended; Ruby's gsub keeps it. Byte offsets are used (O(1)); character offsets
+        # (begin/end) would cost O(position) per match, making a long zero-width scan
+        # quadratic.
+        def self.skip_zero_width?(match, previous_end)
+          return false unless match
+
+          start, finish = match.byteoffset(0)
+          finish == start && start == previous_end
+        end
+        private_class_method :skip_zero_width?
+
+        # Compiles, validates, and runs an all-matches scan under the timeout guard.
+        #
+        # @param pattern_value [Ruby::Rego::Value]
+        # @param string_value [Ruby::Rego::Value]
+        # @param context [String]
+        # @return [Array<String>]
+        def self.matches_for(pattern_value, string_value, context)
+          regexp = compile(pattern_value, context)
+          string = string_arg(string_value, context)
+          guarded(context) { full_matches(regexp, string) }
+        end
+        private_class_method :matches_for
       end
-      # rubocop:enable Metrics/ModuleLength
     end
   end
 end

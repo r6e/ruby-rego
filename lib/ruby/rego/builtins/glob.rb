@@ -137,7 +137,6 @@ module Ruby
           )
         end
         private_class_method :raise_glob_error
-
       end
     end
   end
