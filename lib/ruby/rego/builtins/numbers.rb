@@ -8,7 +8,9 @@ require_relative "numeric_helpers"
 module Ruby
   module Rego
     module Builtins
-      # Built-in numeric helpers (abs, round, ceil, floor, numbers.range).
+      # Built-in numeric helpers (abs, round, ceil, floor, numbers.range,
+      # numbers.range_step).
+      # rubocop:disable Metrics/ModuleLength
       module Numbers
         extend RegistryHelpers
 
@@ -17,7 +19,8 @@ module Ruby
           "round" => { arity: 1, handler: :round },
           "ceil" => { arity: 1, handler: :ceil },
           "floor" => { arity: 1, handler: :floor },
-          "numbers.range" => { arity: 2, handler: :range }
+          "numbers.range" => { arity: 2, handler: :range },
+          "numbers.range_step" => { arity: 3, handler: :range_step }
         }.freeze
 
         # Upper bound on `numbers.range` length. OPA halts large ranges via context
@@ -73,6 +76,26 @@ module Ruby
           ensure_range_within_limit(start_bound, end_bound)
 
           ArrayValue.new(range_elements(start_bound, end_bound).map { |number| NumberValue.new(number) })
+        end
+
+        # numbers.range_step(low, high, step): like numbers.range but advancing by a
+        # positive integer step; the endpoint is included only when it lands exactly
+        # on a step. A non-positive or non-integer step yields undefined (matching OPA).
+        #
+        # @param start_value [Ruby::Rego::Value]
+        # @param end_value [Ruby::Rego::Value]
+        # @param step_value [Ruby::Rego::Value]
+        # @return [Ruby::Rego::ArrayValue]
+        # :reek:TooManyStatements
+        def self.range_step(start_value, end_value, step_value)
+          start_bound = NumericHelpers.integer_value(start_value, context: "numbers.range_step")
+          end_bound = NumericHelpers.integer_value(end_value, context: "numbers.range_step")
+          step = NumericHelpers.integer_value(step_value, context: "numbers.range_step")
+          ensure_positive_step(step)
+          ensure_step_range_within_limit(start_bound, end_bound, step)
+
+          elements = step_elements(start_bound, end_bound, step)
+          ArrayValue.new(elements.map { |number| NumberValue.new(number) })
         end
 
         # Extracts a finite numeric value, rejecting non-finite floats (Infinity,
@@ -135,7 +158,51 @@ module Ruby
           start_bound.downto(end_bound).to_a
         end
         private_class_method :range_elements
+
+        # @param step [Integer]
+        # @return [void]
+        def self.ensure_positive_step(step)
+          return if step.positive?
+
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "numbers.range_step step must be positive",
+            expected: "step >= 1",
+            actual: step,
+            context: "numbers.range_step",
+            location: nil
+          )
+        end
+        private_class_method :ensure_positive_step
+
+        # @param start_bound [Integer]
+        # @param end_bound [Integer]
+        # @param step [Integer]
+        # @return [void]
+        def self.ensure_step_range_within_limit(start_bound, end_bound, step)
+          size = ((end_bound - start_bound).abs / step) + 1
+          return if size <= MAX_RANGE_SIZE
+
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "numbers.range_step size #{size} exceeds maximum #{MAX_RANGE_SIZE}",
+            expected: "size <= #{MAX_RANGE_SIZE}",
+            actual: size,
+            context: "numbers.range_step",
+            location: nil
+          )
+        end
+        private_class_method :ensure_step_range_within_limit
+
+        # @param start_bound [Integer]
+        # @param end_bound [Integer]
+        # @param step [Integer]
+        # @return [Array<Integer>]
+        def self.step_elements(start_bound, end_bound, step)
+          direction = start_bound <= end_bound ? step : -step
+          start_bound.step(end_bound, direction).to_a
+        end
+        private_class_method :step_elements
       end
+      # rubocop:enable Metrics/ModuleLength
     end
   end
 end

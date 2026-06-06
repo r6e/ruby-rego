@@ -413,6 +413,7 @@ module Ruby
         def self.ceil: (Value value) -> NumberValue
         def self.floor: (Value value) -> NumberValue
         def self.range: (Value start_value, Value end_value) -> ArrayValue
+        def self.range_step: (Value start_value, Value end_value, Value step_value) -> ArrayValue
 
         private
 
@@ -420,6 +421,9 @@ module Ruby
         def self.normalize: (Numeric number) -> Numeric
         def self.ensure_range_within_limit: (Integer start_bound, Integer end_bound) -> void
         def self.range_elements: (Integer start_bound, Integer end_bound) -> Array[Integer]
+        def self.ensure_positive_step: (Integer step) -> void
+        def self.ensure_step_range_within_limit: (Integer start_bound, Integer end_bound, Integer step) -> void
+        def self.step_elements: (Integer start_bound, Integer end_bound, Integer step) -> Array[Numeric]
       end
 
       module Bits

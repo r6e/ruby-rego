@@ -14,6 +14,8 @@ NUMERIC_BUILTINS_POLICY = <<~REGO
   flooring := floor(input.measure)
 
   span := numbers.range(input.low, input.high)
+
+  stepped := numbers.range_step(input.low, input.high, input.step)
 REGO
 
 RSpec.describe "numeric builtins (integration)" do
@@ -36,6 +38,14 @@ RSpec.describe "numeric builtins (integration)" do
 
   it "builds a descending range when bounds are reversed" do
     expect(evaluate("span", { "low" => 4, "high" => 1 }).value.to_ruby).to eq([4, 3, 2, 1])
+  end
+
+  it "builds a stepped range from input bounds and step" do
+    expect(evaluate("stepped", { "low" => 1, "high" => 10, "step" => 3 }).value.to_ruby).to eq([1, 4, 7, 10])
+  end
+
+  it "leaves the stepped range undefined for a non-positive step" do
+    expect(evaluate("stepped", { "low" => 1, "high" => 10, "step" => 0 })).to be_nil
   end
 
   it "leaves the range rule undefined for a non-integer bound" do
