@@ -73,6 +73,19 @@ WITH_VIRTUAL_BARE_REF_POLICY = <<~REGO
   }
 REGO
 
+# The override is also honoured for a dotted reference whose base is a bare
+# same-package rule (`obj.a`, not `data.t.obj.a`) — the AST::Reference path,
+# distinct from the bare AST::Variable path above. opa eval => 9.
+WITH_VIRTUAL_BARE_DOTTED_REF_POLICY = <<~REGO
+  package t
+
+  obj := {"a": 1}
+
+  result := y if {
+    y := obj.a with data.t.obj as {"a": 9}
+  }
+REGO
+
 # Regression guard: replacing a user function with another function already
 # works. opa eval => 99.
 WITH_FN_REPLACE_POLICY = <<~REGO
@@ -87,34 +100,47 @@ WITH_FN_REPLACE_POLICY = <<~REGO
   }
 REGO
 
+# rubocop:disable Metrics/BlockLength
 RSpec.describe "with keyword OPA parity" do
-  it "evaluates a replacement's inner builtin call against the original builtin" do
-    result = evaluate_policy(WITH_RECURSION_POLICY, query: "data.t.result")
-    expect(result.value.to_ruby).to eq(4)
+  context "with builtin/function replacement recursion" do
+    it "evaluates a replacement's inner builtin call against the original builtin" do
+      result = evaluate_policy(WITH_RECURSION_POLICY, query: "data.t.result")
+      expect(result.value.to_ruby).to eq(4)
+    end
+
+    it "lets a replacement function call the function it replaces" do
+      result = evaluate_policy(WITH_USER_FN_RECURSION_POLICY, query: "data.t.result")
+      expect(result.value.to_ruby).to eq(6)
+    end
   end
 
-  it "lets a replacement function call the function it replaces" do
-    result = evaluate_policy(WITH_USER_FN_RECURSION_POLICY, query: "data.t.result")
-    expect(result.value.to_ruby).to eq(6)
+  context "with virtual-document (rule) overrides" do
+    it "shadows a rule value with the override" do
+      result = evaluate_policy(WITH_VIRTUAL_EXACT_POLICY, query: "data.t.result")
+      expect(result.value.to_ruby).to eq(2)
+    end
+
+    it "leaves sibling rules unaffected" do
+      result = evaluate_policy(WITH_VIRTUAL_SCOPED_POLICY, query: "data.t.result")
+      expect(result.value.to_ruby).to eq([5, 1])
+    end
+
+    it "honours the override for a bare same-package rule reference" do
+      result = evaluate_policy(WITH_VIRTUAL_BARE_REF_POLICY, query: "data.t.result")
+      expect(result.value.to_ruby).to eq(2)
+    end
+
+    it "honours the override for a dotted bare same-package reference" do
+      result = evaluate_policy(WITH_VIRTUAL_BARE_DOTTED_REF_POLICY, query: "data.t.result")
+      expect(result.value.to_ruby).to eq(9)
+    end
   end
 
-  it "shadows a virtual-document (rule) value with the override" do
-    result = evaluate_policy(WITH_VIRTUAL_EXACT_POLICY, query: "data.t.result")
-    expect(result.value.to_ruby).to eq(2)
-  end
-
-  it "leaves sibling rules unaffected by a virtual-document override" do
-    result = evaluate_policy(WITH_VIRTUAL_SCOPED_POLICY, query: "data.t.result")
-    expect(result.value.to_ruby).to eq([5, 1])
-  end
-
-  it "honours a data-path override for a bare same-package rule reference" do
-    result = evaluate_policy(WITH_VIRTUAL_BARE_REF_POLICY, query: "data.t.result")
-    expect(result.value.to_ruby).to eq(2)
-  end
-
-  it "still replaces a user function with another function" do
-    result = evaluate_policy(WITH_FN_REPLACE_POLICY, query: "data.t.result")
-    expect(result.value.to_ruby).to eq(99)
+  context "with existing replacement paths (regression)" do
+    it "still replaces a user function with another function" do
+      result = evaluate_policy(WITH_FN_REPLACE_POLICY, query: "data.t.result")
+      expect(result.value.to_ruby).to eq(99)
+    end
   end
 end
+# rubocop:enable Metrics/BlockLength
