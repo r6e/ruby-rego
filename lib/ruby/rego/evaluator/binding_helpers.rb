@@ -43,16 +43,14 @@ module Ruby
           end
         end
 
-        # :reek:UtilityFunction
         def yield_bindings(yielder, binding_sets)
           binding_sets.each { |bindings| yielder << bindings }
         end
 
-        # :reek:NestedIterators
         def bindings_for_pair(variables, first_value, second_value)
           first_sets = bindings_for(variables[0], first_value)
           second_sets = bindings_for(variables[1], second_value)
-          first_sets.flat_map { |first| second_sets.filter_map { |second| combine_bindings(first, second) } }
+          first_sets.product(second_sets).filter_map { |first, second| merge_bindings(first, second) }
         end
 
         # @return [Array<Hash{String => Value}>] one binding set for a bare variable
@@ -65,17 +63,18 @@ module Ruby
           unifier.unify(target, Value.from_ruby(value), environment)
         end
 
-        # :reek:UtilityFunction
         def wildcard?(target)
           target.is_a?(AST::Variable) && target.name == "_"
         end
 
-        # :reek:UtilityFunction
-        def combine_bindings(first, second)
-          merged = first.dup
-          second.each do |name, value|
-            existing = merged[name]
-            return nil if existing && existing != value
+        # Merge two binding sets; nil when a shared name has conflicting values
+        # (a unification constraint).
+        # :reek:TooManyStatements
+        def merge_bindings(existing, additions)
+          merged = existing.dup
+          additions.each do |name, value|
+            current = merged[name]
+            return nil if current && current != value
 
             merged[name] = value
           end

@@ -59,10 +59,29 @@ SOME_IN_FILTER_POLICY = <<~REGO
   }
 REGO
 
+# Destructuring also applies to set members (a set of pairs).
+SOME_IN_SET_PATTERN_POLICY = <<~REGO
+  package t
+
+  import future.keywords
+
+  pairs := {["x", 1], ["y", 2]}
+
+  result[a] := b if {
+    some [a, b] in pairs
+  }
+REGO
+
+# rubocop:disable Metrics/BlockLength
 RSpec.describe "some-in destructuring" do
   it "destructures an array pattern over an array of pairs" do
     result = evaluate_policy(SOME_IN_ARRAY_PATTERN_POLICY, input: { "pairs" => [["x", 1], ["y", 2]] },
                                                            query: "data.t.result")
+    expect(result.value.to_ruby).to eq("x" => 1, "y" => 2)
+  end
+
+  it "destructures array patterns over set members" do
+    result = evaluate_policy(SOME_IN_SET_PATTERN_POLICY, query: "data.t.result")
     expect(result.value.to_ruby).to eq("x" => 1, "y" => 2)
   end
 
@@ -89,3 +108,4 @@ RSpec.describe "some-in destructuring" do
     expect(result.value.to_ruby).to contain_exactly("q")
   end
 end
+# rubocop:enable Metrics/BlockLength

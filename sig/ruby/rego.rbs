@@ -1745,7 +1745,7 @@ module Ruby
       def bindings_for: (AST::expression target, untyped value) -> Array[Hash[String, Value]]
       def yield_bindings: (untyped yielder, Array[Hash[String, Value]] binding_sets) -> void
       def wildcard?: (untyped target) -> bool
-      def combine_bindings: (Hash[String, Value] first, Hash[String, Value] second) -> Hash[String, Value]?
+      def merge_bindings: (Hash[String, Value] existing, Hash[String, Value] additions) -> Hash[String, Value]?
       def with_every_scope: (AST::Every node) { () -> untyped } -> untyped
       def shadow_every_locals: (AST::Every node) -> void
       def every_variable_names: (AST::Every node) -> Array[String]
@@ -1787,7 +1787,7 @@ module Ruby
       def bindings_for: (AST::expression target, untyped value) -> Array[Hash[String, Value]]
       def yield_bindings: (untyped yielder, Array[Hash[String, Value]] binding_sets) -> void
       def wildcard?: (untyped target) -> bool
-      def combine_bindings: (Hash[String, Value] first, Hash[String, Value] second) -> Hash[String, Value]?
+      def merge_bindings: (Hash[String, Value] existing, Hash[String, Value] additions) -> Hash[String, Value]?
     end
 
     module Evaluator::LocalShadowing
@@ -2033,7 +2033,6 @@ module Ruby
       def bindings_for: (AST::expression target, untyped value) -> Array[Hash[String, Value]]
       def yield_bindings: (untyped yielder, Array[Hash[String, Value]] binding_sets) -> void
       def wildcard?: (untyped target) -> bool
-      def combine_bindings: (Hash[String, Value] first, Hash[String, Value] second) -> Hash[String, Value]?
       def merge_bindings: (Hash[String, Value] existing, Hash[String, Value] additions) -> Hash[String, Value]?
       def empty_bindings_enum: () -> Enumerator[Hash[String, Value]]
       def memoization: () -> Memoization::Store
