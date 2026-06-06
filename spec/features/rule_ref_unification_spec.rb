@@ -78,6 +78,33 @@ RULE_REF_UNIFY_EVERY_POLICY = <<~REGO
   }
 REGO
 
+# An import alias resolves the same way (the import-variable branch).
+RULE_REF_UNIFY_IMPORT_POLICY = <<~REGO
+  package t
+
+  import data.t.o as oo
+
+  o := 5
+
+  result := r if {
+    r = oo
+  }
+REGO
+
+# A rule name as a constraint alongside a fresh variable in one pattern: the rule
+# is matched (not shadowed) while the fresh variable binds.
+RULE_REF_UNIFY_MIXED_POLICY = <<~REGO
+  package t
+
+  o := 1
+
+  pair := [1, 2]
+
+  result := x if {
+    [o, x] = pair
+  }
+REGO
+
 # A genuine local unification variable still binds (regression guard).
 LOCAL_UNIFY_POLICY = <<~REGO
   package t
@@ -118,6 +145,16 @@ RSpec.describe "unification against a rule reference" do
   it "resolves a rule reference inside an every body" do
     result = evaluate_policy(RULE_REF_UNIFY_EVERY_POLICY, query: "data.t.result")
     expect(result.value.to_ruby).to be(true)
+  end
+
+  it "resolves an import-alias reference in unification" do
+    result = evaluate_policy(RULE_REF_UNIFY_IMPORT_POLICY, query: "data.t.result")
+    expect(result.value.to_ruby).to eq(5)
+  end
+
+  it "matches a rule constraint while binding a fresh variable in one pattern" do
+    result = evaluate_policy(RULE_REF_UNIFY_MIXED_POLICY, query: "data.t.result")
+    expect(result.value.to_ruby).to eq(2)
   end
 
   it "still binds genuine local unification variables" do
