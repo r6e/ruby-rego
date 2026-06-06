@@ -124,6 +124,8 @@ module Ruby
         # return the override value (read from the overridden data tree) so a
         # bare `name` reference honours the override just like `data.<pkg>.name`.
         def overridden_rule_value(name)
+          return nil unless environment.data_overrides?
+
           keys = package_path + [name.to_s]
           return nil unless environment.data_path_overridden?(keys)
 

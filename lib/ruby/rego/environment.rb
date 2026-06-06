@@ -12,6 +12,7 @@ module Ruby
   module Rego
     # Execution environment for evaluating Rego policies.
     # :reek:TooManyInstanceVariables
+    # :reek:TooManyMethods
     # rubocop:disable Metrics/ClassLength
     class Environment
       # Encapsulates environment state for pooling.
@@ -62,6 +63,14 @@ module Ruby
         @scope_pool = [] # @type var @scope_pool: Array[Hash[String, Value]]
         @overridden_data_paths = []
         apply_state(State.new(input: input, data: data, rules: rules, builtin_registry: builtin_registry))
+      end
+
+      # Whether any `with` data override is active. Cheap guard for the common
+      # no-`with` path so callers can skip building a key list.
+      #
+      # @return [bool]
+      def data_overrides?
+        @overridden_data_paths.any?
       end
 
       # Whether `keys` (a data reference's key path) was shadowed by a `with`
