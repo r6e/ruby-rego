@@ -57,14 +57,28 @@ module Ruby
           # Maximum number of flags (`*`/`+`) in the smaller-flagged glob; the
           # algorithm is exponential in this count.
           MAX_GLOB_FLAGS = 20
-          # Maximum codepoints a single character-class range may expand to.
-          MAX_SET_SIZE = 100_000
+          # Maximum codepoints all character-class ranges in one glob may expand to,
+          # cumulatively. Bounds tokenization work, which runs before MAX_WORK applies.
+          MAX_SET_RUNES = 1_000_000
           # Maximum number of intersection steps before bailing out.
           MAX_WORK = 5_000_000
 
           # Raised on invalid glob syntax or a DoS-bound breach; the caller maps it to
           # an undefined result.
           class GlobError < StandardError; end
+
+          # Bounds cumulative character-class range expansion across one glob so a
+          # range-packed pattern cannot do unbounded work during tokenization.
+          class RuneBudget
+            def initialize(limit)
+              @remaining = limit
+            end
+
+            def charge(count)
+              @remaining -= count
+              raise GlobError, "character classes expand too many characters" if @remaining.negative?
+            end
+          end
 
           # A glob atom plus its flag. type ∈ :char/:dot/:set; flag ∈ :none/:plus/:star.
           # rune is set for :char, runes for :set.
@@ -92,6 +106,8 @@ module Ruby
           def self.non_empty?(lhs, rhs)
             lhs = new_glob(lhs)
             rhs = new_glob(rhs)
+            # Checked before trimming (as gintersect does); trimming only removes
+            # unflagged tokens, so the post-trim flag count is never higher.
             ensure_within_flag_limit(lhs, rhs)
 
             lhs, rhs, prefix_ok = trim_globs(lhs, rhs)
@@ -112,27 +128,28 @@ module Ruby
           def self.tokenize(input)
             chars = input.chars
             tokens = [] # @type var tokens: Array[Token]
+            budget = RuneBudget.new(MAX_SET_RUNES)
             index = 0
             while index < chars.length
-              token, index = next_token(chars, index)
+              token, index = next_token(chars, index, budget)
               tokens << token
             end
             tokens
           end
 
-          def self.next_token(chars, index)
+          def self.next_token(chars, index, budget)
             rune, index, escaped = next_rune(chars, index)
-            token, index = atom_token(rune, escaped, chars, index)
+            token, index = atom_token(rune, escaped, chars, index, budget)
             flag, index = next_flag(chars, index)
             token.flag = flag
             [token, index]
           end
           private_class_method :next_token
 
-          def self.atom_token(rune, escaped, chars, index)
+          def self.atom_token(rune, escaped, chars, index, budget)
             return [Token.new(:char, rune, nil, :none), index] if escaped
             return [Token.new(:dot, nil, nil, :none), index] if rune == "."
-            return next_set(chars, index) if rune == "["
+            return next_set(chars, index, budget) if rune == "["
             raise GlobError, "set-close ']' with no preceding '['" if rune == "]"
             raise GlobError, "flag '#{rune}' must be preceded by a non-flag" if ["*", "+"].include?(rune)
 
@@ -161,20 +178,22 @@ module Ruby
           end
           private_class_method :next_flag
 
-          # Parses a `[...]` class starting just after the `[`.
+          # Parses a `[...]` class starting just after the `[`. Runes are stored as
+          # integer codepoints (mirroring gintersect's int32 runes), so a range
+          # spanning the UTF-16 surrogate block never reaches String#chr (RangeError).
           # @return [Array(Token, Integer)] set token, next index
-          def self.next_set(chars, index)
-            runes = Set.new # @type var runes: Set[String]
+          def self.next_set(chars, index, budget)
+            runes = Set.new # @type var runes: Set[Integer]
             prev = nil # @type var prev: String?
             while index < chars.length
               rune, index, escaped = next_rune(chars, index)
               if !escaped && rune == "]"
                 return [Token.new(:set, nil, runes, :none), index]
               elsif !escaped && rune == "-"
-                index = add_range(chars, index, prev, runes)
+                index = add_range(chars, index, prev, runes, budget)
                 prev = nil
               else
-                runes << rune
+                runes << rune.ord
                 prev = rune
               end
             end
@@ -182,18 +201,19 @@ module Ruby
           end
           private_class_method :next_set
 
-          # Expands a `prev-hi` range (the `-` already consumed) into +runes+.
+          # Expands a `prev-hi` range (the `-` already consumed) into +runes+ as
+          # integer codepoints, charging the cumulative budget first.
           # @return [Integer] next index
-          def self.add_range(chars, index, prev, runes)
+          def self.add_range(chars, index, prev, runes, budget)
             raise GlobError, "range '-' must be preceded by a character" unless prev
             raise GlobError, "range '-' must be followed by a character" if index >= chars.length
 
             hi, index, escaped = next_rune(chars, index)
             raise GlobError, "range '-' cannot be followed by a special symbol" if !escaped && ["]", "-"].include?(hi)
             raise GlobError, "range is out of order" if hi.ord < prev.ord
-            raise GlobError, "range too large" if hi.ord - prev.ord + 1 > MAX_SET_SIZE
 
-            (prev.ord..hi.ord).each { |codepoint| runes << codepoint.chr(Encoding::UTF_8) }
+            budget.charge(hi.ord - prev.ord + 1)
+            (prev.ord..hi.ord).each { |codepoint| runes << codepoint }
             index
           end
           private_class_method :add_range
@@ -222,15 +242,18 @@ module Ruby
 
           # Whether two atoms (ignoring flags) can match a common character.
           def self.match?(token_lhs, token_rhs)
-            return true if token_lhs.type == :dot || token_rhs.type == :dot
-            return token_lhs.rune == token_rhs.rune if token_lhs.type == :char && token_rhs.type == :char
-            return runes_of(token_rhs).include?(token_lhs.rune) if token_lhs.type == :char && token_rhs.type == :set
-            return runes_of(token_lhs).include?(token_rhs.rune) if token_lhs.type == :set && token_rhs.type == :char
+            type_lhs = token_lhs.type
+            type_rhs = token_rhs.type
+            return true if type_lhs == :dot || type_rhs == :dot
+            return token_lhs.rune == token_rhs.rune if type_lhs == :char && type_rhs == :char
+            # Only :char and :set remain; a char's codepoint vs the other's rune set.
+            return runes_of(token_rhs).include?(token_lhs.rune.to_s.ord) if type_lhs == :char
+            return runes_of(token_lhs).include?(token_rhs.rune.to_s.ord) if type_rhs == :char
 
             runes_of(token_lhs).intersect?(runes_of(token_rhs))
           end
 
-          # The token's rune set (empty for non-set atoms; lets match? stay nil-free).
+          # The token's codepoint set (empty for non-set atoms; lets match? stay nil-free).
           def self.runes_of(token)
             token.runes || Set.new
           end
@@ -323,7 +346,8 @@ module Ruby
               raise GlobError, "intersection too expensive" if @work > MAX_WORK
             end
 
-            # At least one of lhs[0]/rhs[0] is flagged.
+            # At least one of lhs[0]/rhs[0] is flagged. Both arrays are non-empty:
+            # intersect_normal only dispatches here from inside its bounds check.
             def intersect_special(lhs, rhs)
               return dispatch(lhs, rhs) if lhs[0].flagged?
 

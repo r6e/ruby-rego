@@ -102,5 +102,29 @@ RSpec.describe "regex.globs_match" do
       expect(globs("a]", "a]")).to be_nil
     end
   end
+
+  describe "DoS bounds yield undefined (gintersect is exponential; no Go context here)" do
+    bounds = Ruby::Rego::Builtins::Regex::GlobIntersection
+
+    it "rejects a glob exceeding the source-length cap" do
+      expect(globs("a" * (bounds::MAX_GLOB_SOURCE + 1), "a")).to be_nil
+    end
+
+    it "rejects globs whose smaller flag count exceeds the cap" do
+      # Distinct atoms so Simplify does not collapse them into one flagged token.
+      flagged = (0..bounds::MAX_GLOB_FLAGS).map { |i| "#{(97 + i).chr}*" }.join
+      expect(globs(flagged, flagged)).to be_nil
+    end
+
+    it "rejects character-class ranges that cumulatively expand past the cap" do
+      expect(globs("[A-\u{10FFFF}]", "a")).to be_nil
+    end
+
+    # Regression: a range spanning the UTF-16 surrogate block must not raise
+    # (codepoints are stored as integers, never String#chr'd).
+    it "matches a real character inside a surrogate-spanning range" do
+      expect(globs("[A-\u{186A0}]", "a")).to be(true)
+    end
+  end
 end
 # rubocop:enable Metrics/BlockLength

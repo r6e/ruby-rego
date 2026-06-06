@@ -579,18 +579,24 @@ module Ruby
         module GlobIntersection
           MAX_GLOB_SOURCE: Integer
           MAX_GLOB_FLAGS: Integer
-          MAX_SET_SIZE: Integer
+          MAX_SET_RUNES: Integer
           MAX_WORK: Integer
 
           class GlobError < StandardError
           end
 
+          class RuneBudget
+            @remaining: Integer
+            def initialize: (Integer limit) -> void
+            def charge: (Integer count) -> void
+          end
+
           class Token
             attr_accessor type: Symbol
             attr_accessor rune: String?
-            attr_accessor runes: Set[String]?
+            attr_accessor runes: Set[Integer]?
             attr_accessor flag: Symbol
-            def initialize: (Symbol type, String? rune, Set[String]? runes, Symbol flag) -> void
+            def initialize: (Symbol type, String? rune, Set[Integer]? runes, Symbol flag) -> void
             def flagged?: () -> bool
             def same_atom?: (Token other) -> bool
             def dup: () -> Token
@@ -614,13 +620,13 @@ module Ruby
           def self.new_glob: (String input) -> Array[Token]
           def self.tokenize: (String input) -> Array[Token]
           def self.match?: (Token token1, Token token2) -> bool
-          def self.runes_of: (Token token) -> Set[String]
-          def self.next_token: (Array[String] chars, Integer index) -> [Token, Integer]
-          def self.atom_token: (String? rune, bool escaped, Array[String] chars, Integer index) -> [Token, Integer]
+          def self.runes_of: (Token token) -> Set[Integer]
+          def self.next_token: (Array[String] chars, Integer index, RuneBudget budget) -> [Token, Integer]
+          def self.atom_token: (String? rune, bool escaped, Array[String] chars, Integer index, RuneBudget budget) -> [Token, Integer]
           def self.next_rune: (Array[String] chars, Integer index) -> [String, Integer, bool]
           def self.next_flag: (Array[String] chars, Integer index) -> [Symbol, Integer]
-          def self.next_set: (Array[String] chars, Integer index) -> [Token, Integer]
-          def self.add_range: (Array[String] chars, Integer index, String? prev, Set[String] runes) -> Integer
+          def self.next_set: (Array[String] chars, Integer index, RuneBudget budget) -> [Token, Integer]
+          def self.add_range: (Array[String] chars, Integer index, String? prev, Set[Integer] runes, RuneBudget budget) -> Integer
           def self.simplify: (Array[Token] tokens) -> Array[Token]
           def self.trim_globs: (Array[Token] glob1, Array[Token] glob2) -> [Array[Token], Array[Token], bool]
           def self.trim_prefix: (Array[Token] glob1, Array[Token] glob2) -> Integer?
