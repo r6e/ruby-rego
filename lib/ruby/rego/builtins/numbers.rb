@@ -10,7 +10,6 @@ module Ruby
     module Builtins
       # Built-in numeric helpers (abs, round, ceil, floor, numbers.range,
       # numbers.range_step).
-      # rubocop:disable Metrics/ModuleLength
       module Numbers
         extend RegistryHelpers
 
@@ -73,7 +72,7 @@ module Ruby
         def self.range(start_value, end_value)
           start_bound = NumericHelpers.integer_value(start_value, context: "numbers.range")
           end_bound = NumericHelpers.integer_value(end_value, context: "numbers.range")
-          ensure_range_within_limit(start_bound, end_bound)
+          ensure_size_within_limit((end_bound - start_bound).abs + 1, "numbers.range")
 
           ArrayValue.new(range_elements(start_bound, end_bound).map { |number| NumberValue.new(number) })
         end
@@ -91,8 +90,9 @@ module Ruby
           start_bound = NumericHelpers.integer_value(start_value, context: "numbers.range_step")
           end_bound = NumericHelpers.integer_value(end_value, context: "numbers.range_step")
           step = NumericHelpers.integer_value(step_value, context: "numbers.range_step")
+          # ensure_positive_step must precede step_count, which divides by step.
           ensure_positive_step(step)
-          ensure_step_range_within_limit(start_bound, end_bound, step)
+          ensure_size_within_limit(step_count(start_bound, end_bound, step), "numbers.range_step")
 
           elements = step_elements(start_bound, end_bound, step)
           ArrayValue.new(elements.map { |number| NumberValue.new(number) })
@@ -132,22 +132,24 @@ module Ruby
         end
         private_class_method :normalize
 
-        # @param start_bound [Integer]
-        # @param end_bound [Integer]
+        # Allocation guard shared by numbers.range/range_step. OPA halts large ranges
+        # via context cancellation; this evaluator caps the element count instead.
+        #
+        # @param size [Integer] the number of elements the range would allocate
+        # @param context [String]
         # @return [void]
-        def self.ensure_range_within_limit(start_bound, end_bound)
-          size = (end_bound - start_bound).abs + 1
+        def self.ensure_size_within_limit(size, context)
           return if size <= MAX_RANGE_SIZE
 
           raise Ruby::Rego::BuiltinArgumentError.new(
-            "numbers.range size #{size} exceeds maximum #{MAX_RANGE_SIZE}",
+            "#{context} size #{size} exceeds maximum #{MAX_RANGE_SIZE}",
             expected: "size <= #{MAX_RANGE_SIZE}",
             actual: size,
-            context: "numbers.range",
+            context: context,
             location: nil
           )
         end
-        private_class_method :ensure_range_within_limit
+        private_class_method :ensure_size_within_limit
 
         # @param start_bound [Integer]
         # @param end_bound [Integer]
@@ -174,23 +176,18 @@ module Ruby
         end
         private_class_method :ensure_positive_step
 
+        # Number of elements numbers.range_step yields: one per step from low to high
+        # (endpoint included only when exact). Divides by step, so the caller must
+        # validate step > 0 first.
+        #
         # @param start_bound [Integer]
         # @param end_bound [Integer]
         # @param step [Integer]
-        # @return [void]
-        def self.ensure_step_range_within_limit(start_bound, end_bound, step)
-          size = ((end_bound - start_bound).abs / step) + 1
-          return if size <= MAX_RANGE_SIZE
-
-          raise Ruby::Rego::BuiltinArgumentError.new(
-            "numbers.range_step size #{size} exceeds maximum #{MAX_RANGE_SIZE}",
-            expected: "size <= #{MAX_RANGE_SIZE}",
-            actual: size,
-            context: "numbers.range_step",
-            location: nil
-          )
+        # @return [Integer]
+        def self.step_count(start_bound, end_bound, step)
+          ((end_bound - start_bound).abs / step) + 1
         end
-        private_class_method :ensure_step_range_within_limit
+        private_class_method :step_count
 
         # @param start_bound [Integer]
         # @param end_bound [Integer]
@@ -198,11 +195,10 @@ module Ruby
         # @return [Array<Integer>]
         def self.step_elements(start_bound, end_bound, step)
           direction = start_bound <= end_bound ? step : -step
-          start_bound.step(end_bound, direction).to_a
+          Array.new(step_count(start_bound, end_bound, step)) { |index| start_bound + (index * direction) }
         end
         private_class_method :step_elements
       end
-      # rubocop:enable Metrics/ModuleLength
     end
   end
 end

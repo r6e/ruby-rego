@@ -119,6 +119,11 @@ RSpec.describe "numeric builtins" do
 
     it "produces a descending range when the start exceeds the end" do
       expect(step_range(10, 1, 3).to_ruby).to eq([10, 7, 4, 1])
+      expect(step_range(10, 2, 3).to_ruby).to eq([10, 7, 4]) # non-exact descending endpoint
+    end
+
+    it "is undefined for a non-number argument" do
+      expect(step_range("a", 10, 3)).to be_a(Ruby::Rego::UndefinedValue)
     end
 
     it "includes only steps that land in range (endpoint kept only if exact)" do

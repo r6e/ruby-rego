@@ -419,11 +419,11 @@ module Ruby
 
         def self.numeric: (Value value, String context) -> Numeric
         def self.normalize: (Numeric number) -> Numeric
-        def self.ensure_range_within_limit: (Integer start_bound, Integer end_bound) -> void
+        def self.ensure_size_within_limit: (Integer size, String context) -> void
         def self.range_elements: (Integer start_bound, Integer end_bound) -> Array[Integer]
         def self.ensure_positive_step: (Integer step) -> void
-        def self.ensure_step_range_within_limit: (Integer start_bound, Integer end_bound, Integer step) -> void
-        def self.step_elements: (Integer start_bound, Integer end_bound, Integer step) -> Array[Numeric]
+        def self.step_count: (Integer start_bound, Integer end_bound, Integer step) -> Integer
+        def self.step_elements: (Integer start_bound, Integer end_bound, Integer step) -> Array[Integer]
       end
 
       module Bits
