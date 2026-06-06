@@ -1691,6 +1691,7 @@ module Ruby
       def eval_with_unification: (untyped node, ?Environment env) -> Enumerator[Hash[String, Value]]
       def evaluate_user_function: (String name, Array[Value] args) -> Value
       def variable_known?: (String | Symbol name) -> bool
+      def imported_or_rule_variable?: (String name) -> bool
 
       private
 
@@ -1700,7 +1701,6 @@ module Ruby
       def resolve_import_or_rule: (String name, Value fallback) -> Value
       def wildcard_variable_name?: (String name) -> bool
       def locally_resolved_variable?: (String name) -> bool
-      def imported_or_rule_variable?: (String name) -> bool
       def evaluate_reference: (AST::Reference node) -> Value
       def evaluate_array_literal: (AST::ArrayLiteral node) -> Value
       def evaluate_object_literal: (AST::ObjectLiteral node) -> Value
@@ -1794,6 +1794,7 @@ module Ruby
       private
 
       def environment: () -> Environment
+      def imported_or_rule_variable?: (String name) -> bool
       def shadow_explicit_locals: (Array[String] names) -> void
       def shadow_unification_locals: (Array[String] names, Array[String] explicit_names) -> void
       def bind_undefined: (String name) -> void
@@ -1826,6 +1827,7 @@ module Ruby
 
       private
 
+      def imported_or_rule_variable?: (String name) -> bool
       def object_pairs: (AST::ObjectComprehension node) -> Hash[Object, Value]
       def apply_object_binding: (ObjectPairContext context, AST::object_term term, Hash[String, Value] bindings) -> void
       def resolve_pair: (AST::object_term term) -> (Array[untyped] | nil)

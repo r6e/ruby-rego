@@ -64,6 +64,9 @@ module Ruby
           names.each do |name|
             next if explicit_names.include?(name)
             next unless env.lookup(name).is_a?(UndefinedValue)
+            # A name that resolves to a rule or import is a value, not a binding
+            # target: shadowing it would hide the rule (`x = some_rule`).
+            next if expression_evaluator.imported_or_rule_variable?(name)
 
             bind_undefined(env, name)
           end
