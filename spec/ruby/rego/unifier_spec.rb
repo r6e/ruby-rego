@@ -69,28 +69,17 @@ RSpec.describe Ruby::Rego::Unifier do
     expect(unify(pattern, { "a" => 1, "b" => 2 })).to be_empty
   end
 
-  it "does not reuse object keys for multiple pairs" do
+  it "does not reuse the same object key across pairs" do
+    # Two pairs resolving to the same key ("a") cannot both match: the second
+    # pair finds the key already consumed (the used-keys dedup path).
     pattern = Ruby::Rego::AST::ObjectLiteral.new(
       pairs: [
-        [Ruby::Rego::AST::Variable.new(name: "k1"), Ruby::Rego::AST::NumberLiteral.new(value: 1)],
-        [Ruby::Rego::AST::Variable.new(name: "k2"), Ruby::Rego::AST::NumberLiteral.new(value: 1)]
+        [Ruby::Rego::AST::Literal.new(value: "a"), Ruby::Rego::AST::Variable.new(name: "v1")],
+        [Ruby::Rego::AST::Literal.new(value: "a"), Ruby::Rego::AST::Variable.new(name: "v2")]
       ]
     )
 
     results = unify(pattern, { "a" => 1 })
-
-    expect(results).to be_empty
-  end
-
-  it "does not allow repeated key variables in object patterns" do
-    pattern = Ruby::Rego::AST::ObjectLiteral.new(
-      pairs: [
-        [Ruby::Rego::AST::Variable.new(name: "k"), Ruby::Rego::AST::NumberLiteral.new(value: 1)],
-        [Ruby::Rego::AST::Variable.new(name: "k"), Ruby::Rego::AST::NumberLiteral.new(value: 1)]
-      ]
-    )
-
-    results = unify(pattern, { "a" => 1, "b" => 1 })
 
     expect(results).to be_empty
   end

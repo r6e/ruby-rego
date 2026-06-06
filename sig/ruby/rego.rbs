@@ -1112,7 +1112,6 @@ module Ruby
       def self.bound_value_for: (String name, Hash[String, Value] bindings, Environment env) -> Value?
       def self.merge_bindings: (Hash[String, Value] bindings, Hash[String, Value] additions) -> Hash[String, Value]?
       def self.unify_variable: (AST::Variable variable, Value value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
-      def self.variable_candidate_keys: (AST::Variable key_pattern, Array[untyped] keys, Environment env, Hash[String, Value] bindings) -> Array[untyped]
       def self.candidate_keys_for: (untyped key_pattern, Environment env, Hash[String, Value] bindings) -> Array[untyped]
       def self.match_scalar: (untyped pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
     end

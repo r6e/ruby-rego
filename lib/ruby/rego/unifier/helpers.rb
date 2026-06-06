@@ -107,7 +107,6 @@ module Ruby
         # An object-pattern key must be ground: a literal, or a variable already
         # bound elsewhere. An unbound variable key (or wildcard) yields no
         # candidate — OPA rejects it as unsafe rather than enumerating keys.
-        # :reek:LongParameterList
         def self.candidate_keys_for(key_pattern, env, bindings)
           if key_pattern.is_a?(AST::Variable)
             bound_value = bound_value_for(key_pattern.name, bindings, env)
