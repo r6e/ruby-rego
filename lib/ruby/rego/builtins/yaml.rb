@@ -45,9 +45,10 @@ module Ruby
         # @return [Ruby::Rego::StringValue]
         def self.marshal(value)
           StringValue.new(Emitter.emit(value.to_ruby))
-        rescue Emitter::MarshalError, SystemStackError => e
-          # SystemStackError guards value.to_ruby / node-build recursion on pathologically
-          # deep input, so marshal stays total (undefined) instead of crashing.
+        rescue Emitter::MarshalError, SystemStackError, ArgumentError => e
+          # SystemStackError guards deep-recursion overflow; ArgumentError guards an
+          # unsortable set element (NaN, whose <=> is nil, raises while ordering the set).
+          # Both keep marshal total (undefined) instead of crashing.
           message = e.message
           raise Ruby::Rego::BuiltinArgumentError.new(
             "Cannot marshal value to YAML: #{message}",

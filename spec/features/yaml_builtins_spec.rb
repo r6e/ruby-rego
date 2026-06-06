@@ -18,8 +18,13 @@ REGO
 
 # rubocop:disable Metrics/BlockLength
 RSpec.describe "yaml builtins" do
+  # The raw marshal result: nil when the rule is undefined (e.g. an unmarshalable value).
+  def marshal_result(value)
+    evaluate_policy(YAML_POLICY, input: { "value" => value }, query: "data.t.marshalled")
+  end
+
   def marshal(value)
-    evaluate_policy(YAML_POLICY, input: { "value" => value }, query: "data.t.marshalled").value.to_ruby
+    marshal_result(value).value.to_ruby
   end
 
   # The raw rule result: nil when the rule is undefined, a Value otherwise (so a
@@ -82,6 +87,11 @@ RSpec.describe "yaml builtins" do
 
     it "replaces invalid UTF-8 bytes with the replacement character (matching OPA)" do
       expect(marshal("\xFF".b)).to eq("�\n")
+    end
+
+    it "is undefined (not a crash) for a set with a non-finite, unsortable element" do
+      expect(marshal_result(Set[1.0, Float::NAN, 2.0])).to be_nil
+      expect(marshal_result(Set[[Float::NAN], [1.0]])).to be_nil # nested in a sorted array
     end
 
     it "emits set elements in deterministic OPA order (sorted, type-ranked), not insertion order" do
