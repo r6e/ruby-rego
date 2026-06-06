@@ -9,7 +9,6 @@ module Ruby
         private
 
         # :reek:NestedIterators
-        # :reek:TooManyStatements
         def each_array_binding(variables, collection_value)
           Enumerator.new do |yielder|
             values = collection_value.to_ruby
@@ -33,7 +32,6 @@ module Ruby
         end
 
         # :reek:NestedIterators
-        # :reek:TooManyStatements
         def each_object_binding(variables, collection_value)
           Enumerator.new do |yielder|
             pairs = collection_value.to_ruby
@@ -70,7 +68,6 @@ module Ruby
 
         # Merge two binding sets; nil when a shared name has conflicting values
         # (a unification constraint).
-        # :reek:TooManyStatements
         def merge_bindings(existing, additions)
           merged = existing.dup
           additions.each do |name, value|
