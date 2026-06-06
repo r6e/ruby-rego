@@ -138,6 +138,32 @@ module Ruby
           guarded(context) { full_matches(regexp, string) }
         end
         private_class_method :matches_for
+
+        # Like `matches_for`, but each row is the full match followed by its capture
+        # groups (a non-participating group yields "", mirroring Go's submatch slice).
+        #
+        # @return [Array<Array<String>>]
+        def self.submatches_for(pattern_value, string_value, context)
+          regexp = compile(pattern_value, context)
+          string = string_arg(string_value, context)
+          guarded(context) { all_submatches(regexp, string) }
+        end
+        private_class_method :submatches_for
+
+        # @return [Array<Array<String>>]
+        def self.all_submatches(regexp, string)
+          rows = [] # @type var rows: Array[Array[String]]
+          each_match(regexp, string) { |found| rows << submatch_row(found) }
+          rows
+        end
+        private_class_method :all_submatches
+
+        # @param found [MatchData]
+        # @return [Array<String>]
+        def self.submatch_row(found)
+          found.to_a.map { |capture| capture || "" }
+        end
+        private_class_method :submatch_row
       end
     end
   end
