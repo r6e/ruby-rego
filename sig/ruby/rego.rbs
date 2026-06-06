@@ -1734,15 +1734,18 @@ module Ruby
       def function_name_for_call: (untyped name_node, String fallback_name) -> String
       def every_body_succeeds?: (Array[untyped] body, Hash[String, Value] bindings) -> bool
       def every_bindings: (Array[AST::Variable] variables, Value collection_value) -> Enumerator[Hash[String, Value]]?
-      def bindings_for_collection: (Array[AST::Variable] variables, Value collection_value) -> Enumerator[Hash[String, Value]]?
-      def array_bindings_for: (Array[AST::Variable] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]?
-      def set_bindings_for: (Array[AST::Variable] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]?
-      def object_bindings_for: (Array[AST::Variable] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]?
-      def each_array_binding: (Array[AST::Variable] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]
-      def each_set_binding: (Array[AST::Variable] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]
-      def each_object_binding: (Array[AST::Variable] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]
-      def bindings_for_pair: (Array[AST::Variable] variables, untyped first_value, untyped second_value) -> Hash[String, Value]
-      def bindings_for: (AST::Variable variable, untyped value) -> Hash[String, Value]
+      def bindings_for_collection: (Array[AST::expression] variables, Value collection_value) -> Enumerator[Hash[String, Value]]?
+      def array_bindings_for: (Array[AST::expression] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]?
+      def set_bindings_for: (Array[AST::expression] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]?
+      def object_bindings_for: (Array[AST::expression] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]?
+      def each_array_binding: (Array[AST::expression] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_set_binding: (Array[AST::expression] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_object_binding: (Array[AST::expression] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]
+      def bindings_for_pair: (Array[AST::expression] variables, untyped first_value, untyped second_value) -> Array[Hash[String, Value]]
+      def bindings_for: (AST::expression target, untyped value) -> Array[Hash[String, Value]]
+      def yield_bindings: (untyped yielder, Array[Hash[String, Value]] binding_sets) -> void
+      def wildcard?: (untyped target) -> bool
+      def combine_bindings: (Hash[String, Value] first, Hash[String, Value] second) -> Hash[String, Value]?
       def with_every_scope: (AST::Every node) { () -> untyped } -> untyped
       def shadow_every_locals: (AST::Every node) -> void
       def every_variable_names: (AST::Every node) -> Array[String]
@@ -1774,11 +1777,17 @@ module Ruby
     module Evaluator::BindingHelpers
       private
 
-      def each_array_binding: (Array[AST::Variable] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]
-      def each_set_binding: (Array[AST::Variable] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]
-      def each_object_binding: (Array[AST::Variable] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]
-      def bindings_for_pair: (Array[AST::Variable] variables, untyped first_value, untyped second_value) -> Hash[String, Value]
-      def bindings_for: (AST::Variable variable, untyped value) -> Hash[String, Value]
+      def unifier: () -> Unifier
+      def environment: () -> Environment
+
+      def each_array_binding: (Array[AST::expression] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_set_binding: (Array[AST::expression] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_object_binding: (Array[AST::expression] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]
+      def bindings_for_pair: (Array[AST::expression] variables, untyped first_value, untyped second_value) -> Array[Hash[String, Value]]
+      def bindings_for: (AST::expression target, untyped value) -> Array[Hash[String, Value]]
+      def yield_bindings: (untyped yielder, Array[Hash[String, Value]] binding_sets) -> void
+      def wildcard?: (untyped target) -> bool
+      def combine_bindings: (Hash[String, Value] first, Hash[String, Value] second) -> Hash[String, Value]?
     end
 
     module Evaluator::LocalShadowing
@@ -1840,6 +1849,8 @@ module Ruby
 
       def self.collector_for: (untyped node) -> untyped
       def self.children_for: (untyped node) -> Array[untyped]
+      def self.some_decl_names: (Array[untyped] variables) -> Array[String]
+      def self.some_pattern_names: (untyped node) -> Array[String]
       def self.comprehension_node?: (untyped node) -> bool
     end
 
@@ -2014,12 +2025,15 @@ module Ruby
       def eval_some_decl: (AST::SomeDecl literal, ?Environment env) -> Enumerator[Hash[String, Value]]
       def yield_empty_bindings: (Enumerator::Yielder yielder) -> void
       def each_some_solution: (AST::SomeDecl literal) -> Enumerator[Hash[String, Value]]
-      def collection_bindings: (Array[AST::Variable] variables, Value collection_value) -> Enumerator[Hash[String, Value]]
-      def each_array_binding: (Array[AST::Variable] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]
-      def each_set_binding: (Array[AST::Variable] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]
-      def each_object_binding: (Array[AST::Variable] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]
-      def bindings_for_pair: (Array[AST::Variable] variables, untyped first_value, untyped second_value) -> Hash[String, Value]
-      def bindings_for: (AST::Variable variable, untyped value) -> Hash[String, Value]
+      def collection_bindings: (Array[AST::expression] variables, Value collection_value) -> Enumerator[Hash[String, Value]]
+      def each_array_binding: (Array[AST::expression] variables, ArrayValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_set_binding: (Array[AST::expression] variables, SetValue collection_value) -> Enumerator[Hash[String, Value]]
+      def each_object_binding: (Array[AST::expression] variables, ObjectValue collection_value) -> Enumerator[Hash[String, Value]]
+      def bindings_for_pair: (Array[AST::expression] variables, untyped first_value, untyped second_value) -> Array[Hash[String, Value]]
+      def bindings_for: (AST::expression target, untyped value) -> Array[Hash[String, Value]]
+      def yield_bindings: (untyped yielder, Array[Hash[String, Value]] binding_sets) -> void
+      def wildcard?: (untyped target) -> bool
+      def combine_bindings: (Hash[String, Value] first, Hash[String, Value] second) -> Hash[String, Value]?
       def merge_bindings: (Hash[String, Value] existing, Hash[String, Value] additions) -> Hash[String, Value]?
       def empty_bindings_enum: () -> Enumerator[Hash[String, Value]]
       def memoization: () -> Memoization::Store
@@ -2292,7 +2306,8 @@ module Ruby
       def parse_literal: () -> AST::query_literal
       def parse_some_decl: () -> AST::SomeDecl
       def parse_every: () -> AST::Every
-      def parse_some_variables: () -> Array[AST::Variable]
+      def parse_some_variables: () -> Array[AST::expression]
+      def parse_some_pattern: () -> AST::expression
       def parse_some_collection: () -> AST::expression?
       def parse_every_variables: () -> [AST::Variable?, AST::Variable]
       def parse_every_domain: () -> AST::expression
@@ -2583,10 +2598,10 @@ module Ruby
       end
 
       class SomeDecl < Base
-        attr_reader variables: Array[Variable]
+        attr_reader variables: Array[expression]
         attr_reader collection: expression?
 
-        def initialize: (variables: Array[Variable], ?collection: expression?, ?location: Location?) -> void
+        def initialize: (variables: Array[expression], ?collection: expression?, ?location: Location?) -> void
       end
 
       class WithModifier < Base

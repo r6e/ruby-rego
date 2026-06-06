@@ -3,6 +3,7 @@
 module Ruby
   module Rego
     # Parsing helpers for queries.
+    # rubocop:disable Metrics/ClassLength
     class Parser
       private
 
@@ -79,14 +80,23 @@ module Ruby
 
       # :reek:TooManyStatements
       def parse_some_variables
-        variables = [] # @type var variables: Array[AST::Variable]
+        variables = [] # @type var variables: Array[AST::expression]
         loop do
-          variables << parse_variable
+          variables << parse_some_pattern
           break unless match?(TokenType::COMMA)
 
           advance
         end
         variables
+      end
+
+      # A `some` binding target: a bare variable, or an array/object
+      # destructuring pattern (`some [a, b] in xs`, `some {"k": v} in xs`).
+      def parse_some_pattern
+        return parse_array if match?(TokenType::LBRACKET)
+        return parse_braced_literal if match?(TokenType::LBRACE)
+
+        parse_variable
       end
 
       def parse_some_collection
@@ -135,5 +145,6 @@ module Ruby
         AST::WithModifier.new(target: target, value: value, location: keyword.location)
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end

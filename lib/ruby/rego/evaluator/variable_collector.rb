@@ -51,6 +51,23 @@ module Ruby
           extractor.call(node)
         end
 
+        # Variable names bound by a list of `some` targets.
+        def self.some_decl_names(variables)
+          variables.flat_map { |variable| some_pattern_names(variable) }
+        end
+
+        # Variable names bound by a single `some` target, recursing into array/object
+        # destructuring patterns (value positions only; object keys are matched,
+        # not bound).
+        def self.some_pattern_names(node)
+          case node
+          when AST::Variable then [node.name]
+          when AST::ArrayLiteral then node.elements.flat_map { |element| some_pattern_names(element) }
+          when AST::ObjectLiteral then node.pairs.flat_map { |(_key, value)| some_pattern_names(value) }
+          else []
+          end
+        end
+
         def self.comprehension_node?(node)
           node.is_a?(AST::ArrayComprehension) || node.is_a?(AST::SetComprehension) || node.is_a?(AST::ObjectComprehension)
         end
@@ -92,7 +109,7 @@ module Ruby
         def collect_from_literal(literal)
           case literal
           in AST::SomeDecl[variables:]
-            variables.each { |variable| explicit_names << variable.name }
+            VariableCollectorHelpers.some_decl_names(variables).each { |name| explicit_names << name }
           in AST::QueryLiteral[expression:]
             collect_from_expression(expression)
           else
@@ -180,7 +197,7 @@ module Ruby
         end
 
         def collect_some_decl(node)
-          node.variables.each { |variable| add_name(variable.name) }
+          VariableCollectorHelpers.some_decl_names(node.variables).each { |name| add_name(name) }
           collection = node.collection
           collect_node(collection) if collection
         end
