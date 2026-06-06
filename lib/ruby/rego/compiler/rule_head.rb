@@ -36,8 +36,9 @@ module Ruby
 
       # Return the variable names bound by a function rule's argument patterns.
       # Recurses into array/object destructuring patterns, collecting value-position
-      # variables (array elements, object values). Object *keys* are excluded: OPA
-      # does not bind a variable in key position (`f({k: v})` leaves `k` unbound).
+      # variables (array elements, object values). In the supported patterns the
+      # keys are string literals (`f({"a": v})`), which are matched, not bound, so
+      # only value-position variables contribute names.
       #
       # @return [Array<String>]
       def function_arg_names

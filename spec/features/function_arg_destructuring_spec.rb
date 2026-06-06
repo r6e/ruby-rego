@@ -59,6 +59,19 @@ FN_DESTRUCTURE_EXTRA_KEY_POLICY = <<~REGO
   result := f(input.o)
 REGO
 
+# Variable object-pattern KEYS (`f({k: v})`) are not supported: the gem rejects
+# them at compile time. OPA binds both `k` and `v` as arguments (it reports
+# `unused argument k` under `opa check --strict`) but evaluates the call to
+# `undefined`; the gem's permissive-superset divergence on variable object keys
+# is a separate, deliberate product decision. This test locks the current scope.
+FN_DESTRUCTURE_VAR_KEY_POLICY = <<~REGO
+  package t
+
+  f({k: v}) := v
+
+  result := f(input.o)
+REGO
+
 # rubocop:disable Metrics/BlockLength
 RSpec.describe "function-argument destructuring" do
   it "binds a value-position variable from an object pattern argument" do
@@ -92,6 +105,11 @@ RSpec.describe "function-argument destructuring" do
     result = evaluate_policy(FN_DESTRUCTURE_EXTRA_KEY_POLICY, input: { "o" => { "a" => 5, "b" => 6 } },
                                                               query: "data.t.result")
     expect(result.value.to_ruby).to eq("no")
+  end
+
+  it "rejects a variable object-pattern key as unsafe (known OPA divergence)" do
+    expect { evaluate_policy(FN_DESTRUCTURE_VAR_KEY_POLICY, input: { "o" => { "a" => 1 } }, query: "data.t.result") }
+      .to raise_error(Ruby::Rego::CompilationError, /unbound variables k/)
   end
 end
 # rubocop:enable Metrics/BlockLength
