@@ -170,6 +170,14 @@ RSpec.describe "yaml builtins" do
       expect(result.value).to be_a(Ruby::Rego::NullValue)
     end
 
+    it "decodes an empty document as a defined null, not undefined (matching OPA)" do
+      ["---\n", "", "# comment only\n"].each do |doc|
+        result = unmarshal_result(doc)
+        expect(result).not_to(be_nil, "#{doc.inspect} should be defined")
+        expect(result.value).to be_a(Ruby::Rego::NullValue)
+      end
+    end
+
     it "round-trips through marshal" do
       original = { "name" => "svc", "ports" => [80, 443], "enabled" => true, "ratio" => 1.5 }
       expect(unmarshal(marshal(original))).to eq(original)

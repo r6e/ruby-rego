@@ -143,9 +143,11 @@ module Ruby
           end
           private_class_method :term_sort_key
 
+          # Computes each key's sort tuple once (key + value), then sorts by the key tuple —
+          # avoiding a second term_sort_key(key) pass while sorting.
           # @return [Array<untyped>]
           def self.sorted_pairs(hash)
-            hash.keys.sort_by { |key| term_sort_key(key) }.map { |key| [term_sort_key(key), term_sort_key(hash[key])] }
+            hash.map { |key, value| [term_sort_key(key), term_sort_key(value)] }.sort_by(&:first)
           end
           private_class_method :sorted_pairs
 
