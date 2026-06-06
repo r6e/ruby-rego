@@ -54,7 +54,9 @@ module Ruby
               close = template.index(delim_end, section_start)
               raise template_error("unbalanced delimiter", "no closing #{delim_end}", context) unless close
 
-              buffer << (template[section_start...close] || "")
+              # Group the section so top-level alternation stays scoped to it
+              # (`{a|b}c` must mean `(a|b)c`, not `a|(bc)`), matching OPA.
+              buffer << "(?:#{template[section_start...close]})"
               index = close + 1
             else
               # A closing delimiter outside a section is unbalanced (OPA → undefined).
@@ -73,7 +75,7 @@ module Ruby
         def self.template_error(message, actual, context)
           Ruby::Rego::BuiltinArgumentError.new(
             message,
-            expected: "single-character delimiters and balanced sections",
+            expected: "single-byte delimiters and balanced sections",
             actual: actual,
             context: context,
             location: nil

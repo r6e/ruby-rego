@@ -88,6 +88,13 @@ RSpec.describe "regex.find_all_string_submatch_n and regex.template_match" do
       expect(template("{}", "")).to be(true)
     end
 
+    it "scopes alternation to its section (a section groups its content)" do
+      # `{a|b}c` means `(a|b)c`, not `a|(bc)`.
+      expect(template("{a|b}c", "bc")).to be(true)
+      expect(template("{a|b}c", "a")).to be(false)
+      expect(template("{a|b}c", "xbc")).to be(false)
+    end
+
     # OPA validates delimiters by byte length and requires balanced sections;
     # these all resolve to undefined.
     it "is undefined for a multi-byte (single-character) delimiter" do
