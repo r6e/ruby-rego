@@ -27,7 +27,7 @@ module Ruby
           return nil unless environment.lookup(base.name).is_a?(UndefinedValue)
           return nil unless rule_value_provider.rule_defined?(base.name)
 
-          value = rule_value_provider.value_for(base.name)
+          value = rule_or_override_value(base.name)
           return value if ref.path.empty? || value.undefined?
 
           resolve_reference_path(value, ref.path)

@@ -67,7 +67,7 @@ module Ruby
           return nil unless environment.lookup(name).is_a?(UndefinedValue)
           return nil unless rule_value_provider.rule_defined?(name)
 
-          rule_value_provider.value_for(name)
+          rule_or_override_value(name)
         end
 
         # Resolve a function call reference to a rule name when possible.

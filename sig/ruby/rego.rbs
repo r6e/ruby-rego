@@ -813,7 +813,7 @@ module Ruby
     module EnvironmentOverrides
       UNSET: untyped
 
-      def with_overrides: (?input: untyped, ?data: untyped) { (untyped) -> untyped } -> untyped
+      def with_overrides: (?input: untyped, ?data: untyped, ?data_paths: Array[Array[untyped]]) { (untyped) -> untyped } -> untyped
       def memoization: () -> Memoization::Store
 
       private
@@ -867,6 +867,8 @@ module Ruby
       RESERVED_BINDINGS: Hash[String, Symbol]
       RESERVED_NAMES: Array[String]
 
+      @overridden_data_paths: Array[Array[untyped]]
+
       attr_reader input: Value
       attr_reader data: Value
       attr_reader rules: Hash[untyped, untyped]
@@ -882,8 +884,10 @@ module Ruby
       def resolve_reference: (untyped ref) -> Value
       def reference_key_for: (AST::Variable variable) -> untyped
       def with_bindings: (Hash[String | Symbol, untyped] bindings) { () -> untyped } -> untyped
-      def with_overrides: (?input: untyped, ?data: untyped) { (Environment) -> untyped } -> untyped
+      def with_overrides: (?input: untyped, ?data: untyped, ?data_paths: Array[Array[untyped]]) { (Environment) -> untyped } -> untyped
       def with_builtin_registry: (Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay registry) { (Environment) -> untyped } -> untyped
+      def data_overrides?: () -> bool
+      def data_path_overridden?: (Array[untyped]? keys) -> bool
       def self.from_state: (Environment::State state) -> Environment
       def reset!: (Environment::State state) -> Environment
       def reset: (Environment::State state) -> Environment
@@ -949,7 +953,7 @@ module Ruby
         def root_reference_target?: () -> bool
         def builtin_target_name: () -> String
         def reference_scope: () -> WithModifierRootScope
-        def reference_override: (WithModifierRootScope scope) -> untyped
+        def reference_override: (WithModifierRootScope scope, Array[untyped] keys) -> untyped
         def reference_path_keys: () -> (Array[untyped] | UndefinedValue)
         def apply_variable: () { (Environment) -> untyped } -> untyped
         def apply_builtin_override: (String name) { (Environment) -> untyped } -> untyped
@@ -1026,7 +1030,7 @@ module Ruby
 
         def initialize: (environment: Environment, name: String, location: Location?) -> void
         def base_value: () -> untyped
-        def with_override: (untyped overridden) { (Environment) -> untyped } -> untyped
+        def with_override: (untyped overridden, ?data_path: Array[untyped]?) { (Environment) -> untyped } -> untyped
 
         private
 
@@ -1630,6 +1634,8 @@ module Ruby
       def resolve_reference_path: (Value current, Array[AST::RefArg] path) -> Value
       def resolve_reference_path_fast: (Value current, AST::Reference reference) -> Value
       def resolve_reference_path_keys: (Value current, Array[untyped] keys) -> Value
+      def rule_or_override_value: (String name) -> Value
+      def overridden_rule_value: (String name) -> Value?
       def resolve_path_segment: (Value current, AST::RefArg segment) -> Value
       def valid_reference_keys: (Array[AST::RefArg] path) -> Array[untyped]?
       def reference_keys: (Array[AST::RefArg] path) -> Array[untyped]

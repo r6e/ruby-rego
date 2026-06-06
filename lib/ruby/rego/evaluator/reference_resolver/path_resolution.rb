@@ -4,6 +4,7 @@ module Ruby
   module Rego
     class Evaluator
       # Reference path resolution: rule/data/cross-package resolution and path traversal.
+      # rubocop:disable Metrics/ClassLength
       class ReferenceResolver
         private
 
@@ -20,6 +21,13 @@ module Ruby
         end
 
         def resolve_data_reference_value(ref, resolved)
+          # A `with data.<pkg>.<rule> as v` override shadows the virtual document:
+          # the overridden data-tree value wins over the rule's computed value.
+          # The data_overrides? guard keeps the common no-`with` path allocation-free.
+          if environment.data_overrides? && environment.data_path_overridden?(valid_reference_keys(ref.path))
+            return resolved
+          end
+
           rule_value = resolve_rule_reference(ref)
           return rule_value if rule_value
 
@@ -109,6 +117,25 @@ module Ruby
           current
         end
 
+        # The value of rule `name` in this package, honouring a
+        # `with data.<pkg>.<name> as v` override that shadows the rule.
+        def rule_or_override_value(name)
+          overridden_rule_value(name) || rule_value_provider.value_for(name)
+        end
+
+        # When `with data.<pkg>.<name> as v` shadows this package's rule `name`,
+        # return the override value (read from the overridden data tree) so a
+        # bare `name` reference honours the override just like `data.<pkg>.name`.
+        def overridden_rule_value(name)
+          return nil unless environment.data_overrides?
+
+          keys = package_path + [name.to_s]
+          return nil unless environment.data_path_overridden?(keys)
+
+          value = resolve_reference_path_keys(environment.data, keys)
+          value.is_a?(UndefinedValue) ? nil : value
+        end
+
         def resolve_path_segment(current, segment)
           key = key_resolver.resolve(segment)
           return UndefinedValue.new if key.is_a?(UndefinedValue)
@@ -130,6 +157,7 @@ module Ruby
           keys.length > prefix_length && keys[0, prefix_length] == package_path
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end

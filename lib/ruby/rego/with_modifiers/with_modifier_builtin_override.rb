@@ -119,9 +119,16 @@ module Ruby
           )
         end
 
+        # The replacement function is evaluated with this override suspended (the
+        # pre-override registry), so a replacement that calls the function it
+        # replaces hits the original implementation instead of recursing into
+        # itself. Matches OPA's `with` replacement semantics.
         def function_handler(function_name)
+          base_registry = registry
           lambda do |*args|
-            expression_evaluator.evaluate_user_function(function_name, args)
+            environment.with_builtin_registry(base_registry) do
+              expression_evaluator.evaluate_user_function(function_name, args)
+            end
           end
         end
 
