@@ -34,18 +34,33 @@ module Ruby
         []
       end
 
-      # Return function argument names for a function rule head.
+      # Return the variable names bound by a function rule's argument patterns.
+      # Recurses into array/object destructuring patterns, collecting value-position
+      # variables (array elements, object values). In the supported patterns the
+      # keys are string literals (`f({"a": v})`), which are matched, not bound, so
+      # only value-position variables contribute names.
       #
       # @return [Array<String>]
       def function_arg_names
         return [] unless type == :function
 
-        function_arg_nodes.filter_map { |arg| arg.is_a?(AST::Variable) ? arg.name : nil }
+        function_arg_nodes.flat_map { |arg| pattern_variable_names(arg) }
       end
 
       private
 
       attr_reader :head
+
+      # :reek:TooManyStatements
+      # :reek:FeatureEnvy
+      def pattern_variable_names(node)
+        case node
+        when AST::Variable then [node.name]
+        when AST::ArrayLiteral then node.elements.flat_map { |element| pattern_variable_names(element) }
+        when AST::ObjectLiteral then node.pairs.flat_map { |(_key, value)| pattern_variable_names(value) }
+        else []
+        end
+      end
 
       def value_nodes
         value = head[:value]

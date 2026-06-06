@@ -1299,6 +1299,7 @@ module Ruby
       private
 
       attr_reader head: Hash[Symbol, untyped]
+      def pattern_variable_names: (untyped node) -> Array[String]
       def value_nodes: () -> Array[untyped]
       def function_nodes: () -> Array[untyped]
       def function_arg_nodes: () -> Array[untyped]
