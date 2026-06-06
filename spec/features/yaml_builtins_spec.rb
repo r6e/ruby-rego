@@ -22,9 +22,14 @@ RSpec.describe "yaml builtins" do
     evaluate_policy(YAML_POLICY, input: { "value" => value }, query: "data.t.marshalled").value.to_ruby
   end
 
+  # The raw rule result: nil when the rule is undefined, a Value otherwise (so a
+  # defined YAML `null` is distinguishable from an undefined result).
+  def unmarshal_result(text)
+    evaluate_policy(YAML_POLICY, input: { "text" => text }, query: "data.t.unmarshalled")
+  end
+
   def unmarshal(text)
-    result = evaluate_policy(YAML_POLICY, input: { "text" => text }, query: "data.t.unmarshalled")
-    result&.value&.to_ruby
+    unmarshal_result(text)&.value&.to_ruby
   end
 
   def valid?(text)
@@ -112,8 +117,14 @@ RSpec.describe "yaml builtins" do
     end
 
     it "is undefined for invalid YAML or a non-finite number" do
-      expect(unmarshal("key: : bad")).to be_nil
-      expect(unmarshal(".inf")).to be_nil
+      expect(unmarshal_result("key: : bad")).to be_nil
+      expect(unmarshal_result(".inf")).to be_nil
+    end
+
+    it "returns a defined null value (distinct from undefined) for null" do
+      result = unmarshal_result("null")
+      expect(result).not_to be_nil
+      expect(result.value).to be_a(Ruby::Rego::NullValue)
     end
 
     it "round-trips through marshal" do
@@ -136,19 +147,19 @@ RSpec.describe "yaml builtins" do
     end
 
     it "is undefined for an undefined alias or a non-mapping merge source" do
-      expect(unmarshal("a: *undef")).to be_nil
+      expect(unmarshal_result("a: *undef")).to be_nil
       expect(valid?("a: *undef")).to be(false)
-      expect(unmarshal("<<: 5")).to be_nil
+      expect(unmarshal_result("<<: 5")).to be_nil
     end
 
     it "yields undefined rather than crashing on pathologically deep nesting" do
       deep = ("[" * 5000) + ("]" * 5000)
-      expect(unmarshal(deep)).to be_nil
+      expect(unmarshal_result(deep)).to be_nil
       expect(valid?(deep)).to be(false)
     end
 
     it "yields undefined for a cyclic anchor instead of overflowing the stack" do
-      expect(unmarshal("a: &a {b: *a}")).to be_nil
+      expect(unmarshal_result("a: &a {b: *a}")).to be_nil
       expect(valid?("a: &a {b: *a}")).to be(false)
     end
 
@@ -165,7 +176,7 @@ RSpec.describe "yaml builtins" do
     end
 
     it "is undefined for a non-finite value" do
-      expect(unmarshal("x: .inf")).to be_nil
+      expect(unmarshal_result("x: .inf")).to be_nil
     end
   end
 
@@ -174,6 +185,11 @@ RSpec.describe "yaml builtins" do
       expect(valid?("a: 1")).to be(true)
       expect(valid?("42")).to be(true)
       expect(valid?("key: : bad")).to be(false)
+    end
+
+    it "is a total predicate: a non-string runtime value is false, not undefined" do
+      expect(valid?(123)).to be(false)
+      expect(valid?(["a"])).to be(false)
     end
   end
 end

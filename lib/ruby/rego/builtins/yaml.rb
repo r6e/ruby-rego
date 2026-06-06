@@ -45,7 +45,9 @@ module Ruby
         # @return [Ruby::Rego::StringValue]
         def self.marshal(value)
           StringValue.new(Emitter.emit(value.to_ruby))
-        rescue Emitter::MarshalError => e
+        rescue Emitter::MarshalError, SystemStackError => e
+          # SystemStackError guards value.to_ruby / node-build recursion on pathologically
+          # deep input, so marshal stays total (undefined) instead of crashing.
           message = e.message
           raise Ruby::Rego::BuiltinArgumentError.new(
             "Cannot marshal value to YAML: #{message}",
@@ -63,13 +65,17 @@ module Ruby
           decoded("yaml.unmarshal") { Value.from_ruby(ScalarResolver.load(string)) }
         end
 
+        # A total predicate: a non-string runtime value (or any parse/resolve failure)
+        # yields false rather than undefined, matching OPA's *_is_valid builtins.
+        #
         # @param value [Ruby::Rego::Value]
         # @return [Ruby::Rego::BooleanValue]
         def self.is_valid(value)
-          string = string_arg(value, "yaml.is_valid")
-          ScalarResolver.load(string)
+          return BooleanValue.new(false) unless value.is_a?(StringValue)
+
+          ScalarResolver.load(value.value)
           BooleanValue.new(true)
-        rescue Psych::Exception, ScalarResolver::ResolveError, ArgumentError
+        rescue Psych::Exception, ScalarResolver::ResolveError, ArgumentError, SystemStackError
           BooleanValue.new(false)
         end
 
@@ -88,7 +94,7 @@ module Ruby
         # @return [Ruby::Rego::Value]
         def self.decoded(context)
           yield
-        rescue Psych::Exception, ScalarResolver::ResolveError, ArgumentError => e
+        rescue Psych::Exception, ScalarResolver::ResolveError, ArgumentError, SystemStackError => e
           raise Ruby::Rego::BuiltinArgumentError.new(
             "Invalid #{context} input: #{e.message}",
             expected: "valid #{context} input",

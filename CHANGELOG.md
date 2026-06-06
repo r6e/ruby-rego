@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- YAML built-ins: `yaml.marshal`, `yaml.unmarshal`, and `yaml.is_valid`, matching OPA (which
+  vendors sigs.k8s.io/yaml over gopkg.in/yaml.v2 via a JSON round-trip). Built on Psych
+  (libyaml — the engine yaml.v2 ports), so layout, line-folding, escaping, and the
+  plain→single/double quote downgrade match for free; only the divergent pieces are
+  hand-supplied. `marshal` sorts object keys, formats floats with Go's `strconv` `'g'`
+  shortest rules (`1.0`→`1`, `1e6`→`1e+06`), emits `nil` as `null`, double-quotes strings
+  that would otherwise resolve to a non-string/timestamp/base-60, stringifies and sorts
+  non-string keys, and replaces invalid UTF-8 with U+FFFD. `unmarshal` resolves plain scalars
+  with a yaml.v2-compatible resolver (yes/no/on/off bools, hex/octal/binary/underscored ints;
+  timestamps stay strings; integer-valued floats collapse to ints), stringifies object keys,
+  resolves anchors/aliases and merge keys, and takes the first document; invalid YAML or a
+  non-finite number yields undefined. `is_valid` is total over runtime values (a non-string
+  yields `false`). DoS bounds (source length, nesting depth, expanded-node count → undefined,
+  since OPA relies on Go runtime limits absent here) guard deep nesting, cyclic anchors, and
+  alias-expansion bombs. Uses Psych (Ruby stdlib; no new gem) via the AST API, never
+  `Psych.load`, so there is no object-instantiation surface. One intentional divergence: a
+  finite non-integer float map key formats with Ruby float64-shortest, whereas OPA uses Go
+  float32 — a rare edge; values and all other keys are byte-exact.
+
+- Regex built-in: `regex.globs_match`, matching OPA — true when two restricted-regex globs
+  share a common non-empty match. A faithful port of OPA's github.com/yashtewari/glob-intersection
+  (tokenizer plus recursive intersection engine), bug-for-bug including its quirks (e.g.
+  `abc.*` vs `abc` is `false`). Invalid globs yield undefined; DoS bounds (source length, flag
+  count, class-range size, intersection work → undefined) guard the algorithm, which is
+  exponential in the smaller glob's flag count. Hand-rolled; no new dependency.
+
+- Numeric built-in: `numbers.range_step(low, high, step)`, matching OPA — an integer range
+  from low toward high by a positive integer step, including the endpoint only when it lands
+  exactly on a step (ascending or descending by the bound order). A non-positive or
+  non-integer step yields undefined; integer-valued floats are accepted. Shares
+  `numbers.range`'s allocation guard.
+
+- Regex built-ins: `regex.find_all_string_submatch_n` and `regex.template_match`, matching
+  OPA. `find_all_string_submatch_n(pattern, string, n)` returns each match as
+  `[full_match, group1, …]` (non-participating groups become `""`); `n<0` returns all, `n=0`
+  an empty array, `n>0` the first n. `template_match(template, string, delim_start, delim_end)`
+  matches anchored, with delimited regex sections embedded in literal text; delimiters must be
+  a single byte (Go `len()`), an unbalanced or stray delimiter yields undefined, and each
+  section is grouped so `{a|b}c` means `(a|b)c`. Reuses the existing regex DoS guards.
+
 - JSON path built-ins: `json.filter` and `json.remove`, matching OPA. Both take an object
   document and an array or set of paths; each path is a `/`-separated string (JSON-pointer
   escaped: `~1` is `/`, `~0` is `~`, with a leading run of slashes stripped before splitting
