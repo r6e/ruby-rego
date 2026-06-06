@@ -20,6 +20,10 @@ module Ruby
         end
 
         def resolve_data_reference_value(ref, resolved)
+          # A `with data.<pkg>.<rule> as v` override shadows the virtual document:
+          # the overridden data-tree value wins over the rule's computed value.
+          return resolved if environment.data_path_overridden?(valid_reference_keys(ref.path))
+
           rule_value = resolve_rule_reference(ref)
           return rule_value if rule_value
 

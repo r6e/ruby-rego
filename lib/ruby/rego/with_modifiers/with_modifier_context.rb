@@ -44,14 +44,16 @@ module Ruby
           modifier.value
         end
 
+        # :reek:TooManyStatements
         def apply_reference(&)
           return apply_builtin_override(builtin_target_name, &) unless root_reference_target?
 
           scope = reference_scope
-          overridden = reference_override(scope)
-          return overridden if overridden.is_a?(UndefinedValue)
+          keys = reference_path_keys
+          return UndefinedValue.new if keys.is_a?(UndefinedValue)
 
-          scope.with_override(overridden, &)
+          overridden = reference_override(scope, keys)
+          scope.with_override(overridden, data_path: keys, &)
         end
 
         # :reek:FeatureEnvy
@@ -87,10 +89,7 @@ module Ruby
           )
         end
 
-        def reference_override(scope)
-          keys = reference_path_keys
-          return UndefinedValue.new if keys.is_a?(UndefinedValue)
-
+        def reference_override(scope, keys)
           replacement = resolved_value
           WithModifierPathOverride.new(
             base_value: scope.base_value,

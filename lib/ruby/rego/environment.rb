@@ -54,12 +54,26 @@ module Ruby
       # @param data [Object] data document
       # @param rules [Hash] rule index
       # @param builtin_registry [Builtins::BuiltinRegistry, Builtins::BuiltinRegistryOverlay] registry
+      # :reek:TooManyStatements
       def initialize(input: {}, data: {}, rules: {}, builtin_registry: Builtins::BuiltinRegistry.instance)
         @memoization = Memoization::Store.new
         @builtin_registry = builtin_registry
         @locals = [fresh_scope] # @type var locals: Array[Hash[String, Value]]
         @scope_pool = [] # @type var @scope_pool: Array[Hash[String, Value]]
+        @overridden_data_paths = []
         apply_state(State.new(input: input, data: data, rules: rules, builtin_registry: builtin_registry))
+      end
+
+      # Whether `keys` (a data reference's key path) was shadowed by a `with`
+      # data override, so the data-tree value must take precedence over any rule
+      # at that path. True when a tracked override path equals or prefixes `keys`.
+      #
+      # @param keys [Array<String>, nil]
+      # @return [bool]
+      def data_path_overridden?(keys)
+        return false unless keys
+
+        @overridden_data_paths.any? { |path| keys[0, path.length] == path }
       end
 
       # Build an environment from a state struct.

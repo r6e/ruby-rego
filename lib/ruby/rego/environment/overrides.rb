@@ -10,16 +10,19 @@ module Ruby
 
       # @param input [Object]
       # @param data [Object]
+      # @param data_paths [Array<Array<String>>] data key-paths shadowed by this
+      #   override, so a rule at the path resolves to the override, not its value.
       # @yieldparam environment [Environment]
       # @return [Object]
-      def with_overrides(input: UNSET, data: UNSET)
-        original = [@input, @data]
+      def with_overrides(input: UNSET, data: UNSET, data_paths: [])
+        original = [@input, @data, @overridden_data_paths]
         memoization.with_context do
           apply_overrides(input, data)
+          @overridden_data_paths += data_paths
           yield self
         end
       ensure
-        @input, @data = original
+        @input, @data, @overridden_data_paths = original
       end
 
       private

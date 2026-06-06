@@ -813,7 +813,7 @@ module Ruby
     module EnvironmentOverrides
       UNSET: untyped
 
-      def with_overrides: (?input: untyped, ?data: untyped) { (untyped) -> untyped } -> untyped
+      def with_overrides: (?input: untyped, ?data: untyped, ?data_paths: Array[Array[String]]) { (untyped) -> untyped } -> untyped
       def memoization: () -> Memoization::Store
 
       private
@@ -867,6 +867,8 @@ module Ruby
       RESERVED_BINDINGS: Hash[String, Symbol]
       RESERVED_NAMES: Array[String]
 
+      @overridden_data_paths: Array[Array[String]]
+
       attr_reader input: Value
       attr_reader data: Value
       attr_reader rules: Hash[untyped, untyped]
@@ -882,8 +884,9 @@ module Ruby
       def resolve_reference: (untyped ref) -> Value
       def reference_key_for: (AST::Variable variable) -> untyped
       def with_bindings: (Hash[String | Symbol, untyped] bindings) { () -> untyped } -> untyped
-      def with_overrides: (?input: untyped, ?data: untyped) { (Environment) -> untyped } -> untyped
+      def with_overrides: (?input: untyped, ?data: untyped, ?data_paths: Array[Array[String]]) { (Environment) -> untyped } -> untyped
       def with_builtin_registry: (Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay registry) { (Environment) -> untyped } -> untyped
+      def data_path_overridden?: (Array[String]? keys) -> bool
       def self.from_state: (Environment::State state) -> Environment
       def reset!: (Environment::State state) -> Environment
       def reset: (Environment::State state) -> Environment
@@ -949,7 +952,7 @@ module Ruby
         def root_reference_target?: () -> bool
         def builtin_target_name: () -> String
         def reference_scope: () -> WithModifierRootScope
-        def reference_override: (WithModifierRootScope scope) -> untyped
+        def reference_override: (WithModifierRootScope scope, Array[untyped] keys) -> untyped
         def reference_path_keys: () -> (Array[untyped] | UndefinedValue)
         def apply_variable: () { (Environment) -> untyped } -> untyped
         def apply_builtin_override: (String name) { (Environment) -> untyped } -> untyped
@@ -1026,7 +1029,7 @@ module Ruby
 
         def initialize: (environment: Environment, name: String, location: Location?) -> void
         def base_value: () -> untyped
-        def with_override: (untyped overridden) { (Environment) -> untyped } -> untyped
+        def with_override: (untyped overridden, ?data_path: Array[untyped]?) { (Environment) -> untyped } -> untyped
 
         private
 

@@ -25,13 +25,16 @@ module Ruby
         end
 
         # @param overridden [Object]
+        # @param data_path [Array<String>, nil] the data key-path this override
+        #   names, tracked so a rule at that path is shadowed by the override.
         # @yieldparam environment [Environment]
         # @return [Object]
-        def with_override(overridden, &)
+        def with_override(overridden, data_path: nil, &)
           if input_scope?
             environment.with_overrides(input: overridden, &)
           else
-            environment.with_overrides(data: overridden, &)
+            paths = [data_path].compact
+            environment.with_overrides(data: overridden, data_paths: paths, &)
           end
         end
 
