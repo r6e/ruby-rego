@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
+# rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/ModuleLength
 
 require "psych"
 
@@ -97,17 +97,33 @@ module Ruby
           end
           private_class_method :sequence
 
-          # OPA marshals via JSON, which sorts object keys.
+          # OPA marshals via JSON: object keys are stringified, then sorted. A non-string
+          # Rego key (number/bool/null) is a valid object key, so build each value from
+          # its own entry rather than re-fetching by the stringified key.
           # @return [Psych::Nodes::Mapping]
           def self.mapping(hash)
             node = Psych::Nodes::Mapping.new(nil, nil, true, BLOCK_MAP)
-            hash.keys.map(&:to_s).sort.each do |key|
+            hash.map { |key, value| [key_string(key), value] }.sort_by(&:first).each do |key, value|
               node.children << scalar(key, string_style(key))
-              node.children << build_node(hash.fetch(key) { hash.fetch(key.to_sym) })
+              node.children << build_node(value)
             end
             node
           end
           private_class_method :mapping
+
+          # The string form of an object key (mirrors how OPA stringifies map keys).
+          # @return [String]
+          def self.key_string(key)
+            case key
+            when String then key
+            when Float then float_string(key)
+            when true then "true"
+            when false then "false"
+            when nil then "null"
+            else key.to_s
+            end
+          end
+          private_class_method :key_string
 
           # Go strconv.FormatFloat(f, 'g', -1, 64): shortest digits, scientific when the
           # decimal exponent is < -4 or >= the precision (6 for shortest 'g').
@@ -158,4 +174,4 @@ module Ruby
     end
   end
 end
-# rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
+# rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/ModuleLength

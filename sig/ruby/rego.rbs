@@ -738,6 +738,7 @@ module Ruby
           def self.string_style: (String string) -> Integer
           def self.sequence: (Array[untyped] array) -> untyped
           def self.mapping: (Hash[untyped, untyped] hash) -> untyped
+          def self.key_string: (untyped key) -> String
           def self.float_string: (Float float) -> String
           def self.shortest_digits: (Float float) -> [String, Integer]
           def self.fixed: (String digits, Integer point) -> String

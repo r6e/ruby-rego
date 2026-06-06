@@ -68,6 +68,12 @@ RSpec.describe "yaml builtins" do
     it "emits empty collections in flow style" do
       expect(marshal({ "empty_map" => {}, "empty_arr" => [] })).to eq("empty_arr: []\nempty_map: {}\n")
     end
+
+    it "stringifies, sorts and quotes non-string object keys" do
+      expect(marshal({ 1 => "x" })).to eq("\"1\": x\n")
+      expect(marshal({ true => "y", 1.5 => "z" })).to eq("\"1.5\": z\n\"true\": \"y\"\n")
+      expect(marshal({ nil => "n" })).to eq("\"null\": \"n\"\n")
+    end
   end
 
   describe "yaml.unmarshal" do
@@ -145,7 +151,13 @@ RSpec.describe "yaml builtins" do
     it "normalizes a non-finite float key to its canonical form" do
       expect(unmarshal(".Inf: x")).to eq({ ".inf" => "x" })
       expect(unmarshal("+.inf: x")).to eq({ ".inf" => "x" })
+      expect(unmarshal("-.inf: x")).to eq({ "-.inf" => "x" })
       expect(unmarshal(".NaN: x")).to eq({ ".nan" => "x" })
+    end
+
+    it "stringifies finite numeric keys" do
+      expect(unmarshal("1.5: v")).to eq({ "1.5" => "v" })
+      expect(unmarshal("1.0: v")).to eq({ "1" => "v" }) # integer-valued float key collapses
     end
 
     it "is undefined for a non-finite value" do
