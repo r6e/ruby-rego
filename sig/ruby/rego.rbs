@@ -509,11 +509,19 @@ module Ruby
         def self.is_valid: (Value pattern_value) -> BooleanValue
         def self.split: (Value pattern_value, Value string_value) -> ArrayValue
         def self.find_n: (Value pattern_value, Value string_value, Value number_value) -> ArrayValue
+        def self.find_all_string_submatch_n: (Value pattern_value, Value string_value, Value number_value) -> ArrayValue
+        def self.template_match: (Value template_value, Value string_value, Value delim_start_value, Value delim_end_value) -> BooleanValue
         def self.replace: (Value string_value, Value pattern_value, Value replacement_value) -> StringValue
 
         private
 
         def self.matches_for: (Value pattern_value, Value string_value, String context) -> Array[String]
+        def self.submatches_for: (Value pattern_value, Value string_value, String context) -> Array[Array[String]]
+        def self.all_submatches: (Regexp regexp, String string) -> Array[Array[String]]
+        def self.submatch_row: (MatchData found) -> Array[String]
+        def self.single_delimiter: (Value value, String context) -> String
+        def self.template_source: (String template, String delim_start, String delim_end, String context) -> String
+        def self.template_error: (String message, String actual, String context) -> Ruby::Rego::BuiltinArgumentError
         def self.expand_all: (String string, Regexp regexp, GoTemplate template) -> String
         def self.raise_replace_work_exceeded: () -> bot
         def self.skip_zero_width?: (MatchData? match, Integer previous_end) -> bool

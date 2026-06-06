@@ -8,6 +8,7 @@ require_relative "regex/compilation"
 require_relative "regex/matching"
 require_relative "regex/go_template"
 require_relative "regex/replace"
+require_relative "regex/template"
 
 # rubocop:disable Naming/PredicatePrefix
 module Ruby
@@ -37,6 +38,8 @@ module Ruby
           "regex.is_valid" => { arity: 1, handler: :is_valid },
           "regex.split" => { arity: 2, handler: :split },
           "regex.find_n" => { arity: 3, handler: :find_n },
+          "regex.find_all_string_submatch_n" => { arity: 3, handler: :find_all_string_submatch_n },
+          "regex.template_match" => { arity: 4, handler: :template_match },
           "regex.replace" => { arity: 3, handler: :replace }
         }.freeze
 
@@ -145,6 +148,19 @@ module Ruby
           matches = matches_for(pattern_value, string_value, "regex.find_n")
           limit = NumericHelpers.integer_value(number_value, context: "regex.find_n")
           string_array(limit.negative? ? matches : matches.first(limit))
+        end
+
+        # @param pattern_value [Ruby::Rego::Value]
+        # @param string_value [Ruby::Rego::Value]
+        # @param number_value [Ruby::Rego::Value]
+        # @return [Ruby::Rego::ArrayValue]
+        # :reek:TooManyStatements
+        def self.find_all_string_submatch_n(pattern_value, string_value, number_value)
+          context = "regex.find_all_string_submatch_n"
+          rows = submatches_for(pattern_value, string_value, context)
+          limit = NumericHelpers.integer_value(number_value, context: context)
+          selected = limit.negative? ? rows : rows.first(limit)
+          ArrayValue.new(selected.map { |row| string_array(row) })
         end
 
         # @param value [Ruby::Rego::Value]
