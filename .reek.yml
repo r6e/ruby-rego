@@ -35,6 +35,10 @@ detectors:
       - Ruby::Rego::Builtins::Regex#self.replace
       # Char-scanning port of Go's regexp.Expand replacement-template parser.
       - Ruby::Rego::Builtins::Regex::GoTemplate
+      # Faithful port of the gintersect glob-intersection library (tokenizer +
+      # recursive intersection engine); inherently statement-heavy.
+      - Ruby::Rego::Builtins::Regex::GlobIntersection
+      - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
       # Recursive JSON normalization and OPA set-ordering: type-dispatch case folds.
       - Ruby::Rego::Builtins::Codecs#self.jsonify
       - Ruby::Rego::Builtins::Codecs#self.json_sort_key
@@ -68,6 +72,9 @@ detectors:
       - Ruby::Rego::Builtins::Glob::GlobCompiler
       # Char-scanning port of Go's regexp.Expand replacement-template parser.
       - Ruby::Rego::Builtins::Regex::GoTemplate
+      # gintersect port: repeated rune/token index access while scanning.
+      - Ruby::Rego::Builtins::Regex::GlobIntersection
+      - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
   UtilityFunction:
     exclude:
       - Ruby::Rego::Lexer
@@ -91,6 +98,8 @@ detectors:
       - Ruby::Rego::CompiledPolicySet
       # The Go Expand template parser scans into local literal/segment accumulators.
       - Ruby::Rego::Builtins::Regex::GoTemplate
+      # gintersect intersection engine walks the glob/other token arrays.
+      - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
   ControlParameter:
     exclude:
       - Ruby::Rego::Lexer
@@ -99,12 +108,25 @@ detectors:
       - Ruby::Rego::WithModifiers::WithModifierBuiltinOverride
       # resolve dispatches on the segment kind produced by the template parser.
       - Ruby::Rego::Builtins::Regex::GoTemplate
+      # atom_token dispatches on whether the rune was backslash-escaped.
+      - Ruby::Rego::Builtins::Regex::GlobIntersection
   NilCheck:
     exclude:
       - Ruby::Rego::Lexer
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Unifier
       - Ruby::Rego::Builtins::Regex::GoTemplate
+      # Nil sentinels for trim mismatch and the star's optional next-token.
+      - Ruby::Rego::Builtins::Regex::GlobIntersection
+      - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
+  LongParameterList:
+    exclude:
+      # gintersect tokenizer threads (chars, index, +context) through its scan helpers.
+      - Ruby::Rego::Builtins::Regex::GlobIntersection
+  Attribute:
+    exclude:
+      # Token#flag is set by the tokenizer and rewritten by Simplify (mirrors Go SetFlag).
+      - Ruby::Rego::Builtins::Regex::GlobIntersection::Token
   RepeatedConditional:
     exclude:
       - Ruby::Rego::Lexer
