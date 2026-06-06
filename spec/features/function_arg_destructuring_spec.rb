@@ -59,11 +59,12 @@ FN_DESTRUCTURE_EXTRA_KEY_POLICY = <<~REGO
   result := f(input.o)
 REGO
 
-# Variable object-pattern KEYS (`f({k: v})`) are not supported: the gem rejects
-# them at compile time. OPA binds both `k` and `v` as arguments (it reports
-# `unused argument k` under `opa check --strict`) but evaluates the call to
-# `undefined`; the gem's permissive-superset divergence on variable object keys
-# is a separate, deliberate product decision. This test locks the current scope.
+# Variable object-pattern KEYS (`f({k: v})`) are rejected at compile time, the
+# same as variable object keys in any pattern position (see
+# variable_object_key_spec.rb). OPA treats `f({k: v})` slightly differently here
+# (it binds both as arguments, reporting `unused argument k` under
+# `opa check --strict`, then evaluates the call to `undefined`), but the gem's
+# uniform rejection of variable object keys is the closer match overall.
 FN_DESTRUCTURE_VAR_KEY_POLICY = <<~REGO
   package t
 
