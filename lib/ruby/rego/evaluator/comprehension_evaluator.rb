@@ -73,6 +73,12 @@ module Ruby
 
         attr_reader :expression_evaluator, :environment, :query_evaluator
 
+        # LocalShadowing hook: a comprehension body resolves rule/import names
+        # through the owning expression evaluator.
+        def imported_or_rule_variable?(name)
+          expression_evaluator.imported_or_rule_variable?(name)
+        end
+
         def object_pairs(node)
           values = {} # @type var values: Hash[Object, Value]
           context = ObjectPairContext.new(values, ObjectAccumulator.new)

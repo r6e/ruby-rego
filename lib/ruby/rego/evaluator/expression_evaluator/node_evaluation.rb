@@ -92,6 +92,7 @@ module Ruby
           !!(reference_resolver.resolve_import_variable(name) ||
             reference_resolver.resolve_rule_variable(name))
         end
+        public :imported_or_rule_variable?
 
         def evaluate_template_string(node)
           rendered = node.parts.map do |part|
