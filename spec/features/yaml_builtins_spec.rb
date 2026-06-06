@@ -136,6 +136,21 @@ RSpec.describe "yaml builtins" do
       expect(unmarshal(deep)).to be_nil
       expect(valid?(deep)).to be(false)
     end
+
+    it "yields undefined for a cyclic anchor instead of overflowing the stack" do
+      expect(unmarshal("a: &a {b: *a}")).to be_nil
+      expect(valid?("a: &a {b: *a}")).to be(false)
+    end
+
+    it "normalizes a non-finite float key to its canonical form" do
+      expect(unmarshal(".Inf: x")).to eq({ ".inf" => "x" })
+      expect(unmarshal("+.inf: x")).to eq({ ".inf" => "x" })
+      expect(unmarshal(".NaN: x")).to eq({ ".nan" => "x" })
+    end
+
+    it "is undefined for a non-finite value" do
+      expect(unmarshal("x: .inf")).to be_nil
+    end
   end
 
   describe "yaml.is_valid" do

@@ -714,8 +714,9 @@ module Ruby
           def self.build_mapping: (untyped node, Hash[String, untyped] anchors, Integer depth) -> Hash[String, untyped]
           def self.merge_key?: (untyped key, untyped key_node) -> bool
           def self.merge_into: (Hash[String, untyped] result, untyped source) -> void
-          def self.json_key: (untyped key, untyped node) -> String
-          def self.reject_non_finite: (untyped value, Array[Integer] budget) -> void
+          def self.json_key: (untyped key) -> String
+          def self.canonical_float: (Float float) -> String
+          def self.reject_non_finite: (untyped value, Array[Integer] budget, Integer depth) -> void
         end
 
         module Emitter

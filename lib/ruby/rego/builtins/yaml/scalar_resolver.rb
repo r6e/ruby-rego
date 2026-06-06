@@ -128,7 +128,7 @@ module Ruby
             return nil unless document
 
             value = build(document.root, {}, 0)
-            reject_non_finite(value, [MAX_NODES])
+            reject_non_finite(value, [MAX_NODES], 0)
             value
           end
 
@@ -166,7 +166,7 @@ module Ruby
               built = build(value_node, anchors, depth + 1)
               next merge_into(result, built) if merge_key?(key, key_node)
 
-              result[json_key(key, key_node)] = built
+              result[json_key(key)] = built
             end
             result
           end
@@ -192,11 +192,13 @@ module Ruby
           private_class_method :merge_into
 
           # JSON object keys are strings: resolve the key and stringify it (so 0x1F => "31",
-          # 1.0 => "1", true => "true"), except a non-finite float key keeps its source text
-          # (OPA's round-trip cannot encode Inf/NaN and leaves the literal).
+          # 1.0 => "1", true => "true"). A non-finite float key normalizes to OPA's
+          # canonical form. NOTE: a finite non-integer float key (e.g. 1.123456789) is
+          # formatted with Ruby float64 shortest, whereas OPA uses Go float32 ('g', -1, 32),
+          # so very-high-precision float map keys can differ — a rare, documented edge.
           # @return [String]
-          def self.json_key(key, node)
-            return node.value if key.is_a?(Float) && !key.finite? && node.is_a?(Psych::Nodes::Scalar)
+          def self.json_key(key)
+            return canonical_float(key) if key.is_a?(Float) && !key.finite?
 
             case key
             when String then key
@@ -209,16 +211,26 @@ module Ruby
           end
           private_class_method :json_key
 
-          # JSON cannot represent Inf/NaN (=> undefined); the node budget caps total
-          # expansion so alias bombs cannot blow up this walk or the later from_ruby.
-          def self.reject_non_finite(value, budget)
+          # @return [String]
+          def self.canonical_float(float)
+            return ".nan" if float.nan?
+
+            float.positive? ? ".inf" : "-.inf"
+          end
+          private_class_method :canonical_float
+
+          # JSON cannot represent Inf/NaN (=> undefined). The budget caps total expansion
+          # (alias bombs), and the depth cap stops cyclic anchors (e.g. `a: &a {b: *a}`)
+          # before they overflow the stack — both surface as undefined.
+          def self.reject_non_finite(value, budget, depth)
             budget[0] -= 1
             raise ResolveError, "yaml too large" if budget[0].negative?
+            raise ResolveError, "yaml nested too deep" if depth > MAX_DEPTH
 
             case value
             when Float then raise ResolveError, "non-finite number" unless value.finite?
-            when Array then value.each { |item| reject_non_finite(item, budget) }
-            when Hash then value.each_value { |item| reject_non_finite(item, budget) }
+            when Array then value.each { |item| reject_non_finite(item, budget, depth + 1) }
+            when Hash then value.each_value { |item| reject_non_finite(item, budget, depth + 1) }
             end
           end
           private_class_method :reject_non_finite

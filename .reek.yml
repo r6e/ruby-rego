@@ -78,13 +78,13 @@ detectors:
       # Character-scanning glob->regex compiler; repeated index arithmetic is inherent.
       - Ruby::Rego::Builtins::Glob::GlobCompiler
       # Char-scanning port of Go's regexp.Expand replacement-template parser.
-      # yaml.v2 emitter/resolver: repeated scalar/index access while building nodes.
-      - Ruby::Rego::Builtins::Yaml::Emitter
-      - Ruby::Rego::Builtins::Yaml::ScalarResolver
       - Ruby::Rego::Builtins::Regex::GoTemplate
       # gintersect port: repeated rune/token index access while scanning.
       - Ruby::Rego::Builtins::Regex::GlobIntersection
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
+      # yaml.v2 emitter/resolver: repeated scalar/index access while building nodes.
+      - Ruby::Rego::Builtins::Yaml::Emitter
+      - Ruby::Rego::Builtins::Yaml::ScalarResolver
   UtilityFunction:
     exclude:
       - Ruby::Rego::Lexer
@@ -109,10 +109,6 @@ detectors:
       # The Go Expand template parser scans into local literal/segment accumulators.
       - Ruby::Rego::Builtins::Regex::GoTemplate
       # gintersect intersection engine walks the glob/other token arrays.
-      # Emitter.scalar dispatches on the requested scalar style.
-      - Ruby::Rego::Builtins::Yaml::Emitter
-      # merge_key? dispatches on whether the resolved key is the merge token.
-      - Ruby::Rego::Builtins::Yaml::ScalarResolver
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
   ControlParameter:
     exclude:
