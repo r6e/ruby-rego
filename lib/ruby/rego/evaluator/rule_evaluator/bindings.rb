@@ -48,19 +48,6 @@ module Ruby
         end
 
         # :reek:UtilityFunction
-        # :reek:TooManyStatements
-        def merge_bindings(existing, additions)
-          merged = existing.dup
-          additions.each do |name, value|
-            current = merged[name]
-            return nil if current && current != value
-
-            merged[name] = value
-          end
-          merged
-        end
-
-        # :reek:UtilityFunction
         def empty_bindings_enum
           Enumerator.new { |yielder| yielder }
         end
