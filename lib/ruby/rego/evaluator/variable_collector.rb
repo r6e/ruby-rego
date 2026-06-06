@@ -51,9 +51,26 @@ module Ruby
           extractor.call(node)
         end
 
-        # Variable names bound by a list of `some` targets.
+        # Variable names bound by a list of `some` targets (value positions only).
         def self.some_decl_names(variables)
           variables.flat_map { |variable| some_pattern_names(variable) }
+        end
+
+        # All variable names appearing in `some` targets, including object keys.
+        # Keys are referenced but never bound, so they surface as unsafe when not
+        # bound elsewhere (OPA rejects a variable object key in a pattern).
+        def self.some_decl_all_names(variables)
+          variables.flat_map { |variable| some_pattern_all_names(variable) }
+        end
+
+        def self.some_pattern_all_names(node)
+          case node
+          when AST::Variable then [node.name]
+          when AST::ArrayLiteral then node.elements.flat_map { |element| some_pattern_all_names(element) }
+          when AST::ObjectLiteral
+            node.pairs.flat_map { |(key, value)| some_pattern_all_names(key) + some_pattern_all_names(value) }
+          else []
+          end
         end
 
         # Variable names bound by a single `some` target, recursing into array/object
@@ -144,10 +161,17 @@ module Ruby
           return unless node
           return target << node.name if node.is_a?(AST::Variable)
           return if VariableCollectorHelpers.comprehension_node?(node)
+          # An object pattern binds value positions only. A variable key is not
+          # bound by the pattern (OPA rejects it as unsafe unless bound elsewhere).
+          return collect_object_value_variables(node, target) if node.is_a?(AST::ObjectLiteral)
 
           VariableCollectorHelpers.children_for(node).each do |child|
             collect_all_variables(child, target)
           end
+        end
+
+        def collect_object_value_variables(node, target)
+          node.pairs.each { |(_key, value)| collect_all_variables(value, target) }
         end
       end
 
@@ -197,7 +221,7 @@ module Ruby
         end
 
         def collect_some_decl(node)
-          VariableCollectorHelpers.some_decl_names(node.variables).each { |name| add_name(name) }
+          VariableCollectorHelpers.some_decl_all_names(node.variables).each { |name| add_name(name) }
           collection = node.collection
           collect_node(collection) if collection
         end

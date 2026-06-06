@@ -7,10 +7,6 @@ module Ruby
     class Unifier
       private
 
-      def available_object_keys(object_values, used_keys)
-        object_values.keys.reject { |key| used_keys.include?(key) }
-      end
-
       # :reek:LongParameterList
       # rubocop:disable Metrics/MethodLength
       def reduce_object_pairs(pattern_pairs, object_values, env, bindings)
@@ -33,29 +29,23 @@ module Ruby
 
       # :reek:LongParameterList
       def unify_object_pair(key_pattern, value_pattern, object_values, env, state)
-        available_keys = available_object_keys(object_values, state.used_keys)
-        candidate_keys = Helpers.candidate_keys_for(key_pattern, available_keys, env, state.bindings)
+        candidate_keys = Helpers.candidate_keys_for(key_pattern, env, state.bindings)
         return [] if candidate_keys.empty?
 
         candidate_keys.flat_map do |candidate_key|
-          unify_object_candidate(candidate_key, key_pattern, value_pattern, object_values, env, state)
+          unify_object_candidate(candidate_key, value_pattern, object_values, env, state)
         end
       end
 
       # :reek:LongParameterList
-      # rubocop:disable Metrics/ParameterLists
-      def unify_object_candidate(candidate_key, key_pattern, value_pattern, object_values, env, state)
+      def unify_object_candidate(candidate_key, value_pattern, object_values, env, state)
         return [] unless object_values.key?(candidate_key)
         return [] if state.used_keys.include?(candidate_key)
 
-        updated_bindings = Helpers.bind_key_variable(key_pattern, candidate_key, state.bindings, env)
-        return [] unless updated_bindings
-
-        unify_with_bindings(value_pattern, object_values[candidate_key], env, updated_bindings).map do |bindings|
+        unify_with_bindings(value_pattern, object_values[candidate_key], env, state.bindings).map do |bindings|
           ObjectBindingState.new(bindings: bindings, used_keys: state.used_keys | [candidate_key])
         end
       end
-      # rubocop:enable Metrics/ParameterLists
     end
   end
 end

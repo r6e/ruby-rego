@@ -1081,11 +1081,9 @@ module Ruby
       def structured_unification: (untyped pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]?
       def apply_unification: (untyped pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
       def reduce_array_bindings: (Array[untyped] pattern_elems, Array[Value] elements, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
-      def available_object_keys: (Hash[untyped, Value] object_values, Set[untyped] used_keys) -> Array[untyped]
       def reduce_object_pairs: (Array[[untyped, untyped]] pattern_pairs, Hash[untyped, Value] object_values, Environment env, Hash[String, Value] bindings) -> Array[ObjectBindingState]
       def unify_object_pair: (untyped key_pattern, untyped value_pattern, Hash[untyped, Value] object_values, Environment env, ObjectBindingState state) -> Array[ObjectBindingState]
-      def unify_object_candidate: (untyped candidate_key, untyped key_pattern, untyped value_pattern, Hash[untyped, Value] object_values, Environment env, ObjectBindingState state) -> Array[ObjectBindingState]
-      def bind_key_variable: (untyped key_pattern, untyped candidate_key, Hash[String, Value] bindings, Environment env) -> Hash[String, Value]?
+      def unify_object_candidate: (untyped candidate_key, untyped value_pattern, Hash[untyped, Value] object_values, Environment env, ObjectBindingState state) -> Array[ObjectBindingState]
       def unify_reference: (AST::Reference pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
       def resolve_reference_base: (untyped base, Environment env, Hash[String, Value] bindings) -> Value
       def traverse_reference: (Value current, Array[AST::RefArg] path, Environment env, Hash[String, Value] bindings, ?variable_resolver: untyped) -> Array[[Hash[String, Value], Value]]
@@ -1115,8 +1113,7 @@ module Ruby
       def self.merge_bindings: (Hash[String, Value] bindings, Hash[String, Value] additions) -> Hash[String, Value]?
       def self.unify_variable: (AST::Variable variable, Value value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
       def self.variable_candidate_keys: (AST::Variable key_pattern, Array[untyped] keys, Environment env, Hash[String, Value] bindings) -> Array[untyped]
-      def self.bind_key_variable: (untyped key_pattern, untyped candidate_key, Hash[String, Value] bindings, Environment env) -> Hash[String, Value]?
-      def self.candidate_keys_for: (untyped key_pattern, Array[untyped] keys, Environment env, Hash[String, Value] bindings) -> Array[untyped]
+      def self.candidate_keys_for: (untyped key_pattern, Environment env, Hash[String, Value] bindings) -> Array[untyped]
       def self.match_scalar: (untyped pattern, Value resolved_value, Environment env, Hash[String, Value] bindings) -> Array[Hash[String, Value]]
     end
 
@@ -1853,6 +1850,8 @@ module Ruby
       def self.children_for: (untyped node) -> Array[untyped]
       def self.some_decl_names: (Array[untyped] variables) -> Array[String]
       def self.some_pattern_names: (untyped node) -> Array[String]
+      def self.some_decl_all_names: (Array[untyped] variables) -> Array[String]
+      def self.some_pattern_all_names: (untyped node) -> Array[String]
       def self.comprehension_node?: (untyped node) -> bool
     end
 
@@ -1874,6 +1873,7 @@ module Ruby
       def collect_explicit_variables: (untyped node) -> void
       def collect_unification_variables: (untyped node) -> void
       def collect_all_variables: (untyped node, Array[String] target) -> void
+      def collect_object_value_variables: (AST::ObjectLiteral node, Array[String] target) -> void
     end
 
     class Evaluator::VariableCollector

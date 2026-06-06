@@ -104,16 +104,14 @@ module Ruby
           [bindings.merge(name => value)]
         end
 
+        # An object-pattern key must be ground: a literal, or a variable already
+        # bound elsewhere. An unbound variable key (or wildcard) yields no
+        # candidate — OPA rejects it as unsafe rather than enumerating keys.
         # :reek:LongParameterList
-        def self.candidate_keys_for(key_pattern, keys, env, bindings)
+        def self.candidate_keys_for(key_pattern, env, bindings)
           if key_pattern.is_a?(AST::Variable)
-            name = key_pattern.name
-            return keys if name == "_"
-
-            bound_value = bound_value_for(name, bindings, env)
-            return [normalize_key(bound_value.to_ruby)] if bound_value
-
-            return keys
+            bound_value = bound_value_for(key_pattern.name, bindings, env)
+            return bound_value ? [normalize_key(bound_value.to_ruby)] : []
           end
 
           key_value = value_for_pattern(key_pattern, env)
@@ -126,19 +124,6 @@ module Ruby
         def self.match_scalar(pattern, resolved_value, env, bindings)
           pattern_value = scalar_pattern_value(pattern, env)
           pattern_value == resolved_value ? [bindings] : []
-        end
-
-        # :reek:LongParameterList
-        def self.bind_key_variable(key_pattern, candidate_key, bindings, env)
-          return bindings unless key_pattern.is_a?(AST::Variable)
-
-          name = key_pattern.name
-          return bindings if name == "_"
-
-          bound_value = bound_value_for(name, bindings, env)
-          return bindings if bound_value
-
-          merge_bindings(bindings, name => Value.from_ruby(candidate_key))
         end
       end
     end

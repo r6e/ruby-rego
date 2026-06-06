@@ -108,7 +108,7 @@ RSpec.describe Ruby::Rego::Unifier do
     expect(results).to be_empty
   end
 
-  it "matches variable object keys for exact objects" do
+  it "does not bind an unbound variable object key (OPA rejects it as unsafe)" do
     pattern = Ruby::Rego::AST::ObjectLiteral.new(
       pairs: [
         [
@@ -120,8 +120,7 @@ RSpec.describe Ruby::Rego::Unifier do
 
     results = unify(pattern, { "a" => 1 })
 
-    expect(results.size).to eq(1)
-    expect(results.first["key"].to_ruby).to eq("a")
+    expect(results).to be_empty
   end
 
   it "supports wildcard patterns" do
