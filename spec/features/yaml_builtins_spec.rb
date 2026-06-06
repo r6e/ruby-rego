@@ -112,6 +112,32 @@ RSpec.describe "yaml builtins" do
     end
   end
 
+  describe "merge keys, edge cases and DoS bounds" do
+    it "applies a plain merge key but treats a quoted one as an ordinary key" do
+      expect(unmarshal("base: &b {a: 1}\nm:\n  <<: *b\n  c: 2")).to eq(
+        { "base" => { "a" => 1 }, "m" => { "a" => 1, "c" => 2 } }
+      )
+      expect(unmarshal("\"<<\": [1, 2]")).to eq({ "<<" => [1, 2] })
+    end
+
+    it "resolves and stringifies object keys" do
+      expect(unmarshal("0x1F: v")).to eq({ "31" => "v" })
+      expect(unmarshal(".inf: x")).to eq({ ".inf" => "x" }) # non-finite key keeps its text
+    end
+
+    it "is undefined for an undefined alias or a non-mapping merge source" do
+      expect(unmarshal("a: *undef")).to be_nil
+      expect(valid?("a: *undef")).to be(false)
+      expect(unmarshal("<<: 5")).to be_nil
+    end
+
+    it "yields undefined rather than crashing on pathologically deep nesting" do
+      deep = ("[" * 5000) + ("]" * 5000)
+      expect(unmarshal(deep)).to be_nil
+      expect(valid?(deep)).to be(false)
+    end
+  end
+
   describe "yaml.is_valid" do
     it "is true for valid YAML and false otherwise" do
       expect(valid?("a: 1")).to be(true)

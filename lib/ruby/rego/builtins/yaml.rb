@@ -69,7 +69,7 @@ module Ruby
           string = string_arg(value, "yaml.is_valid")
           ScalarResolver.load(string)
           BooleanValue.new(true)
-        rescue Psych::Exception, ScalarResolver::ResolveError
+        rescue Psych::Exception, ScalarResolver::ResolveError, ArgumentError
           BooleanValue.new(false)
         end
 

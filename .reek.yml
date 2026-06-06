@@ -23,6 +23,8 @@ detectors:
       - Ruby::Rego::Builtins::Regex
       # yaml.v2 emitter port: scalar-style constants plus the two quote-trigger regexes.
       - Ruby::Rego::Builtins::Yaml::Emitter
+      # Resolver carries the yaml.v2 resolve map/regex plus distinct anti-DoS bounds.
+      - Ruby::Rego::Builtins::Yaml::ScalarResolver
   TooManyInstanceVariables:
     exclude:
       - Ruby::Rego::Lexer
@@ -109,6 +111,8 @@ detectors:
       # gintersect intersection engine walks the glob/other token arrays.
       # Emitter.scalar dispatches on the requested scalar style.
       - Ruby::Rego::Builtins::Yaml::Emitter
+      # merge_key? dispatches on whether the resolved key is the merge token.
+      - Ruby::Rego::Builtins::Yaml::ScalarResolver
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
   ControlParameter:
     exclude:
@@ -122,6 +126,8 @@ detectors:
       - Ruby::Rego::Builtins::Regex::GlobIntersection
       # Emitter.scalar dispatches on the requested scalar style.
       - Ruby::Rego::Builtins::Yaml::Emitter
+      # merge_key? dispatches on whether the resolved key is the merge token.
+      - Ruby::Rego::Builtins::Yaml::ScalarResolver
   NilCheck:
     exclude:
       - Ruby::Rego::Lexer

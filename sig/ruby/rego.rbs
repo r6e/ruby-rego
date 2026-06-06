@@ -688,12 +688,15 @@ module Ruby
         private
 
         def self.string_arg: (Value value, String context) -> String
-        def self.decoded: (String context) { () -> Value } -> Value
+        def self.decoded: [T] (String context) { () -> T } -> T
 
         module ScalarResolver
           RESOLVE_MAP: Hash[String, untyped]
           NUMBER_LEADS: String
           FLOAT_RE: Regexp
+          MAX_YAML_SOURCE: Integer
+          MAX_DEPTH: Integer
+          MAX_NODES: Integer
 
           class ResolveError < StandardError
           end
@@ -706,12 +709,13 @@ module Ruby
           def self.split_sign: (String string) -> [Integer, String]
           def self.integer_base: (String digits) -> [Integer, String]
           def self.load: (String string) -> untyped
-          def self.build: (untyped node, Hash[String, untyped] anchors) -> untyped
+          def self.build: (untyped node, Hash[String, untyped] anchors, Integer depth) -> untyped
           def self.anchored: (untyped node, Hash[String, untyped] anchors) { () -> untyped } -> untyped
-          def self.build_mapping: (untyped node, Hash[String, untyped] anchors) -> Hash[String, untyped]
+          def self.build_mapping: (untyped node, Hash[String, untyped] anchors, Integer depth) -> Hash[String, untyped]
+          def self.merge_key?: (untyped key, untyped key_node) -> bool
           def self.merge_into: (Hash[String, untyped] result, untyped source) -> void
-          def self.json_key: (untyped key) -> String
-          def self.reject_non_finite: (untyped value) -> void
+          def self.json_key: (untyped key, untyped node) -> String
+          def self.reject_non_finite: (untyped value, Array[Integer] budget) -> void
         end
 
         module Emitter

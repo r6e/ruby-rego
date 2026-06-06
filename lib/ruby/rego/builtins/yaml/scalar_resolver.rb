@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/ModuleLength
+# rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/ModuleLength
 
 require "psych"
 
@@ -14,8 +14,18 @@ module Ruby
         # resolved (they stay strings, matching OPA's JSON round-trip), object keys are
         # stringified, and a non-finite number makes the whole result undefined.
         module ScalarResolver
-          # Raised when a parsed document cannot be represented as JSON (Inf/NaN).
+          # Raised when a document cannot be represented as JSON (Inf/NaN), is invalid
+          # (undefined alias, bad merge), or breaches a DoS bound. The caller maps it to
+          # undefined / false, matching OPA.
           class ResolveError < StandardError; end
+
+          # DoS bounds. OPA relies on Go runtime limits absent here, so an untrusted
+          # document exceeding these yields undefined rather than exhausting memory/stack:
+          # source byte length, nesting depth (guards a Ruby stack overflow), and total
+          # expanded nodes (guards against alias-expansion "billion laughs" bombs).
+          MAX_YAML_SOURCE = 1_000_000
+          MAX_DEPTH = 1_000
+          MAX_NODES = 5_000_000
 
           # Plain scalars with a fixed meaning (yaml.v2 resolveMap).
           RESOLVE_MAP = {
@@ -112,21 +122,27 @@ module Ruby
           # Parses YAML and returns the first document as JSON-compatible Ruby values.
           # @return [Object]
           def self.load(string)
+            raise ResolveError, "yaml too long" if string.bytesize > MAX_YAML_SOURCE
+
             document = Psych.parse_stream(string).children.first
             return nil unless document
 
-            value = build(document.root, {})
-            reject_non_finite(value)
+            value = build(document.root, {}, 0)
+            reject_non_finite(value, [MAX_NODES])
             value
           end
 
           # @return [Object]
-          def self.build(node, anchors)
+          # :reek:TooManyStatements
+          def self.build(node, anchors, depth)
+            raise ResolveError, "yaml nested too deep" if depth > MAX_DEPTH
+
             case node
             when Psych::Nodes::Scalar then anchored(node, anchors) { node.plain ? resolve(node.value) : node.value }
-            when Psych::Nodes::Sequence then anchored(node, anchors) { node.children.map { |child| build(child, anchors) } }
-            when Psych::Nodes::Mapping then build_mapping(node, anchors)
-            when Psych::Nodes::Alias then anchors.fetch(node.anchor)
+            when Psych::Nodes::Sequence
+              anchored(node, anchors) { node.children.map { |child| build(child, anchors, depth + 1) } }
+            when Psych::Nodes::Mapping then build_mapping(node, anchors, depth)
+            when Psych::Nodes::Alias then anchors.fetch(node.anchor) { raise ResolveError, "undefined alias #{node.anchor}" }
             else raise ResolveError, "unsupported node #{node.class}"
             end
           end
@@ -142,32 +158,46 @@ module Ruby
           private_class_method :anchored
 
           # :reek:TooManyStatements
-          def self.build_mapping(node, anchors)
+          def self.build_mapping(node, anchors, depth)
             result = {} # @type var result: Hash[String, untyped]
             anchored(node, anchors) { result }
             node.children.each_slice(2) do |key_node, value_node|
-              key = build(key_node, anchors)
-              built = build(value_node, anchors)
-              next merge_into(result, built) if key == "<<"
+              key = build(key_node, anchors, depth + 1)
+              built = build(value_node, anchors, depth + 1)
+              next merge_into(result, built) if merge_key?(key, key_node)
 
-              result[json_key(key)] = built
+              result[json_key(key, key_node)] = built
             end
             result
           end
           private_class_method :build_mapping
 
-          # YAML merge key (`<<`): fill in entries not already present.
+          # A `<<` merge key applies only when written as a plain scalar (a quoted
+          # "<<" is an ordinary string key, matching yaml.v2's isMerge).
+          def self.merge_key?(key, key_node)
+            key == "<<" && key_node.is_a?(Psych::Nodes::Scalar) && key_node.plain
+          end
+          private_class_method :merge_key?
+
+          # YAML merge key (`<<`): fill in entries not already present. A non-mapping
+          # merge source is invalid (yaml.v2 errors), so it yields undefined.
           def self.merge_into(result, source)
             sources = source.is_a?(Array) ? source : [source]
             sources.each do |entry|
-              entry.each { |key, value| result[key] = value unless result.key?(key) } if entry.is_a?(Hash)
+              raise ResolveError, "merge source is not a mapping" unless entry.is_a?(Hash)
+
+              entry.each { |key, value| result[key] = value unless result.key?(key) }
             end
           end
           private_class_method :merge_into
 
-          # JSON object keys are strings; coerce a resolved key the way OPA's round-trip does.
+          # JSON object keys are strings: resolve the key and stringify it (so 0x1F => "31",
+          # 1.0 => "1", true => "true"), except a non-finite float key keeps its source text
+          # (OPA's round-trip cannot encode Inf/NaN and leaves the literal).
           # @return [String]
-          def self.json_key(key)
+          def self.json_key(key, node)
+            return node.value if key.is_a?(Float) && !key.finite? && node.is_a?(Psych::Nodes::Scalar)
+
             case key
             when String then key
             when nil then "null"
@@ -179,12 +209,16 @@ module Ruby
           end
           private_class_method :json_key
 
-          # JSON cannot represent Inf/NaN; OPA returns undefined for such documents.
-          def self.reject_non_finite(value)
+          # JSON cannot represent Inf/NaN (=> undefined); the node budget caps total
+          # expansion so alias bombs cannot blow up this walk or the later from_ruby.
+          def self.reject_non_finite(value, budget)
+            budget[0] -= 1
+            raise ResolveError, "yaml too large" if budget[0].negative?
+
             case value
             when Float then raise ResolveError, "non-finite number" unless value.finite?
-            when Array then value.each { |item| reject_non_finite(item) }
-            when Hash then value.each_value { |item| reject_non_finite(item) }
+            when Array then value.each { |item| reject_non_finite(item, budget) }
+            when Hash then value.each_value { |item| reject_non_finite(item, budget) }
             end
           end
           private_class_method :reject_non_finite
@@ -193,4 +227,4 @@ module Ruby
     end
   end
 end
-# rubocop:enable Metrics/ModuleLength
+# rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/ModuleLength
