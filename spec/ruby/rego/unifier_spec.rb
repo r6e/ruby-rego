@@ -74,8 +74,8 @@ RSpec.describe Ruby::Rego::Unifier do
     # pair finds the key already consumed (the used-keys dedup path).
     pattern = Ruby::Rego::AST::ObjectLiteral.new(
       pairs: [
-        [Ruby::Rego::AST::Literal.new(value: "a"), Ruby::Rego::AST::Variable.new(name: "v1")],
-        [Ruby::Rego::AST::Literal.new(value: "a"), Ruby::Rego::AST::Variable.new(name: "v2")]
+        [Ruby::Rego::AST::StringLiteral.new(value: "a"), Ruby::Rego::AST::Variable.new(name: "v1")],
+        [Ruby::Rego::AST::StringLiteral.new(value: "a"), Ruby::Rego::AST::Variable.new(name: "v2")]
       ]
     )
 

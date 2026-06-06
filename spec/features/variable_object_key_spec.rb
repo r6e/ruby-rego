@@ -49,6 +49,33 @@ LITERAL_KEY_POLICY = <<~REGO
   }
 REGO
 
+# A key variable BOUND elsewhere is ground, so the pattern is valid and binds
+# the value (OPA accepts this; opa eval => 1).
+BOUND_KEY_POLICY = <<~REGO
+  package t
+
+  o := {"a": 1}
+
+  result := v if {
+    k := "a"
+    {k: v} = o
+  }
+REGO
+
+# A wildcard object key (`{_: v}`) is also unsafe in OPA (`var _ is unsafe`).
+# The gem does not raise (`_` is always safe to its safety checker) but the
+# unifier yields no candidate, so the pattern is undefined rather than binding —
+# a fidelity delta (undefined vs OPA's compile error), never a wrong binding.
+WILDCARD_KEY_POLICY = <<~REGO
+  package t
+
+  o := {"a": 1}
+
+  result := v if {
+    {_: v} = o
+  }
+REGO
+
 RSpec.describe "variable object keys" do
   it "rejects a variable object key in unification as unsafe" do
     expect { evaluate_policy(VAR_KEY_UNIFY_POLICY, query: "data.t.result") }
@@ -68,5 +95,15 @@ RSpec.describe "variable object keys" do
   it "still binds the value of a literal object key" do
     result = evaluate_policy(LITERAL_KEY_POLICY, query: "data.t.result")
     expect(result.value.to_ruby).to eq(5)
+  end
+
+  it "binds the value when the key variable is bound elsewhere" do
+    result = evaluate_policy(BOUND_KEY_POLICY, query: "data.t.result")
+    expect(result.value.to_ruby).to eq(1)
+  end
+
+  it "treats a wildcard object key as undefined (no candidate, no binding)" do
+    result = evaluate_policy(WILDCARD_KEY_POLICY, query: "data.t.result")
+    expect(result).to be_nil
   end
 end
