@@ -58,7 +58,7 @@ module Ruby
             when String then string_scalar(ruby)
             when Symbol then string_scalar(ruby.to_s)
             when Array then sequence(ruby)
-            when Set then sequence(ruby.to_a)
+            when Set then sequence(sorted_set(ruby))
             when Hash then mapping(ruby)
             else raise MarshalError, "unsupported type #{ruby.class}"
             end
@@ -116,19 +116,142 @@ module Ruby
           end
           private_class_method :sequence
 
-          # OPA marshals via JSON: object keys are stringified, then sorted. A non-string
-          # Rego key (number/bool/null) is a valid object key, so build each value from
-          # its own entry rather than re-fetching by the stringified key.
+          # Rego sets are unordered; OPA marshals them deterministically. Sort by OPA's
+          # canonical term order (verified via opa eval): null < bool < number < string <
+          # array < object < set — note a nested set ranks ABOVE an object, not as its
+          # array form.
+          # @return [Array<untyped>]
+          def self.sorted_set(set)
+            set.to_a.sort_by { |element| term_sort_key(element) }
+          end
+          private_class_method :sorted_set
+
+          # Object keys are compared by term order too (OPA: {2:_} < {10:_} numerically,
+          # {true:_} < {1:_} by rank), so recurse into keys rather than stringifying them.
+          # @return [Array<untyped>]
+          def self.term_sort_key(element)
+            case element
+            when false then [1, 0]
+            when true then [1, 1]
+            when Numeric then [2, element]
+            when String then [3, element]
+            when Array then [4, element.map { |item| term_sort_key(item) }]
+            when Hash then [5, sorted_pairs(element)]
+            when Set then [6, sorted_set(element).map { |item| term_sort_key(item) }]
+            else [0, 0] # null
+            end
+          end
+          private_class_method :term_sort_key
+
+          # @return [Array<untyped>]
+          def self.sorted_pairs(hash)
+            hash.keys.sort_by { |key| term_sort_key(key) }.map { |key| [term_sort_key(key), term_sort_key(hash[key])] }
+          end
+          private_class_method :sorted_pairs
+
+          # OPA stringifies object keys, then yaml.v2 sorts them with its `keyList` natural
+          # order (digit runs compared numerically, so "item2" < "item10" and "2" < "10"),
+          # not lexicographically. A non-string Rego key is valid, so build each value from
+          # its own entry.
           # @return [Psych::Nodes::Mapping]
           def self.mapping(hash)
             node = Psych::Nodes::Mapping.new(nil, nil, true, BLOCK_MAP)
-            hash.map { |key, value| [key_string(key), value] }.sort_by(&:first).each do |key, value|
-              node.children << scalar(key, string_style(key))
-              node.children << build_node(value)
-            end
+            hash.map { |key, value| [key_string(key), value] }
+                .sort { |left, right| natural_compare(left.first, right.first) }
+                .each do |string_key, value|
+                  node.children << scalar(string_key, string_style(string_key))
+                  node.children << build_node(value)
+                end
             node
           end
           private_class_method :mapping
+
+          # Port of gopkg.in/yaml.v2's keyList.Less (v2.4.0) string path — OPA's keys are
+          # strings post-JSON, so only that branch applies. Digit runs compare numerically,
+          # letters lexicographically, and a digit sorts before a letter.
+          # @return [Integer] -1, 0, or 1
+          def self.natural_compare(left, right)
+            lhs = left.chars
+            rhs = right.chars
+            index = 0
+            while index < lhs.length && index < rhs.length
+              return compare_at(lhs, rhs, index) unless lhs[index] == rhs[index]
+
+              index += 1
+            end
+            lhs.length <=> rhs.length
+          end
+          private_class_method :natural_compare
+
+          # Compares the two key strings at their first differing rune (index).
+          # @return [Integer]
+          def self.compare_at(lhs, rhs, index)
+            left_alpha = letter?(lhs[index])
+            right_alpha = letter?(rhs[index])
+            return lhs[index] <=> rhs[index] if left_alpha && right_alpha
+            return left_alpha ? 1 : -1 if left_alpha || right_alpha
+
+            compare_digit_runs(lhs, rhs, index)
+          end
+          private_class_method :compare_at
+
+          # Both differing runes are digits: compare the whole runs numerically, then by
+          # length (leading zeros), then by rune — mirroring keyList.Less.
+          # @return [Integer]
+          def self.compare_digit_runs(lhs, rhs, index)
+            bias = leading_zero_bias(lhs, rhs, index)
+            left_value, left_end = digit_run(lhs, index, bias)
+            right_value, right_end = digit_run(rhs, index, bias)
+            return left_value <=> right_value unless left_value == right_value
+            return left_end <=> right_end unless left_end == right_end
+
+            lhs[index] <=> rhs[index]
+          end
+          private_class_method :compare_digit_runs
+
+          # @return [Array(Integer, Integer)] numeric value of the run (offset by bias) and its end index
+          # NOTE: Ruby integers are arbitrary precision, so a >= 2^63 digit run sorts
+          # numerically; yaml.v2's int64 accumulator wraps there, so OPA can order such
+          # huge-numeric keys differently. Documented divergence (correct over bug-for-bug).
+          def self.digit_run(chars, index, bias)
+            value = bias
+            cursor = index
+            while cursor < chars.length && digit?(chars[cursor])
+              value = (value * 10) + chars[cursor].to_i
+              cursor += 1
+            end
+            [value, cursor]
+          end
+          private_class_method :digit_run
+
+          # keyList's leading-zero tie-break: if a non-zero digit precedes the run in the
+          # left key, both run values start at 1 so a shorter (fewer-leading-zero) run wins.
+          # @return [Integer]
+          def self.leading_zero_bias(lhs, rhs, index)
+            return 0 unless lhs[index] == "0" || rhs[index] == "0"
+
+            position = index - 1
+            while position >= 0 && digit?(lhs[position])
+              return 1 unless lhs[position] == "0"
+
+              position -= 1
+            end
+            0
+          end
+          private_class_method :leading_zero_bias
+
+          # ASCII-only: non-ASCII decimal digits can't reach here via OPA's JSON-stringified keys.
+          # @return [bool]
+          def self.digit?(char)
+            char.between?("0", "9")
+          end
+          private_class_method :digit?
+
+          # @return [bool]
+          def self.letter?(char)
+            char.match?(/\p{L}/)
+          end
+          private_class_method :letter?
 
           # The string form of an object key (mirrors how OPA stringifies map keys).
           # @return [String]

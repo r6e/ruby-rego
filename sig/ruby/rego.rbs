@@ -746,6 +746,16 @@ module Ruby
           def self.scalar: (String value, Integer style) -> untyped
           def self.string_style: (String string) -> Integer
           def self.sequence: (Array[untyped] array) -> untyped
+          def self.sorted_set: (untyped set) -> Array[untyped]
+          def self.term_sort_key: (untyped element) -> Array[untyped]
+          def self.natural_compare: (String left, String right) -> Integer
+          def self.compare_at: (Array[String] lhs, Array[String] rhs, Integer index) -> Integer
+          def self.compare_digit_runs: (Array[String] lhs, Array[String] rhs, Integer index) -> Integer
+          def self.digit_run: (Array[String] chars, Integer index, Integer bias) -> [Integer, Integer]
+          def self.leading_zero_bias: (Array[String] lhs, Array[String] rhs, Integer index) -> Integer
+          def self.digit?: (String char) -> bool
+          def self.letter?: (String char) -> bool
+          def self.sorted_pairs: (Hash[untyped, untyped] hash) -> Array[untyped]
           def self.mapping: (Hash[untyped, untyped] hash) -> untyped
           def self.key_string: (untyped key) -> String
           def self.shortest_digits: (Float float) -> [String, Integer]

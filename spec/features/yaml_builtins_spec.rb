@@ -83,6 +83,39 @@ RSpec.describe "yaml builtins" do
     it "replaces invalid UTF-8 bytes with the replacement character (matching OPA)" do
       expect(marshal("\xFF".b)).to eq("�\n")
     end
+
+    it "emits set elements in deterministic OPA order (sorted, type-ranked), not insertion order" do
+      expect(marshal(Set[3, 1, 2])).to eq("- 1\n- 2\n- 3\n")
+      expect(marshal(Set["c", "a", "b"])).to eq("- a\n- b\n- c\n")
+      expect(marshal(Set[2, "a", 1, "b"])).to eq("- 1\n- 2\n- a\n- b\n")
+    end
+
+    it "orders object keys by yaml.v2 natural sort (numeric-aware), not lexicographically" do
+      expect(marshal({ "item10" => 1, "item2" => 2, "item1" => 3 })).to eq("item1: 3\nitem2: 2\nitem10: 1\n")
+      expect(marshal({ 10 => "a", 2 => "b", 1 => "c" })).to eq("\"1\": c\n\"2\": b\n\"10\": a\n")
+    end
+
+    it "orders a non-letter key before a letter key (matching OPA's keyList)" do
+      expect(marshal({ "_x" => 1, "Ax" => 2 })).to eq("_x: 1\nAx: 2\n")
+    end
+
+    # Documented divergence: yaml.v2's int64 key sorter wraps at 2^63, so OPA orders these
+    # huge-numeric keys backwards; this implementation sorts them numerically (correctly).
+    it "sorts >= 2^63 numeric keys numerically (diverging from OPA's int64 wraparound)" do
+      expect(marshal({ "9300000000000000000" => 1, "8000000000000000000" => 2 }))
+        .to eq("\"8000000000000000000\": 2\n\"9300000000000000000\": 1\n")
+    end
+
+    it "ranks composite set elements as OPA does: array < object < set" do
+      expect(marshal(Set[{ "a" => 2 }, Set[2, 3]])).to eq("- a: 2\n- - 2\n  - 3\n")
+      expect(marshal(Set[{ "a" => 1 }, [9]])).to eq("- - 9\n- a: 1\n")
+      expect(marshal(Set[Set[1], { "a" => 1 }, [9]])).to eq("- - 9\n- a: 1\n- - 1\n")
+    end
+
+    it "orders object-valued set elements by their keys' term order, not stringified keys" do
+      expect(marshal(Set[{ 10 => "a" }, { 2 => "b" }])).to eq("- \"2\": b\n- \"10\": a\n")
+      expect(marshal(Set[{ true => "xx" }, { 1 => "yy" }])).to eq("- \"true\": xx\n- \"1\": yy\n")
+    end
   end
 
   describe "yaml.unmarshal" do
