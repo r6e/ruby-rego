@@ -15,9 +15,10 @@ module Ruby
             values = collection_value.to_ruby
             case variables.length
             when 1 then values.each { |value| yield_bindings(yielder, bindings_for(variables[0], value)) }
-            when 2 then values.each_with_index do |value, index|
-              yield_bindings(yielder, bindings_for_pair(variables, index, value))
-            end
+            when 2
+              values.each_with_index do |value, index|
+                yield_bindings(yielder, bindings_for_pair(variables, index, value))
+              end
             end
           end
         end
