@@ -8,7 +8,8 @@ require_relative "numeric_helpers"
 module Ruby
   module Rego
     module Builtins
-      # Built-in numeric helpers (abs, round, ceil, floor, numbers.range).
+      # Built-in numeric helpers (abs, round, ceil, floor, numbers.range,
+      # numbers.range_step).
       module Numbers
         extend RegistryHelpers
 
@@ -17,7 +18,8 @@ module Ruby
           "round" => { arity: 1, handler: :round },
           "ceil" => { arity: 1, handler: :ceil },
           "floor" => { arity: 1, handler: :floor },
-          "numbers.range" => { arity: 2, handler: :range }
+          "numbers.range" => { arity: 2, handler: :range },
+          "numbers.range_step" => { arity: 3, handler: :range_step }
         }.freeze
 
         # Upper bound on `numbers.range` length. OPA halts large ranges via context
@@ -70,9 +72,30 @@ module Ruby
         def self.range(start_value, end_value)
           start_bound = NumericHelpers.integer_value(start_value, context: "numbers.range")
           end_bound = NumericHelpers.integer_value(end_value, context: "numbers.range")
-          ensure_range_within_limit(start_bound, end_bound)
+          ensure_size_within_limit((end_bound - start_bound).abs + 1, "numbers.range")
 
           ArrayValue.new(range_elements(start_bound, end_bound).map { |number| NumberValue.new(number) })
+        end
+
+        # numbers.range_step(low, high, step): like numbers.range but advancing by a
+        # positive integer step; the endpoint is included only when it lands exactly
+        # on a step. A non-positive or non-integer step yields undefined (matching OPA).
+        #
+        # @param start_value [Ruby::Rego::Value]
+        # @param end_value [Ruby::Rego::Value]
+        # @param step_value [Ruby::Rego::Value]
+        # @return [Ruby::Rego::ArrayValue]
+        # :reek:TooManyStatements
+        def self.range_step(start_value, end_value, step_value)
+          start_bound = NumericHelpers.integer_value(start_value, context: "numbers.range_step")
+          end_bound = NumericHelpers.integer_value(end_value, context: "numbers.range_step")
+          step = NumericHelpers.integer_value(step_value, context: "numbers.range_step")
+          # ensure_positive_step must precede step_count, which divides by step.
+          ensure_positive_step(step)
+          ensure_size_within_limit(step_count(start_bound, end_bound, step), "numbers.range_step")
+
+          elements = step_elements(start_bound, end_bound, step)
+          ArrayValue.new(elements.map { |number| NumberValue.new(number) })
         end
 
         # Extracts a finite numeric value, rejecting non-finite floats (Infinity,
@@ -109,22 +132,24 @@ module Ruby
         end
         private_class_method :normalize
 
-        # @param start_bound [Integer]
-        # @param end_bound [Integer]
+        # Allocation guard shared by numbers.range/range_step. OPA halts large ranges
+        # via context cancellation; this evaluator caps the element count instead.
+        #
+        # @param size [Integer] the number of elements the range would allocate
+        # @param context [String]
         # @return [void]
-        def self.ensure_range_within_limit(start_bound, end_bound)
-          size = (end_bound - start_bound).abs + 1
+        def self.ensure_size_within_limit(size, context)
           return if size <= MAX_RANGE_SIZE
 
           raise Ruby::Rego::BuiltinArgumentError.new(
-            "numbers.range size #{size} exceeds maximum #{MAX_RANGE_SIZE}",
+            "#{context} size #{size} exceeds maximum #{MAX_RANGE_SIZE}",
             expected: "size <= #{MAX_RANGE_SIZE}",
             actual: size,
-            context: "numbers.range",
+            context: context,
             location: nil
           )
         end
-        private_class_method :ensure_range_within_limit
+        private_class_method :ensure_size_within_limit
 
         # @param start_bound [Integer]
         # @param end_bound [Integer]
@@ -135,6 +160,44 @@ module Ruby
           start_bound.downto(end_bound).to_a
         end
         private_class_method :range_elements
+
+        # @param step [Integer]
+        # @return [void]
+        def self.ensure_positive_step(step)
+          return if step.positive?
+
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "numbers.range_step step must be positive",
+            expected: "step >= 1",
+            actual: step,
+            context: "numbers.range_step",
+            location: nil
+          )
+        end
+        private_class_method :ensure_positive_step
+
+        # Number of elements numbers.range_step yields: one per step from low to high
+        # (endpoint included only when exact). Divides by step, so the caller must
+        # validate step > 0 first.
+        #
+        # @param start_bound [Integer]
+        # @param end_bound [Integer]
+        # @param step [Integer]
+        # @return [Integer]
+        def self.step_count(start_bound, end_bound, step)
+          ((end_bound - start_bound).abs / step) + 1
+        end
+        private_class_method :step_count
+
+        # @param start_bound [Integer]
+        # @param end_bound [Integer]
+        # @param step [Integer]
+        # @return [Array<Integer>]
+        def self.step_elements(start_bound, end_bound, step)
+          direction = start_bound <= end_bound ? step : -step
+          Array.new(step_count(start_bound, end_bound, step)) { |index| start_bound + (index * direction) }
+        end
+        private_class_method :step_elements
       end
     end
   end

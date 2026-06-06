@@ -105,6 +105,50 @@ RSpec.describe "numeric builtins" do
       expect(registry.call("numbers.range", [-1, max])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
+
+  describe "numbers.range_step" do
+    def step_range(low, high, step)
+      registry.call("numbers.range_step", [low, high, step])
+    end
+
+    it "produces an inclusive ascending range stepping by step" do
+      expect(step_range(1, 10, 3).to_ruby).to eq([1, 4, 7, 10])
+      expect(step_range(1, 7, 3).to_ruby).to eq([1, 4, 7])
+      expect(step_range(-3, 3, 2).to_ruby).to eq([-3, -1, 1, 3])
+    end
+
+    it "produces a descending range when the start exceeds the end" do
+      expect(step_range(10, 1, 3).to_ruby).to eq([10, 7, 4, 1])
+      expect(step_range(10, 2, 3).to_ruby).to eq([10, 7, 4]) # non-exact descending endpoint
+    end
+
+    it "is undefined for a non-number argument" do
+      expect(step_range("a", 10, 3)).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "includes only steps that land in range (endpoint kept only if exact)" do
+      expect(step_range(1, 3, 10).to_ruby).to eq([1])
+      expect(step_range(5, 5, 2).to_ruby).to eq([5])
+    end
+
+    it "accepts integer-valued floats (matching OPA)" do
+      expect(step_range(1, 7.0, 3.0).to_ruby).to eq([1, 4, 7])
+    end
+
+    it "is undefined for a non-positive step (matching OPA)" do
+      expect(step_range(1, 10, 0)).to be_a(Ruby::Rego::UndefinedValue)
+      expect(step_range(1, 10, -2)).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined for a non-integer step (matching OPA)" do
+      expect(step_range(1, 10, 2.5)).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined when the stepped range exceeds the maximum size (allocation guard)" do
+      max = Ruby::Rego::Builtins::Numbers::MAX_RANGE_SIZE
+      expect(step_range(1, max + 2, 1)).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
 end
 
 # rubocop:enable Metrics/BlockLength
