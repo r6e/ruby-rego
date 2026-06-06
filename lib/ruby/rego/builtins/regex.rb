@@ -9,6 +9,7 @@ require_relative "regex/matching"
 require_relative "regex/go_template"
 require_relative "regex/replace"
 require_relative "regex/template"
+require_relative "regex/glob_intersection"
 
 # rubocop:disable Naming/PredicatePrefix
 module Ruby
@@ -40,6 +41,7 @@ module Ruby
           "regex.find_n" => { arity: 3, handler: :find_n },
           "regex.find_all_string_submatch_n" => { arity: 3, handler: :find_all_string_submatch_n },
           "regex.template_match" => { arity: 4, handler: :template_match },
+          "regex.globs_match" => { arity: 2, handler: :globs_match },
           "regex.replace" => { arity: 3, handler: :replace }
         }.freeze
 
