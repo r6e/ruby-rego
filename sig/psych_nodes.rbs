@@ -1,0 +1,61 @@
+# Additive signatures for the Psych AST API used by Builtins::Yaml.
+# rbs's bundled psych.rbs (4.0) types dump/load/safe_load but not parse_stream or
+# Psych::Nodes; these declarations fill only that gap (they do not redefine any
+# class rbs already provides, unlike the stub removed in PR #45).
+
+module Psych
+  def self.parse_stream: (String yaml) -> Psych::Nodes::Stream
+
+  module Nodes
+    class Node
+    end
+
+    class Stream < Psych::Nodes::Node
+      def initialize: () -> void
+      def children: () -> Array[untyped]
+      def to_yaml: () -> String
+    end
+
+    class Document < Psych::Nodes::Node
+      attr_accessor implicit_end: bool
+      def initialize: (Array[untyped] version, Array[untyped] tag_directives, bool implicit) -> void
+      def children: () -> Array[untyped]
+      def root: () -> untyped
+    end
+
+    class Scalar < Psych::Nodes::Node
+      PLAIN: Integer
+      SINGLE_QUOTED: Integer
+      DOUBLE_QUOTED: Integer
+      LITERAL: Integer
+      FOLDED: Integer
+      ANY: Integer
+      def initialize: (String value, ?String? anchor, ?String? tag, ?bool plain, ?bool quoted, ?Integer style) -> void
+      def value: () -> String
+      def plain: () -> bool
+      def anchor: () -> String?
+    end
+
+    class Sequence < Psych::Nodes::Node
+      ANY: Integer
+      BLOCK: Integer
+      FLOW: Integer
+      def initialize: (?String? anchor, ?String? tag, ?bool implicit, ?Integer style) -> void
+      def children: () -> Array[untyped]
+      def anchor: () -> String?
+    end
+
+    class Mapping < Psych::Nodes::Node
+      ANY: Integer
+      BLOCK: Integer
+      FLOW: Integer
+      def initialize: (?String? anchor, ?String? tag, ?bool implicit, ?Integer style) -> void
+      def children: () -> Array[untyped]
+      def anchor: () -> String?
+    end
+
+    class Alias < Psych::Nodes::Node
+      def anchor: () -> String
+    end
+  end
+end

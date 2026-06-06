@@ -675,6 +675,71 @@ module Ruby
         def self.json_sort_key: (untyped element) -> Array[untyped]
       end
 
+      module Yaml
+        extend RegistryHelpers
+
+        YAML_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.marshal: (Value value) -> StringValue
+        def self.unmarshal: (Value value) -> Value
+        def self.is_valid: (Value value) -> BooleanValue
+
+        private
+
+        def self.string_arg: (Value value, String context) -> String
+        def self.decoded: (String context) { () -> Value } -> Value
+
+        module ScalarResolver
+          RESOLVE_MAP: Hash[String, untyped]
+          NUMBER_LEADS: String
+          FLOAT_RE: Regexp
+
+          class ResolveError < StandardError
+          end
+
+          def self.resolve: (String string) -> untyped
+          def self.ambiguous?: (String string) -> bool
+          def self.numeric: (String string) -> (Integer | Float | nil)
+          def self.json_number: (Float float) -> (Integer | Float)
+          def self.parse_integer: (String string) -> Integer?
+          def self.split_sign: (String string) -> [Integer, String]
+          def self.integer_base: (String digits) -> [Integer, String]
+          def self.load: (String string) -> untyped
+          def self.build: (untyped node, Hash[String, untyped] anchors) -> untyped
+          def self.anchored: (untyped node, Hash[String, untyped] anchors) { () -> untyped } -> untyped
+          def self.build_mapping: (untyped node, Hash[String, untyped] anchors) -> Hash[String, untyped]
+          def self.merge_into: (Hash[String, untyped] result, untyped source) -> void
+          def self.json_key: (untyped key) -> String
+          def self.reject_non_finite: (untyped value) -> void
+        end
+
+        module Emitter
+          PLAIN: Integer
+          DOUBLE: Integer
+          LITERAL: Integer
+          AUTO: Integer
+          BLOCK_SEQ: Integer
+          BLOCK_MAP: Integer
+          TIMESTAMP: Regexp
+          BASE60: Regexp
+
+          class MarshalError < StandardError
+          end
+
+          def self.emit: (untyped ruby) -> String
+          def self.build_node: (untyped ruby) -> untyped
+          def self.scalar: (String value, Integer style) -> untyped
+          def self.string_style: (String string) -> Integer
+          def self.sequence: (Array[untyped] array) -> untyped
+          def self.mapping: (Hash[untyped, untyped] hash) -> untyped
+          def self.float_string: (Float float) -> String
+          def self.shortest_digits: (Float float) -> [String, Integer]
+          def self.fixed: (String digits, Integer point) -> String
+          def self.scientific: (String digits, Integer exponent) -> String
+        end
+      end
+
       module JsonPaths
         extend RegistryHelpers
 
