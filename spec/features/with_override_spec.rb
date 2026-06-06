@@ -60,6 +60,19 @@ WITH_VIRTUAL_SCOPED_POLICY = <<~REGO
   }
 REGO
 
+# A `with data.t.x as 2` override is also honoured when the rule is referenced
+# by its bare name `x` from within package `t`, not only via `data.t.x`.
+# opa eval => 2.
+WITH_VIRTUAL_BARE_REF_POLICY = <<~REGO
+  package t
+
+  x := 1
+
+  result := y if {
+    y := x with data.t.x as 2
+  }
+REGO
+
 # Regression guard: replacing a user function with another function already
 # works. opa eval => 99.
 WITH_FN_REPLACE_POLICY = <<~REGO
@@ -93,6 +106,11 @@ RSpec.describe "with keyword OPA parity" do
   it "leaves sibling rules unaffected by a virtual-document override" do
     result = evaluate_policy(WITH_VIRTUAL_SCOPED_POLICY, query: "data.t.result")
     expect(result.value.to_ruby).to eq([5, 1])
+  end
+
+  it "honours a data-path override for a bare same-package rule reference" do
+    result = evaluate_policy(WITH_VIRTUAL_BARE_REF_POLICY, query: "data.t.result")
+    expect(result.value.to_ruby).to eq(2)
   end
 
   it "still replaces a user function with another function" do
