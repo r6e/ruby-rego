@@ -229,7 +229,9 @@ module Ruby
             tokens.drop(1).each do |token|
               latest = simple.last
               if token.flagged? && latest.flagged? && token.same_atom?(latest)
-                latest.flag = token.flag == :plus || latest.flag == :plus ? :plus : :star
+                # FlagPlus wins: t+t* == t+, t*t+ == t+.
+                either_plus = token.flag == :plus || latest.flag == :plus
+                latest.flag = either_plus ? :plus : :star
               else
                 simple << token.dup
               end
@@ -372,17 +374,17 @@ module Ruby
             # intersects starred[1..].
             def intersect_star(starred, other)
               star_token = starred[0]
-              next_token = starred[1]
+              next_atom = starred[1]
               other.each_with_index do |token, index|
                 charge_work
-                if next_token && GlobIntersection.match?(token, next_token)
+                if next_atom && GlobIntersection.match?(token, next_atom)
                   return true if intersect_normal(starred[1..] || [], other[index..] || [])
                   return false unless GlobIntersection.match?(token, star_token)
                 elsif !GlobIntersection.match?(token, star_token)
                   return false
                 end
               end
-              next_token.nil?
+              next_atom.nil?
             end
           end
         end
