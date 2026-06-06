@@ -42,6 +42,8 @@ module Ruby
             stream = Psych::Nodes::Stream.new
             stream.children << document
             stream.to_yaml
+          rescue Psych::Exception => e
+            raise MarshalError, e.message
           end
 
           # @return [Psych::Nodes::Node]
@@ -53,8 +55,8 @@ module Ruby
             when false then scalar("false", PLAIN)
             when Integer then scalar(ruby.to_s, PLAIN)
             when Float then scalar(float_string(ruby), PLAIN)
-            when String then scalar(ruby, string_style(ruby))
-            when Symbol then scalar(ruby.to_s, string_style(ruby.to_s))
+            when String then string_scalar(ruby)
+            when Symbol then string_scalar(ruby.to_s)
             when Array then sequence(ruby)
             when Set then sequence(ruby.to_a)
             when Hash then mapping(ruby)
@@ -62,6 +64,23 @@ module Ruby
             end
           end
           private_class_method :build_node
+
+          # Emits a string scalar, first replacing invalid UTF-8 with U+FFFD (as OPA's
+          # JSON round-trip does) so libyaml never rejects the bytes.
+          # @return [Psych::Nodes::Scalar]
+          def self.string_scalar(string)
+            clean = sanitize(string)
+            scalar(clean, string_style(clean))
+          end
+          private_class_method :string_scalar
+
+          # @return [String]
+          def self.sanitize(string)
+            return string if string.encoding == Encoding::UTF_8 && string.valid_encoding?
+
+            string.dup.force_encoding(Encoding::UTF_8).scrub("�")
+          end
+          private_class_method :sanitize
 
           # Builds a scalar node. PLAIN/DOUBLE force that style; AUTO sets both implicit
           # flags so libyaml picks plain/single/double/literal itself (no `!` tag).
@@ -115,7 +134,7 @@ module Ruby
           # @return [String]
           def self.key_string(key)
             case key
-            when String then key
+            when String then sanitize(key)
             when Float then float_string(key)
             when true then "true"
             when false then "false"

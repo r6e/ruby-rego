@@ -74,6 +74,10 @@ RSpec.describe "yaml builtins" do
       expect(marshal({ true => "y", 1.5 => "z" })).to eq("\"1.5\": z\n\"true\": \"y\"\n")
       expect(marshal({ nil => "n" })).to eq("\"null\": \"n\"\n")
     end
+
+    it "replaces invalid UTF-8 bytes with the replacement character (matching OPA)" do
+      expect(marshal("\xFF".b)).to eq("�\n")
+    end
   end
 
   describe "yaml.unmarshal" do

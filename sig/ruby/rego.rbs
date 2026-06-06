@@ -734,6 +734,8 @@ module Ruby
 
           def self.emit: (untyped ruby) -> String
           def self.build_node: (untyped ruby) -> untyped
+          def self.string_scalar: (String string) -> untyped
+          def self.sanitize: (String string) -> String
           def self.scalar: (String value, Integer style) -> untyped
           def self.string_style: (String string) -> Integer
           def self.sequence: (Array[untyped] array) -> untyped
