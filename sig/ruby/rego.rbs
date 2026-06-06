@@ -1295,6 +1295,7 @@ module Ruby
       def type: () -> Symbol?
       def nodes: () -> Array[untyped]
       def function_arg_names: () -> Array[String]
+      def pattern_variable_names: (untyped node) -> Array[String]
 
       private
 
