@@ -83,6 +83,32 @@ RSpec.describe "regex.find_all_string_submatch_n and regex.template_match" do
     it "supports custom single-character delimiters" do
       expect(template("aX[0-9]+Yc", "a99c", "X", "Y")).to be(true)
     end
+
+    it "matches an empty section against the empty string" do
+      expect(template("{}", "")).to be(true)
+    end
+
+    # OPA validates delimiters by byte length and requires balanced sections;
+    # these all resolve to undefined.
+    it "is undefined for a multi-byte (single-character) delimiter" do
+      expect(template("a£x£c", "abc", "£", "£")).to be_nil
+    end
+
+    it "is undefined for a multi-character delimiter" do
+      expect(template("a{b}c", "a9c", "<<", ">>")).to be_nil
+    end
+
+    it "is undefined for an empty delimiter" do
+      expect(template("a[0-9]c", "a9c", "", "")).to be_nil
+    end
+
+    it "is undefined for an unbalanced opening delimiter" do
+      expect(template("a{b", "axb")).to be_nil
+    end
+
+    it "is undefined for a stray closing delimiter" do
+      expect(template("a}b", "a}b")).to be_nil
+    end
   end
 end
 # rubocop:enable Metrics/BlockLength

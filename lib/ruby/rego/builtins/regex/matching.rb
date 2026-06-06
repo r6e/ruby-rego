@@ -161,7 +161,7 @@ module Ruby
         # @param found [MatchData]
         # @return [Array<String>]
         def self.submatch_row(found)
-          [found[0] || ""] + found.captures.map { |capture| capture || "" }
+          found.to_a.map { |capture| capture || "" }
         end
         private_class_method :submatch_row
       end

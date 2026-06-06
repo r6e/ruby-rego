@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../errors"
-require_relative "../../value"
-
 module Ruby
   module Rego
     module Builtins
@@ -28,12 +25,14 @@ module Ruby
         end
 
         # @return [String] the single delimiter character
+        # OPA validates each delimiter with Go's `len()` (byte length), so a
+        # multi-byte single character (e.g. "£") is rejected, not just multi-char ones.
         def self.single_delimiter(value, context)
           delimiter = string_arg(value, context)
-          length = delimiter.length
-          return delimiter if length == 1
+          bytes = delimiter.bytesize
+          return delimiter if bytes == 1
 
-          raise template_error("delimiter must be a single character", "length #{length}", context)
+          raise template_error("delimiter must be a single byte", "byte length #{bytes}", context)
         end
         private_class_method :single_delimiter
 
@@ -44,7 +43,7 @@ module Ruby
         # :reek:TooManyStatements
         # :reek:LongParameterList
         # :reek:ControlParameter
-        # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
         def self.template_source(template, delim_start, delim_end, context)
           buffer = +"\\A"
           index = 0
@@ -58,13 +57,16 @@ module Ruby
               buffer << (template[section_start...close] || "")
               index = close + 1
             else
+              # A closing delimiter outside a section is unbalanced (OPA → undefined).
+              raise template_error("unbalanced delimiter", "stray #{delim_end}", context) if char == delim_end
+
               buffer << Regexp.escape(char)
               index += 1
             end
           end
           "#{buffer}\\z"
         end
-        # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
         private_class_method :template_source
 
         # @return [Ruby::Rego::BuiltinArgumentError]
