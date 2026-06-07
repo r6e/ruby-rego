@@ -3,6 +3,7 @@
 # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/ModuleLength
 
 require "psych"
+require_relative "../term_order"
 
 module Ruby
   module Rego
@@ -58,7 +59,7 @@ module Ruby
             when String then string_scalar(ruby)
             when Symbol then string_scalar(ruby.to_s)
             when Array then sequence(ruby)
-            when Set then sequence(sorted_set(ruby))
+            when Set then sequence(TermOrder.sorted(ruby))
             when Hash then mapping(ruby)
             else raise MarshalError, "unsupported type #{ruby.class}"
             end
@@ -115,41 +116,6 @@ module Ruby
             node
           end
           private_class_method :sequence
-
-          # Rego sets are unordered; OPA marshals them deterministically. Sort by OPA's
-          # canonical term order (verified via opa eval): null < bool < number < string <
-          # array < object < set — note a nested set ranks ABOVE an object, not as its
-          # array form.
-          # @return [Array<untyped>]
-          def self.sorted_set(set)
-            set.to_a.sort_by { |element| term_sort_key(element) }
-          end
-          private_class_method :sorted_set
-
-          # Object keys are compared by term order too (OPA: {2:_} < {10:_} numerically,
-          # {true:_} < {1:_} by rank), so recurse into keys rather than stringifying them.
-          # @return [Array<untyped>]
-          def self.term_sort_key(element)
-            case element
-            when false then [1, 0]
-            when true then [1, 1]
-            when Numeric then [2, element]
-            when String then [3, element]
-            when Array then [4, element.map { |item| term_sort_key(item) }]
-            when Hash then [5, sorted_pairs(element)]
-            when Set then [6, sorted_set(element).map { |item| term_sort_key(item) }]
-            else [0, 0] # null
-            end
-          end
-          private_class_method :term_sort_key
-
-          # Computes each key's sort tuple once (key + value), then sorts by the key tuple —
-          # avoiding a second term_sort_key(key) pass while sorting.
-          # @return [Array<untyped>]
-          def self.sorted_pairs(hash)
-            hash.map { |key, value| [term_sort_key(key), term_sort_key(value)] }.sort_by(&:first)
-          end
-          private_class_method :sorted_pairs
 
           # OPA stringifies object keys, then yaml.v2 sorts them with its `keyList` natural
           # order (digit runs compared numerically, so "item2" < "item10" and "2" < "10"),

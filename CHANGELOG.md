@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Fix: `json.marshal` now orders set elements by OPA's term order even when an element is a
+  composite. The previous implementation ranked elements *after* converting them to JSON, which
+  lost type information: a nested set was ranked as an array (so `json.marshal({ {"a": 2}, {2, 3} })`
+  returned `[[2,3],{"a":2}]` instead of OPA's `[{"a":2},[2,3]]`), and a set of objects with
+  non-string keys was ranked by stringified keys (so `{ {2: "x"}, {10: "x"} }` ordered as `"10"`
+  before `"2"` instead of numerically). Set element ordering is now sorted on the raw value
+  before conversion, via a new `Builtins::TermOrder` helper shared with `yaml.marshal`. Sets of
+  scalars, arrays, and string-keyed objects are unaffected.
+
 - YAML built-ins: `yaml.marshal`, `yaml.unmarshal`, and `yaml.is_valid`, matching OPA (which
   vendors sigs.k8s.io/yaml over gopkg.in/yaml.v2 via a JSON round-trip). Built on Psych
   (libyaml — the engine yaml.v2 ports), so layout, line-folding, escaping, and the

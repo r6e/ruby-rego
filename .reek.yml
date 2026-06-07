@@ -43,9 +43,8 @@ detectors:
       # recursive intersection engine); inherently statement-heavy.
       - Ruby::Rego::Builtins::Regex::GlobIntersection
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
-      # Recursive JSON normalization and OPA set-ordering: type-dispatch case folds.
+      # Recursive JSON normalization: type-dispatch case fold.
       - Ruby::Rego::Builtins::Codecs#self.jsonify
-      - Ruby::Rego::Builtins::Codecs#self.json_sort_key
       # Faithful SemVer parse / §11 precedence steps.
       - Ruby::Rego::Builtins::Semver#self.build_version
       - Ruby::Rego::Builtins::Semver#self.compare_prerelease
@@ -55,6 +54,8 @@ detectors:
       # Faithful ports of the yaml.v2 emitter and scalar resolver.
       - Ruby::Rego::Builtins::Yaml::Emitter
       - Ruby::Rego::Builtins::Yaml::ScalarResolver
+      # Recursive term-order comparator (single case over all value types).
+      - Ruby::Rego::Builtins::TermOrder
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
       - Ruby::Rego::CompiledPolicySet
@@ -85,6 +86,8 @@ detectors:
       # yaml.v2 emitter/resolver: repeated scalar/index access while building nodes.
       - Ruby::Rego::Builtins::Yaml::Emitter
       - Ruby::Rego::Builtins::Yaml::ScalarResolver
+      # Recursive term-order comparator: repeats sort_key across case branches.
+      - Ruby::Rego::Builtins::TermOrder
   UtilityFunction:
     exclude:
       - Ruby::Rego::Lexer
