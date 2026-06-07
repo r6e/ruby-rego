@@ -1016,8 +1016,8 @@ module Ruby
         GRAPH_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
 
         def self.register!: () -> BuiltinRegistry
-        def self.reachable: (Value graph_value, Value initial_value) -> Set[untyped]
-        def self.reachable_paths: (Value graph_value, Value initial_value) -> Set[Array[untyped]]
+        def self.reachable: (Value graph_value, Value initial_value) -> SetValue
+        def self.reachable_paths: (Value graph_value, Value initial_value) -> SetValue
 
         private
 

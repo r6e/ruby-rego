@@ -38,11 +38,11 @@ module Ruby
         #
         # @param graph_value [Ruby::Rego::Value]
         # @param initial_value [Ruby::Rego::Value]
-        # @return [Set]
+        # @return [Ruby::Rego::SetValue]
         def self.reachable(graph_value, initial_value)
           graph = object_arg(graph_value, "graph.reachable")
           queue = vertices(initial_value, "graph.reachable")
-          walk_reachable(graph, queue, Set.new(queue))
+          SetValue.new(walk_reachable(graph, queue, Set.new(queue)))
         end
 
         # Worklist over `queue`; `seen` dedups at enqueue (not after pop) so each node is queued
@@ -68,7 +68,7 @@ module Ruby
         #
         # @param graph_value [Ruby::Rego::Value]
         # @param initial_value [Ruby::Rego::Value]
-        # @return [Set<Array>]
+        # @return [Ruby::Rego::SetValue]
         def self.reachable_paths(graph_value, initial_value)
           graph = object_arg(graph_value, "graph.reachable_paths")
           paths = Set.new # @type var paths: Set[Array[untyped]]
@@ -77,7 +77,7 @@ module Ruby
 
             walk_roots(graph, node, paths)
           end
-          paths
+          SetValue.new(paths)
         end
 
         # @return [void]
