@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 # rubocop:disable Metrics/BlockLength
+# OPA-compat expectations (array.flatten / object.subset) were verified against `opa eval` 1.17.
 
 RSpec.describe "collection builtins" do
   let(:registry) { Ruby::Rego::Builtins::BuiltinRegistry.instance }
@@ -179,6 +180,16 @@ RSpec.describe "collection builtins" do
       expect(registry.call("object.subset", [Set[1.0, 2], Set[1]]).to_ruby).to be(true)
       expect(registry.call("object.subset", [Set[1], Set[1.0]]).to_ruby).to be(true)
       expect(registry.call("object.subset", [[1.0, 2, 3], Set[1]]).to_ruby).to be(true)
+    end
+
+    # The array-super/set-sub path is OPA's position-counter, not set-theoretic superset: it
+    # counts array positions whose element is in the set until the set is covered. So it never
+    # vacuously matches an empty array, and duplicate array positions each count (verified vs
+    # opa eval). These pin that (counterintuitive) OPA-faithful behaviour.
+    it "matches OPA's array/set coverage semantics on the empty and duplicate edges" do
+      expect(registry.call("object.subset", [[], Set.new]).to_ruby).to be(false)
+      expect(registry.call("object.subset", [[1], Set.new]).to_ruby).to be(true)
+      expect(registry.call("object.subset", [[1, 1], Set[1, 2]]).to_ruby).to be(true)
     end
   end
 end

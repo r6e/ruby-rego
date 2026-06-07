@@ -11,6 +11,11 @@ module Ruby
       # an object mapping each node to its neighbours (an array or set); the initial set is an
       # array or set of nodes. A neighbour that is not itself a key in the graph is followed but
       # not treated as a node (it has no edges), exactly as OPA's implementation does.
+      #
+      # Node identity uses Ruby Hash/Set membership. Like the rest of the gem (and unlike OPA),
+      # numbers 1 and 1.0 are distinct here, so a graph whose node labels mix integer and float
+      # forms of the same value can diverge from OPA — part of the known SetValue/ObjectValue
+      # numeric-normalisation gap. String-labelled graphs (the common case) are exact.
       module Graph
         extend RegistryHelpers
 
@@ -38,8 +43,10 @@ module Ruby
           graph = object_arg(graph_value, "graph.reachable")
           queue = vertices(initial_value, "graph.reachable")
           reached = Set.new
+          # The result is an unordered set, so pop (O(1)) instead of shift (O(n)) — visit order
+          # does not affect which nodes are reached.
           until queue.empty?
-            node = queue.shift
+            node = queue.pop
             next unless graph.key?(node)
 
             neighbours(graph[node]).each { |neighbour| queue.push(neighbour) unless reached.include?(neighbour) }

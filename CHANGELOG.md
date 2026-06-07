@@ -13,7 +13,11 @@ All notable changes to this project will be documented in this file.
   of reachable nodes and `graph.reachable_paths` the set of walkable paths (both stop at cycles;
   a neighbour that is not itself a node in the graph is not reached, as in OPA). Hand-rolled; no
   new dependency. (`uuid.rfc4122` is not implemented — it is non-deterministic, so it cannot be
-  reproduced byte-for-byte, like `rand.intn`.)
+  reproduced byte-for-byte, like `rand.intn`.) `object.subset` compares set members and object
+  keys with numeric equality (1 and 1.0 match, as OPA does); `graph.*` node identity, however,
+  uses plain Hash/Set membership, so a graph mixing integer and float forms of the same node
+  label can diverge — part of the known SetValue/ObjectValue numeric-normalisation gap
+  (`count({1, 1.0})` is 2 here, 1 in OPA), to be addressed at the value layer in a later change.
 
 - Units built-ins: `units.parse` and `units.parse_bytes`, matching OPA. `parse` reads an
   SI/binary quantity (`10K`, `1.5Mi`, `10m`) to a number — note the m/M asymmetry (lowercase
