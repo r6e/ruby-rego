@@ -42,18 +42,26 @@ module Ruby
         def self.reachable(graph_value, initial_value)
           graph = object_arg(graph_value, "graph.reachable")
           queue = vertices(initial_value, "graph.reachable")
+          walk_reachable(graph, queue, Set.new(queue))
+        end
+
+        # Worklist over `queue`; `seen` dedups at enqueue (not after pop) so each node is queued
+        # at most once, and dangling neighbours (not graph nodes) are never enqueued — bounding
+        # the work to O(V+E) without changing which nodes are reached. The result is an unordered
+        # set, so pop (O(1)) over shift (O(n)).
+        # @return [Set]
+        def self.walk_reachable(graph, queue, seen)
           reached = Set.new
-          # The result is an unordered set, so pop (O(1)) instead of shift (O(n)) — visit order
-          # does not affect which nodes are reached.
           until queue.empty?
             node = queue.pop
             next unless graph.key?(node)
 
-            neighbours(graph[node]).each { |neighbour| queue.push(neighbour) unless reached.include?(neighbour) }
             reached.add(node)
+            neighbours(graph[node]).each { |adj| queue.push(adj) if seen.add?(adj) && graph.key?(adj) }
           end
           reached
         end
+        private_class_method :walk_reachable
 
         # The set of all paths (arrays) walkable from the initial set, stopping at leaves and
         # at the first repeated node on a path (cycle).

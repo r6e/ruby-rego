@@ -1021,6 +1021,7 @@ module Ruby
 
         private
 
+        def self.walk_reachable: (Hash[untyped, untyped] graph, Array[untyped] queue, Set[untyped] seen) -> Set[untyped]
         def self.walk_roots: (Hash[untyped, untyped] graph, untyped node, Set[Array[untyped]] paths) -> void
         def self.build_paths: (Hash[untyped, untyped] graph, untyped root, Array[untyped] path, Set[Array[untyped]] paths, Set[untyped] reached) -> void
         def self.object_arg: (Value value, String context) -> Hash[untyped, untyped]

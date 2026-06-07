@@ -25,6 +25,13 @@ RSpec.describe "graph builtins" do
       expect(registry.call("graph.reachable", [{}, []]).to_ruby).to eq(Set.new)
     end
 
+    it "reaches each node once across shared predecessors and duplicate edges" do
+      diamond = { "a" => %w[b c], "b" => ["d"], "c" => ["d"], "d" => [] }
+      expect(registry.call("graph.reachable", [diamond, ["a"]]).to_ruby).to eq(Set["a", "b", "c", "d"])
+      expect(registry.call("graph.reachable", [{ "a" => %w[b b b], "b" => [] }, ["a"]]).to_ruby)
+        .to eq(Set["a", "b"])
+    end
+
     it "is undefined for a non-object graph or non-array/set initial set" do
       expect(registry.call("graph.reachable", [["a"], ["a"]])).to be_a(Ruby::Rego::UndefinedValue)
       expect(registry.call("graph.reachable", [{ "a" => [] }, "a"])).to be_a(Ruby::Rego::UndefinedValue)

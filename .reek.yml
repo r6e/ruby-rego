@@ -65,7 +65,7 @@ detectors:
       # Recursive term-order comparator (single case over all value types).
       - Ruby::Rego::Builtins::TermOrder
       # Graph traversal: BFS worklist and the recursive path builder (OPA reachable port).
-      - Ruby::Rego::Builtins::Graph#self.reachable
+      - Ruby::Rego::Builtins::Graph#self.walk_reachable
       - Ruby::Rego::Builtins::Graph#self.reachable_paths
       - Ruby::Rego::Builtins::Graph#self.build_paths
       - Ruby::Rego::Lexer
