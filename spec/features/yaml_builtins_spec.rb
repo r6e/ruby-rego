@@ -244,11 +244,18 @@ RSpec.describe "yaml builtins" do
       expect(unmarshal_result("!!binary xyz")).to be_nil
     end
 
-    it "accepts dot-edge floats (5. / .5), matching OPA, plain and tagged" do
+    # Ruby < 3.4's Float() rejects a bare leading/trailing dot, so these are normalized
+    # before parsing to stay consistent with OPA across every supported Ruby version.
+    it "accepts dot-edge floats (5. / .5 / 5.e3 / .5e2), matching OPA, plain and tagged" do
       expect(unmarshal("5.")).to eq(5)
       expect(unmarshal(".5")).to eq(0.5)
+      expect(unmarshal("5.e3")).to eq(5000)
+      expect(unmarshal(".5e2")).to eq(50)
+      expect(unmarshal("+.5")).to eq(0.5)
+      expect(unmarshal("-.5")).to eq(-0.5)
+      expect(unmarshal("-5.")).to eq(-5)
       expect(unmarshal("!!float 5.")).to eq(5)
-      expect(unmarshal("!!float .5")).to eq(0.5)
+      expect(unmarshal("!!float -5.")).to eq(-5)
     end
 
     it "strips underscores anywhere in a number, like yaml.v2 (1_e2 == 100)" do

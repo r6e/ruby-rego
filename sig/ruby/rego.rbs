@@ -717,6 +717,7 @@ module Ruby
           private
 
           def self.numeric: (String string) -> (Integer | Float | nil)
+          def self.float_value: (String plain) -> Float?
           def self.json_number: (Float float) -> (Integer | Float)
           def self.parse_integer: (String string) -> Integer?
           def self.split_sign: (String string) -> [Integer, String]
