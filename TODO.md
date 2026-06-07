@@ -55,7 +55,7 @@ annotations — these ripple structurally and are not "just more functions").
 ~117 of OPA 1.17's 205 builtins are implemented (types, aggregates, numbers, bits, regex,
 encoding incl. `yaml.*`, strings, collections, comparisons, semver, net/CIDR, units). The
 registry pattern makes additions mechanical; this is volume, not difficulty. Each addition is
-verified byte-for-byte against `opa eval` (see the builtin pre-flight checklist in memory).
+verified byte-for-byte against `opa eval`.
 
 Done across these namespaces: numeric (`abs`/`round`/`ceil`/`floor`/`numbers.range`/
 `numbers.range_step`), regex (incl. `find_all_string_submatch_n`, `template_match`,
