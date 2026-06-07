@@ -330,15 +330,26 @@ module Ruby
       module Net
         extend RegistryHelpers
 
+        MAX_EXPAND_SIZE: Integer
         NET_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
 
         def self.register!: () -> BuiltinRegistry
         def self.cidr_contains: (Value cidr_value, Value other_value) -> BooleanValue
         def self.cidr_intersects: (Value cidr1_value, Value cidr2_value) -> BooleanValue
         def self.cidr_is_valid: (Value value) -> BooleanValue
+        def self.cidr_expand: (Value value) -> Set[String]
+        def self.cidr_contains_matches: (Value cidrs, Value addrs) -> Set[Array[untyped]]
 
         private
 
+        def self.containment_pairs: (Array[Array[untyped]] networks, Array[Array[untyped]] addresses) -> Set[Array[untyped]]
+        def self.entries: (Value value) -> Array[Array[untyped]]
+        def self.validate_structure: (Array[Array[untyped]] collection, String context) -> void
+        def self.structural_check: (untyped element, String context) -> void
+        def self.cidr_from: (untyped element, String context) -> IPAddr
+        def self.addr_from: (untyped element, String context) -> IPAddr
+        def self.match_string: (untyped element, String context) -> String
+        def self.guard_expand_size: (IPAddr cidr, String context) -> void
         def self.cidr_arg: (Value value, String context) -> IPAddr
         def self.addr_arg: (Value value, String context) -> IPAddr
         def self.parse_cidr: (String string) -> IPAddr?

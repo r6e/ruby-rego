@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Net/CIDR built-ins: `net.cidr_expand` and `net.cidr_contains_matches`, matching OPA.
+  `cidr_expand(cidr)` returns the set of every address in a CIDR (host bits masked to the
+  network first); the argument must be a valid CIDR (a bare IP is undefined), and a block
+  larger than ~1M addresses yields undefined (OPA relies on Go's runtime; this is a DoS
+  bound). `cidr_contains_matches(cidrs, addrs)` returns the set of `[cidr_key, addr_key]`
+  pairs where a CIDR contains an address — each operand may be an array (key is the index),
+  object (key is the key), set or scalar (key is the element itself); a first-collection
+  element must be a CIDR, a second an IP or CIDR, and any non-string or unparseable element
+  yields undefined. Both build on the existing `IPAddr`-backed parsing (IPv4/IPv6,
+  IPv4-mapped normalisation); no new dependency. (`net.cidr_overlap` is intentionally
+  omitted — OPA deprecated it and rejects it at compile time.)
+
 - Fix: an empty array literal `[]` now parses in every position (rule value, nested,
   object/set value, function argument). The parser recognized `[]` but did not consume the
   closing `]`, leaving it dangling so any enclosing construct failed (e.g. `count([])` →
