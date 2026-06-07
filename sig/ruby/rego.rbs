@@ -360,6 +360,37 @@ module Ruby
         def self.string_value: (Value value, String context) -> String
       end
 
+      module Units
+        extend RegistryHelpers
+
+        MAX_EXPONENT_DIGITS: Integer
+        NUMERIC: String
+        DIGIT: Regexp
+        SIGN: Array[String]
+        PARSE_UNITS: Hash[String, (Integer | Rational)]
+        PARSE_BYTES_UNITS: Hash[String, Integer]
+        UNITS_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.parse: (Value value) -> (Integer | Float)
+        def self.parse_bytes: (Value value) -> Integer
+
+        private
+
+        def self.string_arg: (Value value, String context) -> String
+        def self.split: (String string, String context) -> [String, String]
+        def self.number_boundary: (String string, String context) -> Integer?
+        def self.exponent_at?: (String string, Integer index) -> bool
+        def self.guard_exponent: (String string, Integer index, String context) -> void
+        def self.normalize_unit: (String unit) -> String
+        def self.parse_amount: (String string, String context) -> Rational
+        def self.raise_unrecognized: (String unit, String context) -> bot
+        def self.raise_spaces: (String context) -> bot
+        def self.raise_no_amount: (String context) -> bot
+        def self.raise_amount: (String context) -> bot
+        def self.raise_exponent: (String context) -> bot
+      end
+
       module Semver
         extend RegistryHelpers
 

@@ -25,6 +25,8 @@ detectors:
       - Ruby::Rego::Builtins::Yaml::Emitter
       # Resolver carries the yaml.v2 resolve map/regex plus distinct anti-DoS bounds.
       - Ruby::Rego::Builtins::Yaml::ScalarResolver
+      # Two multiplier tables (SI/binary) plus the exponent bound and numeric-scan constants.
+      - Ruby::Rego::Builtins::Units
   TooManyInstanceVariables:
     exclude:
       - Ruby::Rego::Lexer
