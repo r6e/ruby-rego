@@ -40,6 +40,9 @@ module Ruby
             "-.inf" => -Float::INFINITY, "-.Inf" => -Float::INFINITY, "-.INF" => -Float::INFINITY
           }.freeze
 
+          # Prefix of an explicit core YAML schema tag (e.g. "tag:yaml.org,2002:int").
+          TAG_PREFIX = "tag:yaml.org,2002:"
+
           # First-byte hints that a scalar might be a number (yaml.v2 resolveTable).
           NUMBER_LEADS = "+-.0123456789"
           FLOAT_RE = /\A[-+]?(\.[0-9]+|[0-9]+(\.[0-9]*)?)([eE][-+]?[0-9]+)?\z/
@@ -140,7 +143,7 @@ module Ruby
             raise ResolveError, "yaml nested too deep" if depth > MAX_DEPTH
 
             case node
-            when Psych::Nodes::Scalar then anchored(node, anchors) { node.plain ? resolve(node.value) : node.value }
+            when Psych::Nodes::Scalar then anchored(node, anchors) { scalar_value(node) }
             when Psych::Nodes::Sequence
               anchored(node, anchors) { node.children.map { |child| build(child, anchors, depth + 1) } }
             when Psych::Nodes::Mapping then build_mapping(node, anchors, depth)
@@ -149,6 +152,78 @@ module Ruby
             end
           end
           private_class_method :build
+
+          # Resolves a scalar node's value. An explicit core tag (!!str/!!int/!!float/!!bool/
+          # !!null) coerces the value to that type (erroring on a value that can't be coerced,
+          # like OPA); otherwise a plain scalar is resolved and a quoted one is a string.
+          # @return [Object]
+          def self.scalar_value(node)
+            tag = node.tag
+            return tag_coerce(tag[TAG_PREFIX.length..], node.value) if tag&.start_with?(TAG_PREFIX)
+
+            node.plain ? resolve(node.value) : node.value
+          end
+          private_class_method :scalar_value
+
+          # @return [Object]
+          def self.tag_coerce(type, value)
+            case type
+            when "int" then tag_int(value)
+            when "float" then tag_float(value)
+            when "bool" then tag_bool(value)
+            when "null" then tag_null(value)
+            when "binary" then tag_binary(value)
+            # !!str — and any unrecognized core tag (e.g. !!timestamp) — yields the raw string.
+            else value
+            end
+          end
+          private_class_method :tag_coerce
+
+          # @return [Integer]
+          def self.tag_int(value)
+            parse_integer(value.delete("_")) || raise(ResolveError, "invalid !!int")
+          end
+          private_class_method :tag_int
+
+          # @return [Float, Integer]
+          def self.tag_float(value)
+            mapped = RESOLVE_MAP[value]
+            return mapped if mapped.is_a?(Float) # .inf / .nan
+
+            plain = value.delete("_")
+            raise ResolveError, "invalid !!float" unless FLOAT_RE.match?(plain)
+
+            json_number(Float(plain))
+          end
+          private_class_method :tag_float
+
+          # base64 (yaml.v2 emits it wrapped, so whitespace is stripped). A pathologically
+          # malformed payload yields undefined; OPA's leniency for some non-base64 bytes is
+          # an unreproduced edge.
+          # @return [String]
+          def self.tag_binary(value)
+            value.gsub(/\s/, "").unpack1("m0")
+          rescue ArgumentError
+            raise ResolveError, "invalid !!binary"
+          end
+          private_class_method :tag_binary
+
+          # @return [bool]
+          def self.tag_bool(value)
+            mapped = RESOLVE_MAP[value]
+            return mapped if [true, false].include?(mapped)
+
+            raise ResolveError, "invalid !!bool"
+          end
+          private_class_method :tag_bool
+
+          # @return [nil]
+          def self.tag_null(value)
+            return nil if RESOLVE_MAP.key?(value) && RESOLVE_MAP[value].nil?
+
+            raise ResolveError, "invalid !!null"
+          end
+          private_class_method :tag_null
 
           # Registers a built value under its anchor (if any) so later aliases resolve.
           def self.anchored(node, anchors)
@@ -204,11 +279,13 @@ module Ruby
 
             case key
             when String then key
-            when nil then "null"
             when true then "true"
             when false then "false"
+            when Integer then key.to_s
             when Float then Emitter.float_string(key)
-            else key.to_s
+            # A null or composite (array/object) key cannot be a JSON object key, so OPA's
+            # round-trip rejects it; yield undefined to match.
+            else raise ResolveError, "invalid object key #{key.class}"
             end
           end
           private_class_method :json_key
