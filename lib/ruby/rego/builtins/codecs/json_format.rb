@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../term_order"
+
 module Ruby
   module Rego
     module Builtins
@@ -27,31 +29,16 @@ module Ruby
         end
         private_class_method :jsonify
 
+        # Sorts the raw set elements into OPA's term order (so a nested set ranks as a set,
+        # above an object — which jsonify would otherwise flatten to an array) before
+        # converting each to its JSON form.
+        #
         # @param set [Set]
         # @return [Array<Object>]
         def self.sorted_json_array(set)
-          set.map { |element| jsonify(element) }.sort_by { |element| json_sort_key(element) }
+          TermOrder.sorted(set).map { |element| jsonify(element) }
         end
         private_class_method :sorted_json_array
-
-        # Deterministic sort key mirroring OPA's set ordering: by type rank, then
-        # value, with composites compared element-wise (not by serialized string).
-        #
-        # @param element [Object]
-        # @return [Array<Object>]
-        # rubocop:disable Metrics/CyclomaticComplexity
-        def self.json_sort_key(element)
-          case element
-          when true, false then [1, element ? 1 : 0]
-          when ::Numeric then [2, element]
-          when ::String then [3, element]
-          when ::Array then [4, element.map { |item| json_sort_key(item) }]
-          when ::Hash then [5, element.keys.sort.map { |key| [key, json_sort_key(element[key])] }]
-          else [0, 0] # null
-          end
-        end
-        # rubocop:enable Metrics/CyclomaticComplexity
-        private_class_method :json_sort_key
       end
     end
   end

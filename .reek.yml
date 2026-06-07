@@ -21,6 +21,10 @@ detectors:
       # Regex carries several independent anti-DoS bound constants (timeout, source
       # length, output/work caps) plus character classes — each a distinct guard.
       - Ruby::Rego::Builtins::Regex
+      # yaml.v2 emitter port: scalar-style constants plus the two quote-trigger regexes.
+      - Ruby::Rego::Builtins::Yaml::Emitter
+      # Resolver carries the yaml.v2 resolve map/regex plus distinct anti-DoS bounds.
+      - Ruby::Rego::Builtins::Yaml::ScalarResolver
   TooManyInstanceVariables:
     exclude:
       - Ruby::Rego::Lexer
@@ -39,15 +43,19 @@ detectors:
       # recursive intersection engine); inherently statement-heavy.
       - Ruby::Rego::Builtins::Regex::GlobIntersection
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
-      # Recursive JSON normalization and OPA set-ordering: type-dispatch case folds.
+      # Recursive JSON normalization: type-dispatch case fold.
       - Ruby::Rego::Builtins::Codecs#self.jsonify
-      - Ruby::Rego::Builtins::Codecs#self.json_sort_key
       # Faithful SemVer parse / §11 precedence steps.
       - Ruby::Rego::Builtins::Semver#self.build_version
       - Ruby::Rego::Builtins::Semver#self.compare_prerelease
       - Ruby::Rego::Builtins::Semver#self.compare_identifier
       # Multi-index array removal: recurse-then-delete-descending in one pass.
       - Ruby::Rego::Builtins::JsonPaths#self.prune_array
+      # Faithful ports of the yaml.v2 emitter and scalar resolver.
+      - Ruby::Rego::Builtins::Yaml::Emitter
+      - Ruby::Rego::Builtins::Yaml::ScalarResolver
+      # Recursive term-order comparator (single case over all value types).
+      - Ruby::Rego::Builtins::TermOrder
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
       - Ruby::Rego::CompiledPolicySet
@@ -75,6 +83,11 @@ detectors:
       # gintersect port: repeated rune/token index access while scanning.
       - Ruby::Rego::Builtins::Regex::GlobIntersection
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
+      # yaml.v2 emitter/resolver: repeated scalar/index access while building nodes.
+      - Ruby::Rego::Builtins::Yaml::Emitter
+      - Ruby::Rego::Builtins::Yaml::ScalarResolver
+      # Recursive term-order comparator: repeats sort_key across case branches.
+      - Ruby::Rego::Builtins::TermOrder
   UtilityFunction:
     exclude:
       - Ruby::Rego::Lexer
@@ -110,6 +123,10 @@ detectors:
       - Ruby::Rego::Builtins::Regex::GoTemplate
       # atom_token dispatches on whether the rune was backslash-escaped.
       - Ruby::Rego::Builtins::Regex::GlobIntersection
+      # Emitter.scalar dispatches on the requested scalar style.
+      - Ruby::Rego::Builtins::Yaml::Emitter
+      # merge_key? dispatches on whether the resolved key is the merge token.
+      - Ruby::Rego::Builtins::Yaml::ScalarResolver
   NilCheck:
     exclude:
       - Ruby::Rego::Lexer
@@ -117,6 +134,9 @@ detectors:
       - Ruby::Rego::Unifier
       - Ruby::Rego::Builtins::Regex::GoTemplate
       # Nil sentinels for trim mismatch and the star's optional next-token.
+      # Type-dispatch over JSON values (null is a real case).
+      - Ruby::Rego::Builtins::Yaml::Emitter
+      - Ruby::Rego::Builtins::Yaml::ScalarResolver
       - Ruby::Rego::Builtins::Regex::GlobIntersection
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
   LongParameterList:
@@ -138,6 +158,8 @@ detectors:
       - Ruby::Rego::Evaluator::RuleEvaluator
       # Idiomatic any-over-any membership test; short-circuits on both axes.
       - Ruby::Rego::Builtins::Strings#self.any_pair_match?
+      # YAML merge keys: iterate merge sources, then each source's entries.
+      - Ruby::Rego::Builtins::Yaml::ScalarResolver#self.merge_into
   UncommunicativeVariableName:
     accept:
       - e
