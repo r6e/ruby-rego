@@ -37,9 +37,11 @@ module Ruby
         # rubocop:enable Metrics/CyclomaticComplexity
         private_class_method :sort_key
 
+        # Computes each key/value sort tuple once, then sorts by the key tuple — avoiding a
+        # second sort_key(key) pass while sorting.
         # @return [Array<Object>]
         def self.key_pairs(hash)
-          hash.keys.sort_by { |key| sort_key(key) }.map { |key| [sort_key(key), sort_key(hash[key])] }
+          hash.map { |key, value| [sort_key(key), sort_key(value)] }.sort_by(&:first)
         end
         private_class_method :key_pairs
       end

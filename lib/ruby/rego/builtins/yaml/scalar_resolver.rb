@@ -125,7 +125,9 @@ module Ruby
             raise ResolveError, "yaml too long" if string.bytesize > MAX_YAML_SOURCE
 
             document = Psych.parse_stream(string).children.first
-            return nil unless document
+            # An absent document or one with no root node is an empty document, which
+            # decodes to null (matching yaml.v2 / sigs.k8s.io/yaml), not an error.
+            return nil if document.nil? || document.root.nil?
 
             value = build(document.root, {}, 0)
             reject_non_finite(value, [MAX_NODES], 0)
