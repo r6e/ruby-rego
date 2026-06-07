@@ -364,6 +364,7 @@ module Ruby
         extend RegistryHelpers
 
         MAX_EXPONENT_DIGITS: Integer
+        MAX_SOURCE: Integer
         NUMERIC: String
         DIGIT: Regexp
         SIGN: Array[String]
@@ -385,6 +386,7 @@ module Ruby
         def self.normalize_unit: (String unit) -> String
         def self.parse_amount: (String string, String context) -> Rational
         def self.raise_unrecognized: (String unit, String context) -> bot
+        def self.raise_too_long: (String context) -> bot
         def self.raise_spaces: (String context) -> bot
         def self.raise_no_amount: (String context) -> bot
         def self.raise_amount: (String context) -> bot

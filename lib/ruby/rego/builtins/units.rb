@@ -26,6 +26,12 @@ module Ruby
         # OPA's maxExponentDigits: a scientific exponent longer than this is undefined.
         MAX_EXPONENT_DIGITS = 6
 
+        # Upper bound on the operand length (OPA has none — it relies on Go's runtime). Guards
+        # the pure-Ruby evaluator against a huge literal numeric string allocating a giant
+        # bignum; an over-long operand yields undefined. (The 6-digit exponent cap already
+        # bounds scientific-notation blow-up.)
+        MAX_SOURCE = 1_000_000
+
         # Characters that continue the numeric prefix (an `e`/`E` exponent is handled apart).
         NUMERIC = "0123456789.+-"
         DIGIT = /[0-9]/
@@ -98,7 +104,10 @@ module Ruby
         # @return [String]
         def self.string_arg(value, context)
           Base.assert_type(value, expected: StringValue, context: context)
-          value.value.delete('"')
+          string = value.value
+          raise_too_long(context) if string.length > MAX_SOURCE
+
+          string.delete('"')
         end
         private_class_method :string_arg
 
@@ -176,6 +185,15 @@ module Ruby
           )
         end
         private_class_method :raise_unrecognized
+
+        # @return [void]
+        def self.raise_too_long(context)
+          Base.raise_argument_error(
+            "resource string exceeds maximum length #{MAX_SOURCE}",
+            expected: "length <= #{MAX_SOURCE}", actual: "too long", context: context
+          )
+        end
+        private_class_method :raise_too_long
 
         # @return [void]
         def self.raise_spaces(context)

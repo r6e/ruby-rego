@@ -52,9 +52,16 @@ RSpec.describe "units builtins" do
       expect(parse("10.123456789012m").to_ruby).to eq(0.0101234568)
     end
 
-    it "accepts scientific notation and the exa suffix" do
+    it "accepts scientific notation (both e/E, with optional exponent sign) and the exa suffix" do
       expect(parse("1e3K").to_ruby).to eq(1_000_000)
+      expect(parse("1E3K").to_ruby).to eq(1_000_000)
+      expect(parse("1e+3K").to_ruby).to eq(1_000_000)
+      expect(parse("1.5e-3K").to_ruby).to eq(1.5)
       expect(parse("10e").to_ruby).to eq(10_000_000_000_000_000_000)
+    end
+
+    it "is undefined for an operand longer than the DoS cap (OPA relies on Go's runtime)" do
+      expect(parse("1#{"0" * 1_000_000}")).to be_a(Ruby::Rego::UndefinedValue)
     end
 
     it "is undefined for spaces, unknown units, bad amounts, non-strings, or huge exponents" do
@@ -85,6 +92,10 @@ RSpec.describe "units builtins" do
       expect(parse_bytes("10Mi").to_ruby).to eq(10_485_760)
       expect(parse_bytes("10GiB").to_ruby).to eq(10_737_418_240)
       expect(parse_bytes("1TiB").to_ruby).to eq(1024**4)
+    end
+
+    it "removes embedded double-quotes from the value, matching OPA" do
+      expect(parse_bytes(%(1"0kb)).to_ruby).to eq(10_000)
     end
 
     it "is undefined for a bare b, spaces, unknown units, bad amounts, or non-strings" do

@@ -10,7 +10,8 @@ All notable changes to this project will be documented in this file.
   an integer or a value rounded to 10 decimals. `parse_bytes` reads a byte quantity (`10KB`,
   `1.5GiB`; case-insensitive, `b`-suffixed or bare, but a lone `b` is not a unit) to an
   integer, truncating toward zero. A space, an empty/unparseable amount, an unknown unit, a
-  non-string, or a scientific exponent over 6 digits yields undefined. Hand-rolled with exact
+  non-string, a scientific exponent over 6 digits, or an operand over 1M characters (a DoS
+  bound OPA lacks) yields undefined. Hand-rolled with exact
   rational arithmetic; no new dependency. One intentional divergence: `parse_bytes` uses exact
   arithmetic where OPA uses `big.Float`, so a fractional amount whose binary approximation
   falls just below an integer truncates one lower in OPA (e.g. `0.001mb` → 999 there, 1000
