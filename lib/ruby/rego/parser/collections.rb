@@ -16,7 +16,7 @@ module Ruby
         start = consume(TokenType::LBRACKET)
         location = start.location
         consume_newlines
-        return AST::ArrayLiteral.new(elements: [], location: location) if match?(TokenType::RBRACKET)
+        return empty_array_literal(start) if match?(TokenType::RBRACKET)
 
         term = parse_expression(Precedence::OR)
         return parse_array_comprehension(start, term) if pipe_token?
@@ -156,6 +156,11 @@ module Ruby
 
       def empty_set?(first_element)
         rbrace_token? && !first_element
+      end
+
+      def empty_array_literal(start_token)
+        advance
+        AST::ArrayLiteral.new(elements: [], location: start_token.location)
       end
 
       def empty_object_literal(start_token)

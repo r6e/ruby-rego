@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Fix: an empty array literal `[]` now parses in every position (rule value, nested,
+  object/set value, function argument). The parser recognized `[]` but did not consume the
+  closing `]`, leaving it dangling so any enclosing construct failed (e.g. `count([])` →
+  "Expected ')' after arguments", `x := []` → "Expected rule identifier"). Empty `{}` was
+  unaffected. Now consumes the bracket like the empty-object/empty-set paths.
+
 - Fix: `json.marshal` now orders set elements by OPA's term order even when an element is a
   composite. The previous implementation ranked elements *after* converting them to JSON, which
   lost type information: a nested set was ranked as an array (so `json.marshal({ {"a": 2}, {2, 3} })`
