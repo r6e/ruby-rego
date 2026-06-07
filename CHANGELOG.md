@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Units built-ins: `units.parse` and `units.parse_bytes`, matching OPA. `parse` reads an
+  SI/binary quantity (`10K`, `1.5Mi`, `10m`) to a number — note the m/M asymmetry (lowercase
+  `m` is milli, uppercase `M` mega; every other first letter is case-insensitive) — returning
+  an integer or a value rounded to 10 decimals. `parse_bytes` reads a byte quantity (`10KB`,
+  `1.5GiB`; case-insensitive, `b`-suffixed or bare, but a lone `b` is not a unit) to an
+  integer, truncating toward zero. A space, an empty/unparseable amount, an unknown unit, a
+  non-string, a scientific exponent over 6 digits, or an operand over 1M characters (a DoS
+  bound OPA lacks) yields undefined. Hand-rolled with exact
+  rational arithmetic; no new dependency. One intentional divergence: `parse_bytes` uses exact
+  arithmetic where OPA uses `big.Float`, so a fractional amount whose binary approximation
+  falls just below an integer truncates one lower in OPA (e.g. `0.001mb` → 999 there, 1000
+  here — the value OPA's own `units.parse("0.001M")` returns).
+
 - Net/CIDR built-ins: `net.cidr_expand` and `net.cidr_contains_matches`, matching OPA.
   `cidr_expand(cidr)` returns the set of every address in a CIDR (host bits masked to the
   network first); the argument must be a valid CIDR (a bare IP is undefined), and a block

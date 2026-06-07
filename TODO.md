@@ -52,20 +52,36 @@ annotations — these ripple structurally and are not "just more functions").
 
 ## Built-in function backlog
 
-~66 of OPA's ~210 builtins are implemented (types, aggregates, numbers, regex,
-encoding, strings, collections, comparisons). The registry pattern makes
-additions mechanical; this is volume, not difficulty. Highest compat-per-effort first:
+~117 of OPA 1.17's 205 builtins are implemented (types, aggregates, numbers, bits, regex,
+encoding incl. `yaml.*`, strings, collections, comparisons, semver, net/CIDR, units). The
+registry pattern makes additions mechanical; this is volume, not difficulty. Each addition is
+verified byte-for-byte against `opa eval`.
 
-- 🟡 Numeric: ✅ `abs`, `round`, `ceil`, `floor`, `numbers.range`; ⬜ `rand.intn`
-  (stateful/seeded — deferred), ⬜ `numbers.range_step`.
-- 🟡 Regex: ✅ `regex.match`, `regex.is_valid`, `regex.split`, `regex.find_n`,
-  `regex.replace` (Go `Expand` template syntax; Go `(?P<name>)` named groups rewritten to
-  plain captures with `${name}` resolved via a name→index map; RE2 zero-width-match
-  semantics); ⬜ `regex.find_all_string_submatch_n`, `regex.template_match`,
-  `regex.globs_match`.
-- 🟡 Encoding: ✅ `json.marshal`/`json.unmarshal`/`json.is_valid`, `base64`
-  encode/decode/is_valid, `base64url` encode/decode/`encode_no_pad`, `hex` encode/decode,
-  `urlquery` encode/decode/`encode_object`/`decode_object`; ⬜ `yaml.*`.
+Done across these namespaces: numeric (`abs`/`round`/`ceil`/`floor`/`numbers.range`/
+`numbers.range_step`), regex (incl. `find_all_string_submatch_n`, `template_match`,
+`globs_match`), encoding (`json.*`, `base64`/`base64url`/`hex`/`urlquery`, `yaml.*`), semver
+(`is_valid`/`compare`), net (`cidr_contains`/`cidr_intersects`/`cidr_is_valid`/`cidr_expand`/
+`cidr_contains_matches`), units (`parse`/`parse_bytes`).
+
+Remaining (~88), highest compat-per-effort first:
+
+- ⬜ Small / self-contained: `array.flatten`, `object.subset`, `uuid.parse`/`uuid.rfc4122`,
+  `uri.parse`/`uri.is_valid`, `graph.reachable`/`graph.reachable_paths`,
+  `strings.render_template`.
+- ⬜ Net: `net.cidr_merge` (netaddr range-merge port). (`net.cidr_overlap` is deprecated and
+  rejected by OPA at compile time — intentionally omitted. `net.lookup_ip_addr` does DNS —
+  deferred as side-effecting.)
+- ⬜ Time (10): `time.now_ns`, `time.parse_rfc3339_ns`, `time.date`, `time.clock`,
+  `time.weekday`, `time.add_date`, `time.diff`, `time.format`, `time.parse_ns`,
+  `time.parse_duration_ns`. High value; Go reference-time layout + tz make `format`/`parse` fiddly.
+- ⬜ JSON: `json.patch` (RFC 6902), `json.marshal_with_options`; `json.match_schema`/
+  `json.verify_schema` need a JSON-Schema validator (dependency decision).
+- ⬜ Crypto: `crypto.x509.*` (7, OpenSSL), `crypto.parse_private_keys`.
+- ⬜ JWT: `io.jwt.*` (17 — decode/verify/encode_sign; OpenSSL-backed, large batch).
+- ⬜ GraphQL: `graphql.*` (6 — needs a GraphQL parser dependency).
+- ⬜ Deferred / out of scope: `rand.intn` (seeded/stateful), `http.send` (network),
+  `providers.aws.sign_req`, `opa.runtime`, `rego.metadata.*` (needs annotations), `internal.*`
+  (engine-internal), and operator function-forms (`plus`/`and`/`eq`/… — handled as operators).
 
 ## Refactoring follow-ups
 
