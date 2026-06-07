@@ -369,6 +369,26 @@ RSpec.describe Ruby::Rego::Parser do
       expect(empty_object.pairs).to eq([])
     end
 
+    it "parses an empty array literal in every position" do
+      top = parse_expression("[]")
+      expect(top).to be_a(Ruby::Rego::AST::ArrayLiteral)
+      expect(top.elements).to eq([])
+
+      nested = parse_expression("[[], 1]")
+      expect(nested.elements.length).to eq(2)
+      expect(nested.elements.first).to be_a(Ruby::Rego::AST::ArrayLiteral)
+
+      arg = parse_expression("count([])")
+      expect(arg).to be_a(Ruby::Rego::AST::Call)
+      expect(arg.args.first).to be_a(Ruby::Rego::AST::ArrayLiteral)
+
+      object_value = parse_expression("{\"k\": []}")
+      expect(object_value.pairs.first[1]).to be_a(Ruby::Rego::AST::ArrayLiteral)
+
+      rule = parse_rule("x := []")
+      expect(rule.head[:value]).to be_a(Ruby::Rego::AST::ArrayLiteral)
+    end
+
     it "parses function calls" do
       expr = parse_expression("count([1, 2])")
 

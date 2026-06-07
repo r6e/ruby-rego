@@ -2433,6 +2433,7 @@ module Ruby
       def parse_object_pair: (AST::expression key) -> [AST::expression, AST::expression]
       def append_object_pairs: (Array[[AST::expression, AST::expression]] pairs) -> void
       def empty_set?: (AST::expression?) -> bool
+      def empty_array_literal: (Token start_token) -> AST::ArrayLiteral
       def empty_object_literal: (Token start_token) -> AST::ObjectLiteral
       def empty_set_literal: (Token start_token) -> AST::SetLiteral
       def parse_reference_path: (Array[AST::RefArg] path) -> void

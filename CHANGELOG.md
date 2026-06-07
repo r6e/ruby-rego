@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Fix: an empty array literal `[]` now parses in every position (rule value, nested,
+  object/set value, function argument). The parser recognized `[]` but did not consume the
+  closing `]`, leaving it dangling so any enclosing construct failed (e.g. `count([])` →
+  "Expected ')' after arguments", `x := []` → "Expected rule identifier"). Empty `{}` was
+  unaffected. Now consumes the bracket like the empty-object/empty-set paths.
+
 - JSON path built-ins: `json.filter` and `json.remove`, matching OPA. Both take an object
   document and an array or set of paths; each path is a `/`-separated string (JSON-pointer
   escaped: `~1` is `/`, `~0` is `~`, with a leading run of slashes stripped before splitting
