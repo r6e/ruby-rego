@@ -692,6 +692,7 @@ module Ruby
 
         module ScalarResolver
           RESOLVE_MAP: Hash[String, untyped]
+          TAG_PREFIX: String
           NUMBER_LEADS: String
           FLOAT_RE: Regexp
           MAX_YAML_SOURCE: Integer
@@ -713,6 +714,13 @@ module Ruby
           def self.split_sign: (String string) -> [Integer, String]
           def self.integer_base: (String digits) -> [Integer, String]
           def self.build: (untyped node, Hash[String, untyped] anchors, Integer depth) -> untyped
+          def self.scalar_value: (untyped node) -> untyped
+          def self.tag_coerce: (String type, String value) -> untyped
+          def self.tag_int: (String value) -> Integer
+          def self.tag_float: (String value) -> (Integer | Float)
+          def self.tag_bool: (String value) -> bool
+          def self.tag_null: (String value) -> nil
+          def self.tag_binary: (String value) -> untyped
           def self.anchored: (untyped node, Hash[String, untyped] anchors) { () -> untyped } -> untyped
           def self.build_mapping: (untyped node, Hash[String, untyped] anchors, Integer depth) -> Hash[String, untyped]
           def self.merge_key?: (untyped key, untyped key_node) -> bool

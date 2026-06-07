@@ -13,9 +13,12 @@ All notable changes to this project will be documented in this file.
   that would otherwise resolve to a non-string/timestamp/base-60, stringifies and sorts
   non-string keys, and replaces invalid UTF-8 with U+FFFD. `unmarshal` resolves plain scalars
   with a yaml.v2-compatible resolver (yes/no/on/off bools, hex/octal/binary/underscored ints;
-  timestamps stay strings; integer-valued floats collapse to ints), stringifies object keys,
-  resolves anchors/aliases and merge keys, and takes the first document; invalid YAML or a
-  non-finite number yields undefined. `is_valid` is total over runtime values (a non-string
+  timestamps stay strings; integer-valued floats collapse to ints), honors explicit core
+  tags (`!!str`/`!!int`/`!!float`/`!!bool`/`!!null`, yielding undefined on an uncoercible
+  value like `!!int "abc"`), stringifies object keys (a null or composite key yields
+  undefined, as JSON cannot key on it), resolves anchors/aliases and merge keys, takes the
+  first document (an empty document is null); invalid YAML or a non-finite number yields
+  undefined. `is_valid` is total over runtime values (a non-string
   yields `false`). DoS bounds (source length, nesting depth, expanded-node count → undefined,
   since OPA relies on Go runtime limits absent here) guard deep nesting, cyclic anchors, and
   alias-expansion bombs. Uses Psych (Ruby stdlib; no new gem) via the AST API, never

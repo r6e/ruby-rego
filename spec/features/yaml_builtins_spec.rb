@@ -226,6 +226,39 @@ RSpec.describe "yaml builtins" do
       expect(unmarshal("1.0: v")).to eq({ "1" => "v" }) # integer-valued float key collapses
     end
 
+    it "is undefined for a null or composite object key (not a valid JSON key)" do
+      expect(unmarshal_result("null: z")).to be_nil
+      expect(unmarshal_result("~: z")).to be_nil
+      expect(unmarshal_result("[1, 2]: z")).to be_nil
+    end
+
+    it "honors explicit core tags, erroring on an uncoercible value (matching OPA)" do
+      expect(unmarshal('!!int "5"')).to eq(5)
+      expect(unmarshal("!!str 123")).to eq("123")
+      expect(unmarshal("!!float 3")).to eq(3)
+      expect(unmarshal('!!bool "yes"')).to be(true)
+      expect(unmarshal("!!null ~")).to be_nil
+      expect(unmarshal("!!binary aGVsbG8=")).to eq("hello") # base64-decoded, like OPA
+      expect(unmarshal_result('!!int "abc"')).to be_nil
+      expect(unmarshal_result("!!null x")).to be_nil
+      expect(unmarshal_result("!!binary xyz")).to be_nil
+    end
+
+    it "accepts dot-edge floats (5. / .5), matching OPA, plain and tagged" do
+      expect(unmarshal("5.")).to eq(5)
+      expect(unmarshal(".5")).to eq(0.5)
+      expect(unmarshal("!!float 5.")).to eq(5)
+      expect(unmarshal("!!float .5")).to eq(0.5)
+    end
+
+    it "strips underscores anywhere in a number, like yaml.v2 (1_e2 == 100)" do
+      # yaml.v2's resolve.go removes every '_' before parsing, so this matches OPA — not
+      # the stricter YAML-spec "between digits only" rule.
+      expect(unmarshal("1_e2")).to eq(100)
+      expect(unmarshal("1__0")).to eq(10)
+      expect(unmarshal("_1")).to eq("_1")
+    end
+
     it "is undefined for a non-finite value" do
       expect(unmarshal_result("x: .inf")).to be_nil
     end
