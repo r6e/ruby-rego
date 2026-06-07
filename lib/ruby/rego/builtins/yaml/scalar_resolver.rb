@@ -71,10 +71,21 @@ module Ruby
             return integer if integer
             return nil unless FLOAT_RE.match?(plain)
 
-            float = Float(plain, exception: false)
+            float = float_value(plain)
             float && json_number(float)
           end
           private_class_method :numeric
+
+          # Parses a FLOAT_RE-matched scalar. Dot-edge forms (".5", "5.", "5.e3") are
+          # normalized to have a digit on both sides of the point so Ruby's Float accepts
+          # them on every supported version — Ruby < 3.4 rejects a bare leading/trailing
+          # dot, unlike Go's strconv (which OPA uses).
+          # @return [Float, nil]
+          def self.float_value(plain)
+            normalized = plain.sub(/\A(?<sign>[+-]?)\./, '\k<sign>0.').sub(/\.(?=[eE]|\z)/, ".0")
+            Float(normalized, exception: false)
+          end
+          private_class_method :float_value
 
           # OPA's YAML→JSON round-trip renders an integer-valued float without a decimal
           # (Go json uses fixed notation for 1e-6 <= |x| < 1e21), so it reparses as an
@@ -193,7 +204,7 @@ module Ruby
             plain = value.delete("_")
             raise ResolveError, "invalid !!float" unless FLOAT_RE.match?(plain)
 
-            json_number(Float(plain))
+            json_number(float_value(plain) || raise(ResolveError, "invalid !!float"))
           end
           private_class_method :tag_float
 
