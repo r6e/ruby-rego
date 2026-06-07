@@ -47,6 +47,8 @@ detectors:
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
       # Recursive JSON normalization: type-dispatch case fold.
       - Ruby::Rego::Builtins::Codecs#self.jsonify
+      # Faithful port of OPA's arraySetSubset unmatched-counter (==-based for numeric equality).
+      - Ruby::Rego::Builtins::Collections::ObjectOps#self.array_set_subset?
       # cidr_contains_matches: parse both operands then cross-product; entries: 4-way
       # collection-or-scalar dispatch.
       - Ruby::Rego::Builtins::Net#self.cidr_contains_matches
@@ -62,6 +64,10 @@ detectors:
       - Ruby::Rego::Builtins::Yaml::ScalarResolver
       # Recursive term-order comparator (single case over all value types).
       - Ruby::Rego::Builtins::TermOrder
+      # Graph traversal: BFS worklist and the recursive path builder (OPA reachable port).
+      - Ruby::Rego::Builtins::Graph#self.reachable
+      - Ruby::Rego::Builtins::Graph#self.reachable_paths
+      - Ruby::Rego::Builtins::Graph#self.build_paths
       - Ruby::Rego::Lexer
       - Ruby::Rego::Parser
       - Ruby::Rego::CompiledPolicySet
@@ -149,6 +155,8 @@ detectors:
     exclude:
       # gintersect tokenizer threads (chars, index, +context) through its scan helpers.
       - Ruby::Rego::Builtins::Regex::GlobIntersection
+      # Recursive path builder threads (graph, root, path, accumulator, visited) like OPA's.
+      - Ruby::Rego::Builtins::Graph#self.build_paths
   Attribute:
     exclude:
       # Token#flag is set by the tokenizer and rewritten by Simplify (mirrors Go SetFlag).

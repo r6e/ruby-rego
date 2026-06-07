@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Small collection & graph built-ins: `array.flatten`, `object.subset`, `graph.reachable`,
+  and `graph.reachable_paths`, matching OPA. `array.flatten` flattens exactly one level (a
+  directly-nested array's elements are spliced in; deeper arrays are left intact).
+  `object.subset(super, sub)` is true when `sub` is contained in `super`: objects recursively,
+  sets by membership, arrays as a contiguous subslice, and an array-super/set-sub by coverage;
+  any other operand pairing yields undefined. `graph.reachable(graph, initial)` returns the set
+  of reachable nodes and `graph.reachable_paths` the set of walkable paths (both stop at cycles;
+  a neighbour that is not itself a node in the graph is not reached, as in OPA). Hand-rolled; no
+  new dependency. (`uuid.rfc4122` is not implemented — it is non-deterministic, so it cannot be
+  reproduced byte-for-byte, like `rand.intn`.)
+
 - Units built-ins: `units.parse` and `units.parse_bytes`, matching OPA. `parse` reads an
   SI/binary quantity (`10K`, `1.5Mi`, `10m`) to a number — note the m/M asymmetry (lowercase
   `m` is milli, uppercase `M` mega; every other first letter is case-insensitive) — returning

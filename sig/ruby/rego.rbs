@@ -927,7 +927,9 @@ module Ruby
         def self.array_concat: (Value left, Value right) -> ArrayValue
         def self.array_slice: (Value array, Value start, Value stop) -> ArrayValue
         def self.array_reverse: (Value array) -> ArrayValue
+        def self.array_flatten: (Value array) -> ArrayValue
         def self.object_get: (Value object, Value key, Value default) -> Value
+        def self.object_subset: (Value super_value, Value sub_value) -> BooleanValue
         def self.object_keys: (Value object) -> SetValue
         def self.object_remove: (Value object, Value keys) -> ObjectValue
         def self.object_union: (Value left, Value right) -> ObjectValue
@@ -945,6 +947,7 @@ module Ruby
       module Collections::ArrayOps
         def self.sort: (Value array) -> ArrayValue
         def self.reverse: (Value array) -> ArrayValue
+        def self.flatten: (Value array) -> ArrayValue
         def self.array_concat: (Value left, Value right) -> ArrayValue
         def self.array_slice: (Value array, Value start, Value stop) -> ArrayValue
 
@@ -963,6 +966,7 @@ module Ruby
 
       module Collections::ObjectOps
         def self.object_get: (Value object, Value key, Value default) -> Value
+        def self.subset: (Value super_value, Value sub_value) -> BooleanValue
         def self.object_keys: (Value object) -> SetValue
         def self.object_remove: (Value object, Value keys) -> ObjectValue
         def self.object_union: (Value left, Value right) -> ObjectValue
@@ -973,6 +977,16 @@ module Ruby
         private
 
         def self.object_value: (Value value, name: String) -> ObjectValue
+        def self.subset?: (untyped sup, untyped sub) -> bool
+        def self.both?: (untyped left, untyped right, Class type) -> bool
+        def self.set_subset?: (Set[untyped] sup, Set[untyped] sub) -> bool
+        def self.member?: (untyped collection, untyped value) -> bool
+        def self.unique_members: (untyped collection) -> Array[untyped]
+        def self.object_subset?: (Hash[untyped, untyped] sup, Hash[untyped, untyped] sub) -> bool
+        def self.super_value_subset?: (Hash[untyped, untyped] sup, untyped key, untyped sub_value) -> bool
+        def self.nested_subset?: (untyped sup_value, untyped sub_value) -> bool
+        def self.array_subset?: (Array[untyped] sup, Array[untyped] sub) -> bool
+        def self.array_set_subset?: (Array[untyped] sup, Set[untyped] sub) -> bool
         def self.normalize_object_key: (untyped key) -> untyped
         def self.key_collection: (Value keys, name: String) -> Set[untyped]
         def self.deep_union: (Hash[untyped, Value] left, Hash[untyped, Value] right) -> Hash[untyped, Value]
@@ -994,6 +1008,24 @@ module Ruby
 
         def self.set_operation: (Value left, Value right, name: String) { (Set[Value], Set[Value]) -> Set[Value] } -> SetValue
         def self.set_contents: (Value value, name: String) -> Set[Value]
+      end
+
+      module Graph
+        extend RegistryHelpers
+
+        GRAPH_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.reachable: (Value graph_value, Value initial_value) -> Set[untyped]
+        def self.reachable_paths: (Value graph_value, Value initial_value) -> Set[Array[untyped]]
+
+        private
+
+        def self.walk_roots: (Hash[untyped, untyped] graph, untyped node, Set[Array[untyped]] paths) -> void
+        def self.build_paths: (Hash[untyped, untyped] graph, untyped root, Array[untyped] path, Set[Array[untyped]] paths, Set[untyped] reached) -> void
+        def self.object_arg: (Value value, String context) -> Hash[untyped, untyped]
+        def self.vertices: (Value value, String context) -> Array[untyped]
+        def self.neighbours: (untyped edges) -> Array[untyped]
       end
 
       module Comparisons
