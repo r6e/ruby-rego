@@ -45,6 +45,10 @@ detectors:
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
       # Recursive JSON normalization: type-dispatch case fold.
       - Ruby::Rego::Builtins::Codecs#self.jsonify
+      # cidr_contains_matches: parse both operands then cross-product; entries: 4-way
+      # collection-or-scalar dispatch.
+      - Ruby::Rego::Builtins::Net#self.cidr_contains_matches
+      - Ruby::Rego::Builtins::Net#self.entries
       # Faithful SemVer parse / §11 precedence steps.
       - Ruby::Rego::Builtins::Semver#self.build_version
       - Ruby::Rego::Builtins::Semver#self.compare_prerelease

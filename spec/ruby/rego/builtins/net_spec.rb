@@ -151,5 +151,114 @@ RSpec.describe "net builtins" do
       expect(registry.call("net.cidr_intersects", [utf16, "10.0.0.0/8"])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
+
+  describe "net.cidr_expand" do
+    it "expands a CIDR into the set of its addresses" do
+      expect(registry.call("net.cidr_expand", ["192.168.0.0/30"]).to_ruby)
+        .to eq(Set["192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3"])
+    end
+
+    it "masks host bits to the network before expanding (matching OPA)" do
+      expect(registry.call("net.cidr_expand", ["192.168.0.5/30"]).to_ruby)
+        .to eq(Set["192.168.0.4", "192.168.0.5", "192.168.0.6", "192.168.0.7"])
+    end
+
+    it "expands a /32 to a single address and handles IPv6" do
+      expect(registry.call("net.cidr_expand", ["10.0.0.5/32"]).to_ruby).to eq(Set["10.0.0.5"])
+      expect(registry.call("net.cidr_expand", ["2001:db8::/126"]).to_ruby)
+        .to eq(Set["2001:db8::", "2001:db8::1", "2001:db8::2", "2001:db8::3"])
+    end
+
+    it "is undefined for a bare IP (a prefix is required), an invalid CIDR, or a non-string" do
+      expect(registry.call("net.cidr_expand", ["10.0.0.1"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_expand", ["bad"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_expand", ["192.168.1.0/33"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_expand", [42])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined for a block larger than the DoS cap (OPA relies on Go's runtime)" do
+      expect(registry.call("net.cidr_expand", ["10.0.0.0/8"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_expand", ["0.0.0.0/0"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
+  describe "net.cidr_contains_matches" do
+    it "returns [index, index] pairs for array operands" do
+      expect(registry.call("net.cidr_contains_matches", [["10.0.0.0/8"], ["10.1.1.1", "192.0.0.1"]]).to_ruby)
+        .to eq(Set[[0, 0]])
+    end
+
+    it "keys each side by its collection type (object key, set element, or the scalar)" do
+      expect(registry.call("net.cidr_contains_matches", [{ "a" => "10.0.0.0/8" }, { "x" => "10.1.1.1" }]).to_ruby)
+        .to eq(Set[%w[a x]])
+      expect(registry.call("net.cidr_contains_matches", [Set["10.0.0.0/8"], "10.1.1.1"]).to_ruby)
+        .to eq(Set[["10.0.0.0/8", "10.1.1.1"]])
+      expect(registry.call("net.cidr_contains_matches", ["10.0.0.0/8", "10.1.1.1"]).to_ruby)
+        .to eq(Set[["10.0.0.0/8", "10.1.1.1"]])
+    end
+
+    it "returns the full cross-product of matches" do
+      result = registry.call("net.cidr_contains_matches",
+                             [["10.0.0.0/8", "192.168.0.0/16"], ["10.1.1.1", "192.168.5.5"]]).to_ruby
+      expect(result).to eq(Set[[0, 0], [1, 1]])
+    end
+
+    it "is an empty set when nothing matches or the collection is empty" do
+      expect(registry.call("net.cidr_contains_matches", [[], "10.1.1.1"]).to_ruby).to eq(Set.new)
+    end
+
+    it "is an empty set when either operand is empty, with no value-parsing (OPA)" do
+      expect(registry.call("net.cidr_contains_matches", [[], ["bad"]]).to_ruby).to eq(Set.new)
+      expect(registry.call("net.cidr_contains_matches", [[], [42]]).to_ruby).to eq(Set.new)
+      expect(registry.call("net.cidr_contains_matches", [["bad-cidr"], []]).to_ruby).to eq(Set.new)
+      expect(registry.call("net.cidr_contains_matches", [["10.0.0.1"], []]).to_ruby).to eq(Set.new)
+    end
+
+    it "still structurally checks cidr-side elements when addresses is empty (OPA)" do
+      # A non-string / empty-array cidr-side element is undefined even with no addresses,
+      # but a non-empty array (whose contents are only value-checked later) is an empty set.
+      expect(registry.call("net.cidr_contains_matches", [[42], []])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_contains_matches", [[[]], []])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_contains_matches", [[[42]], []]).to_ruby).to eq(Set.new)
+    end
+
+    it "accepts [address, metadata] tuples, taking the first element and keying by position" do
+      expect(registry.call("net.cidr_contains_matches", [[["10.0.0.0/8", "m"]], ["10.1.1.1"]]).to_ruby)
+        .to eq(Set[[0, 0]])
+      expect(registry.call("net.cidr_contains_matches", [["10.0.0.0/8"], [["10.1.1.1", "m"]]]).to_ruby)
+        .to eq(Set[[0, 0]])
+      expect(registry.call("net.cidr_contains_matches", [{ "k" => ["10.0.0.0/8", "m"] }, "10.1.1.1"]).to_ruby)
+        .to eq(Set[["k", "10.1.1.1"]])
+    end
+
+    it "is undefined for a non-string/empty-array address-side element (even with a valid network)" do
+      expect(registry.call("net.cidr_contains_matches", [["10.0.0.0/8"], [42]]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+      # A non-matching network still validates the address side eagerly (matching OPA).
+      expect(registry.call("net.cidr_contains_matches", [["99.0.0.0/8"], [42]]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_contains_matches", [["10.0.0.0/8"], [[]]]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined for an empty-array element or one whose first element is not an address" do
+      expect(registry.call("net.cidr_contains_matches", [[[]], "10.1.1.1"])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_contains_matches", [[%w[bad x]], "10.1.1.1"]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_contains_matches", [[[["10.0.0.0/8"]]], "10.1.1.1"]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined if any element is non-string, an unparseable address, or a bare-IP cidr-side" do
+      expect(registry.call("net.cidr_contains_matches", [["10.0.0.0/8", "bad"], "10.1.1.1"]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_contains_matches", [["10.0.0.0/8"], ["10.1.1.1", "bad"]]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_contains_matches", [["10.0.0.0/8", 42], "10.1.1.1"]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_contains_matches", ["10.0.0.1", "10.0.0.1"]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
 end
 # rubocop:enable Metrics/BlockLength
