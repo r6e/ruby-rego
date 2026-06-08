@@ -881,6 +881,46 @@ module Ruby
         end
       end
 
+      module JsonPatch
+        extend RegistryHelpers
+
+        ARRAY_INDEX: Regexp
+        JSON_PATCH_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.patch: (Value document_value, Value operations_value) -> untyped
+
+        private
+
+        def self.apply: (untyped document, untyped operation) -> untyped
+        def self.dispatch: (untyped document, Array[untyped] path, Hash[untyped, untyped] operation) -> untyped
+        def self.move: (untyped document, Array[untyped] path, Hash[untyped, untyped] operation) -> untyped
+        def self.copy: (untyped document, Array[untyped] path, Hash[untyped, untyped] operation) -> untyped
+        def self.add_at: (untyped document, Array[untyped] path, untyped value) -> untyped
+        def self.replace_at: (untyped document, Array[untyped] path, untyped value) -> untyped
+        def self.remove_at: (untyped document, Array[untyped] path) -> untyped
+        def self.test_at: (untyped document, Array[untyped] path, untyped value) -> untyped
+        def self.fetch_at: (untyped node, Array[untyped] segments) -> untyped
+        def self.step: (untyped node, untyped segment) -> untyped
+        def self.array_member: (Array[untyped] array, untyped segment) -> untyped
+        def self.insert: (untyped parent, untyped segment, untyped value) -> untyped
+        def self.array_insert: (Array[untyped] array, untyped segment, untyped value) -> untyped
+        def self.delete: (untyped parent, untyped segment) -> untyped
+        def self.delete_key: (Hash[untyped, untyped] hash, untyped key) -> untyped
+        def self.array_delete: (Array[untyped] array, untyped segment) -> untyped
+        def self.string_key: (untyped segment) -> String
+        def self.array_index: (untyped segment, Integer length, append: bool) -> Integer?
+        def self.numeric_index: (untyped segment) -> Integer?
+        def self.parse_pointer: (untyped path) -> Array[untyped]
+        def self.string_pointer: (String path) -> Array[String]
+        def self.parent_path: (Array[untyped] path) -> Array[untyped]
+        def self.unescape: (String segment) -> String
+        def self.fetch_field: (Hash[untyped, untyped] operation, String key) -> untyped
+        def self.value_of: (Hash[untyped, untyped] operation) -> untyped
+        def self.deep_dup: (untyped value) -> untyped
+        def self.raise_patch_error: () -> bot
+      end
+
       module JsonPaths
         extend RegistryHelpers
 
