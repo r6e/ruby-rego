@@ -8,6 +8,7 @@ require_relative "errors"
 module Ruby
   module Rego
     # Base class for Rego values.
+    # :reek:InstanceVariableAssumption (lazily memoizes @canonical)
     class Value
       TYPE_NAME = "value"
 
@@ -68,21 +69,63 @@ module Ruby
         to_ruby
       end
 
-      # Compare values by class and underlying Ruby value.
+      # Compare values by class and canonical Ruby value. The canonical form makes
+      # numerically-equal numbers (e.g. 1 and 1.0) compare equal everywhere — including as
+      # array/set/object members — matching OPA, where 1 == 1.0.
       #
       # @param other [Object]
       # @return [Boolean]
       def ==(other)
-        other.is_a?(self.class) && other.to_ruby == to_ruby
+        other.is_a?(self.class) && other.canonical == canonical
       end
 
       alias eql? ==
 
-      # Hash for use in Ruby collections.
+      # Hash for use in Ruby collections, consistent with ==/eql? (so a Set/Hash dedups 1 and
+      # 1.0). Without this, eql?-equal numbers could hash differently and never collapse.
       #
       # @return [Integer]
       def hash
-        [self.class.name, to_ruby].hash
+        [self.class.name, canonical].hash
+      end
+
+      # The value's canonical Ruby form: numerically-equal numbers are unified (an
+      # integer-valued Float collapses to its Integer) recursively through arrays, sets, and
+      # objects, so identity/equality/hashing match OPA's number semantics. `to_ruby` still
+      # returns the original (first-seen) representation.
+      #
+      # @return [Object]
+      def canonical
+        return @canonical if defined?(@canonical)
+
+        @canonical = self.class.canonicalize(to_ruby)
+      end
+
+      # @param value [Object] a Ruby value (as produced by #to_ruby)
+      # @return [Object]
+      def self.canonicalize(value)
+        case value
+        when ::Float then canonicalize_float(value)
+        when ::Array then canonicalize_each(value)
+        when ::Set then ::Set.new(canonicalize_each(value))
+        when ::Hash then value.to_h { |key, val| [canonicalize(key), canonicalize(val)] }
+        else value
+        end
+      end
+
+      # @return [Array]
+      def self.canonicalize_each(collection)
+        collection.map { |element| canonicalize(element) }
+      end
+
+      # An integer-valued Float collapses to its Integer so it compares and hashes like the
+      # integer; any other (fractional, infinite, NaN) Float is left as-is.
+      # @return [Numeric]
+      def self.canonicalize_float(value)
+        return value unless value.finite?
+
+        integer = value.to_i
+        value == integer ? integer : value
       end
 
       # Coerce Ruby values into Rego values.
