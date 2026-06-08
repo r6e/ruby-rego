@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- New built-in: `uuid.parse`, matching OPA's `internal/uuid` (a port of google/uuid). It returns
+  an object with `version` and `variant` for every UUID, plus `time` (nanoseconds since the Unix
+  epoch), `nodeid`, `macvariables`, and `clocksequence` for time-based versions 1 and 2 (and `id`
+  and `domain` for the DCE version 2). Canonical, unhyphenated, `urn:uuid:`-prefixed, and
+  brace-wrapped forms are accepted (case-insensitive); a non-string or an unparseable UUID is
+  undefined. The `time` field matches OPA's int64 arithmetic, including its silent overflow for
+  the extreme (non-real) timestamps at the ends of the 60-bit range. (`uuid.rfc4122` is not yet
+  implemented: it is a per-evaluation random generator that needs evaluator-scoped builtin state.)
+
 - Fix: numerically-equal numbers (e.g. `1` and `1.0`, `1.5` and `1.50`) are now treated as the
   same value for equality and hashing, matching OPA (where `1 == 1.0`). The `Value` layer
   compares and hashes on a canonical form (an integer-valued `Float` collapses to its `Integer`)

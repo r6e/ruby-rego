@@ -65,9 +65,11 @@ Done across these namespaces: numeric (`abs`/`round`/`ceil`/`floor`/`numbers.ran
 
 Remaining (~88), highest compat-per-effort first:
 
-- ⬜ Small / self-contained: `array.flatten`, `object.subset`, `uuid.parse`/`uuid.rfc4122`,
-  `uri.parse`/`uri.is_valid`, `graph.reachable`/`graph.reachable_paths`,
-  `strings.render_template`.
+- 🟡 Small / self-contained: ✅ `array.flatten`, `object.subset`, `uuid.parse`,
+  `graph.reachable`/`graph.reachable_paths`. Remaining: `uri.parse`/`uri.is_valid` (thin
+  wrappers over Go `net/url.Parse` — needs a faithful port of Go's lenient parser *and its exact
+  error set*, since Ruby `URI` diverges; own PR), `uuid.rfc4122` (per-eval random generator —
+  needs evaluator-scoped/impure builtin state the registry lacks), `strings.render_template`.
 - ⬜ Net: `net.cidr_merge` (netaddr range-merge port). (`net.cidr_overlap` is deprecated and
   rejected by OPA at compile time — intentionally omitted. `net.lookup_ip_addr` does DNS —
   deferred as side-effecting.)

@@ -400,6 +400,35 @@ module Ruby
         def self.raise_exponent: (String context) -> bot
       end
 
+      module Uuid
+        extend RegistryHelpers
+
+        EPOCH_100NS: Integer
+        DOMAINS: Hash[Integer, String]
+        HYPHEN_POSITIONS: Array[Integer]
+        TIME_BASED_VERSIONS: Array[Integer]
+        UUID_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.parse: (Value value) -> (Hash[String, untyped] | UndefinedValue)
+
+        private
+
+        def self.decode: (String string) -> Array[Integer]?
+        def self.canonical_hex: (String string) -> String?
+        def self.dehyphenate: (String string) -> String?
+        def self.fields: (Array[Integer] bytes) -> Hash[String, untyped]
+        def self.variant: (Integer byte) -> String
+        def self.time_fields: (Array[Integer] bytes) -> Hash[String, untyped]
+        def self.dce_fields: (Array[Integer] bytes) -> Hash[String, untyped]
+        def self.unix_nanos: (Array[Integer] bytes) -> Integer
+        def self.wrap_int64: (Integer value) -> Integer
+        def self.node_id: (Array[Integer] bytes) -> String
+        def self.mac_vars: (Integer byte) -> String
+        def self.uint16: (Array[Integer] bytes, Integer offset) -> Integer
+        def self.uint32: (Array[Integer] bytes, Integer offset) -> Integer
+      end
+
       module Semver
         extend RegistryHelpers
 
