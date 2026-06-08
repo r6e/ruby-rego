@@ -318,6 +318,13 @@ RSpec.describe "net builtins" do
       expect(registry.call("net.cidr_merge", [[42]])).to be_a(Ruby::Rego::UndefinedValue)
       expect(registry.call("net.cidr_merge", ["192.168.0.0/24"])).to be_a(Ruby::Rego::UndefinedValue)
     end
+
+    it "is undefined (not a raised error) for a non-ASCII-compatible string element" do
+      element = Ruby::Rego::StringValue.new("10.0.0.0/8".encode("UTF-16LE"))
+      result = registry.call("net.cidr_merge", [Ruby::Rego::ArrayValue.new([element])])
+
+      expect(result).to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 end
 # rubocop:enable Metrics/BlockLength

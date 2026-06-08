@@ -138,6 +138,11 @@ module Ruby
         # IPNet string OPA keeps for a network that is never merged.
         def self.merge_entry(element, context)
           string = string_value(element, context)
+          # Guard the encoding before `include?` so a non-ASCII-compatible string (e.g. UTF-16LE)
+          # yields undefined rather than raising Encoding::CompatibilityError, matching the other
+          # net builtins (whose parse_addr checks encoding first).
+          raise_invalid_addr(context) unless string.encoding.ascii_compatible? && string.valid_encoding?
+
           string.include?("/") ? cidr_entry(string, context) : address_entry(string, context)
         end
         private_class_method :merge_entry
