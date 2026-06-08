@@ -12,13 +12,22 @@ All notable changes to this project will be documented in this file.
   is now `1` (was `2`), `{1} == {1.0}` is `true` (was `false`), and the same holds for nested
   collections (`{[1], [1.0]}`, `{{1}, {1.0}}`, objects with numeric members) and for set
   comprehensions, partial-set rules, membership, and the `union`/`intersection`/`set_diff`
-  helpers. Known follow-up: object *construction* with numeric keys (`{1: "a", 1.0: "b"}`) and
-  `object.get` on a numeric key are not yet normalized — until then such an object reports two
-  entries where OPA reports one (its keys still de-duplicate as a set, so `object.keys` count is
-  already correct); these are tracked for a separate change to `ObjectValue`. Note the canonical
-  form collapses such duplicate numeric keys (last value wins, as OPA constructs them), so two
-  such objects still compare and hash as OPA would — only their entry count is off until the
-  `ObjectValue` change lands.
+  helpers. Object construction and lookup are normalized for the common cases: numerically-equal
+  object keys collapse to one entry keeping the first key form and last value (`{1: "a", 1.0:
+  "b"}` is `{1: "b"}`, `{1.0: "a", 1: "b"}` is `{1.0: "b"}`), `count` of such an object is `1`,
+  `object.keys` de-duplicates, and `object.get`/reference lookup find a value by numeric equality
+  (`object.get({1.0: "v"}, 1, _)` is `"v"`).
+
+  Known limitations (rare; rooted in object-literal/partial-rule/unifier construction internals,
+  not the value layer): when numeric keys are *duplicated or conflict within a single construct*,
+  the result can diverge from OPA. A literal repeating an exact key alongside a numeric alias
+  (`{1: "a", 1.0: "b", 1: "c"}`) may pick the wrong duplicate's value; a partial-object rule with
+  numerically-equal keys and different values (`p[1] := "a"`, `p[1.0] := "b"`) silently keeps one
+  value where OPA raises a conflict (**fail-open vs OPA's fail-closed**); and object destructuring
+  patterns (`{1: x} = {1.0: v}`) don't match across numeric aliases. Out of scope and
+  pre-existing: numbers larger than 2^53 written in float form lose precision (the gem uses Ruby
+  `Float`, not OPA's arbitrary-precision number), and `union`/`intersection` take two sets here
+  rather than OPA's single set-of-sets.
 
 - Small collection & graph built-ins: `array.flatten`, `object.subset`, `graph.reachable`,
   and `graph.reachable_paths`, matching OPA. `array.flatten` flattens exactly one level (a

@@ -325,17 +325,42 @@ module Ruby
         super(@values)
       end
 
+      # Normalizes object pairs. A numeric key numerically equal to one already present (1 vs
+      # 1.0) reuses the first-seen key form and overwrites its value (last value wins), matching
+      # OPA; other keys are symbol-normalized and conflict-checked as before.
       # :reek:TooManyStatements
       # :reek:FeatureEnvy
       def normalize_pairs(pairs)
         values = {} # @type var values: Hash[Object, Value]
         key_sources = {} # @type var key_sources: Hash[Object, Object]
-        pairs.each_with_object(values) do |(key, val), acc|
+        pairs.each do |key, val|
           normalized_key = key.is_a?(Symbol) ? key.to_s : key
-          ensure_unique_key(normalized_key, key_sources, key)
-          acc[normalized_key] = Value.from_ruby(val)
+          target = numeric_key_match(values, normalized_key) ||
+                   register_key(key_sources, normalized_key, key)
+          values[target] = Value.from_ruby(val)
         end
         values
+      end
+
+      # Records a new (non-numeric-alias) key after the conflict check, returning the key to
+      # store it under.
+      # :reek:FeatureEnvy
+      def register_key(key_sources, normalized_key, key)
+        ensure_unique_key(normalized_key, key_sources, key)
+        normalized_key
+      end
+
+      # The key in `hash` numerically equal to `key` (so 1 and 1.0 collapse to one entry), or
+      # nil for a non-numeric key or a numeric value not yet present. Takes `hash` explicitly
+      # because construction calls it on the under-construction map, before @values exists.
+      # @return [Object, nil]
+      # :reek:UtilityFunction
+      def numeric_key_match(hash, key)
+        return nil unless key.is_a?(Numeric)
+        return key if hash.key?(key)
+
+        canonical = Value.canonicalize(key)
+        hash.keys.find { |existing| existing.is_a?(Numeric) && Value.canonicalize(existing) == canonical }
       end
 
       # :reek:FeatureEnvy
@@ -354,10 +379,17 @@ module Ruby
       # @return [Value] value or undefined
       def fetch(key)
         return @values[key] if @values.key?(key)
-
+        return fetch_numeric(key) if key.is_a?(Numeric)
         return fetch_by_symbol_key(key) if key.is_a?(Symbol)
 
         UndefinedValue.new
+      end
+
+      # Looks up a numeric key by numeric equality (so `1` finds an entry stored under `1.0`).
+      # @return [Value]
+      def fetch_numeric(key)
+        match = numeric_key_match(@values, key)
+        match ? @values[match] : UndefinedValue.new
       end
 
       # Resolve a reference for an object.
@@ -383,7 +415,8 @@ module Ruby
       private
 
       attr_reader :values
-      private :fetch_by_symbol_key, :normalize_pairs, :ensure_unique_key
+      private :fetch_by_symbol_key, :fetch_numeric, :numeric_key_match, :normalize_pairs, :register_key,
+              :ensure_unique_key
     end
 
     # Represents a set value.
