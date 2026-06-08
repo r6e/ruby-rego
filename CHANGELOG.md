@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- New built-in: `net.cidr_merge`, matching OPA (a port of Cilium's algorithm). It merges a list
+  (array or set) of IP addresses and CIDRs into the smallest set of CIDRs covering exactly the
+  same addresses — combining adjacent subnets, absorbing contained ones, and removing duplicates.
+  A bare IPv4 address takes its classful default mask (Go's `net.IP.DefaultMask`); a bare IPv6
+  address is undefined (a prefix is required), as is a non-string element, an unparseable element,
+  or a non-collection operand. IPv4 ranges are merged inside their IPv6-mapped (`::ffff:`) block,
+  so a containing IPv6 range (e.g. `::/0`) absorbs IPv4 entries exactly as OPA does. A CIDR is
+  masked to its network; a bare address keeps its host form unless it is merged. IPv6 output uses
+  an RFC 5952 renderer matching Go's `net.IP.String()` (no deprecated IPv4-compatible `::a.b.c.d`
+  form).
+
 - New built-in: `uuid.parse`, matching OPA's `internal/uuid` (a port of google/uuid). It returns
   an object with `version` and `variant` for every UUID, plus `time` (nanoseconds since the Unix
   epoch), `nodeid`, `macvariables`, and `clocksequence` for time-based versions 1 and 2 (and `id`

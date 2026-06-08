@@ -260,5 +260,71 @@ RSpec.describe "net builtins" do
         .to be_a(Ruby::Rego::UndefinedValue)
     end
   end
+
+  describe "net.cidr_merge" do
+    def merge(arr)
+      registry.call("net.cidr_merge", [arr]).to_ruby.to_a.sort
+    end
+
+    it "merges adjacent subnets and absorbs contained ones" do
+      expect(merge(["192.168.0.0/24", "192.168.1.0/24"])).to eq(["192.168.0.0/23"])
+      expect(merge(["10.0.0.0/8", "10.1.0.0/16"])).to eq(["10.0.0.0/8"])
+      expect(merge(["192.168.0.0/24", "192.168.1.0/24", "192.168.2.0/24", "192.168.3.0/24"]))
+        .to eq(["192.168.0.0/22"])
+    end
+
+    it "keeps disjoint networks and sorts the result, masking CIDRs to their network" do
+      expect(merge(["192.168.0.0/24", "10.0.0.0/8"])).to eq(["10.0.0.0/8", "192.168.0.0/24"])
+      expect(merge(["192.168.1.5/24"])).to eq(["192.168.1.0/24"])
+      expect(merge(["10.0.0.0/24", "10.0.1.0/25"])).to eq(["10.0.0.0/24", "10.0.1.0/25"])
+    end
+
+    it "accepts a set operand and an empty list" do
+      expect(registry.call("net.cidr_merge", [Set["192.168.0.0/24", "192.168.1.0/24"]]).to_ruby)
+        .to eq(Set["192.168.0.0/23"])
+      expect(registry.call("net.cidr_merge", [[]]).to_ruby).to eq(Set.new)
+    end
+
+    it "gives a bare IPv4 its classful mask, unmasked unless merged" do
+      expect(merge(["1.1.1.1"])).to eq(["1.1.1.1/8"])           # class A, untouched -> host kept
+      expect(merge(["192.168.5.7"])).to eq(["192.168.5.7/24"])  # class C
+      expect(merge(["1.1.1.1", "1.1.1.2"])).to eq(["1.0.0.0/8"]) # overlap -> merged -> masked
+    end
+
+    it "merges IPv6 and renders RFC 5952 form" do
+      expect(merge(["2001:db8::/34", "2001:db8:4000::/34", "2001:db8:8000::/33"])).to eq(["2001:db8::/32"])
+      expect(merge(["::/0"])).to eq(["::/0"])
+      expect(merge(["::1.2.3.4/126"])).to eq(["::102:304/126"]) # no deprecated ::a.b.c.d form
+    end
+
+    it "absorbs IPv4 into a containing IPv6 range (v4 lives in the ::ffff: block), matching OPA" do
+      expect(merge(["192.168.0.0/24", "2001:db8::/32"])).to eq(["192.168.0.0/24", "2001:db8::/32"])
+      expect(merge(["::/0", "10.0.0.0/8"])).to eq(["::/0"]) # ::/0 covers the ::ffff: block
+      expect(merge(["::/1", "10.0.0.0/8"])).to eq(["::/1"])
+      expect(merge(["8000::/1", "10.0.0.0/8"])).to eq(["10.0.0.0/8", "8000::/1"]) # upper half: no overlap
+    end
+
+    it "renders each output CIDR's family at the ::ffff: boundary (per-CIDR, like OPA)" do
+      # A range straddling the v4-mapped block edge decomposes into a v4 block (rendered dotted)
+      # and a v6 block (rendered hex), each by its own family (verified vs opa eval).
+      expect(merge(["0.0.0.0/32", "::fffe:ffff:ffff/128"]))
+        .to eq(["0.0.0.0/32", "::fffe:ffff:ffff/128"])
+    end
+
+    it "is undefined for a bare IPv6, an invalid element, or a non-collection operand" do
+      expect(registry.call("net.cidr_merge", [["2001:db8::"]])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_merge", [["01.1.1.1/24"]])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_merge", [["10.0.0.0/33"]])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_merge", [[42]])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("net.cidr_merge", ["192.168.0.0/24"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined (not a raised error) for a non-ASCII-compatible string element" do
+      element = Ruby::Rego::StringValue.new("10.0.0.0/8".encode("UTF-16LE"))
+      result = registry.call("net.cidr_merge", [Ruby::Rego::ArrayValue.new([element])])
+
+      expect(result).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
 end
 # rubocop:enable Metrics/BlockLength
