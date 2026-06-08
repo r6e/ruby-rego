@@ -124,6 +124,10 @@ module Ruby
       def ==: (untyped) -> bool
       def eql?: (untyped) -> bool
       def hash: () -> Integer
+      def canonical: () -> untyped
+      def self.canonicalize: (untyped value) -> untyped
+      def self.canonicalize_each: (untyped collection) -> Array[untyped]
+      def self.canonicalize_float: (Float value) -> Numeric
 
       private
 

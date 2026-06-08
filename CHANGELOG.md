@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Fix: numerically-equal numbers (e.g. `1` and `1.0`, `1.5` and `1.50`) are now treated as the
+  same value for equality and hashing, matching OPA (where `1 == 1.0`). The `Value` layer
+  compares and hashes on a canonical form (an integer-valued `Float` collapses to its `Integer`)
+  applied recursively through arrays, sets, and objects, while `to_ruby` keeps the first-seen
+  representation. This fixes set deduplication and equality across the board: `count({1, 1.0})`
+  is now `1` (was `2`), `{1} == {1.0}` is `true` (was `false`), and the same holds for nested
+  collections (`{[1], [1.0]}`, `{{1}, {1.0}}`, objects with numeric members) and for set
+  comprehensions, partial-set rules, membership, and the `union`/`intersection`/`set_diff`
+  helpers. Known follow-up: object *construction* with numeric keys (`{1: "a", 1.0: "b"}`) and
+  `object.get` on a numeric key are not yet normalized — until then such an object reports two
+  entries where OPA reports one (its keys still de-duplicate as a set, so `object.keys` count is
+  already correct); these are tracked for a separate change to `ObjectValue`. Note the canonical
+  form collapses such duplicate numeric keys (last value wins, as OPA constructs them), so two
+  such objects still compare and hash as OPA would — only their entry count is off until the
+  `ObjectValue` change lands.
+
 - Small collection & graph built-ins: `array.flatten`, `object.subset`, `graph.reachable`,
   and `graph.reachable_paths`, matching OPA. `array.flatten` flattens exactly one level (a
   directly-nested array's elements are spliced in; deeper arrays are left intact).

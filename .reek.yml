@@ -64,6 +64,8 @@ detectors:
       - Ruby::Rego::Builtins::Yaml::ScalarResolver
       # Recursive term-order comparator (single case over all value types).
       - Ruby::Rego::Builtins::TermOrder
+      # Recursive canonicalizer (single case over all value types) for OPA number equality.
+      - Ruby::Rego::Value#self.canonicalize
       # Graph traversal: BFS worklist and the recursive path builder (OPA reachable port).
       - Ruby::Rego::Builtins::Graph#self.walk_reachable
       - Ruby::Rego::Builtins::Graph#self.reachable_paths
@@ -82,6 +84,8 @@ detectors:
       - Ruby::Rego::UnificationError#initialize
   DuplicateMethodCall:
     exclude:
+      # Recursive canonicalizer reuses canonicalize_each across the array/set case arms.
+      - Ruby::Rego::Value#self.canonicalize
       - Ruby::Rego::Lexer
       - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
@@ -163,6 +167,9 @@ detectors:
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Token
   RepeatedConditional:
     exclude:
+      # Value wraps Ruby types, so it type-dispatches on `value` in several factory/canonical
+      # helpers (build_simple_value, build_composite_value, canonicalize).
+      - Ruby::Rego::Value
       - Ruby::Rego::Lexer
       - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
