@@ -743,9 +743,19 @@ module Ruby
 
         CODEC_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
         MALFORMED_PERCENT: Regexp
+        INDENT_SENTINEL: String
 
         def self.register!: () -> BuiltinRegistry
         def self.json_marshal: (Value value) -> StringValue
+        def self.json_marshal_with_options: (Value value, Value options_value) -> StringValue
+        def self.raise_marshal_error: (Exception error, String context) -> bot
+        def self.marshal_options: (Value options_value) -> [String, String, bool]
+        def self.validate_option_key: (untyped key) -> void
+        def self.marshal_pretty: (Hash[untyped, untyped] options) -> bool
+        def self.string_option: (String key, untyped option) -> String
+        def self.bool_option: (untyped option) -> bool
+        def self.pretty_json: (untyped ruby, String prefix, String indent) -> String
+        def self.raise_marshal_option_error: (String message) -> bot
         def self.json_unmarshal: (Value value) -> Value
         def self.json_is_valid: (Value value) -> BooleanValue
         def self.base64_encode: (Value value) -> StringValue
