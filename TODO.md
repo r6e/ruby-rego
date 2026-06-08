@@ -76,7 +76,7 @@ Remaining (~88), highest compat-per-effort first:
 - ⬜ Time (10): `time.now_ns`, `time.parse_rfc3339_ns`, `time.date`, `time.clock`,
   `time.weekday`, `time.add_date`, `time.diff`, `time.format`, `time.parse_ns`,
   `time.parse_duration_ns`. High value; Go reference-time layout + tz make `format`/`parse` fiddly.
-- ⬜ JSON: ✅ `json.patch` (RFC 6902); `json.marshal_with_options`; `json.match_schema`/
+- ⬜ JSON: ✅ `json.patch` (RFC 6902); ✅ `json.marshal_with_options`; `json.match_schema`/
   `json.verify_schema` need a JSON-Schema validator (dependency decision).
 - ⬜ Crypto: `crypto.x509.*` (7, OpenSSL), `crypto.parse_private_keys`.
 - ⬜ JWT: `io.jwt.*` (17 — decode/verify/encode_sign; OpenSSL-backed, large batch).

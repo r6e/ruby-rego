@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- New built-in: `json.marshal_with_options`, matching OPA — marshals a value to JSON with optional
+  formatting. The options object takes `prefix` and `indent` strings and a `pretty` boolean;
+  pretty-printing uses Go's json.MarshalIndent indent-per-depth layout, with the `prefix` (matching
+  OPA) prepended to every line including the first, and is
+  enabled by `pretty: true`, or implicitly when `prefix` or `indent` is given without an explicit
+  `pretty`. Compact output matches `json.marshal` (sorted keys, HTML escaping). A non-object
+  options argument, an unknown option key, a wrongly-typed option value, or an unmarshalable
+  document yields undefined.
+
 - New built-in: `json.patch`, matching OPA — applies an RFC 6902 operation list (add, remove,
   replace, move, copy, test) to a document. Paths are RFC 6901 JSON pointers (`~1` for `/`, `~0`
   for `~`; a leading run of slashes is stripped; the empty string `""` is the whole document,
