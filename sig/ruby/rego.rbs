@@ -192,7 +192,10 @@ module Ruby
       private
 
       def fetch_by_symbol_key: (Symbol key) -> Value
+      def fetch_numeric: (untyped key) -> Value
+      def numeric_key_match: (Hash[untyped, Value] hash, untyped key) -> untyped
       def normalize_pairs: (Hash[untyped, untyped] pairs) -> Hash[untyped, Value]
+      def register_key: (Hash[untyped, untyped] key_sources, untyped normalized_key, untyped key) -> untyped
       def ensure_unique_key: (untyped normalized_key, Hash[untyped, untyped] key_sources, untyped key) -> void
     end
 
