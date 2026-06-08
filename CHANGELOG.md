@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- New built-ins: `time.parse_rfc3339_ns` and `time.parse_duration_ns`, matching OPA. The former
+  parses a strict RFC 3339 timestamp (uppercase `T`/`Z`, a required `Z` or `±HH:MM` zone, a
+  fractional second of any length truncated to nanoseconds, a valid calendar date/time) to
+  nanoseconds since the Unix epoch, and is undefined outside the int64-nanosecond range. The latter
+  parses a Go duration (signed, fractional, units ns/us/µs/ms/s/m/h, with `0` a valid zero) plus
+  OPA's `d`/`w`/`y` extension (24h/168h/8760h); the result must fit int64 nanoseconds. A
+  non-string or unparseable input is undefined.
+
 - New built-in: `json.marshal_with_options`, matching OPA — marshals a value to JSON with optional
   formatting. The options object takes `prefix` and `indent` strings and a `pretty` boolean;
   pretty-printing uses Go's json.MarshalIndent indent-per-depth layout, with the `prefix` (matching

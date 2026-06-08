@@ -6,10 +6,12 @@ target :lib do
   library "json"
   library "base64"
   library "cgi"
+  library "date"
   library "digest"
   library "ipaddr"
   library "openssl"
   library "optparse"
   library "psych"
+  library "time"
   library "yaml"
 end
