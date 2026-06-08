@@ -338,6 +338,9 @@ module Ruby
         extend RegistryHelpers
 
         MAX_EXPAND_SIZE: Integer
+        IPV4_BITS: Integer
+        IPV6_BITS: Integer
+        V4_MAPPED_OFFSET: Integer
         NET_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
 
         def self.register!: () -> BuiltinRegistry
@@ -346,8 +349,28 @@ module Ruby
         def self.cidr_is_valid: (Value value) -> BooleanValue
         def self.cidr_expand: (Value value) -> Set[String]
         def self.cidr_contains_matches: (Value cidrs, Value addrs) -> Set[Array[untyped]]
+        def self.cidr_merge: (Value value) -> Set[String]
 
         private
+
+        def self.merge_operands: (Value value, String context) -> Array[Hash[Symbol, untyped]]
+        def self.merge_entry: (Value element, String context) -> Hash[Symbol, untyped]
+        def self.cidr_entry: (String string, String context) -> Hash[Symbol, untyped]
+        def self.address_entry: (String string, String context) -> Hash[Symbol, untyped]
+        def self.classful_entry: (IPAddr addr) -> Hash[Symbol, untyped]
+        def self.v4_address: (String string, String context) -> IPAddr
+        def self.classful_prefix: (Integer ip) -> Integer
+        def self.merge_group: (Array[Hash[Symbol, untyped]] entries) -> Array[String]
+        def self.fold_range: (Array[Hash[Symbol, untyped]] merged, Hash[Symbol, untyped] entry) -> void
+        def self.range_to_cidrs: (Integer first, Integer last) -> Array[String]
+        def self.v4_mapped?: (Integer int) -> bool
+        def self.block_cidr: (Integer low, Integer prefix) -> String
+        def self.alignment_bits: (Integer low, Integer bits) -> Integer
+        def self.cidr_string: (Integer network, Integer prefix, Integer bits) -> String
+        def self.format_address: (Integer int, Integer bits) -> String
+        def self.format_ipv6: (Integer int) -> String
+        def self.longest_zero_run: (Array[String] hex) -> [Integer, Integer]
+        def self.zero_run_length: (Array[String] hex, Integer start) -> Integer
 
         def self.containment_pairs: (Array[Array[untyped]] networks, Array[Array[untyped]] addresses) -> Set[Array[untyped]]
         def self.entries: (Value value) -> Array[Array[untyped]]
