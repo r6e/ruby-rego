@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- New built-in: `json.patch`, matching OPA — applies an RFC 6902 operation list (add, remove,
+  replace, move, copy, test) to a document. Paths are RFC 6901 JSON pointers (`~1` for `/`, `~0`
+  for `~`; a leading run of slashes is stripped; the empty string is the whole document) or an
+  array of segments. Operations apply in order; any failure — a non-array operand, an operation
+  that is not an object, a missing or invalid field, a path into a non-existent or scalar
+  location, an out-of-range array index, or a failed `test` — yields undefined. `test` compares
+  by value (so `1` matches `1.0`).
+
 - New built-in: `net.cidr_merge`, matching OPA (a port of Cilium's algorithm). It merges a list
   (array or set) of IP addresses and CIDRs into the smallest set of CIDRs covering exactly the
   same addresses — combining adjacent subnets, absorbing contained ones, and removing duplicates.
