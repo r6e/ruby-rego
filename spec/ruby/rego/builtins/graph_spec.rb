@@ -56,6 +56,14 @@ RSpec.describe "graph builtins" do
       expect(registry.call("graph.reachable_paths", [{ "a" => [] }, ["a"]]).to_ruby).to eq(Set[["a"]])
     end
 
+    it "commits a path WITHOUT a dangling neighbour (not a graph node), matching OPA" do
+      # OPA's pathBuilder commits the path without a node that isn't in the graph, so a
+      # dangling neighbour is dropped rather than appended (verified vs opa eval).
+      expect(registry.call("graph.reachable_paths", [{ "a" => ["b"] }, ["a"]]).to_ruby).to eq(Set[["a"]])
+      expect(registry.call("graph.reachable_paths", [{ "a" => %w[b c], "c" => [] }, ["a"]]).to_ruby)
+        .to eq(Set[["a"], %w[a c]])
+    end
+
     it "is undefined for a non-object graph or non-array/set initial set" do
       expect(registry.call("graph.reachable_paths", [42, ["a"]])).to be_a(Ruby::Rego::UndefinedValue)
     end
