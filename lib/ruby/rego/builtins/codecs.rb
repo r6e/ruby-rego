@@ -68,8 +68,9 @@ module Ruby
         # Compact or pretty-printed JSON, matching OPA's json.marshal_with_options. The options
         # object takes `prefix` and `indent` strings and a `pretty` boolean; pretty-printing is
         # enabled by `pretty: true`, or — when `pretty` is absent — implicitly by supplying a
-        # `prefix` or `indent`. Pretty output follows Go's json.MarshalIndent (prefix + indent per
-        # depth on every line). A non-object options argument, an unknown option key, a
+        # `prefix` or `indent`. Pretty output uses Go's json.MarshalIndent indent-per-depth layout;
+        # OPA then prepends the `prefix` to every line, including the first (MarshalIndent itself
+        # omits it on line one). A non-object options argument, an unknown option key, a
         # wrongly-typed option value, or an unmarshalable document yields undefined.
         #
         # @param value [Ruby::Rego::Value]

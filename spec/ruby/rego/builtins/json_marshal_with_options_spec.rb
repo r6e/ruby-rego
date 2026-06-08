@@ -36,7 +36,8 @@ RSpec.describe "json.marshal_with_options" do
 
   it "HTML-escapes string values but not the structural indent/prefix" do
     expect(marshal({ "a" => "<b>&" }, { "pretty" => true })).to eq("{\n\t\"a\": \"\\u003cb\\u003e\\u0026\"\n}")
-    # an indent containing '>' must stay literal, not become >
+    # a '>' in the structural indent stays a literal '>' and must not be HTML-escaped the way a
+    # '>' inside a string value is (the indent is structure, not data)
     expect(marshal([1], { "indent" => "->" })).to eq("[\n->1\n]")
   end
 
