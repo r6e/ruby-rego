@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 # rubocop:disable Metrics/BlockLength
+# OPA-compat expectations (array.flatten / object.subset) were verified against `opa eval` 1.17.
 
 RSpec.describe "collection builtins" do
   let(:registry) { Ruby::Rego::Builtins::BuiltinRegistry.instance }
@@ -132,6 +133,64 @@ RSpec.describe "collection builtins" do
     result = registry.call("set", [{ "a" => 1 }])
 
     expect(result).to be_a(Ruby::Rego::UndefinedValue)
+  end
+
+  describe "array.flatten" do
+    it "flattens exactly one level, leaving deeper arrays intact (matching OPA)" do
+      expect(registry.call("array.flatten", [[1, [2, [3, 4]], 5]]).to_ruby).to eq([1, 2, [3, 4], 5])
+      expect(registry.call("array.flatten", [[[1], "x", [2, 3]]]).to_ruby).to eq([1, "x", 2, 3])
+      expect(registry.call("array.flatten", [[]]).to_ruby).to eq([])
+      expect(registry.call("array.flatten", [[1, 2, 3]]).to_ruby).to eq([1, 2, 3])
+    end
+
+    it "is undefined for a non-array argument" do
+      expect(registry.call("array.flatten", [{ "a" => 1 }])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
+  describe "object.subset" do
+    it "checks object containment recursively" do
+      expect(registry.call("object.subset", [{ "a" => 1, "b" => 2 }, { "a" => 1 }]).to_ruby).to be(true)
+      expect(registry.call("object.subset", [{ "a" => 1 }, { "a" => 1, "b" => 2 }]).to_ruby).to be(false)
+      expect(registry.call("object.subset", [{ "a" => { "x" => 1, "y" => 2 } }, { "a" => { "x" => 1 } }])
+        .to_ruby).to be(true)
+    end
+
+    it "treats array subset as a contiguous subslice" do
+      expect(registry.call("object.subset", [[1, 2, 3], [2, 3]]).to_ruby).to be(true)
+      expect(registry.call("object.subset", [[1, 2, 3, 4], [2, 3]]).to_ruby).to be(true)
+      expect(registry.call("object.subset", [[1, 2, 3], [1, 3]]).to_ruby).to be(false)
+      expect(registry.call("object.subset", [[1, 2, 3], [3, 2]]).to_ruby).to be(false)
+      expect(registry.call("object.subset", [[1, 2, 3], []]).to_ruby).to be(true)
+    end
+
+    it "handles set/set and array/set operands" do
+      expect(registry.call("object.subset", [Set[1, 2, 3], Set[1, 2]]).to_ruby).to be(true)
+      expect(registry.call("object.subset", [Set[1, 2], Set[1, 2, 3]]).to_ruby).to be(false)
+      expect(registry.call("object.subset", [[1, 2, 3], Set[2, 3]]).to_ruby).to be(true)
+      expect(registry.call("object.subset", [[1, 2, 3], Set[9]]).to_ruby).to be(false)
+    end
+
+    it "is undefined for mismatched or non-collection operand types" do
+      expect(registry.call("object.subset", [Set[1, 2], [1]])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("object.subset", [{ "a" => 1 }, "a"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "uses numeric equality for set membership (1 and 1.0 match), like OPA" do
+      expect(registry.call("object.subset", [Set[1.0, 2], Set[1]]).to_ruby).to be(true)
+      expect(registry.call("object.subset", [Set[1], Set[1.0]]).to_ruby).to be(true)
+      expect(registry.call("object.subset", [[1.0, 2, 3], Set[1]]).to_ruby).to be(true)
+    end
+
+    # The array-super/set-sub path is OPA's position-counter, not set-theoretic superset: it
+    # counts array positions whose element is in the set until the set is covered. So it never
+    # vacuously matches an empty array, and duplicate array positions each count (verified vs
+    # opa eval). These pin that (counterintuitive) OPA-faithful behaviour.
+    it "matches OPA's array/set coverage semantics on the empty and duplicate edges" do
+      expect(registry.call("object.subset", [[], Set.new]).to_ruby).to be(false)
+      expect(registry.call("object.subset", [[1], Set.new]).to_ruby).to be(true)
+      expect(registry.call("object.subset", [[1, 1], Set[1, 2]]).to_ruby).to be(true)
+    end
   end
 end
 

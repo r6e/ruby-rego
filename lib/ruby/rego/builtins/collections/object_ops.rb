@@ -22,6 +22,109 @@ module Ruby
             value.is_a?(UndefinedValue) ? default : value
           end
 
+          # True when `sub` is a subset of `super`, matching OPA's object.subset. Valid operand
+          # pairs: object/object (recursive), set/set, array/array (a contiguous subslice), and
+          # array/set (super array contains the set's members). Any other pairing is undefined.
+          # @param super_value [Ruby::Rego::Value]
+          # @param sub_value [Ruby::Rego::Value]
+          # @return [Ruby::Rego::BooleanValue]
+          def self.subset(super_value, sub_value)
+            BooleanValue.new(subset?(super_value.to_ruby, sub_value.to_ruby))
+          end
+
+          def self.subset?(sup, sub)
+            return object_subset?(sup, sub) if both?(sup, sub, ::Hash)
+            return set_subset?(sup, sub) if both?(sup, sub, ::Set)
+            return array_subset?(sup, sub) if both?(sup, sub, ::Array)
+            return array_set_subset?(sup, sub) if sup.is_a?(::Array) && sub.is_a?(::Set)
+
+            Base.raise_argument_error(
+              "object.subset arguments must be the same type, or an array and a set",
+              expected: "matching collection types", actual: "mismatched", context: "object.subset"
+            )
+          end
+          private_class_method :subset?
+
+          def self.both?(left, right, type)
+            left.is_a?(type) && right.is_a?(type)
+          end
+          private_class_method :both?
+
+          # OPA set membership uses numeric equality (1 and 1.0 match), so this compares with `==`
+          # rather than Ruby's Set#subset?/include? (which hash on eql?, treating 1 and 1.0 as
+          # distinct). Note: the gem's SetValue itself does not yet dedup 1 and 1.0 — a separate
+          # pre-existing gap — but membership-by-== still yields OPA's subset answer.
+          def self.set_subset?(sup, sub)
+            sub.all? { |element| member?(sup, element) }
+          end
+          private_class_method :set_subset?
+
+          def self.member?(collection, value)
+            collection.any? { |element| element == value }
+          end
+          private_class_method :member?
+
+          # Every key in `sub` must be present in `super` with an equal value, recursing into
+          # nested object/set/array values. Keys are matched by `==` (so a numeric `1` key
+          # matches `1.0`, as OPA does), not by Ruby Hash lookup which hashes on eql?.
+          def self.object_subset?(sup, sub)
+            sub.all? { |key, sub_value| super_value_subset?(sup, key, sub_value) }
+          end
+          private_class_method :object_subset?
+
+          # True when `super` has a key equal (by `==`) to `key` whose value contains `sub_value`.
+          # :reek:ControlParameter
+          def self.super_value_subset?(sup, key, sub_value)
+            sup.any? { |super_key, super_value| super_key == key && nested_subset?(super_value, sub_value) }
+          end
+          private_class_method :super_value_subset?
+
+          # Like #subset? for a nested value, but a mismatched-type pair is simply not a subset
+          # (it does not raise) and only collection types recurse.
+          def self.nested_subset?(sup, sub)
+            return true if sup == sub
+            return object_subset?(sup, sub) if both?(sup, sub, ::Hash)
+            return set_subset?(sup, sub) if both?(sup, sub, ::Set)
+            return array_subset?(sup, sub) if both?(sup, sub, ::Array)
+
+            false
+          end
+          private_class_method :nested_subset?
+
+          # `sub` must appear as a contiguous run within `super` (matching OPA). An empty `sub`
+          # is a subslice of anything.
+          def self.array_subset?(sup, sub)
+            return true if sub.empty?
+
+            length = sub.length
+            return false if length > sup.length
+
+            sup.each_cons(length).any?(sub.method(:==))
+          end
+          private_class_method :array_subset?
+
+          # True once `super`'s elements have covered every member of the set `sub` (OPA counts
+          # super positions whose element is in sub until the set is exhausted).
+          def self.array_set_subset?(sup, sub)
+            unique = unique_members(sub)
+            unmatched = unique.size
+            sup.each do |element|
+              unmatched -= 1 if member?(unique, element)
+              return true if unmatched.zero?
+            end
+            false
+          end
+          private_class_method :array_set_subset?
+
+          # The set's members de-duplicated under `==` (so 1 and 1.0 collapse), giving OPA's
+          # set cardinality even though the gem's SetValue does not yet normalise them.
+          def self.unique_members(collection)
+            unique = [] # @type var unique: Array[untyped]
+            collection.each { |element| unique << element unless member?(unique, element) }
+            unique
+          end
+          private_class_method :unique_members
+
           # @param object [Ruby::Rego::Value]
           # @return [Ruby::Rego::SetValue]
           def self.object_keys(object)

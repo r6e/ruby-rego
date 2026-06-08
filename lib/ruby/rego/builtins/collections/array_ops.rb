@@ -28,6 +28,15 @@ module Ruby
             ArrayValue.new(elements.reverse)
           end
 
+          # Flattens one level only (matching OPA): each directly-nested array's elements are
+          # spliced in, but arrays nested deeper are left intact.
+          # @param array [Ruby::Rego::Value]
+          # @return [Ruby::Rego::ArrayValue]
+          def self.flatten(array)
+            elements = array_values(array, name: "array.flatten")
+            ArrayValue.new(elements.flat_map { |element| element.is_a?(ArrayValue) ? element.value : [element] })
+          end
+
           # @param left [Ruby::Rego::Value]
           # @param right [Ruby::Rego::Value]
           # @return [Ruby::Rego::ArrayValue]

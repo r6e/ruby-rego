@@ -24,7 +24,9 @@ module Ruby
           "array.reverse" => { arity: 1, handler: :array_reverse },
           "array.concat" => { arity: 2, handler: :array_concat },
           "array.slice" => { arity: 3, handler: :array_slice },
+          "array.flatten" => { arity: 1, handler: :array_flatten },
           "object.get" => { arity: 3, handler: :object_get },
+          "object.subset" => { arity: 2, handler: :object_subset },
           "object.keys" => { arity: 1, handler: :object_keys },
           "object.remove" => { arity: 2, handler: :object_remove },
           "object.union" => { arity: 2, handler: :object_union },
@@ -82,6 +84,19 @@ module Ruby
         # @return [Ruby::Rego::ArrayValue]
         def self.array_reverse(array)
           ArrayOps.reverse(array)
+        end
+
+        # @param array [Ruby::Rego::Value]
+        # @return [Ruby::Rego::ArrayValue]
+        def self.array_flatten(array)
+          ArrayOps.flatten(array)
+        end
+
+        # @param super_value [Ruby::Rego::Value]
+        # @param sub_value [Ruby::Rego::Value]
+        # @return [Ruby::Rego::BooleanValue]
+        def self.object_subset(super_value, sub_value)
+          ObjectOps.subset(super_value, sub_value)
         end
 
         # @param object [Ruby::Rego::Value]
