@@ -11,15 +11,18 @@ module Ruby
       # JSON Patch (json.patch), matching OPA — applies an RFC 6902 operation list to a
       # document. Each operation is an object with `op` (add/remove/replace/move/copy/test) and
       # a `path` (an RFC 6901 JSON pointer string, with `~1` for `/` and `~0` for `~`, or an
-      # array of string segments); `add`/`replace`/`test` need a `value`, `move`/`copy` need a
-      # `from`. A leading run of slashes in a string path is stripped and the empty string is
-      # the whole document. Operations apply in order. Any failure — a non-array operand, an
-      # operation that is not an object, a missing/invalid field, a path into a non-existent or
-      # scalar location, an out-of-range array index, or a failed `test` — yields undefined.
+      # array of segments — a string for an object key, a string or integer for an array index);
+      # `add`/`replace`/`test` need a `value`, `move`/`copy` need a `from`. In a string path a
+      # leading run of slashes is stripped, the empty string `""` addresses the whole document,
+      # and a path that is only slashes (`/`, `//`) addresses the empty-string key `""`.
+      # Operations apply in order. Any failure — a non-array operand, an operation that is not an
+      # object, a missing/invalid field, a path into a non-existent or scalar location, an
+      # out-of-range array index, or a failed `test` — yields undefined.
       module JsonPatch
         extend RegistryHelpers
 
-        # A canonical non-negative array index (no leading zeros), matching RFC 6901.
+        # A canonical non-negative array index (no leading zeros), matching how OPA renders and
+        # accepts an index (its EditTree rejects leading zeros).
         ARRAY_INDEX = /\A(?:0|[1-9]\d*)\z/
 
         JSON_PATCH_FUNCTIONS = {
@@ -180,8 +183,8 @@ module Ruby
         end
         private_class_method :array_delete
 
-        # An object key segment must be a string (array-form paths with a non-string key segment,
-        # which OPA coerces, are not supported — only string JSON-pointer paths reach here).
+        # An object-key segment must be a string. String JSON-pointer paths always satisfy this;
+        # an array-form path with a non-string key segment (which OPA coerces) is not supported.
         def self.string_key(segment)
           segment.is_a?(String) ? segment : raise_patch_error
         end
