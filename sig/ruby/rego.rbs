@@ -484,8 +484,8 @@ module Ruby
         def self.register!: () -> BuiltinRegistry
         def self.parse_rfc3339_ns: (Value value) -> (Integer | UndefinedValue)
         def self.parse_duration_ns: (Value value) -> (Integer | UndefinedValue)
-        def self.date: (Value value) -> Array[Integer]
-        def self.clock: (Value value) -> Array[Integer]
+        def self.date: (Value value) -> [Integer, Integer, Integer]
+        def self.clock: (Value value) -> [Integer, Integer, Integer]
         def self.weekday: (Value value) -> String
 
         private
