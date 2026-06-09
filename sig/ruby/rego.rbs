@@ -1,3 +1,20 @@
+# Minimal external declaration for the tzinfo gem. Community RBS exists in gem_rbs_collection, but
+# this project's Steepfile uses only stdlib `library` declarations (no rbs_collection tooling), so
+# the tiny surface the time builtins use is declared inline rather than pulling in that machinery.
+# `to_local` actually returns a Time subclass.
+module TZInfo
+  class InvalidTimezoneIdentifier < StandardError
+  end
+
+  class DataSourceNotFound < StandardError
+  end
+
+  class Timezone
+    def self.get: (String identifier) -> Timezone
+    def to_local: (Time utc_time) -> Time
+  end
+end
+
 module Ruby
   module Rego
     VERSION: String
@@ -460,14 +477,26 @@ module Ruby
         NANOS_PER_SECOND: Integer
         DURATION_UNITS: Hash[String, Integer]
         EXTENDED_HOURS: Hash[String, Integer]
+        DAY_NAMES: Array[String]
         RFC3339: Regexp
         TIME_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
 
         def self.register!: () -> BuiltinRegistry
         def self.parse_rfc3339_ns: (Value value) -> (Integer | UndefinedValue)
         def self.parse_duration_ns: (Value value) -> (Integer | UndefinedValue)
+        def self.date: (Value value) -> [Integer, Integer, Integer]
+        def self.clock: (Value value) -> [Integer, Integer, Integer]
+        def self.weekday: (Value value) -> String
 
         private
+
+        def self.tz_instant: (Value value, String context) -> Time
+        def self.operand_parts: (Value value, String context) -> [Integer, String]
+        def self.require_nanos: (Value value, String context) -> Integer
+        def self.integer_value: (Numeric number) -> Integer?
+        def self.require_zone_name: (Value value, String context) -> String
+        def self.in_zone: (Time utc_time, String zone, String context) -> Time
+        def self.raise_time_error: (String context) -> bot
 
         def self.rfc3339_nanos: (MatchData match) -> Integer?
         def self.epoch_seconds: (MatchData match) -> Integer?

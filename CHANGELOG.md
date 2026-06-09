@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- New built-ins: `time.date`, `time.clock`, and `time.weekday`, matching OPA. Each decomposes an
+  instant given as nanoseconds since the Unix epoch — a bare number (UTC) or `[ns, tz]` where `tz`
+  is `""`/`"UTC"`, `"Local"`, or an IANA timezone name (resolved via the new `tzinfo`/`tzinfo-data`
+  dependencies, which pin the timezone database for deterministic, host-independent results).
+  `time.date` returns `[year, month, day]`, `time.clock` `[hour, minute, second]`, and
+  `time.weekday` the English weekday name. A third array element (a layout, used only by
+  `time.format`) is accepted and ignored. A non-integer or out-of-int64 ns, a non-string or unknown
+  tz, an empty array, or a wrong-typed operand is undefined. Note: for DST-active instants past
+  tzinfo's last generated transition for the zone (e.g. ~2127 onward for `America/New_York`) in
+  daylight-saving timezones, the result may differ from OPA by the DST offset, because Ruby's
+  tzinfo stops emitting transitions there while Go's bundled tzdata projects the POSIX TZ rule
+  indefinitely; within any practical range the output is byte-exact.
+
 - New built-ins: `time.parse_rfc3339_ns` and `time.parse_duration_ns`, matching OPA. The former
   parses a strict RFC 3339 timestamp (uppercase `T`/`Z`, a required `Z` or `±HH:MM` zone, a
   fractional second of any length truncated to nanoseconds, a valid calendar date/time) to

@@ -46,6 +46,12 @@ Gem::Specification.new do |spec|
   spec.add_dependency "ipaddr"
   spec.add_dependency "json"
   spec.add_dependency "openssl"
+  # tzinfo (with bundled tzinfo-data) for the IANA-timezone forms of the time builtins
+  # (time.date/clock/weekday). tzinfo-data pins the IANA database so results don't depend on the
+  # host's system zoneinfo version — matching OPA, which compiles in its own tzdata — and avoids a
+  # TZInfo::DataSourceNotFound crash on hosts without system zoneinfo (Windows, minimal containers).
+  spec.add_dependency "tzinfo", "~> 2.0"
+  spec.add_dependency "tzinfo-data"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
