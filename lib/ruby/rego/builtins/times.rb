@@ -2,6 +2,7 @@
 
 require "time"
 require "date"
+require "tzinfo"
 require_relative "base"
 require_relative "registry"
 require_relative "registry_helpers"
@@ -21,6 +22,12 @@ module Ruby
       # parse_duration_ns parses a Go duration (signed, fractional, units ns/us/µs/ms/s/m/h, with
       # `0` a valid zero) and OPA's `d`/`w`/`y` extension (rewritten to 24h/168h/8760h, matching
       # OPA's float-through-hours path). The total must fit int64 nanoseconds.
+      #
+      # date/clock/weekday decompose an instant given as nanoseconds since the Unix epoch — a bare
+      # number (interpreted as UTC) or `[ns, tz]` where `tz` is `""`/`"UTC"`, `"Local"`, or an IANA
+      # name (resolved via tzinfo). A third array element (a layout, used only by time.format) is
+      # accepted and ignored. A non-integer/out-of-int64 ns, a non-string tz, or an unknown zone is
+      # undefined.
       # :reek:TooManyConstants
       module Times
         extend RegistryHelpers
@@ -28,6 +35,10 @@ module Ruby
         INT64_MAX = (2**63) - 1
         INT64_MIN = -(2**63)
         NANOS_PER_SECOND = 1_000_000_000
+
+        # Go's Weekday.String() names, indexed by Ruby's Time#wday (Sunday == 0); kept as an
+        # explicit table that mirrors Go's spelling rather than deriving the name another way.
+        DAY_NAMES = %w[Sunday Monday Tuesday Wednesday Thursday Friday Saturday].freeze
 
         # Nanoseconds per standard Go duration unit.
         DURATION_UNITS = {
@@ -42,7 +53,10 @@ module Ruby
 
         TIME_FUNCTIONS = {
           "time.parse_rfc3339_ns" => { arity: 1, handler: :parse_rfc3339_ns },
-          "time.parse_duration_ns" => { arity: 1, handler: :parse_duration_ns }
+          "time.parse_duration_ns" => { arity: 1, handler: :parse_duration_ns },
+          "time.date" => { arity: 1, handler: :date },
+          "time.clock" => { arity: 1, handler: :clock },
+          "time.weekday" => { arity: 1, handler: :weekday }
         }.freeze
 
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
@@ -132,6 +146,96 @@ module Ruby
         def self.parse_duration_ns(value)
           parse_extended_duration(string_arg(value, "time.parse_duration_ns")) || UndefinedValue.new
         end
+
+        # @param value [Ruby::Rego::Value] ns, or [ns, tz] (an optional ignored layout may follow)
+        # @return [Array(Integer, Integer, Integer)] [year, month, day]
+        def self.date(value)
+          time = tz_instant(value, "time.date")
+          [time.year, time.month, time.day]
+        end
+
+        # @return [Array(Integer, Integer, Integer)] [hour, minute, second]
+        def self.clock(value)
+          time = tz_instant(value, "time.clock")
+          [time.hour, time.min, time.sec]
+        end
+
+        # @return [String] the English weekday name
+        def self.weekday(value)
+          DAY_NAMES.fetch(tz_instant(value, "time.weekday").wday)
+        end
+
+        # The instant (a Ruby Time in the requested zone) for a ns / [ns, tz] operand. Raises a
+        # BuiltinArgumentError (→ undefined) on a bad number, type, or zone.
+        def self.tz_instant(value, context)
+          nanos, zone = operand_parts(value, context)
+          in_zone(::Time.at(0, nanos, :nanosecond).utc, zone, context)
+        end
+        private_class_method :tz_instant
+
+        # @return [[Integer, String]] the nanoseconds and the timezone name
+        # :reek:TooManyStatements
+        def self.operand_parts(value, context)
+          return [require_nanos(value, context), "UTC"] unless value.is_a?(ArrayValue)
+
+          elements = value.value.to_a
+          raise_time_error(context) if elements.empty?
+          count = elements.length
+          nanos = require_nanos(elements[0], context)
+          zone = count > 1 ? require_zone_name(elements[1], context) : "UTC"
+          # A third element is a layout (only meaningful to time.format); validated as a string but
+          # ignored here. Any further elements are ignored entirely, matching OPA's tzTime.
+          require_zone_name(elements[2], context) if count > 2
+          [nanos, zone]
+        end
+        private_class_method :operand_parts
+
+        # The operand as an int64 nanosecond count. OPA converts via big.Float.Int64 and rejects a
+        # non-integer or out-of-range value, so a fractional or oversized number is undefined.
+        def self.require_nanos(value, context)
+          Base.assert_type(value, expected: NumberValue, context: context)
+          nanos = integer_value(value.value)
+          return nanos if nanos&.between?(INT64_MIN, INT64_MAX)
+
+          raise_time_error(context)
+        end
+        private_class_method :require_nanos
+
+        # @return [Integer, nil] the number as an integer if it has no fractional part, else nil
+        def self.integer_value(number)
+          return number if number.is_a?(Integer)
+          return nil unless number.is_a?(Float) && number.finite?
+
+          truncated = number.to_i
+          number == truncated ? truncated : nil
+        end
+        private_class_method :integer_value
+
+        def self.require_zone_name(value, context)
+          Base.assert_type(value, expected: StringValue, context: context)
+          value.value
+        end
+        private_class_method :require_zone_name
+
+        # Converts a UTC time to the requested zone: "" / "UTC" stay UTC, "Local" uses the process's
+        # local zone (Go's time.Local), any other name is an IANA identifier resolved via tzinfo.
+        def self.in_zone(utc_time, zone, context)
+          case zone
+          when "", "UTC" then utc_time
+          when "Local" then utc_time.getlocal
+          else TZInfo::Timezone.get(zone).to_local(utc_time)
+          end
+        rescue TZInfo::InvalidTimezoneIdentifier, TZInfo::DataSourceNotFound
+          # Unknown zone, or (defensively, since tzinfo-data is a dependency) no tz database at all.
+          raise_time_error(context)
+        end
+        private_class_method :in_zone
+
+        def self.raise_time_error(context)
+          Base.raise_argument_error("invalid #{context} operand",
+                                    expected: "ns or [ns, tz]", actual: "invalid", context: context)
+        end
+        private_class_method :raise_time_error
 
         # @return [Integer, nil]
         def self.parse_extended_duration(string)

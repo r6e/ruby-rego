@@ -71,6 +71,60 @@ RSpec.describe "time parsing builtins" do
     end
   end
 
+  describe "time.date / time.clock / time.weekday" do
+    let(:ns) { 1_710_505_845_123_456_789 } # 2024-03-15T12:30:45.123…Z (a Friday)
+
+    it "decomposes a bare ns operand in UTC" do
+      expect(value("time.date", ns)).to eq([2024, 3, 15])
+      expect(value("time.clock", ns)).to eq([12, 30, 45])
+      expect(value("time.weekday", ns)).to eq("Friday")
+    end
+
+    it "applies an IANA timezone from the [ns, tz] form" do
+      expect(value("time.clock", [ns, "America/New_York"])).to eq([8, 30, 45]) # UTC-4 (EDT)
+      expect(value("time.clock", [ns, "Asia/Kolkata"])).to eq([18, 0, 45]) # UTC+5:30
+      expect(value("time.date", [ns, "Pacific/Kiritimati"])).to eq([2024, 3, 16]) # UTC+14, next day
+    end
+
+    it "treats \"\" and \"UTC\" as UTC and handles a DST transition instant" do
+      expect(value("time.clock", [ns, ""])).to eq([12, 30, 45])
+      expect(value("time.clock", [ns, "UTC"])).to eq([12, 30, 45])
+      # 2024-03-10 07:00:00Z is the US spring-forward: 02:00 EST jumps to 03:00 EDT.
+      expect(value("time.clock", [1_710_054_000_000_000_000, "America/New_York"])).to eq([3, 0, 0])
+    end
+
+    it "handles the epoch, pre-epoch (sub-second floor), and the int64 bounds" do
+      expect(value("time.date", 0)).to eq([1970, 1, 1])
+      expect(value("time.weekday", 0)).to eq("Thursday")
+      expect(value("time.date", -1)).to eq([1969, 12, 31])
+      expect(value("time.clock", -1)).to eq([23, 59, 59]) # negative ns floors toward the second
+      expect(value("time.clock", -500_000_000)).to eq([23, 59, 59])
+      expect(value("time.date", 9_223_372_036_854_775_807)).to eq([2262, 4, 11])
+      expect(value("time.clock", 9_223_372_036_854_775_807)).to eq([23, 47, 16])
+      expect(value("time.date", -9_223_372_036_854_775_808)).to eq([1677, 9, 21])
+    end
+
+    it "resolves \"Local\" against the process timezone" do
+      original = ENV.fetch("TZ", nil)
+      ENV["TZ"] = "America/New_York"
+      expect(value("time.clock", [ns, "Local"])).to eq([8, 30, 45]) # 12:30:45Z in EDT
+    ensure
+      ENV["TZ"] = original
+    end
+
+    it "accepts a third (layout) element and further elements, ignoring them" do
+      expect(value("time.date", [ns, "UTC", "ignored-layout"])).to eq([2024, 3, 15])
+      expect(value("time.date", [ns, "UTC", "lay", "extra"])).to eq([2024, 3, 15])
+    end
+
+    it "is undefined for an empty array, bad/non-string tz, fractional or oversized ns, or wrong type" do
+      [[], [ns, "Not/AZone"], [ns, 123], [ns, "UTC", 9], 1.5, [1.5, "UTC"],
+       [9_223_372_036_854_775_808, "UTC"], "x", true].each do |arg|
+        expect(call("time.date", arg)).to be_a(Ruby::Rego::UndefinedValue)
+      end
+    end
+  end
+
   describe "time.parse_duration_ns" do
     it "parses signed, multi-unit, and fractional Go durations" do
       expect(value("time.parse_duration_ns", "1h30m")).to eq(5_400_000_000_000)
