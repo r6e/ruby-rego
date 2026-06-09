@@ -29,6 +29,9 @@ module Ruby
       # name (resolved via tzinfo). A third array element (a layout, used only by time.format) is
       # accepted and ignored. A non-integer/out-of-int64 ns, a non-string tz, or an unknown zone is
       # undefined.
+      #
+      # diff returns the calendar difference between two such instants as a non-negative
+      # [years, months, days, hours, minutes, seconds] tuple, decomposed in the first operand's zone.
       # :reek:TooManyConstants
       module Times
         extend RegistryHelpers
@@ -57,7 +60,8 @@ module Ruby
           "time.parse_duration_ns" => { arity: 1, handler: :parse_duration_ns },
           "time.date" => { arity: 1, handler: :date },
           "time.clock" => { arity: 1, handler: :clock },
-          "time.weekday" => { arity: 1, handler: :weekday }
+          "time.weekday" => { arity: 1, handler: :weekday },
+          "time.diff" => { arity: 2, handler: :diff }
         }.freeze
 
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
@@ -166,11 +170,76 @@ module Ruby
           DAY_NAMES.fetch(tz_instant(value, "time.weekday").wday)
         end
 
+        # The calendar difference between two instants as [years, months, days, hours, minutes,
+        # seconds], all non-negative — matching OPA (which uses icza/gox's algorithm). Both instants
+        # are decomposed in the FIRST operand's timezone (Go realigns the second to the first's
+        # location), then a borrow-normalised component subtraction is taken from the earlier to the
+        # later. The second operand's zone is still resolved (and so validated) even though the
+        # decomposition uses the first's.
+        # @param left [Ruby::Rego::Value] ns or [ns, tz]
+        # @param right [Ruby::Rego::Value] ns or [ns, tz]
+        # @return [Array(Integer, Integer, Integer, Integer, Integer, Integer)]
+        # :reek:TooManyStatements
+        def self.diff(left, right)
+          left_nanos, zone = operand_parts(left, "time.diff")
+          right_nanos, right_zone = operand_parts(right, "time.diff")
+          in_zone(utc_instant(0), right_zone, "time.diff") # validate the 2nd zone too
+          left_nanos, right_nanos = right_nanos, left_nanos if left_nanos > right_nanos # order earlier->later
+          diff_components(localize(left_nanos, zone), localize(right_nanos, zone))
+        rescue RangeError
+          raise_time_error("time.diff")
+        end
+
+        # The instant `nanos` as a Ruby Time decomposed in `zone`.
+        def self.localize(nanos, zone)
+          in_zone(utc_instant(nanos), zone, "time.diff")
+        end
+        private_class_method :localize
+
+        # icza/gox's borrow-normalised component difference (earlier -> later), kept as a literal
+        # port of the Go algorithm. The day borrow uses the earlier date's month length, exactly as
+        # the original does; that sequence of borrows is what trips the ABC/length cops.
+        # @return [Array(Integer, Integer, Integer, Integer, Integer, Integer)]
+        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+        # :reek:TooManyStatements
+        def self.diff_components(earlier, later)
+          earlier_year = earlier.year
+          earlier_month = earlier.month
+          year = later.year - earlier_year
+          month = later.month - earlier_month
+          day = later.day - earlier.day
+          hour = later.hour - earlier.hour
+          minute = later.min - earlier.min
+          second = later.sec - earlier.sec
+          minute, second = borrow(minute, second, 60)
+          hour, minute = borrow(hour, minute, 60)
+          day, hour = borrow(day, hour, 24)
+          month, day = borrow(month, day, days_in_month(earlier_year, earlier_month))
+          year, month = borrow(year, month, 12)
+          [year, month, day, hour, minute, second]
+        end
+        # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+        private_class_method :diff_components
+
+        # If `low` is negative, carry one unit (`base`) down from `high`.
+        # @return [[Integer, Integer]] the adjusted [high, low]
+        def self.borrow(high, low, base)
+          return [high, low] unless low.negative?
+
+          [high - 1, low + base]
+        end
+        private_class_method :borrow
+
+        def self.days_in_month(year, month)
+          Date.new(year, month, -1).day
+        end
+        private_class_method :days_in_month
+
         # The instant (a Ruby Time in the requested zone) for a ns / [ns, tz] operand. Raises a
         # BuiltinArgumentError (→ undefined) on a bad number, type, or zone.
         def self.tz_instant(value, context)
           nanos, zone = operand_parts(value, context)
-          in_zone(::Time.at(0, nanos, :nanosecond).utc, zone, context)
+          in_zone(utc_instant(nanos), zone, context)
         rescue RangeError
           # Defensive, consistent with epoch_seconds: a platform whose Time can't represent this
           # instant (e.g. a 32-bit time_t build) is undefined, not a crash. The ns is already
@@ -222,6 +291,12 @@ module Ruby
           value.value
         end
         private_class_method :require_zone_name
+
+        # The instant `nanos` nanoseconds after the Unix epoch as a UTC Ruby Time.
+        def self.utc_instant(nanos)
+          ::Time.at(0, nanos, :nanosecond).utc
+        end
+        private_class_method :utc_instant
 
         # Converts a UTC time to the requested zone: "" / "UTC" stay UTC, "Local" uses the process's
         # local zone (Go's time.Local), any other name is an IANA identifier resolved via tzinfo.
