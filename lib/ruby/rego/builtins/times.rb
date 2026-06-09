@@ -278,7 +278,7 @@ module Ruby
         private_class_method :leading_fraction
 
         # The unit (run of non-digit, non-dot chars) as its nanosecond multiplier, and the rest.
-        # @return [[Integer, nil], String]
+        # @return [[Integer, String]] the multiplier (nil if the unit is unknown) and the rest
         def self.take_unit(string)
           unit = string[/\A[^0-9.]*/].to_s
           [DURATION_UNITS[unit], string[unit.length..].to_s]
