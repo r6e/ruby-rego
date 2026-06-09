@@ -452,6 +452,45 @@ module Ruby
         def self.uint32: (Array[Integer] bytes, Integer offset) -> Integer
       end
 
+      module Times
+        extend RegistryHelpers
+
+        INT64_MAX: Integer
+        INT64_MIN: Integer
+        NANOS_PER_SECOND: Integer
+        DURATION_UNITS: Hash[String, Integer]
+        EXTENDED_HOURS: Hash[String, Integer]
+        RFC3339: Regexp
+        TIME_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.parse_rfc3339_ns: (Value value) -> (Integer | UndefinedValue)
+        def self.parse_duration_ns: (Value value) -> (Integer | UndefinedValue)
+
+        private
+
+        def self.rfc3339_nanos: (MatchData match) -> Integer?
+        def self.epoch_seconds: (MatchData match) -> Integer?
+        def self.zone_offset: (String zone) -> Integer?
+        def self.fraction_nanos: (String? fraction) -> Integer
+        def self.bounded: (Integer nanos) -> Integer?
+        def self.parse_extended_duration: (String string) -> Integer?
+        def self.rewrite_extended: (String string) -> String?
+        def self.scan_segments: (String body) -> Array[Array[String]]?
+        def self.rewrite_segment: (String digits, String unit) -> String
+        def self.parse_go_duration: (String string) -> Integer?
+        def self.sum_segments: (String rest) -> Integer?
+        def self.split_sign: (String string) -> [bool, String]
+        def self.parse_segment: (String string) -> [Integer?, String]
+        def self.parse_fraction: (String string) -> [Integer, Integer, String]
+        def self.segment_nanos: (Integer integer, Integer fraction, Integer scale, Integer unit_ns) -> Integer
+        def self.leading_int: (String string) -> [Integer, String, bool]
+        def self.leading_fraction: (String string) -> [Integer, Integer, String]
+        def self.take_unit: (String string) -> [Integer?, String]
+        def self.digit?: (String? char) -> bool
+        def self.string_arg: (Value value, String context) -> String
+      end
+
       module Semver
         extend RegistryHelpers
 

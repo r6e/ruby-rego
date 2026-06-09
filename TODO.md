@@ -73,9 +73,11 @@ Remaining (~88), highest compat-per-effort first:
 - ✅ Net: `net.cidr_merge` (Cilium range-merge port; RFC 5952 IPv6 output). (`net.cidr_overlap`
   is deprecated and rejected by OPA at compile time — intentionally omitted. `net.lookup_ip_addr`
   does DNS — deferred as side-effecting.)
-- ⬜ Time (10): `time.now_ns`, `time.parse_rfc3339_ns`, `time.date`, `time.clock`,
+- ⬜ Time (10): `time.now_ns`, ✅ `time.parse_rfc3339_ns`, `time.date`, `time.clock`,
   `time.weekday`, `time.add_date`, `time.diff`, `time.format`, `time.parse_ns`,
-  `time.parse_duration_ns`. High value; Go reference-time layout + tz make `format`/`parse` fiddly.
+  ✅ `time.parse_duration_ns`. High value; Go reference-time layout + tz make `format`/`parse`
+  fiddly. The two no-tz parsers are done (#TBD); date/clock/weekday/format/diff need tzdata,
+  parse_ns/format need the Go reference layout, now_ns needs impure-builtin infra.
 - ⬜ JSON: ✅ `json.patch` (RFC 6902); ✅ `json.marshal_with_options`; `json.match_schema`/
   `json.verify_schema` need a JSON-Schema validator (dependency decision).
 - ⬜ Crypto: `crypto.x509.*` (7, OpenSSL), `crypto.parse_private_keys`.
