@@ -3,6 +3,7 @@
 require "time"
 require "date"
 require "tzinfo"
+require "tzinfo/data" # pin the Ruby (tzinfo-data) timezone database explicitly, not host zoneinfo
 require_relative "base"
 require_relative "registry"
 require_relative "registry_helpers"
@@ -170,6 +171,11 @@ module Ruby
         def self.tz_instant(value, context)
           nanos, zone = operand_parts(value, context)
           in_zone(::Time.at(0, nanos, :nanosecond).utc, zone, context)
+        rescue RangeError
+          # Defensive, consistent with epoch_seconds: a platform whose Time can't represent this
+          # instant (e.g. a 32-bit time_t build) is undefined, not a crash. The ns is already
+          # int64-bounded, so a 64-bit Time never reaches here.
+          raise_time_error(context)
         end
         private_class_method :tz_instant
 

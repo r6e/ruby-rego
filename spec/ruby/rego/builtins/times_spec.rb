@@ -104,6 +104,11 @@ RSpec.describe "time parsing builtins" do
       expect(value("time.date", -9_223_372_036_854_775_808)).to eq([1677, 9, 21])
     end
 
+    it "returns undefined (not a crash) when Time.at raises RangeError, as on a 32-bit time_t build" do
+      allow(Time).to receive(:at).and_raise(RangeError)
+      expect(call("time.date", [ns, "UTC"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
     it "resolves \"Local\" against the process timezone" do
       original = ENV.fetch("TZ", nil)
       ENV["TZ"] = "America/New_York"
