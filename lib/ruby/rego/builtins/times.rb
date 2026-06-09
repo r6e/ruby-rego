@@ -154,9 +154,10 @@ module Ruby
         private_class_method :rewrite_extended
 
         # The (digits, unit) capture pairs of `body`, or nil if it is not a clean sequence of them.
+        # Both capture groups always participate, so each pair is a two-String array.
         # @return [Array[Array[String]], nil]
         def self.scan_segments(body)
-          segments = body.scan(/(\d*\.?\d*)([a-zµμ]+)/)
+          segments = body.scan(/(\d*\.?\d*)([a-zµμ]+)/) # @type var segments: Array[Array[String]]
           return nil if segments.empty?
 
           segments if segments.map { |pair| "#{pair[0]}#{pair[1]}" }.join == body

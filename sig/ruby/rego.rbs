@@ -476,7 +476,7 @@ module Ruby
         def self.bounded: (Integer nanos) -> Integer?
         def self.parse_extended_duration: (String string) -> Integer?
         def self.rewrite_extended: (String string) -> String?
-        def self.scan_segments: (String body) -> Array[String | Array[String?]]?
+        def self.scan_segments: (String body) -> Array[Array[String]]?
         def self.rewrite_segment: (String digits, String unit) -> String
         def self.parse_go_duration: (String string) -> Integer?
         def self.sum_segments: (String rest) -> Integer?
