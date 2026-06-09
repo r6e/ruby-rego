@@ -9,9 +9,24 @@ module TZInfo
   class DataSourceNotFound < StandardError
   end
 
+  class Timestamp
+    def to_i: () -> Integer
+  end
+
+  class TimezoneOffset
+    def utc_total_offset: () -> Integer
+  end
+
+  class TimezonePeriod
+    def offset: () -> TimezoneOffset
+    def starts_at: () -> Timestamp?
+    def ends_at: () -> Timestamp?
+  end
+
   class Timezone
     def self.get: (String identifier) -> Timezone
     def to_local: (Time utc_time) -> Time
+    def period_for_utc: (Time utc_time) -> TimezonePeriod
   end
 end
 
@@ -488,8 +503,16 @@ module Ruby
         def self.clock: (Value value) -> [Integer, Integer, Integer]
         def self.weekday: (Value value) -> String
         def self.diff: (Value left, Value right) -> [Integer, Integer, Integer, Integer, Integer, Integer]
+        def self.add_date: (Value value, Value years_value, Value months_value, Value days_value) -> (Integer | UndefinedValue)
 
         private
+
+        def self.int_arg: (Value value, String context) -> Integer
+        def self.shift_date: (Time instant, Integer years, Integer months, Integer days) -> [Integer, Integer, Integer, Integer, Integer, Integer]
+        def self.reconstruct_ns: ([Integer, Integer, Integer, Integer, Integer, Integer] fields, String zone, Integer nsec) -> Integer
+        def self.zone_offset_at: (TZInfo::Timezone timezone, Time naive) -> Integer
+        def self.offset_at_unix: (TZInfo::Timezone timezone, Integer unix) -> Integer
+        def self.local_offset_at: (Time naive) -> Integer
 
         def self.localize: (Integer nanos, String zone) -> Time
         def self.diff_components: (Time earlier, Time later) -> [Integer, Integer, Integer, Integer, Integer, Integer]

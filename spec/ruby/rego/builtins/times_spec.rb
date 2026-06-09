@@ -130,6 +130,45 @@ RSpec.describe "time parsing builtins" do
     end
   end
 
+  describe "time.add_date" do
+    def add_date(value, years, months, days)
+      r = registry.call("time.add_date", [value, years, months, days])
+      r.is_a?(Ruby::Rego::UndefinedValue) ? :undef : r.to_ruby
+    end
+
+    it "adds years/months/days, normalising overflow forward like Go's time.Date" do
+      # 2024-01-31 + 1 month -> Mar 2 (Feb 31 rolls forward, not clamped to Feb 29).
+      expect(add_date(1_706_659_200_000_000_000, 0, 1, 0)).to eq(1_709_337_600_000_000_000)
+      # 2024-02-29 + 1 year -> 2025-03-01 (Feb 29 2025 doesn't exist).
+      expect(add_date(1_709_164_800_000_000_000, 1, 0, 0)).to eq(1_740_787_200_000_000_000)
+      expect(add_date(0, 0, 0, 0)).to eq(0)
+      # pre-epoch (1900-01-01 + 1 month) — negative ns sub-second handling.
+      expect(add_date(-2_208_988_800_000_000_000, 0, 1, 0)).to eq(-2_206_310_400_000_000_000)
+    end
+
+    it "re-anchors the wall clock in the operand's zone, resolving DST gaps/overlaps like Go" do
+      # +1mo lands the wall clock 02:30 in the NY spring-forward gap -> Go's post-transition offset.
+      expect(add_date([1_707_550_200_000_000_000, "America/New_York"], 0, 1, 0)).to eq(1_710_052_200_000_000_000)
+      # +1mo lands 01:30 in the NY fall-back overlap -> Go's first occurrence.
+      expect(add_date([1_727_933_400_000_000_000, "America/New_York"], 0, 1, 0)).to eq(1_730_611_800_000_000_000)
+    end
+
+    it "is undefined for an out-of-int64 result, a non-integer count, or an unknown zone" do
+      expect(add_date(9_000_000_000_000_000_000, 1000, 0, 0)).to eq(:undef)
+      expect(add_date(1_710_505_845_000_000_000, 0, 0, 1.5)).to eq(:undef)
+      expect(add_date([1_710_505_845_000_000_000, "Bad/Zone"], 0, 1, 0)).to eq(:undef)
+    end
+
+    it "resolves a \"Local\" DST overlap like Go (first occurrence), not POSIX mktime (standard)" do
+      original = ENV.fetch("TZ", nil)
+      ENV["TZ"] = "America/New_York"
+      # +1mo lands 01:30 in the fall-back overlap → Go's EDT (first) occurrence, not EST.
+      expect(add_date([1_727_933_400_000_000_000, "Local"], 0, 1, 0)).to eq(1_730_611_800_000_000_000)
+    ensure
+      ENV["TZ"] = original
+    end
+  end
+
   describe "time.diff" do
     let(:a) { 1_710_505_845_000_000_000 } # 2024-03-15 12:30:45Z
     let(:b) { 1_700_000_000_000_000_000 } # 2023-11-14 22:13:20Z

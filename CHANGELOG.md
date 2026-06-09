@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- New built-in: `time.add_date`, matching OPA (Go's Time.AddDate) — adds integer years/months/days
+  to an instant (`ns` or `[ns, tz]`), keeping the wall clock and zone, and returns nanoseconds.
+  Calendar overflow rolls forward like Go's time.Date (e.g. Jan 31 + 1 month -> Mar 2), not
+  clamped; the result wall clock is re-anchored in the operand's zone, resolving a DST gap or
+  overlap exactly as Go does. An out-of-int64 result, a non-integer count, or an unknown zone is
+  undefined. The same far-future DST-projection caveat as the other tz-aware time builtins applies.
+
 - New built-in: `time.diff`, matching OPA — the calendar difference between two instants (each a
   bare ns number, UTC, or `[ns, tz]`) as a non-negative `[years, months, days, hours, minutes,
   seconds]` tuple. Both instants are decomposed in the first operand's timezone (the second
