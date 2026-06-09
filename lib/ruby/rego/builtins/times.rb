@@ -78,8 +78,8 @@ module Ruby
         # Ruby's Time) accepts offset fields up to 24h/60m (e.g. `+24:60`) and Ruby would raise.
         # Each field is a separate `match[n].to_i` local so Steep types it Integer (String?#to_i);
         # destructuring `captures.take(6).map(&:to_i)` instead yields Integer?, rejected downstream.
-        # That explicitness is what pushes ABC over the cop's default.
-        # rubocop:disable Metrics/AbcSize
+        # That explicitness is what pushes ABC (and, with the RangeError guard, length) over default.
+        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         # :reek:TooManyStatements
         def self.epoch_seconds(match)
           year = match[1].to_i
@@ -92,8 +92,12 @@ module Ruby
 
           offset = zone_offset(match[8].to_s)
           offset && (::Time.utc(year, month, day, hour, minute, second).to_i - offset)
+        rescue RangeError
+          # A platform whose Time can't represent this year (e.g. a 32-bit time_t build) — undefined,
+          # not a crash. On a 64-bit Time the range is bounded later by `bounded`.
+          nil
         end
-        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
         private_class_method :epoch_seconds
 
         # The zone's signed offset in seconds, or nil if out of range. Go's RFC 3339 parser accepts

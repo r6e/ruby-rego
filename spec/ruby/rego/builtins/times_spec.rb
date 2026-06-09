@@ -59,8 +59,15 @@ RSpec.describe "time parsing builtins" do
     it "is undefined outside the int64-nanosecond range, a non-string, and a non-date" do
       expect(value("time.parse_rfc3339_ns", "1500-01-01T00:00:00Z")).to eq(:undef)
       expect(value("time.parse_rfc3339_ns", "2300-01-01T00:00:00Z")).to eq(:undef)
+      expect(value("time.parse_rfc3339_ns", "0000-01-01T00:00:00Z")).to eq(:undef) # extreme years, no crash
+      expect(value("time.parse_rfc3339_ns", "9999-12-31T23:59:59Z")).to eq(:undef)
       expect(value("time.parse_rfc3339_ns", "not-a-date")).to eq(:undef)
       expect(call("time.parse_rfc3339_ns", 42)).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "returns undefined (not a crash) when Time.utc raises RangeError, as on a 32-bit time_t build" do
+      allow(Time).to receive(:utc).and_raise(RangeError)
+      expect(value("time.parse_rfc3339_ns", "2000-01-01T00:00:00Z")).to eq(:undef)
     end
   end
 
