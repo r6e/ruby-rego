@@ -487,9 +487,15 @@ module Ruby
         def self.date: (Value value) -> [Integer, Integer, Integer]
         def self.clock: (Value value) -> [Integer, Integer, Integer]
         def self.weekday: (Value value) -> String
+        def self.diff: (Value left, Value right) -> [Integer, Integer, Integer, Integer, Integer, Integer]
 
         private
 
+        def self.localize: (Integer nanos, String zone) -> Time
+        def self.diff_components: (Time earlier, Time later) -> [Integer, Integer, Integer, Integer, Integer, Integer]
+        def self.borrow: (Integer high, Integer low, Integer base) -> [Integer, Integer]
+        def self.days_in_month: (Integer year, Integer month) -> Integer
+        def self.utc_instant: (Integer nanos) -> Time
         def self.tz_instant: (Value value, String context) -> Time
         def self.operand_parts: (Value value, String context) -> [Integer, String]
         def self.require_nanos: (Value value, String context) -> Integer

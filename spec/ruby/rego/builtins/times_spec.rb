@@ -130,6 +130,43 @@ RSpec.describe "time parsing builtins" do
     end
   end
 
+  describe "time.diff" do
+    let(:a) { 1_710_505_845_000_000_000 } # 2024-03-15 12:30:45Z
+    let(:b) { 1_700_000_000_000_000_000 } # 2023-11-14 22:13:20Z
+
+    def diff(arg1, arg2)
+      registry.call("time.diff", [arg1, arg2]).then { |r| r.is_a?(Ruby::Rego::UndefinedValue) ? :undef : r.to_ruby }
+    end
+
+    it "returns the non-negative [y, mo, d, h, mi, s] difference, symmetric in argument order" do
+      expect(diff(a, b)).to eq([0, 4, 0, 14, 17, 25])
+      expect(diff(b, a)).to eq([0, 4, 0, 14, 17, 25])
+    end
+
+    it "is all-zeros for identical instants and sub-second differences" do
+      expect(diff(a, a)).to eq([0, 0, 0, 0, 0, 0])
+      expect(diff(a + 1, a)).to eq([0, 0, 0, 0, 0, 0])
+    end
+
+    it "decomposes both instants in the first operand's timezone" do
+      # Same pair, different first-operand zone → different hour component.
+      expect(diff([a, "UTC"], [b, "Asia/Tokyo"])).to eq([0, 4, 0, 14, 17, 25])
+      expect(diff([a, "America/New_York"], [b, "Asia/Tokyo"])).to eq([0, 4, 0, 15, 17, 25])
+    end
+
+    it "borrows correctly across a month boundary (end-of-month day borrow)" do
+      # 2024-03-01T00:00:00Z minus 2024-02-29T12:00:00Z → 12h, borrowing from the 29-day Feb.
+      expect(diff(1_709_251_200_000_000_000, 1_709_208_000_000_000_000)).to eq([0, 0, 0, 12, 0, 0])
+    end
+
+    it "is undefined for a wrong-typed operand or an unknown timezone on either side" do
+      [[a, "x"], ["x", a], [[a, "Bad/Zone"], b], [a, [b, "Bad/Zone"]],
+       [1.5, a], [a, 1.5], [[], a], [a, []]].each do |arg1, arg2|
+        expect(registry.call("time.diff", [arg1, arg2])).to be_a(Ruby::Rego::UndefinedValue)
+      end
+    end
+  end
+
   describe "time.parse_duration_ns" do
     it "parses signed, multi-unit, and fractional Go durations" do
       expect(value("time.parse_duration_ns", "1h30m")).to eq(5_400_000_000_000)

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- New built-in: `time.diff`, matching OPA — the calendar difference between two instants (each a
+  bare ns number, UTC, or `[ns, tz]`) as a non-negative `[years, months, days, hours, minutes,
+  seconds]` tuple. Both instants are decomposed in the first operand's timezone (the second
+  operand's zone is still resolved, and so validated); a wrong-typed operand or an unknown zone
+  on either side is undefined. The same far-future DST-projection caveat as the other tz-aware
+  time builtins applies.
+
 - New built-ins: `time.date`, `time.clock`, and `time.weekday`, matching OPA. Each decomposes an
   instant given as nanoseconds since the Unix epoch — a bare number (UTC) or `[ns, tz]` where `tz`
   is `""`/`"UTC"`, `"Local"`, or an IANA timezone name (resolved via the new `tzinfo`/`tzinfo-data`

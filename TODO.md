@@ -74,7 +74,7 @@ Remaining (~88), highest compat-per-effort first:
   is deprecated and rejected by OPA at compile time — intentionally omitted. `net.lookup_ip_addr`
   does DNS — deferred as side-effecting.)
 - ⬜ Time (10): `time.now_ns`, ✅ `time.parse_rfc3339_ns`, ✅ `time.date`, ✅ `time.clock`,
-  ✅ `time.weekday`, `time.add_date`, `time.diff`, `time.format`, `time.parse_ns`,
+  ✅ `time.weekday`, `time.add_date`, ✅ `time.diff`, `time.format`, `time.parse_ns`,
   ✅ `time.parse_duration_ns`. High value; Go reference-time layout + tz make `format`/`parse`
   fiddly. The two no-tz parsers are done (#TBD); date/clock/weekday/format/diff need tzdata,
   parse_ns/format need the Go reference layout, now_ns needs impure-builtin infra.
