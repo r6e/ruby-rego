@@ -514,7 +514,7 @@ module Ruby
         def self.offset_at_unix: (TZInfo::Timezone timezone, Integer unix) -> Integer
         def self.local_offset_at: (Time naive) -> Integer
 
-        def self.localize: (Integer nanos, String zone) -> Time
+        def self.localize: (Integer nanos, String zone, String context) -> Time
         def self.diff_components: (Time earlier, Time later) -> [Integer, Integer, Integer, Integer, Integer, Integer]
         def self.borrow: (Integer high, Integer low, Integer base) -> [Integer, Integer]
         def self.days_in_month: (Integer year, Integer month) -> Integer

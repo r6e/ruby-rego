@@ -185,7 +185,7 @@ module Ruby
           years = int_arg(years_value, "time.add_date")
           months = int_arg(months_value, "time.add_date")
           days = int_arg(days_value, "time.add_date")
-          fields = shift_date(localize(nanos, zone), years, months, days)
+          fields = shift_date(localize(nanos, zone, "time.add_date"), years, months, days)
           bounded(reconstruct_ns(fields, zone, nanos % NANOS_PER_SECOND)) || UndefinedValue.new
         rescue RangeError
           UndefinedValue.new
@@ -283,14 +283,14 @@ module Ruby
           right_nanos, right_zone = operand_parts(right, "time.diff")
           in_zone(utc_instant(0), right_zone, "time.diff") # validate the 2nd zone too
           left_nanos, right_nanos = right_nanos, left_nanos if left_nanos > right_nanos # order earlier->later
-          diff_components(localize(left_nanos, zone), localize(right_nanos, zone))
+          diff_components(localize(left_nanos, zone, "time.diff"), localize(right_nanos, zone, "time.diff"))
         rescue RangeError
           raise_time_error("time.diff")
         end
 
         # The instant `nanos` as a Ruby Time decomposed in `zone`.
-        def self.localize(nanos, zone)
-          in_zone(utc_instant(nanos), zone, "time.diff")
+        def self.localize(nanos, zone, context)
+          in_zone(utc_instant(nanos), zone, context)
         end
         private_class_method :localize
 
