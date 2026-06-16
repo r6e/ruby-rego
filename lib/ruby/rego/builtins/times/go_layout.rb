@@ -74,7 +74,8 @@ module Ruby
             [layout, nil, ""]
           end
 
-          # The token starting at `i` and its source length, or [nil, 0] if `layout[i]` starts no token.
+          # The token at `index` as [token, source_length], or [token, source_length, literal_prefix]
+          # when a leading character is literal (the `_2006` case), or [nil, 0] for no token.
           def self.token_at(layout, index)
             char = layout[index]
             handler = char && SCANNERS[char]
@@ -94,8 +95,9 @@ module Ruby
           end
           private_class_method :digit_at?
 
-          # Each scanner returns [token, source_length] for a match at `i`, else [nil, 0].
-          # The fixed-field scanners mirror nextStdChunk's per-leading-byte cases.
+          # Each scanner returns [token, source_length] for a match at `index` (or a third
+          # literal_prefix_length element when a leading char is literal, as in scan_underscore's
+          # `_2006`), else [nil, 0]. The fixed-field scanners mirror nextStdChunk's per-leading-byte cases.
           # :reek:TooManyStatements
           def self.scan_letter_j(layout, index)
             return [:long_month, 7] if layout[index, 7] == "January"
