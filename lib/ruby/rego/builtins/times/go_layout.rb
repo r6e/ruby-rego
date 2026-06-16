@@ -296,6 +296,9 @@ module Ruby
 
           # Go's appendNano: the separator + up to `digits` fractional digits; the `:nine` form trims
           # trailing zeros (and the separator itself) and emits nothing when the value rounds to zero.
+          # The `digits.zero?` guard mirrors Go's appendNano `n == 0` early return; `scan_fraction`
+          # never yields a zero-digit run, so (as in Go) it is a defensively-inert fidelity guard, not
+          # reachable dead code.
           # :reek:TooManyStatements
           def self.emit_fraction(time, frac)
             _, kind, digits, separator = frac
