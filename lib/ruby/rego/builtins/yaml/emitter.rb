@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/ModuleLength
+# rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
 
 require "psych"
 require_relative "../term_order"
@@ -48,7 +48,6 @@ module Ruby
           end
 
           # @return [Psych::Nodes::Node]
-          # :reek:TooManyStatements
           def self.build_node(ruby)
             case ruby
             when nil then scalar("null", PLAIN)
@@ -134,93 +133,6 @@ module Ruby
           end
           private_class_method :mapping
 
-          # Port of gopkg.in/yaml.v2's keyList.Less (v2.4.0) string path — OPA's keys are
-          # strings post-JSON, so only that branch applies. Digit runs compare numerically,
-          # letters lexicographically, and a digit sorts before a letter.
-          # @return [Integer] -1, 0, or 1
-          def self.natural_compare(left, right)
-            lhs = left.chars
-            rhs = right.chars
-            index = 0
-            while index < lhs.length && index < rhs.length
-              return compare_at(lhs, rhs, index) unless lhs[index] == rhs[index]
-
-              index += 1
-            end
-            lhs.length <=> rhs.length
-          end
-          private_class_method :natural_compare
-
-          # Compares the two key strings at their first differing rune (index).
-          # @return [Integer]
-          def self.compare_at(lhs, rhs, index)
-            left_alpha = letter?(lhs[index])
-            right_alpha = letter?(rhs[index])
-            return lhs[index] <=> rhs[index] if left_alpha && right_alpha
-            return left_alpha ? 1 : -1 if left_alpha || right_alpha
-
-            compare_digit_runs(lhs, rhs, index)
-          end
-          private_class_method :compare_at
-
-          # Both differing runes are digits: compare the whole runs numerically, then by
-          # length (leading zeros), then by rune — mirroring keyList.Less.
-          # @return [Integer]
-          def self.compare_digit_runs(lhs, rhs, index)
-            bias = leading_zero_bias(lhs, rhs, index)
-            left_value, left_end = digit_run(lhs, index, bias)
-            right_value, right_end = digit_run(rhs, index, bias)
-            return left_value <=> right_value unless left_value == right_value
-            return left_end <=> right_end unless left_end == right_end
-
-            lhs[index] <=> rhs[index]
-          end
-          private_class_method :compare_digit_runs
-
-          # @return [Array(Integer, Integer)] numeric value of the run (offset by bias) and its end index
-          # NOTE: Ruby integers are arbitrary precision, so a >= 2^63 digit run sorts
-          # numerically; yaml.v2's int64 accumulator wraps there, so OPA can order such
-          # huge-numeric keys differently. Documented divergence (correct over bug-for-bug).
-          def self.digit_run(chars, index, bias)
-            value = bias
-            cursor = index
-            while cursor < chars.length && digit?(chars[cursor])
-              value = (value * 10) + chars[cursor].to_i
-              cursor += 1
-            end
-            [value, cursor]
-          end
-          private_class_method :digit_run
-
-          # keyList's leading-zero tie-break: if a non-zero digit precedes the run in the
-          # left key, both run values start at 1 so a shorter (fewer-leading-zero) run wins.
-          # @return [Integer]
-          def self.leading_zero_bias(lhs, rhs, index)
-            return 0 unless lhs[index] == "0" || rhs[index] == "0"
-
-            position = index - 1
-            while position >= 0 && digit?(lhs[position])
-              return 1 unless lhs[position] == "0"
-
-              position -= 1
-            end
-            0
-          end
-          private_class_method :leading_zero_bias
-
-          # ASCII-only: non-ASCII decimal digits can't reach here via OPA's JSON-stringified keys.
-          # @return [bool]
-          def self.digit?(char)
-            char.between?("0", "9")
-          end
-          private_class_method :digit?
-
-          # @return [bool]
-          def self.letter?(char)
-            char.match?(/\p{L}/)
-          end
-          private_class_method :letter?
-
           # The string form of an object key (mirrors how OPA stringifies map keys).
           # @return [String]
           def self.key_string(key)
@@ -234,54 +146,12 @@ module Ruby
             end
           end
           private_class_method :key_string
-
-          # Go strconv.FormatFloat(f, 'g', -1, 64): shortest digits, scientific when the
-          # decimal exponent is < -4 or >= the precision (6 for shortest 'g').
-          # @return [String]
-          def self.float_string(float)
-            raise MarshalError, "non-finite number" unless float.finite?
-            return float.to_s.start_with?("-") ? "-0" : "0" if float.zero?
-
-            digits, point = shortest_digits(float.abs)
-            exponent = point - 1
-            body = exponent < -4 || exponent >= 6 ? scientific(digits, exponent) : fixed(digits, point)
-            float.negative? ? "-#{body}" : body
-          end
-
-          # Extracts the shortest significant digits and the decimal-point position such
-          # that value == 0.<digits> * 10**point. Ruby's Float#to_s gives shortest digits.
-          # @return [Array(String, Integer)]
-          # :reek:TooManyStatements
-          def self.shortest_digits(float)
-            mantissa, exponent = float.to_s.split(/e/i)
-            integer_part, fraction = mantissa.to_s.split(".")
-            integer_part = integer_part.to_s
-            combined = integer_part + fraction.to_s
-            without_leading = combined.sub(/\A0+/, "")
-            point = integer_part.length + (exponent || "0").to_i - (combined.length - without_leading.length)
-            digits = without_leading.sub(/0+\z/, "")
-            digits.empty? ? ["0", 1] : [digits, point]
-          end
-          private_class_method :shortest_digits
-
-          # @return [String]
-          def self.fixed(digits, point)
-            return "0.#{"0" * -point}#{digits}" if point <= 0
-            return digits + ("0" * (point - digits.length)) if point >= digits.length
-
-            "#{digits[0...point]}.#{digits[point..]}"
-          end
-          private_class_method :fixed
-
-          # @return [String]
-          def self.scientific(digits, exponent)
-            mantissa = digits.length == 1 ? digits : "#{digits[0]}.#{digits[1..]}"
-            "#{mantissa}e#{exponent.negative? ? "-" : "+"}#{format("%02d", exponent.abs)}"
-          end
-          private_class_method :scientific
         end
       end
     end
   end
 end
-# rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/ModuleLength
+
+require_relative "emitter/key_order"
+require_relative "emitter/float_format"
+# rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
