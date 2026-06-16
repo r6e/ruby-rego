@@ -7,6 +7,7 @@ require "tzinfo/data" # pin the Ruby (tzinfo-data) timezone database explicitly,
 require_relative "base"
 require_relative "registry"
 require_relative "registry_helpers"
+require_relative "times/go_layout"
 
 # rubocop:disable Metrics/ModuleLength
 module Ruby
@@ -62,7 +63,8 @@ module Ruby
           "time.clock" => { arity: 1, handler: :clock },
           "time.weekday" => { arity: 1, handler: :weekday },
           "time.diff" => { arity: 2, handler: :diff },
-          "time.add_date" => { arity: 4, handler: :add_date }
+          "time.add_date" => { arity: 4, handler: :add_date },
+          "time.format" => { arity: 1, handler: :format }
         }.freeze
 
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
@@ -169,6 +171,17 @@ module Ruby
         # @return [String] the English weekday name
         def self.weekday(value)
           DAY_NAMES.fetch(tz_instant(value, "time.weekday").wday)
+        end
+
+        # Formats an instant (ns, [ns, tz], or [ns, tz, layout]) using a Go reference-time layout
+        # (default RFC3339Nano; a named constant or a literal layout otherwise), matching OPA.
+        # @param value [Ruby::Rego::Value]
+        # @return [String, Ruby::Rego::UndefinedValue]
+        def self.format(value)
+          nanos, zone, layout = operand_parts(value, "time.format")
+          GoLayout.format(localize(nanos, zone, "time.format"), layout)
+        rescue RangeError
+          UndefinedValue.new
         end
 
         # Adds years/months/days (Go's Time.AddDate) to an instant, keeping the wall clock and zone,
@@ -346,20 +359,20 @@ module Ruby
         end
         private_class_method :tz_instant
 
-        # @return [[Integer, String]] the nanoseconds and the timezone name
+        # @return [[Integer, String, String]] the nanoseconds, the timezone name, and the layout
+        #   (a third array element, used only by time.format — "" when absent). All other callers
+        #   destructure just the first two. Any further elements are ignored, matching OPA's tzTime.
         # :reek:TooManyStatements
         def self.operand_parts(value, context)
-          return [require_nanos(value, context), "UTC"] unless value.is_a?(ArrayValue)
+          return [require_nanos(value, context), "UTC", ""] unless value.is_a?(ArrayValue)
 
           elements = value.value.to_a
           raise_time_error(context) if elements.empty?
           count = elements.length
           nanos = require_nanos(elements[0], context)
-          zone = count > 1 ? require_zone_name(elements[1], context) : "UTC"
-          # A third element is a layout (only meaningful to time.format); validated as a string but
-          # ignored here. Any further elements are ignored entirely, matching OPA's tzTime.
-          require_zone_name(elements[2], context) if count > 2
-          [nanos, zone]
+          zone = count > 1 ? require_string(elements[1], context) : "UTC"
+          layout = count > 2 ? require_string(elements[2], context) : ""
+          [nanos, zone, layout]
         end
         private_class_method :operand_parts
 
@@ -384,11 +397,11 @@ module Ruby
         end
         private_class_method :integer_value
 
-        def self.require_zone_name(value, context)
+        def self.require_string(value, context)
           Base.assert_type(value, expected: StringValue, context: context)
           value.value
         end
-        private_class_method :require_zone_name
+        private_class_method :require_string
 
         # The instant `nanos` nanoseconds after the Unix epoch as a UTC Ruby Time.
         def self.utc_instant(nanos)

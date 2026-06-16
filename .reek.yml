@@ -8,6 +8,7 @@ detectors:
   TooManyMethods:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Parser
       - Ruby::Rego::Compiler
       - Ruby::Rego::Evaluator
@@ -17,6 +18,7 @@ detectors:
   TooManyConstants:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator::OperatorEvaluator
       # Regex carries several independent anti-DoS bound constants (timeout, source
       # length, output/work caps) plus character classes — each a distinct guard.
@@ -30,6 +32,7 @@ detectors:
   TooManyInstanceVariables:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
   TooManyStatements:
@@ -71,6 +74,7 @@ detectors:
       - Ruby::Rego::Builtins::Graph#self.reachable_paths
       - Ruby::Rego::Builtins::Graph#self.build_paths
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Parser
       - Ruby::Rego::CompiledPolicySet
       - Ruby::Rego::Evaluator
@@ -87,6 +91,7 @@ detectors:
       # Recursive canonicalizer reuses canonicalize_each across the array/set case arms.
       - Ruby::Rego::Value#self.canonicalize
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Evaluator::RuleEvaluator
@@ -107,6 +112,7 @@ detectors:
   UtilityFunction:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Unifier
@@ -117,6 +123,7 @@ detectors:
   FeatureEnvy:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator::RuleEvaluator
       - Ruby::Rego::Evaluator::ReferenceKeyResolver
       - Ruby::Rego::Evaluator::BoundVariableCollector
@@ -132,6 +139,7 @@ detectors:
   ControlParameter:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator::RuleEvaluator
       - Ruby::Rego::Unifier
       - Ruby::Rego::WithModifiers::WithModifierBuiltinOverride
@@ -146,6 +154,7 @@ detectors:
   NilCheck:
     exclude:
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Unifier
       - Ruby::Rego::Builtins::Regex::GoTemplate
@@ -171,6 +180,7 @@ detectors:
       # helpers (build_simple_value, build_composite_value, canonicalize).
       - Ruby::Rego::Value
       - Ruby::Rego::Lexer
+      - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator
       - Ruby::Rego::Evaluator::ReferenceResolver
       - Ruby::Rego::Evaluator::RuleEvaluator

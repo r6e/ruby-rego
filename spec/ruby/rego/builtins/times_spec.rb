@@ -130,6 +130,44 @@ RSpec.describe "time parsing builtins" do
     end
   end
 
+  describe "time.format" do
+    let(:ns) { 1_710_505_845_123_456_789 } # 2024-03-15T12:30:45.123…Z (a Friday)
+
+    def fmt(operand)
+      r = registry.call("time.format", [operand])
+      r.is_a?(Ruby::Rego::UndefinedValue) ? :undef : r.to_ruby
+    end
+
+    it "defaults to RFC3339Nano and applies the operand's timezone" do
+      expect(fmt(ns)).to eq("2024-03-15T12:30:45.123456789Z")
+      expect(fmt([ns])).to eq("2024-03-15T12:30:45.123456789Z") # single-element array → UTC
+      expect(fmt([ns, "America/New_York"])).to eq("2024-03-15T08:30:45.123456789-04:00")
+    end
+
+    it "uses a named layout constant or a literal Go reference-time layout" do
+      expect(fmt([ns, "UTC", "RFC3339"])).to eq("2024-03-15T12:30:45Z")
+      expect(fmt([ns, "UTC", "2006-01-02 15:04:05"])).to eq("2024-03-15 12:30:45")
+      expect(fmt([ns, "UTC", "Mon Jan _2 03:04:05 PM 2006"])).to eq("Fri Mar 15 12:30:45 PM 2024")
+    end
+
+    it "matches Go's Z-for-UTC, numeric-offset, and zone-abbreviation rendering" do
+      expect(fmt([ns, "UTC", "2006-01-02T15:04:05Z07:00"])).to eq("2024-03-15T12:30:45Z")
+      expect(fmt([ns, "Asia/Kolkata", "-0700 MST"])).to eq("+0530 IST")
+      expect(fmt([ns, "Etc/GMT+5", "MST"])).to eq("-05") # numeric IANA abbreviation
+    end
+
+    it "trims a .999 fraction's trailing zeros (and the separator when zero), keeps .000 fixed" do
+      expect(fmt([1_710_505_845_100_000_000, "UTC", "05.999"])).to eq("45.1")
+      expect(fmt([1_710_505_845_000_000_000, "UTC", "05.999"])).to eq("45")
+      expect(fmt([1_710_505_845_100_000_000, "UTC", "05.000"])).to eq("45.100")
+    end
+
+    it "is undefined for an unknown zone or a wrong-typed operand" do
+      expect(fmt([ns, "Bad/Zone", "RFC3339"])).to eq(:undef)
+      expect(registry.call("time.format", ["x"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
   describe "time.add_date" do
     def add_date(value, years, months, days)
       r = registry.call("time.add_date", [value, years, months, days])
