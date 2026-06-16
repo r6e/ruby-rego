@@ -504,6 +504,7 @@ module Ruby
         def self.weekday: (Value value) -> String
         def self.diff: (Value left, Value right) -> [Integer, Integer, Integer, Integer, Integer, Integer]
         def self.add_date: (Value value, Value years_value, Value months_value, Value days_value) -> (Integer | UndefinedValue)
+        def self.format: (Value value) -> (String | UndefinedValue)
 
         private
 
@@ -520,10 +521,10 @@ module Ruby
         def self.days_in_month: (Integer year, Integer month) -> Integer
         def self.utc_instant: (Integer nanos) -> Time
         def self.tz_instant: (Value value, String context) -> Time
-        def self.operand_parts: (Value value, String context) -> [Integer, String]
+        def self.operand_parts: (Value value, String context) -> [Integer, String, String]
         def self.require_nanos: (Value value, String context) -> Integer
         def self.integer_value: (Numeric number) -> Integer?
-        def self.require_zone_name: (Value value, String context) -> String
+        def self.require_string: (Value value, String context) -> String
         def self.in_zone: (Time utc_time, String zone, String context) -> Time
         def self.raise_time_error: (String context) -> bot
 
@@ -547,6 +548,51 @@ module Ruby
         def self.take_unit: (String string) -> [Integer?, String]
         def self.digit?: (String? char) -> bool
         def self.string_arg: (Value value, String context) -> String
+
+        # Go reference-time layout formatter. `token` values are Symbols or a [:frac, ...] tuple,
+        # typed loosely as untyped to avoid encoding that union in RBS.
+        module GoLayout
+          NAMED: Hash[String, String]
+          DEFAULT: String
+          MONTHS: Array[String]
+          WEEKDAYS: Array[String]
+          ZERO_TOKENS: Hash[String, Symbol]
+          NUM_TZ: Array[[String, Symbol]]
+          ISO_TZ: Array[[String, Symbol]]
+          SCANNERS: Hash[String, untyped]
+          ISO_ZONE: Array[Symbol]
+          COLON_ZONE: Array[Symbol]
+          SHORT_ZONE: Array[Symbol]
+          SECONDS_ZONE: Array[Symbol]
+          COLON_SECONDS_ZONE: Array[Symbol]
+          ZONE_OFFSET: Array[Symbol]
+
+          def self.resolve: (String layout) -> String
+          def self.format: (Time time, String layout) -> String
+          def self.next_chunk: (String layout) -> [String, untyped, String]
+          def self.token_at: (String layout, Integer index) -> Array[untyped]
+          def self.starts_lower?: (String? rest) -> bool
+          def self.digit_at?: (String string, Integer index) -> bool
+          def self.scan_letter_j: (String layout, Integer index) -> Array[untyped]
+          def self.scan_letter_m: (String layout, Integer index) -> Array[untyped]
+          def self.scan_zero: (String layout, Integer index) -> Array[untyped]
+          def self.scan_one: (String layout, Integer index) -> Array[untyped]
+          def self.scan_two: (String layout, Integer index) -> Array[untyped]
+          def self.scan_underscore: (String layout, Integer index) -> Array[untyped]
+          def self.scan_pm_upper: (String layout, Integer index) -> Array[untyped]
+          def self.scan_pm_lower: (String layout, Integer index) -> Array[untyped]
+          def self.scan_dash: (String layout, Integer index) -> Array[untyped]
+          def self.scan_zed: (String layout, Integer index) -> Array[untyped]
+          def self.scan_table: (String layout, Integer index, Array[[String, Symbol]] table) -> Array[untyped]
+          def self.scan_fraction: (String layout, Integer index) -> Array[untyped]
+          def self.emit: (Time time, untyped token) -> String
+          def self.emit_field: (Time time, Symbol token) -> String?
+          def self.zone_name: (Time time) -> String
+          def self.zone_offset: (Time time, Symbol token) -> String
+          def self.emit_fraction: (Time time, Array[untyped] frac) -> String
+          def self.pad: (Integer value, Integer width) -> String
+          def self.twelve_hour: (Integer hour) -> Integer
+        end
       end
 
       module Semver

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- New built-in: `time.format`, matching OPA — formats an instant (`ns`, `[ns, tz]`, or
+  `[ns, tz, layout]`) using Go's reference-time layout language (the `2006-01-02 15:04:05` token
+  scheme). The layout defaults to RFC3339Nano, accepts the named constants (ANSIC, UnixDate,
+  RubyDate, RFC822/Z, RFC850, RFC1123/Z, RFC3339, RFC3339Nano), or any literal Go layout. The
+  formatter is a direct port of Go's stdlib (nextStdChunk + appendFormat + appendNano), so the
+  fiddly cases match Go exactly: `Z07:00` prints `Z` for UTC, `.999`-style fractions trim trailing
+  zeros (dropping the separator when zero) while `.000` stays fixed-width, `_2` space-pads, and the
+  `MST` token uses the IANA abbreviation (including numeric forms like `-05`/`+14`). An unknown zone
+  or wrong-typed operand is undefined. The same far-future DST-projection caveat as the other
+  tz-aware time builtins applies.
+
 - New built-in: `time.add_date`, matching OPA (Go's Time.AddDate) — adds integer years/months/days
   to an instant (`ns` or `[ns, tz]`), keeping the wall clock and zone, and returns nanoseconds.
   Calendar overflow rolls forward like Go's time.Date (e.g. Jan 31 + 1 month -> Mar 2), not
