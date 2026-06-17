@@ -17,8 +17,7 @@ module Ruby
             private
 
             # A numeric (`-0700`) or ISO (`Z07:00`) zone offset. ISO tokens accept a bare `Z`
-            # for UTC; otherwise a sign and the shape's digit groups give a signed offset. The
-            # offset is not range-checked (Go's parser accepts e.g. `+24:60`).
+            # for UTC; otherwise a sign and the shape's digit groups give a signed offset.
             # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity
             def consume_zone(token)
               shape = ZONE_SHAPES.fetch(token)
@@ -39,17 +38,22 @@ module Ruby
               true
             end
 
-            # rubocop:disable Metrics/AbcSize
+            # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
             def apply_offset(text, shape)
               hh = two_digits(text, shape[:hh]) || (return false)
               mm = shape[:mm] ? (two_digits(text, shape[:mm]) || (return false)) : 0
               ss = shape[:ss] ? (two_digits(text, shape[:ss]) || (return false)) : 0
+              # Go's time.Parse range-checks each field independently: an hour up to 24 and a
+              # minute/second up to 60 are accepted (so `+24:60` is valid), but `+25:00`/`+12:61`
+              # are not. Mirrors RFC3339 (times/rfc3339.rb#zone_offset).
+              return false if hh > 24 || mm > 60 || ss > 60
+
               magnitude = (hh * 3600) + (mm * 60) + ss
               @zone_offset = text[0] == "-" ? -magnitude : magnitude
               @value = @value[shape[:len]..]
               true
             end
-            # rubocop:enable Metrics/AbcSize
+            # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
             # A named zone abbreviation (the layout's `MST`). Consumed per Go's parseTimeZone
             # grammar; the offset is always 0 (see the module/file notes). "UTC" is taken first.
@@ -69,13 +73,15 @@ module Ruby
 
             # The length of a zone abbreviation at the head of `value` per Go's parseTimeZone,
             # or 0 if none. GMT may carry a signed hour offset; ChST/MeST are the lower-case
-            # specials; otherwise a run of 3 (always), or 4/5 ending in `T` (plus WITA),
-            # uppercase letters.
-            # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+            # specials; a leading `+`/`-` is an unnamed signed-offset zone (consumed for its
+            # length only — the offset stays 0, like every abbreviation); otherwise a run of 3
+            # (always), or 4/5 ending in `T` (plus WITA), uppercase letters.
+            # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/AbcSize, Metrics/MethodLength
             def named_zone_length(value)
               return 0 if value.length < 3
               return 4 if %w[ChST MeST].include?(value[0, 4])
               return gmt_length(value) if value[0, 3] == "GMT"
+              return signed_offset_length(value) if %w[+ -].include?(value[0])
 
               upper = uppercase_run(value)
               case upper
@@ -85,7 +91,7 @@ module Ruby
               else 0
               end
             end
-            # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+            # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/AbcSize, Metrics/MethodLength
 
             def uppercase_run(value)
               run = 0
@@ -101,11 +107,12 @@ module Ruby
               3 + signed_offset_length(rest)
             end
 
-            # Length of a `+`/`-` sign plus its leading integer (capped at 23, Go's
-            # parseSignedOffset), or 0 if the integer would overflow that.
+            # Length of a `+`/`-` sign plus its leading integer, or 0 when no digit follows the
+            # sign or the integer exceeds 23 — Go's parseSignedOffset returns 0 in both cases, so
+            # the sign is NOT consumed (it becomes leftover text and the parse fails).
             def signed_offset_length(rest)
               digits = rest[1..].to_s[/\A\d+/]
-              return 1 if digits.nil? || digits.to_i > 23
+              return 0 if digits.nil? || digits.to_i > 23
 
               1 + digits.length
             end

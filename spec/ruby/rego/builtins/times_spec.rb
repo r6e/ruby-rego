@@ -358,7 +358,6 @@ RSpec.describe "time parsing builtins" do
         ["03:04:05 PM", "12:30:45 AM", nil],
         ["03:04:05 PM", "12:30:45 PM", nil],
         ["03:04:05 PM", "13:30:45 PM", nil],
-        ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45Z", 1710073845000000000],
         ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+05:30", 1710054045000000000],
         ["2006-01-02T15:04:05Z0700", "2024-03-10T12:30:45Z", 1710073845000000000],
         ["2006-01-02T15:04:05Z0700", "2024-03-10T12:30:45+0530", 1710054045000000000],
@@ -390,6 +389,33 @@ RSpec.describe "time parsing builtins" do
       end
     end
 
+    # Edge cases surfaced by the adversarial review panel (each was a one-sided divergence from
+    # Go's time.Parse), verified against `TZ=UTC opa eval` 1.17.
+    [
+      # A trailing layout space matches an exhausted value (Go's skip only errors on a non-empty
+      # non-space value).
+      ["2006-01-02 ", "2024-03-04", 1_709_510_400_000_000_000],
+      # A bare second token absorbs a trailing value fraction (period or comma) when the layout
+      # has no fraction token, truncating to nanoseconds (Go's stdSecond special case).
+      ["2006-01-02 15:04:05", "2024-03-10 10:20:30.5", 1_710_066_030_500_000_000],
+      ["2006-01-02 15:04:05", "2024-03-10 10:20:30,5", 1_710_066_030_500_000_000],
+      ["2006-01-02 15:04:05", "2024-03-10 10:20:30.123456789999", 1_710_066_030_123_456_789],
+      # A signed value after a named-zone token is consumed via parseSignedOffset (length only,
+      # offset stays 0); an hour > 23 leaves leftover digits → undefined.
+      ["2006-01-02 15:04:05 MST", "2024-03-10 12:30:45 +05", 1_710_073_845_000_000_000],
+      ["2006-01-02 15:04:05 MST", "2024-03-10 12:30:45 +0530", nil],
+      # A bare GMT sign with no following digit is not consumed → leftover "+" → undefined.
+      ["2006-01-02 15:04:05 MST", "2024-03-10 12:30:45 GMT+", nil],
+      # Zone offsets are range-checked per field: hour ≤ 24, minute/second ≤ 60.
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+24:00", 1_709_987_445_000_000_000],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+25:00", nil],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+12:61", nil]
+    ].each do |layout, val, expected|
+      it "parses #{layout.inspect} / #{val.inspect} (panel regression)" do
+        expect(parse_ns(layout, val)).to eq(expected.nil? ? :undef : expected)
+      end
+    end
+
     it "is undefined for an empty layout against any non-empty value" do
       expect(parse_ns("", "")).to eq(:undef) # year 0 -> out of int64-ns range
       expect(parse_ns("", "x")).to eq(:undef) # leftover text
@@ -400,6 +426,14 @@ RSpec.describe "time parsing builtins" do
         .to be_a(Ruby::Rego::UndefinedValue)
       expect(registry.call("time.parse_ns", ["2006-01-02", 42]))
         .to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined (not a crash) for an invalid-encoding layout or value" do
+      bad = +"Janu\xFFry"
+      bad.force_encoding("UTF-8")
+      expect(bad.valid_encoding?).to be(false)
+      expect(parse_ns("January 2 2006", bad)).to eq(:undef)
+      expect(parse_ns(bad, "March 2 2024")).to eq(:undef)
     end
   end
 end

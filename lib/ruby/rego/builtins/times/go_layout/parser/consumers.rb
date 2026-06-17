@@ -46,8 +46,10 @@ module Ruby
               !@day.nil?
             end
 
-            def consume_year_day(fixed)
-              @yday = getnum3(fixed)
+            # Only the zero-padded `002` token reaches here (the underscore-padded `__2` form
+            # routes through consume_under_year_day), so the day-of-year is always 3 fixed digits.
+            def consume_year_day
+              @yday = getnum3(true)
               !@yday.nil?
             end
 
@@ -68,7 +70,20 @@ module Ruby
 
             def consume_second(fixed)
               @sec = getnum(fixed) || (return false)
-              @sec.between?(0, 59)
+              return false unless @sec.between?(0, 59)
+
+              # Go's stdSecond special case: when the value carries a fractional second but the
+              # layout has NO fraction token next, absorb it here (truncating to ns). When a
+              # :frac token follows, that token consumes the fraction instead.
+              fraction_optional unless next_token_fraction?
+              true
+            end
+
+            # Whether the next layout token is the fractional-second token (the only Array-valued
+            # token next_chunk emits); peeked from the not-yet-walked remainder of the layout.
+            def next_token_fraction?
+              _, token, = GoLayout.next_chunk(@layout)
+              token.is_a?(::Array)
             end
 
             def consume_under_day
@@ -92,6 +107,35 @@ module Ruby
               return (@am = true) if token == am
 
               false
+            end
+
+            # The fractional-second token (:frac). `:zero` (.000) requires exactly `digits`
+            # fraction digits; `:nine` (.999) takes any number and may be absent entirely. Reads
+            # the leading "." or "," separator and accumulates @nsec (truncated to nanoseconds).
+            def consume_fraction(token)
+              _, kind, digits, = token
+              kind == :zero ? fraction_fixed(digits) : fraction_optional
+            end
+
+            def fraction_fixed(digits)
+              return false unless %w[. ,].include?(@value[0])
+
+              frac = @value[1, digits]
+              return false unless frac && frac.length == digits && frac.each_char.all? { |char| digit?(char) }
+
+              @nsec = frac.ljust(9, "0")[0, 9].to_i
+              @value = @value[(1 + digits)..]
+              true
+            end
+
+            def fraction_optional
+              return true unless %w[. ,].include?(@value[0]) && digit?(@value[1])
+
+              run = 1
+              run += 1 while digit?(@value[run])
+              @nsec = @value[1, run - 1].to_s.ljust(9, "0")[0, 9].to_i
+              @value = @value[run..]
+              true
             end
           end
           # rubocop:enable Naming/PredicateMethod

@@ -42,9 +42,14 @@ module Ruby
 
           # Walks a (layout, value) pair, accumulating broken-down time fields. One instance per
           # parse; not reused. Mirrors Go's parse(): every helper returns false/nil to abort the
-          # whole parse as undefined, matching Go returning a *ParseError. The field consumers,
-          # zone grammar, and composition live in the parser/ sub-files (required below); this
-          # file holds the driver — the layout walk and token dispatch — plus the shared tables.
+          # whole parse as undefined, matching Go returning a *ParseError. The field primitives,
+          # per-token consumers, zone grammar, and composition live in the parser/ sub-files
+          # (required below); this file holds the driver — the layout walk and token dispatch —
+          # plus the shared tables. The class is reopened across those files (rather than split
+          # into modules, the pattern used elsewhere) because the parse is inherently stateful —
+          # all the helpers mutate the same instance cursor (@value) and accumulated fields, as
+          # Go's parse() mutates locals; threading that state through module functions would be
+          # noise. Each reopen carries a :reek:InstanceVariableAssumption note for that reason.
           # :reek:TooManyInstanceVariables -- the broken-down fields Go's parse() also carries.
           # rubocop:disable Naming/PredicateMethod -- the consume_* helpers return a success
           # boolean for control flow (false aborts the parse); they are not predicates.
@@ -90,7 +95,9 @@ module Ruby
             def skip_prefix(prefix)
               until prefix.empty?
                 if prefix[0] == " "
-                  return false unless @value.start_with?(" ")
+                  # Go's skip: a space in the layout errors only against a non-empty,
+                  # non-space value; an exhausted value passes (a trailing layout space matches).
+                  return false if !@value.empty? && @value[0] != " "
 
                   prefix = prefix.sub(/\A +/, "")
                   @value = @value.sub(/\A +/, "")
@@ -129,7 +136,7 @@ module Ruby
               when :day then consume_day(false)
               when :zero_day then consume_day(true)
               when :under_day then consume_under_day
-              when :zero_year_day then consume_year_day(true)
+              when :zero_year_day then consume_year_day
               when :under_year_day then consume_under_year_day
               when :hour then consume_hour24
               when :twelve_hour then consume_hour12(false)

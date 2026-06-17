@@ -161,8 +161,7 @@ module Ruby
         private_class_method :integer_value
 
         def self.require_string(value, context)
-          Base.assert_type(value, expected: StringValue, context: context)
-          value.value
+          string_arg(value, context)
         end
         private_class_method :require_string
 
@@ -194,7 +193,20 @@ module Ruby
 
         def self.string_arg(value, context)
           Base.assert_type(value, expected: StringValue, context: context)
-          value.value
+          string = value.value
+          return string if string.valid_encoding?
+
+          # An invalid-encoding string raises (e.g. String#casecmp?/sub during parsing) rather
+          # than returning cleanly. OPA never sees these (JSON input is valid UTF-8); they reach
+          # the public Ruby API only. Reject them as undefined, mirroring regex.rb#string_arg
+          # (the encoding-normalisation refactor is deferred — see TODO.md).
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "Invalid string encoding",
+            expected: "valid #{string.encoding} string",
+            actual: "invalid byte sequence",
+            context: context,
+            location: nil
+          )
         end
         private_class_method :string_arg
       end

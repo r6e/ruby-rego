@@ -643,11 +643,12 @@ module Ruby
             def consume_month: (bool fixed) -> bool
             def consume_month_name: (Array[String] names) -> bool
             def consume_day: (bool fixed) -> bool
-            def consume_year_day: (bool fixed) -> bool
+            def consume_year_day: () -> bool
             def consume_hour24: () -> bool
             def consume_hour12: (bool fixed) -> bool
             def consume_minute: (bool fixed) -> bool
             def consume_second: (bool fixed) -> bool
+            def next_token_fraction?: () -> bool
             def consume_under_day: () -> bool
             def consume_under_year_day: () -> bool
             def consume_meridiem: (bool upper) -> bool
