@@ -112,26 +112,28 @@ Remaining (~88), highest compat-per-effort first:
   (which has no OPA equivalent — transcode-and-undefined vs. hash-raw-bytes). Low
   severity: unreachable through the JSON/Rego input path; requires a hand-built
   non-UTF-8 Ruby String.
-- 🟡 Object: ✅ `object.union`, `object.union_n`, `object.filter` (plus object-keys
+- ✅ Object: `object.union`, `object.union_n`, `object.filter` (plus object-keys
   support for `object.filter`/`object.remove`), `json.filter`, `json.remove` (JSON path
-  projection/redaction); ⬜ `json.patch` (RFC 6902 operations).
+  projection/redaction), `json.patch` (RFC 6902 operations).
 - ✅ Strings: `replace`, `trim_prefix`, `trim_suffix`, `strings.count`,
   `strings.reverse`, `indexof_n`, `strings.replace_n`, `strings.any_prefix_match`,
   `strings.any_suffix_match`, regex-backed `regex.split`, and `strings.substring`.
 - ✅ Glob: `glob.match`, `glob.quote_meta` (compiled to an anchored Ruby Regexp;
   implements correct glob semantics rather than reproducing gobwas bugs #41/#47 — see
   README known limitations).
-- ⬜ Time: `time.now_ns`, `time.parse_rfc3339_ns`, `time.date`, `time.add_date`, etc.
+- ✅ Time (complete): `time.now_ns`, `time.parse_rfc3339_ns`, `time.parse_ns`,
+  `time.parse_duration_ns`, `time.date`, `time.clock`, `time.weekday`, `time.diff`,
+  `time.add_date`, `time.format`.
 - 🟡 Crypto: ✅ `crypto.md5`, `crypto.sha1`, `crypto.sha256`, `crypto.hmac.md5`/`sha1`/
   `sha256`/`sha512`, `crypto.hmac.equal`; ⬜ `crypto.x509.*`.
-- 🟡 Net/CIDR: ✅ `net.cidr_contains`, `net.cidr_intersects`, `net.cidr_is_valid`;
-  ⬜ `net.cidr_merge`, `net.cidr_expand` (needs a DoS cap), `net.cidr_contains_matches`.
+- ✅ Net/CIDR: `net.cidr_contains`, `net.cidr_intersects`, `net.cidr_is_valid`,
+  `net.cidr_merge`, `net.cidr_expand` (with a DoS cap), `net.cidr_contains_matches`.
 - ✅ Bits: `bits.and`, `bits.or`, `bits.xor`, `bits.negate`, `bits.lsh`, `bits.rsh`
   (`bits.lsh` caps result size as a DoS guard; parser accepts `and`/`or` as dotted
   reference segments so the builtins are callable from source).
 - 🟡 Misc: ✅ `semver.compare`, `semver.is_valid` (hand-rolled SemVer §11; implements a
   correct, terminating comparison rather than reproducing OPA's leading-zero-prerelease
-  compare hang); ⬜ `uuid.rfc4122`, `units.parse*`, `graph.reachable`, `walk`.
+  compare hang), `units.parse*`, `graph.reachable`; ⬜ `uuid.rfc4122`, `walk`.
 
 ## Known limitations
 
