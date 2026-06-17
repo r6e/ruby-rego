@@ -274,5 +274,198 @@ RSpec.describe "time parsing builtins" do
       expect(call("time.parse_duration_ns", 42)).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
+
+  describe "time.parse_ns" do
+    def parse_ns(layout, value)
+      result = registry.call("time.parse_ns", [layout, value])
+      result.is_a?(Ruby::Rego::UndefinedValue) ? :undef : result.to_ruby
+    end
+
+    # [layout, value, expected_ns] verified byte-for-byte against `TZ=UTC opa eval` 1.17
+    # (nil == undefined). Zone abbreviations (MST/PST/GMT/ABC...) resolve to a 0 offset under
+    # the UTC-deterministic policy documented in times/parse.rb; only explicit numeric offsets
+    # and `Z` shift the instant. Out-of-int64-ns results (year 0, year 9999) are undefined.
+    [
+      ["Mon Jan _2 15:04:05 2006", "Mon Jan _2 15:04:05 2006", nil],
+      ["Mon Jan _2 15:04:05 MST 2006", "Mon Jan _2 15:04:05 MST 2006", nil],
+      ["Mon Jan 02 15:04:05 -0700 2006", "Mon Jan 02 15:04:05 -0700 2006", 1_136_239_445_000_000_000],
+      ["02 Jan 06 15:04 MST", "02 Jan 06 15:04 MST", 1_136_214_240_000_000_000],
+      ["02 Jan 06 15:04 -0700", "02 Jan 06 15:04 -0700", 1_136_239_440_000_000_000],
+      ["Monday, 02-Jan-06 15:04:05 MST", "Monday, 02-Jan-06 15:04:05 MST", 1_136_214_245_000_000_000],
+      ["Mon, 02 Jan 2006 15:04:05 MST", "Mon, 02 Jan 2006 15:04:05 MST", 1_136_214_245_000_000_000],
+      ["Mon, 02 Jan 2006 15:04:05 -0700", "Mon, 02 Jan 2006 15:04:05 -0700", 1_136_239_445_000_000_000],
+      ["2006-01-02T15:04:05Z07:00", "2006-01-02T15:04:05Z07:00", nil],
+      ["2006-01-02T15:04:05.999999999Z07:00", "2006-01-02T15:04:05.999999999Z07:00", nil],
+      ["RFC3339", "2024-03-10T12:30:45Z", 1_710_073_845_000_000_000],
+      ["RFC3339Nano", "2024-03-10T12:30:45Z", 1_710_073_845_000_000_000],
+      ["2006-01-02", "2024-03-10", 1_710_028_800_000_000_000],
+      ["2006-01-02", "2024-02-29", 1_709_164_800_000_000_000],
+      ["2006-01-02", "2024-12-31", 1_735_603_200_000_000_000],
+      ["2006-01-02", "1970-01-01", 0],
+      ["2006-01-02", "2024-3-10", nil],
+      ["2006-01-02", "2024-13-01", nil],
+      ["2006-01-02", "2024-00-10", nil],
+      ["2006-01-02", "2024-02-30", nil],
+      ["2006-01-02", "2023-02-29", nil],
+      ["2006-01-02", "2024-03-00", nil],
+      ["2006-01-02", "2024-03-32", nil],
+      ["2006-01-02", "0000-01-01", nil],
+      ["2006-01-02", "9999-12-31", nil],
+      ["2006-01-02", "24-03-10", nil],
+      ["2006-1-2", "2024-3-10", 1_710_028_800_000_000_000],
+      ["2006-1-2", "2024-03-10", 1_710_028_800_000_000_000],
+      ["2006-1-2", "2024-12-5", 1_733_356_800_000_000_000],
+      ["06-01-02", "24-03-10", 1_710_028_800_000_000_000],
+      ["06-01-02", "69-03-10", -25_660_800_000_000_000],
+      ["06-01-02", "68-03-10", 3_098_563_200_000_000_000],
+      ["06-01-02", "99-12-31", 946_598_400_000_000_000],
+      ["06-01-02", "00-01-01", 946_684_800_000_000_000],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45Z", 1_710_073_845_000_000_000],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45-05:00", 1_710_091_845_000_000_000],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+09:00", 1_710_041_445_000_000_000],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T00:00:00Z", 1_710_028_800_000_000_000],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T24:00:00Z", nil],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T23:60:00Z", nil],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T23:00:60Z", nil],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+14:00", 1_710_023_445_000_000_000],
+      ["2006-01-02 15:04:05", "2024-03-10 12:30:45", 1_710_073_845_000_000_000],
+      ["2006-01-02 15:04:05", "2024-03-10 00:00:00", 1_710_028_800_000_000_000],
+      ["2006-01-02 15:04:05", "2024-03-10 23:59:59", 1_710_115_199_000_000_000],
+      ["2006-01-02T15:04:05.999999999Z07:00", "2024-03-10T12:30:45.5Z", 1_710_073_845_500_000_000],
+      ["2006-01-02T15:04:05.999999999Z07:00", "2024-03-10T12:30:45Z", 1_710_073_845_000_000_000],
+      ["2006-01-02T15:04:05.999999999Z07:00", "2024-03-10T12:30:45.123456789Z", 1_710_073_845_123_456_789],
+      ["2006-01-02T15:04:05.999999999Z07:00", "2024-03-10T12:30:45.999999999-05:00", 1_710_091_845_999_999_999],
+      ["Mon Jan _2 15:04:05 2006", "Sun Mar 10 12:30:45 2024", 1_710_073_845_000_000_000],
+      ["Mon Jan _2 15:04:05 2006", "Wed Mar 10 12:30:45 2024", 1_710_073_845_000_000_000],
+      ["Mon Jan _2 15:04:05 2006", "Mon Jan  2 03:04:05 2006", 1_136_171_045_000_000_000],
+      ["January 2, 2006", "March 10, 2024", 1_710_028_800_000_000_000],
+      ["January 2, 2006", "december 31, 2023", 1_703_980_800_000_000_000],
+      ["January 2, 2006", "Feb 1, 2024", nil],
+      ["02 Jan 2006", "10 Mar 2024", 1_710_028_800_000_000_000],
+      ["02 Jan 2006", "10 mar 2024", 1_710_028_800_000_000_000],
+      ["02 Jan 2006", "1 Mar 2024", nil],
+      ["2006-002", "2024-070", 1_710_028_800_000_000_000],
+      ["2006-002", "2024-001", 1_704_067_200_000_000_000],
+      ["2006-002", "2024-366", 1_735_603_200_000_000_000],
+      ["2006-002", "2024-367", nil],
+      ["2006-002", "2023-366", nil],
+      ["15:04:05", "12:30:45", nil],
+      ["3:04 PM", "11:30 PM", nil],
+      ["3:04 PM", "12:30 AM", nil],
+      ["3:04 PM", "12:30 PM", nil],
+      ["3:04 PM", "1:05 AM", nil],
+      ["03:04:05 PM", "11:30:45 PM", nil],
+      ["03:04:05 PM", "12:30:45 AM", nil],
+      ["03:04:05 PM", "12:30:45 PM", nil],
+      ["03:04:05 PM", "13:30:45 PM", nil],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+05:30", 1_710_054_045_000_000_000],
+      ["2006-01-02T15:04:05Z0700", "2024-03-10T12:30:45Z", 1_710_073_845_000_000_000],
+      ["2006-01-02T15:04:05Z0700", "2024-03-10T12:30:45+0530", 1_710_054_045_000_000_000],
+      ["2006-01-02T15:04:05Z07", "2024-03-10T12:30:45Z", 1_710_073_845_000_000_000],
+      ["2006-01-02T15:04:05Z07", "2024-03-10T12:30:45+05", 1_710_055_845_000_000_000],
+      ["2006-01-02 15:04:05 -07:00", "2024-03-10 12:30:45 -05:00", 1_710_091_845_000_000_000],
+      ["2006-01-02 15:04:05 -07:00", "2024-03-10 12:30:45 +00:00", 1_710_073_845_000_000_000],
+      ["2006-01-02 15:04:05 -0700", "2024-03-10 12:30:45 -0500", 1_710_091_845_000_000_000],
+      ["2006-01-02 15:04:05 -07", "2024-03-10 12:30:45 -05", 1_710_091_845_000_000_000],
+      ["2006-01-02 15:04:05 MST", "2024-03-10 12:30:45 MST", 1_710_073_845_000_000_000],
+      ["2006-01-02 15:04:05 MST", "2024-03-10 12:30:45 UTC", 1_710_073_845_000_000_000],
+      ["2006-01-02 15:04:05 MST", "2024-03-10 12:30:45 GMT", 1_710_073_845_000_000_000],
+      ["2006-01-02 15:04:05 MST", "2024-03-10 12:30:45 PST", 1_710_073_845_000_000_000],
+      ["2006-01-02 15:04:05 MST", "2024-03-10 12:30:45 ABC", 1_710_073_845_000_000_000],
+      ["15:04:05.000 2006-01-02", "12:30:45.500 2024-03-10", 1_710_073_845_500_000_000],
+      ["15:04:05.000 2006-01-02", "12:30:45.5 2024-03-10", nil],
+      ["15:04:05.000 2006-01-02", "12:30:45.123 2024-03-10", 1_710_073_845_123_000_000],
+      ["15:04:05.999 2006-01-02", "12:30:45.5 2024-03-10", 1_710_073_845_500_000_000],
+      ["15:04:05.999 2006-01-02", "12:30:45 2024-03-10", 1_710_073_845_000_000_000],
+      ["15:04:05.999 2006-01-02", "12:30:45.123456 2024-03-10", 1_710_073_845_123_456_000],
+      ["15:04:05,000 2006-01-02", "12:30:45,500 2024-03-10", 1_710_073_845_500_000_000],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10t12:30:45z", nil],
+      ["2006-01-02 15:04:05", "2024-03-10 12:30", nil],
+      ["2006-01-02", "2024-03-10extra", nil],
+      ["2006-01-02", "not-a-date", nil]
+    ].each do |layout, val, expected|
+      it "parses #{layout.inspect} / #{val.inspect}" do
+        expect(parse_ns(layout, val)).to eq(expected.nil? ? :undef : expected)
+      end
+    end
+
+    # Edge cases surfaced by the adversarial review panel (each was a one-sided divergence from
+    # Go's time.Parse), verified against `TZ=UTC opa eval` 1.17.
+    [
+      # A trailing layout space matches an exhausted value (Go's skip only errors on a non-empty
+      # non-space value).
+      ["2006-01-02 ", "2024-03-04", 1_709_510_400_000_000_000],
+      # A bare second token absorbs a trailing value fraction (period or comma) when the layout
+      # has no fraction token, truncating to nanoseconds (Go's stdSecond special case).
+      ["2006-01-02 15:04:05", "2024-03-10 10:20:30.5", 1_710_066_030_500_000_000],
+      ["2006-01-02 15:04:05", "2024-03-10 10:20:30,5", 1_710_066_030_500_000_000],
+      ["2006-01-02 15:04:05", "2024-03-10 10:20:30.123456789999", 1_710_066_030_123_456_789],
+      # A signed value after a named-zone token is consumed via parseSignedOffset (length only,
+      # offset stays 0); an hour > 23 leaves leftover digits → undefined.
+      ["2006-01-02 15:04:05 MST", "2024-03-10 12:30:45 +05", 1_710_073_845_000_000_000],
+      ["2006-01-02 15:04:05 MST", "2024-03-10 12:30:45 +0530", nil],
+      # A bare GMT sign with no following digit is not consumed → leftover "+" → undefined.
+      ["2006-01-02 15:04:05 MST", "2024-03-10 12:30:45 GMT+", nil],
+      # Zone offsets are range-checked per field: hour ≤ 24, minute/second ≤ 60.
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+24:00", 1_709_987_445_000_000_000],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+25:00", nil],
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+12:61", nil],
+      # An offset of exactly -1 second collides with Go's "no zone" sentinel and is not applied
+      # (kept naive); a -2s offset and a +1s offset apply normally — the boundary is exactly -1.
+      ["2006-01-02T15:04:05-07:00:00", "2024-03-04T10:20:30-00:00:01", 1_709_547_630_000_000_000],
+      ["2006-01-02T15:04:05-07:00:00", "2024-03-04T10:20:30-00:00:02", 1_709_547_632_000_000_000],
+      ["2006-01-02T15:04:05-07:00:00", "2024-03-04T10:20:30+00:00:01", 1_709_547_629_000_000_000],
+      # A 12-hour clock value of 0/"00" is ACCEPTED (Go's range is 0..12, rejecting only <0/>12),
+      # not rejected — "00:30 AM" is 00:30, "00:30 PM" is 12:30 (pm && hour<12 → +12). Do not
+      # "fix" consume_hour12 to 1..12; that would break OPA parity (verified via TZ=UTC opa eval).
+      ["2006-01-02 03:04 PM", "2024-03-10 00:30 AM", 1_710_030_600_000_000_000],
+      ["2006-01-02 03:04 PM", "2024-03-10 00:30 PM", 1_710_073_800_000_000_000],
+      ["2006-01-02 3:04 PM", "2024-03-10 0:30 AM", 1_710_030_600_000_000_000],
+      ["2006-01-02 03:04 PM", "2024-03-10 13:30 PM", nil] # >12 is still undefined
+    ].each do |layout, val, expected|
+      it "parses #{layout.inspect} / #{val.inspect} (panel regression)" do
+        expect(parse_ns(layout, val)).to eq(expected.nil? ? :undef : expected)
+      end
+    end
+
+    it "is undefined for an empty layout against any non-empty value" do
+      expect(parse_ns("", "")).to eq(:undef) # year 0 -> out of int64-ns range
+      expect(parse_ns("", "x")).to eq(:undef) # leftover text
+    end
+
+    it "is undefined for a non-string layout or value (runtime types)" do
+      expect(registry.call("time.parse_ns", [42, "2024-03-10"]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("time.parse_ns", ["2006-01-02", 42]))
+        .to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "is undefined (not a crash) for an invalid-encoding layout or value" do
+      bad = +"Janu\xFFry"
+      bad.force_encoding("UTF-8")
+      expect(bad.valid_encoding?).to be(false)
+      expect(parse_ns("January 2 2006", bad)).to eq(:undef)
+      expect(parse_ns(bad, "March 2 2024")).to eq(:undef)
+    end
+
+    it "is undefined (not a crash) for a valid but ASCII-incompatible encoding (UTF-16)" do
+      utf16 = "March 2 2024".encode("UTF-16LE")
+      expect(utf16.valid_encoding?).to be(true) # the prior guard missed this; the crash is real
+      expect(parse_ns("January 2 2006", utf16)).to eq(:undef)
+      expect(parse_ns("2006".encode("UTF-16LE"), "2024")).to eq(:undef)
+    end
+
+    it "is undefined (not a crash) for a binary (ASCII-8BIT) string with high bytes" do
+      # ASCII-8BIT is ascii_compatible? and always valid_encoding?, so it slipped past the
+      # encoding guard and then broke the UTF-8 transcode downstream (in TZInfo / the regex).
+      binary = (+"Mar\xFFch").force_encoding("ASCII-8BIT")
+      expect(binary.valid_encoding?).to be(true)
+      expect(parse_ns("January 2 2006", binary)).to eq(:undef)
+      # also via a tz-consuming sibling that routes the string through TZInfo
+      tz = (+"UTC\xFF").force_encoding("ASCII-8BIT")
+      operand = Ruby::Rego::ArrayValue.new([Ruby::Rego::NumberValue.new(0), Ruby::Rego::StringValue.new(tz)])
+      expect(registry.call("time.date", [operand])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
 end
 # rubocop:enable Metrics/BlockLength

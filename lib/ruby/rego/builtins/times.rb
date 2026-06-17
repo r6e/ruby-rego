@@ -49,6 +49,7 @@ module Ruby
 
         TIME_FUNCTIONS = {
           "time.parse_rfc3339_ns" => { arity: 1, handler: :parse_rfc3339_ns },
+          "time.parse_ns" => { arity: 2, handler: :parse_ns },
           "time.parse_duration_ns" => { arity: 1, handler: :parse_duration_ns },
           "time.date" => { arity: 1, handler: :date },
           "time.clock" => { arity: 1, handler: :clock },
@@ -160,8 +161,7 @@ module Ruby
         private_class_method :integer_value
 
         def self.require_string(value, context)
-          Base.assert_type(value, expected: StringValue, context: context)
-          value.value
+          string_arg(value, context)
         end
         private_class_method :require_string
 
@@ -193,7 +193,25 @@ module Ruby
 
         def self.string_arg(value, context)
           Base.assert_type(value, expected: StringValue, context: context)
-          value.value
+          string = value.value
+          encoding = string.encoding
+          return string if string.valid_encoding? && (string.ascii_only? || encoding == Encoding::UTF_8)
+
+          # A string whose content is not representable as UTF-8 raises somewhere downstream rather
+          # than returning cleanly: invalid bytes or an ASCII-incompatible encoding (UTF-16) break
+          # String#casecmp?/sub/to_i; a binary (ASCII-8BIT) string with high bytes breaks the
+          # UTF-8 transcode inside TZInfo and the duration regex. OPA never sees any of these (JSON
+          # input is UTF-8); they reach the public Ruby API only. Accept valid UTF-8 and any
+          # pure-ASCII string; reject the rest as undefined at this shared chokepoint (used by the
+          # whole time.* family). The encoding-normalisation refactor is deferred (TODO.md).
+          # Metadata accurate for all three rejected cases — invalid bytes, an ASCII-incompatible
+          # encoding (UTF-16), and a binary string with high bytes are all "non-UTF-8 content".
+          raise Ruby::Rego::BuiltinArgumentError.new(
+            "String not representable as UTF-8",
+            expected: "a valid UTF-8 or ASCII-only string",
+            actual: "#{encoding} string with non-UTF-8 content",
+            context: context, location: nil
+          )
         end
         private_class_method :string_arg
       end
@@ -204,6 +222,7 @@ end
 
 require_relative "times/duration"
 require_relative "times/rfc3339"
+require_relative "times/parse"
 require_relative "times/diff"
 require_relative "times/arithmetic"
 
