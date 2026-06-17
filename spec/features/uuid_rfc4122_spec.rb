@@ -41,17 +41,8 @@ RSpec.describe "uuid.rfc4122 (integration)" do
     expect(first).to eq(second)
   end
 
-  it "returns different UUIDs for different keys" do
-    expect(evaluate("distinct")).to be(true)
-  end
-
   it "shares the memo across rules within one evaluation" do
     expect(evaluate("cross_rule")).to be(true)
-  end
-
-  it "generates fresh UUIDs on a separate evaluation" do
-    # Collision probability is ~2^-122; the value is fresh per evaluate().
-    expect(evaluate("single")).not_to eq(evaluate("single"))
   end
 
   it "accepts a non-string key at runtime and memoizes it by value" do
@@ -60,12 +51,34 @@ RSpec.describe "uuid.rfc4122 (integration)" do
     expect(first).to eq(second)
   end
 
-  it "treats values of different types as distinct keys (42 vs \"42\")" do
-    expect(evaluate("typed_distinct")).to be(true)
-  end
-
   it "is overridable via `with uuid.rfc4122 as <value>`" do
     expect(evaluate("overridden")).to eq("fixed-uuid")
+  end
+
+  # The assertions below distinguish independently-generated UUIDs. Relying on real randomness
+  # would make them probabilistic (a ~2^-122 collision). Stubbing generation with a distinct
+  # value per call makes them deterministic AND proves the memo mechanism directly: generation
+  # is invoked once per distinct key, and again on a fresh evaluation.
+  context "with deterministic generation" do
+    before do
+      counter = 0
+      allow(Ruby::Rego::Builtins::Uuid).to receive(:generate) do
+        counter += 1
+        format("00000000-0000-4000-8000-%012d", counter)
+      end
+    end
+
+    it "returns different UUIDs for different keys (generation invoked per distinct key)" do
+      expect(evaluate("distinct")).to be(true)
+    end
+
+    it "treats values of different types as distinct keys (42 vs \"42\")" do
+      expect(evaluate("typed_distinct")).to be(true)
+    end
+
+    it "generates fresh UUIDs on a separate evaluation (the memo is per-eval)" do
+      expect(evaluate("single")).not_to eq(evaluate("single"))
+    end
   end
 
   it "coexists with time.now_ns in one evaluation (both impure overrides in the shared overlay)" do
