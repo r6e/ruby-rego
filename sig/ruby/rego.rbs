@@ -474,6 +474,8 @@ module Ruby
 
         def self.register!: () -> BuiltinRegistry
         def self.parse: (Value value) -> (Hash[String, untyped] | UndefinedValue)
+        def self.rfc4122: (Value key) -> String
+        def self.generate: () -> String
 
         private
 
@@ -2093,7 +2095,8 @@ module Ruby
 
       private
       def evaluate_query_or_rules: (untyped query) -> (Result | nil)
-      def clock_registry: () -> Builtins::BuiltinRegistryOverlay
+      def impure_registry: () -> Builtins::BuiltinRegistryOverlay
+      def impure_entry: (String name, Integer arity, ^(*untyped) -> untyped handler) -> untyped
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
       attr_reader rule_evaluator: Evaluator::RuleEvaluator
       attr_reader policy_set: untyped

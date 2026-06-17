@@ -12,6 +12,7 @@ target :lib do
   library "openssl"
   library "optparse"
   library "psych"
+  library "securerandom"
   library "time"
   library "yaml"
 end
