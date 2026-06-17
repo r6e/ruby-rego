@@ -447,6 +447,18 @@ RSpec.describe "time parsing builtins" do
       expect(parse_ns("January 2 2006", utf16)).to eq(:undef)
       expect(parse_ns("2006".encode("UTF-16LE"), "2024")).to eq(:undef)
     end
+
+    it "is undefined (not a crash) for a binary (ASCII-8BIT) string with high bytes" do
+      # ASCII-8BIT is ascii_compatible? and always valid_encoding?, so it slipped past the
+      # encoding guard and then broke the UTF-8 transcode downstream (in TZInfo / the regex).
+      binary = (+"Mar\xFFch").force_encoding("ASCII-8BIT")
+      expect(binary.valid_encoding?).to be(true)
+      expect(parse_ns("January 2 2006", binary)).to eq(:undef)
+      # also via a tz-consuming sibling that routes the string through TZInfo
+      tz = (+"UTC\xFF").force_encoding("ASCII-8BIT")
+      operand = Ruby::Rego::ArrayValue.new([Ruby::Rego::NumberValue.new(0), Ruby::Rego::StringValue.new(tz)])
+      expect(registry.call("time.date", [operand])).to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 end
 # rubocop:enable Metrics/BlockLength

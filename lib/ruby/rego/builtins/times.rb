@@ -195,13 +195,15 @@ module Ruby
           Base.assert_type(value, expected: StringValue, context: context)
           string = value.value
           encoding = string.encoding
-          return string if string.valid_encoding? && encoding.ascii_compatible?
+          return string if string.valid_encoding? && (string.ascii_only? || encoding == Encoding::UTF_8)
 
-          # A string that is invalid-encoding OR in an ASCII-incompatible encoding (e.g. UTF-16)
-          # raises during parsing (String#casecmp?/sub/to_i) rather than returning cleanly. OPA
-          # never sees these (JSON input is valid UTF-8, which is ASCII-compatible); they reach
-          # the public Ruby API only. Reject them as undefined at this shared chokepoint (used by
-          # the whole time.* family), the encoding-normalisation refactor being deferred (TODO.md).
+          # A string whose content is not representable as UTF-8 raises somewhere downstream rather
+          # than returning cleanly: invalid bytes or an ASCII-incompatible encoding (UTF-16) break
+          # String#casecmp?/sub/to_i; a binary (ASCII-8BIT) string with high bytes breaks the
+          # UTF-8 transcode inside TZInfo and the duration regex. OPA never sees any of these (JSON
+          # input is UTF-8); they reach the public Ruby API only. Accept valid UTF-8 and any
+          # pure-ASCII string; reject the rest as undefined at this shared chokepoint (used by the
+          # whole time.* family). The encoding-normalisation refactor is deferred (TODO.md).
           raise Ruby::Rego::BuiltinArgumentError.new(
             "Invalid string encoding", expected: "valid #{encoding} string",
                                        actual: "invalid byte sequence", context: context, location: nil
