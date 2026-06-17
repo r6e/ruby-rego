@@ -74,10 +74,11 @@ Remaining (~88), highest compat-per-effort first:
   is deprecated and rejected by OPA at compile time — intentionally omitted. `net.lookup_ip_addr`
   does DNS — deferred as side-effecting.)
 - ⬜ Time (10): `time.now_ns`, ✅ `time.parse_rfc3339_ns`, ✅ `time.date`, ✅ `time.clock`,
-  ✅ `time.weekday`, ✅ `time.add_date`, ✅ `time.diff`, ✅ `time.format`, `time.parse_ns`,
+  ✅ `time.weekday`, ✅ `time.add_date`, ✅ `time.diff`, ✅ `time.format`, ✅ `time.parse_ns`,
   ✅ `time.parse_duration_ns`. High value; Go reference-time layout + tz make `format`/`parse`
-  fiddly. The two no-tz parsers are done (#TBD); date/clock/weekday/format/diff need tzdata,
-  parse_ns/format need the Go reference layout, now_ns needs impure-builtin infra.
+  fiddly. parse_ns is a faithful Go time.Parse port (validate-don't-normalize; UTC-deterministic
+  zone abbreviations — see times/go_layout/parser.rb). Only `time.now_ns` remains: it needs
+  impure-builtin infra (a per-eval clock the registry lacks).
 - ⬜ JSON: ✅ `json.patch` (RFC 6902); ✅ `json.marshal_with_options`; `json.match_schema`/
   `json.verify_schema` need a JSON-Schema validator (dependency decision).
 - ⬜ Crypto: `crypto.x509.*` (7, OpenSSL), `crypto.parse_private_keys`.

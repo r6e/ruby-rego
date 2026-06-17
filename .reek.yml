@@ -210,3 +210,10 @@ detectors:
       - Ruby::Rego::Builtins::Crypto#self.hmac_sha1
       - Ruby::Rego::Builtins::Crypto#self.hmac_sha256
       - Ruby::Rego::Builtins::Crypto#self.hmac_sha512
+      # Go time.Parse field readers: the digits name the field width (getnum3/getnum4)
+      # or the 12/24-hour clock (consume_hour12/24), mirroring Go's src/time/format.go.
+      - Ruby::Rego::Builtins::Times::GoLayout::Parser#getnum3
+      - Ruby::Rego::Builtins::Times::GoLayout::Parser#getnum4
+      - Ruby::Rego::Builtins::Times::GoLayout::Parser#consume_year2
+      - Ruby::Rego::Builtins::Times::GoLayout::Parser#consume_hour12
+      - Ruby::Rego::Builtins::Times::GoLayout::Parser#consume_hour24

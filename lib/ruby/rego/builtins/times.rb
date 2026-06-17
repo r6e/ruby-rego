@@ -49,6 +49,7 @@ module Ruby
 
         TIME_FUNCTIONS = {
           "time.parse_rfc3339_ns" => { arity: 1, handler: :parse_rfc3339_ns },
+          "time.parse_ns" => { arity: 2, handler: :parse_ns },
           "time.parse_duration_ns" => { arity: 1, handler: :parse_duration_ns },
           "time.date" => { arity: 1, handler: :date },
           "time.clock" => { arity: 1, handler: :clock },
@@ -204,6 +205,7 @@ end
 
 require_relative "times/duration"
 require_relative "times/rfc3339"
+require_relative "times/parse"
 require_relative "times/diff"
 require_relative "times/arithmetic"
 

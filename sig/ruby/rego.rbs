@@ -30,6 +30,14 @@ module TZInfo
   end
 end
 
+# Date::Error (raised by Date.ordinal on an out-of-range day-of-year) is absent from the stdlib
+# RBS bundled with this project's Steep; declared minimally so times/go_layout/parser.rb can
+# rescue it. It is an ArgumentError subclass.
+class Date
+  class Error < ArgumentError
+  end
+end
+
 module Ruby
   module Rego
     VERSION: String
@@ -498,6 +506,7 @@ module Ruby
 
         def self.register!: () -> BuiltinRegistry
         def self.parse_rfc3339_ns: (Value value) -> (Integer | UndefinedValue)
+        def self.parse_ns: (Value layout_value, Value value_value) -> (Integer | UndefinedValue)
         def self.parse_duration_ns: (Value value) -> (Integer | UndefinedValue)
         def self.date: (Value value) -> [Integer, Integer, Integer]
         def self.clock: (Value value) -> [Integer, Integer, Integer]
@@ -592,6 +601,75 @@ module Ruby
           def self.emit_fraction: (Time time, Array[untyped] frac) -> String
           def self.pad: (Integer value, Integer width) -> String
           def self.twelve_hour: (Integer hour) -> Integer
+
+          ZONE_SHAPES: Hash[Symbol, Hash[Symbol, untyped]]
+
+          def self.parse: (String layout, String value) -> Integer?
+
+          # Go time.Parse port: one instance per parse, accumulating broken-down fields.
+          class Parser
+            SHORT_MONTHS: Array[String]
+            SHORT_WEEKDAYS: Array[String]
+
+            @layout: String
+            @value: String
+            @year: Integer
+            @month: Integer
+            @day: Integer
+            @yday: Integer
+            @hour: Integer
+            @min: Integer
+            @sec: Integer
+            @nsec: Integer
+            @zone_offset: Integer?
+            @pm: bool
+            @am: bool
+
+            def initialize: (String layout, String value) -> void
+            def run: () -> Integer?
+
+            private
+
+            def walk: () -> bool
+            def skip_prefix: (String prefix) -> bool
+            def consume: (untyped token) -> bool?
+            def dispatch: (Symbol token) -> bool?
+            def getnum: (bool fixed) -> Integer?
+            def getnum3: (bool fixed) -> Integer?
+            def getnum4: () -> Integer?
+            def lookup: (Array[String] names) -> Integer?
+            def consume_year2: () -> bool
+            def consume_long_year: () -> bool
+            def consume_month: (bool fixed) -> bool
+            def consume_month_name: (Array[String] names) -> bool
+            def consume_day: (bool fixed) -> bool
+            def consume_year_day: (bool fixed) -> bool
+            def consume_hour24: () -> bool
+            def consume_hour12: (bool fixed) -> bool
+            def consume_minute: (bool fixed) -> bool
+            def consume_second: (bool fixed) -> bool
+            def consume_under_day: () -> bool
+            def consume_under_year_day: () -> bool
+            def consume_meridiem: (bool upper) -> bool
+            def consume_zone: (Symbol token) -> bool
+            def zero_zone: () -> bool
+            def apply_offset: (String text, Hash[Symbol, untyped] shape) -> bool
+            def consume_named_zone: () -> bool
+            def named_zone_length: (String value) -> Integer
+            def uppercase_run: (String value) -> Integer
+            def gmt_length: (String value) -> Integer
+            def signed_offset_length: (String rest) -> Integer
+            def two_digits: (String text, Integer index) -> Integer?
+            def consume_fraction: (untyped token) -> bool
+            def fraction_fixed: (Integer digits) -> bool
+            def fraction_optional: () -> bool
+            def digit?: (String? char) -> bool
+            def compose: () -> Integer?
+            def resolve_date: () -> bool
+            def apply_yday: () -> bool
+            def apply_meridiem: () -> void
+            def epoch_seconds: () -> Integer?
+          end
         end
       end
 
