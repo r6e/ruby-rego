@@ -103,7 +103,7 @@ module Ruby
       # @return [Result, nil] evaluation result, or nil when a query is undefined
       def evaluate(query = nil)
         environment.memoization.reset!
-        environment.using_builtin_registry(clock_registry) { evaluate_query_or_rules(query) }
+        environment.using_builtin_registry(impure_registry) { evaluate_query_or_rules(query) }
       end
 
       private
@@ -119,17 +119,22 @@ module Ruby
         ResultBuilder.new(value, bindings).build
       end
 
-      # A per-evaluation overlay that fixes the impure time.now_ns builtin to a single timestamp,
-      # captured once here so every call within this evaluation returns the same value (OPA fixes
-      # the clock once per query). This overlay is the intended reuse point for a future impure
-      # builtin that needs a value fixed once per evaluation (e.g. uuid.rfc4122). A user
-      # `with time.now_ns as X` still composes — it overlays this overlay and so takes precedence.
-      def clock_registry
+      # A per-evaluation overlay for the impure builtins, whose values must stay consistent within
+      # a single evaluation (OPA fixes them once per query): time.now_ns returns one timestamp
+      # captured here, and uuid.rfc4122 returns a UUID memoized by its key in a per-evaluation map.
+      # Each builtin's value is therefore stable across all calls in this evaluation but fresh on the
+      # next one. A user `with <builtin> as X` still composes — it overlays this overlay and so wins.
+      def impure_registry
         now_ns = Builtins::Times.now_ns
-        entry = Builtins::BuiltinRegistry::Entry.new(
-          name: "time.now_ns", arity: 0, handler: ->(*_args) { now_ns }
-        )
-        environment.builtin_registry.with_override("time.now_ns", entry)
+        uuids = {} # @type var uuids: Hash[Value, String]
+        environment.builtin_registry
+                   .with_override("time.now_ns", override_entry("time.now_ns", 0, ->(*_args) { now_ns }))
+                   .with_override("uuid.rfc4122",
+                                  override_entry("uuid.rfc4122", 1, ->(key) { uuids[key] ||= Builtins::Uuid.generate }))
+      end
+
+      def override_entry(name, arity, handler)
+        Builtins::BuiltinRegistry::Entry.new(name: name, arity: arity, handler: handler)
       end
 
       def initialize_with_environment(compiled_module, environment)

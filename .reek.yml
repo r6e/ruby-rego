@@ -217,3 +217,5 @@ detectors:
       - Ruby::Rego::Builtins::Times::GoLayout::Parser#consume_year2
       - Ruby::Rego::Builtins::Times::GoLayout::Parser#consume_hour12
       - Ruby::Rego::Builtins::Times::GoLayout::Parser#consume_hour24
+      # The OPA builtin name uuid.rfc4122 → rfc4122; the digits are the RFC number, not a count.
+      - Ruby::Rego::Builtins::Uuid#self.rfc4122

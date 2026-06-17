@@ -66,11 +66,10 @@ Done across these namespaces: numeric (`abs`/`round`/`ceil`/`floor`/`numbers.ran
 Remaining (~88), highest compat-per-effort first:
 
 - 🟡 Small / self-contained: ✅ `array.flatten`, `object.subset`, `uuid.parse`,
-  `graph.reachable`/`graph.reachable_paths`. Remaining: `uri.parse`/`uri.is_valid` (thin
+  `uuid.rfc4122` (per-eval random generator memoized by key via the Evaluator#impure_registry
+  overlay), `graph.reachable`/`graph.reachable_paths`. Remaining: `uri.parse`/`uri.is_valid` (thin
   wrappers over Go `net/url.Parse` — needs a faithful port of Go's lenient parser *and its exact
-  error set*, since Ruby `URI` diverges; own PR), `uuid.rfc4122` (per-eval random generator,
-  memoized by key — the per-eval registry overlay added for `time.now_ns` (Evaluator#evaluate) is
-  now the mechanism to thread this evaluator-scoped state), `strings.render_template`.
+  error set*, since Ruby `URI` diverges; own PR), `strings.render_template`.
 - ✅ Net: `net.cidr_merge` (Cilium range-merge port; RFC 5952 IPv6 output). (`net.cidr_overlap`
   is deprecated and rejected by OPA at compile time — intentionally omitted. `net.lookup_ip_addr`
   does DNS — deferred as side-effecting.)
@@ -78,8 +77,8 @@ Remaining (~88), highest compat-per-effort first:
   ✅ `time.clock`, ✅ `time.weekday`, ✅ `time.add_date`, ✅ `time.diff`, ✅ `time.format`,
   ✅ `time.parse_ns`, ✅ `time.parse_duration_ns`. parse_ns is a faithful Go time.Parse port
   (validate-don't-normalize; UTC-deterministic zone abbreviations — see times/go_layout/parser.rb).
-  `time.now_ns` is impure: the clock is fixed once per evaluation via a per-eval registry overlay
-  in Evaluator#evaluate (the reuse point for future impure builtins like uuid.rfc4122/rand.intn).
+  `time.now_ns` is impure: the clock is fixed once per evaluation via the per-eval registry
+  overlay in Evaluator#impure_registry (now shared with uuid.rfc4122's per-key memoization).
 - ⬜ JSON: ✅ `json.patch` (RFC 6902); ✅ `json.marshal_with_options`; `json.match_schema`/
   `json.verify_schema` need a JSON-Schema validator (dependency decision).
 - ⬜ Crypto: `crypto.x509.*` (7, OpenSSL), `crypto.parse_private_keys`.
@@ -133,7 +132,7 @@ Remaining (~88), highest compat-per-effort first:
   reference segments so the builtins are callable from source).
 - 🟡 Misc: ✅ `semver.compare`, `semver.is_valid` (hand-rolled SemVer §11; implements a
   correct, terminating comparison rather than reproducing OPA's leading-zero-prerelease
-  compare hang), `units.parse*`, `graph.reachable`; ⬜ `uuid.rfc4122`, `walk`.
+  compare hang), `units.parse*`, `graph.reachable`, `uuid.rfc4122`; ⬜ `walk`.
 
 ## Known limitations
 

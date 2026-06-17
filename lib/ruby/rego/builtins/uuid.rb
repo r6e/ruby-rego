@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "securerandom"
 require_relative "base"
 require_relative "registry"
 require_relative "registry_helpers"
@@ -12,9 +13,13 @@ module Ruby
       # MAC bits, and clock sequence for the time-based versions 1 and 2 (and the DCE id/domain
       # for version 2). A non-string or an unparseable UUID yields undefined.
       #
-      # uuid.rfc4122 is intentionally omitted: it is a per-evaluation random generator (memoized
-      # by key, seeded per query). The per-evaluation registry overlay added for time.now_ns
-      # (Evaluator#evaluate) is the mechanism to thread that evaluator-scoped state when it lands.
+      # uuid.rfc4122(key) returns a random RFC 4122 version-4 UUID. Impure: within one evaluation
+      # OPA memoizes the result by the key (same key → same UUID), which the per-evaluation overlay
+      # in Evaluator#impure_registry supplies; this module's base handler generates a fresh UUID per
+      # call and is the value outside an evaluation. The key accepts any value at runtime — OPA's
+      # type-checker requires a string literal, but the gem evaluates at runtime semantics (it has
+      # no compile-time type checker), like its other builtins.
+      # rubocop:disable Metrics/ModuleLength
       module Uuid
         extend RegistryHelpers
 
@@ -26,7 +31,8 @@ module Ruby
         TIME_BASED_VERSIONS = [1, 2].freeze
 
         UUID_FUNCTIONS = {
-          "uuid.parse" => { arity: 1, handler: :parse }
+          "uuid.parse" => { arity: 1, handler: :parse },
+          "uuid.rfc4122" => { arity: 1, handler: :rfc4122 }
         }.freeze
 
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
@@ -37,6 +43,20 @@ module Ruby
         end
 
         private_class_method :register_configured_functions, :register_configured_function
+
+        # The base (out-of-evaluation) handler: a fresh random v4 UUID per call. During evaluation
+        # the overlay in Evaluator#impure_registry shadows this to memoize by the key argument, so
+        # the key is ignored here. See the module doc.
+        # @param _key [Ruby::Rego::Value]
+        # @return [String]
+        def self.rfc4122(_key)
+          generate
+        end
+
+        # @return [String] a fresh random RFC 4122 version-4 UUID
+        def self.generate
+          SecureRandom.uuid
+        end
 
         # Parses a UUID string into its components, or undefined if it is not a valid UUID.
         #
@@ -179,6 +199,7 @@ module Ruby
         end
         private_class_method :uint32
       end
+      # rubocop:enable Metrics/ModuleLength
     end
   end
 end
