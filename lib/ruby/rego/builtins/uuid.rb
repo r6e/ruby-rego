@@ -13,8 +13,8 @@ module Ruby
       # for version 2). A non-string or an unparseable UUID yields undefined.
       #
       # uuid.rfc4122 is intentionally omitted: it is a per-evaluation random generator (memoized
-      # by key, seeded per query) and needs evaluator-scoped builtin state the registry does not
-      # yet provide.
+      # by key, seeded per query). The per-evaluation registry overlay added for time.now_ns
+      # (Evaluator#evaluate) is the mechanism to thread that evaluator-scoped state when it lands.
       module Uuid
         extend RegistryHelpers
 

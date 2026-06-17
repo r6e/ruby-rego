@@ -511,6 +511,7 @@ module Ruby
         def self.date: (Value value) -> [Integer, Integer, Integer]
         def self.clock: (Value value) -> [Integer, Integer, Integer]
         def self.weekday: (Value value) -> String
+        def self.now_ns: () -> Integer
         def self.diff: (Value left, Value right) -> [Integer, Integer, Integer, Integer, Integer, Integer]
         def self.add_date: (Value value, Value years_value, Value months_value, Value days_value) -> (Integer | UndefinedValue)
         def self.format: (Value value) -> (String | UndefinedValue)
@@ -1472,6 +1473,7 @@ module Ruby
       def with_bindings: (Hash[String | Symbol, untyped] bindings) { () -> untyped } -> untyped
       def with_overrides: (?input: untyped, ?data: untyped, ?data_paths: Array[Array[untyped]]) { (Environment) -> untyped } -> untyped
       def with_builtin_registry: (Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay registry) { (Environment) -> untyped } -> untyped
+      def using_builtin_registry: (Builtins::BuiltinRegistry | Builtins::BuiltinRegistryOverlay registry) { () -> untyped } -> untyped
       def data_overrides?: () -> bool
       def data_path_overridden?: (Array[untyped]? keys) -> bool
       def self.from_state: (Environment::State state) -> Environment
@@ -2090,6 +2092,8 @@ module Ruby
       def evaluate: (?untyped query) -> (Result | nil)
 
       private
+      def evaluate_query_or_rules: (untyped query) -> (Result | nil)
+      def clock_registry: () -> Builtins::BuiltinRegistryOverlay
       attr_reader expression_evaluator: Evaluator::ExpressionEvaluator
       attr_reader rule_evaluator: Evaluator::RuleEvaluator
       attr_reader policy_set: untyped

@@ -51,6 +51,7 @@ module Ruby
           "time.parse_rfc3339_ns" => { arity: 1, handler: :parse_rfc3339_ns },
           "time.parse_ns" => { arity: 2, handler: :parse_ns },
           "time.parse_duration_ns" => { arity: 1, handler: :parse_duration_ns },
+          "time.now_ns" => { arity: 0, handler: :now_ns },
           "time.date" => { arity: 1, handler: :date },
           "time.clock" => { arity: 1, handler: :clock },
           "time.weekday" => { arity: 1, handler: :weekday },
@@ -84,6 +85,17 @@ module Ruby
         # @return [String] the English weekday name
         def self.weekday(value)
           DAY_NAMES.fetch(tz_instant(value, "time.weekday").wday)
+        end
+
+        # The current wall-clock time in nanoseconds since the Unix epoch (Go's time.Now().UnixNano()).
+        # Impure: within one evaluation OPA fixes the clock once so every call returns the same value.
+        # That per-evaluation consistency is supplied by an evaluator overlay that calls this method
+        # once at evaluation start (see Evaluator#evaluate); this base handler reads the clock fresh,
+        # serving as the single source of the timestamp computation and the value outside an evaluation.
+        # @return [Integer]
+        def self.now_ns
+          now = ::Time.now
+          (now.to_i * NANOS_PER_SECOND) + now.nsec
         end
 
         # Formats an instant (ns, [ns, tz], or [ns, tz, layout]) using a Go reference-time layout

@@ -68,17 +68,18 @@ Remaining (~88), highest compat-per-effort first:
 - 🟡 Small / self-contained: ✅ `array.flatten`, `object.subset`, `uuid.parse`,
   `graph.reachable`/`graph.reachable_paths`. Remaining: `uri.parse`/`uri.is_valid` (thin
   wrappers over Go `net/url.Parse` — needs a faithful port of Go's lenient parser *and its exact
-  error set*, since Ruby `URI` diverges; own PR), `uuid.rfc4122` (per-eval random generator —
-  needs evaluator-scoped/impure builtin state the registry lacks), `strings.render_template`.
+  error set*, since Ruby `URI` diverges; own PR), `uuid.rfc4122` (per-eval random generator,
+  memoized by key — the per-eval registry overlay added for `time.now_ns` (Evaluator#evaluate) is
+  now the mechanism to thread this evaluator-scoped state), `strings.render_template`.
 - ✅ Net: `net.cidr_merge` (Cilium range-merge port; RFC 5952 IPv6 output). (`net.cidr_overlap`
   is deprecated and rejected by OPA at compile time — intentionally omitted. `net.lookup_ip_addr`
   does DNS — deferred as side-effecting.)
-- ⬜ Time (10): `time.now_ns`, ✅ `time.parse_rfc3339_ns`, ✅ `time.date`, ✅ `time.clock`,
-  ✅ `time.weekday`, ✅ `time.add_date`, ✅ `time.diff`, ✅ `time.format`, ✅ `time.parse_ns`,
-  ✅ `time.parse_duration_ns`. High value; Go reference-time layout + tz make `format`/`parse`
-  fiddly. parse_ns is a faithful Go time.Parse port (validate-don't-normalize; UTC-deterministic
-  zone abbreviations — see times/go_layout/parser.rb). Only `time.now_ns` remains: it needs
-  impure-builtin infra (a per-eval clock the registry lacks).
+- ✅ Time (10, complete): ✅ `time.now_ns`, ✅ `time.parse_rfc3339_ns`, ✅ `time.date`,
+  ✅ `time.clock`, ✅ `time.weekday`, ✅ `time.add_date`, ✅ `time.diff`, ✅ `time.format`,
+  ✅ `time.parse_ns`, ✅ `time.parse_duration_ns`. parse_ns is a faithful Go time.Parse port
+  (validate-don't-normalize; UTC-deterministic zone abbreviations — see times/go_layout/parser.rb).
+  `time.now_ns` is impure: the clock is fixed once per evaluation via a per-eval registry overlay
+  in Evaluator#evaluate (the reuse point for future impure builtins like uuid.rfc4122/rand.intn).
 - ⬜ JSON: ✅ `json.patch` (RFC 6902); ✅ `json.marshal_with_options`; `json.match_schema`/
   `json.verify_schema` need a JSON-Schema validator (dependency decision).
 - ⬜ Crypto: `crypto.x509.*` (7, OpenSSL), `crypto.parse_private_keys`.
@@ -111,26 +112,28 @@ Remaining (~88), highest compat-per-effort first:
   (which has no OPA equivalent — transcode-and-undefined vs. hash-raw-bytes). Low
   severity: unreachable through the JSON/Rego input path; requires a hand-built
   non-UTF-8 Ruby String.
-- 🟡 Object: ✅ `object.union`, `object.union_n`, `object.filter` (plus object-keys
+- ✅ Object: `object.union`, `object.union_n`, `object.filter` (plus object-keys
   support for `object.filter`/`object.remove`), `json.filter`, `json.remove` (JSON path
-  projection/redaction); ⬜ `json.patch` (RFC 6902 operations).
+  projection/redaction), `json.patch` (RFC 6902 operations).
 - ✅ Strings: `replace`, `trim_prefix`, `trim_suffix`, `strings.count`,
   `strings.reverse`, `indexof_n`, `strings.replace_n`, `strings.any_prefix_match`,
   `strings.any_suffix_match`, regex-backed `regex.split`, and `strings.substring`.
 - ✅ Glob: `glob.match`, `glob.quote_meta` (compiled to an anchored Ruby Regexp;
   implements correct glob semantics rather than reproducing gobwas bugs #41/#47 — see
   README known limitations).
-- ⬜ Time: `time.now_ns`, `time.parse_rfc3339_ns`, `time.date`, `time.add_date`, etc.
+- ✅ Time (complete): `time.now_ns`, `time.parse_rfc3339_ns`, `time.parse_ns`,
+  `time.parse_duration_ns`, `time.date`, `time.clock`, `time.weekday`, `time.diff`,
+  `time.add_date`, `time.format`.
 - 🟡 Crypto: ✅ `crypto.md5`, `crypto.sha1`, `crypto.sha256`, `crypto.hmac.md5`/`sha1`/
   `sha256`/`sha512`, `crypto.hmac.equal`; ⬜ `crypto.x509.*`.
-- 🟡 Net/CIDR: ✅ `net.cidr_contains`, `net.cidr_intersects`, `net.cidr_is_valid`;
-  ⬜ `net.cidr_merge`, `net.cidr_expand` (needs a DoS cap), `net.cidr_contains_matches`.
+- ✅ Net/CIDR: `net.cidr_contains`, `net.cidr_intersects`, `net.cidr_is_valid`,
+  `net.cidr_merge`, `net.cidr_expand` (with a DoS cap), `net.cidr_contains_matches`.
 - ✅ Bits: `bits.and`, `bits.or`, `bits.xor`, `bits.negate`, `bits.lsh`, `bits.rsh`
   (`bits.lsh` caps result size as a DoS guard; parser accepts `and`/`or` as dotted
   reference segments so the builtins are callable from source).
 - 🟡 Misc: ✅ `semver.compare`, `semver.is_valid` (hand-rolled SemVer §11; implements a
   correct, terminating comparison rather than reproducing OPA's leading-zero-prerelease
-  compare hang); ⬜ `uuid.rfc4122`, `units.parse*`, `graph.reachable`, `walk`.
+  compare hang), `units.parse*`, `graph.reachable`; ⬜ `uuid.rfc4122`, `walk`.
 
 ## Known limitations
 

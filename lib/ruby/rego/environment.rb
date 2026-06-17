@@ -225,6 +225,22 @@ module Ruby
         @builtin_registry = original
       end
 
+      # Execute a block with an overridden builtin registry as the base for the whole evaluation,
+      # WITHOUT opening a memoization context. Unlike with_builtin_registry (used by `with`
+      # modifiers mid-evaluation, where cache isolation from the surrounding scope is required),
+      # the caller here has just reset memoization, so the evaluation runs in that clean base
+      # context rather than a redundant nested one.
+      #
+      # @param registry [Builtins::BuiltinRegistry, Builtins::BuiltinRegistryOverlay] registry to use
+      # @return [Object] block result
+      def using_builtin_registry(registry)
+        original = @builtin_registry
+        @builtin_registry = registry
+        yield
+      ensure
+        @builtin_registry = original
+      end
+
       private
 
       attr_reader :locals, :scope_pool
