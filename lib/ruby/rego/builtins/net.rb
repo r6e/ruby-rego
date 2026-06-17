@@ -25,6 +25,8 @@ module Ruby
       # input to `::/prefix` and stays reflexive (a network contains itself) rather than
       # reproduce the upstream Go inconsistency. Prefixes >= 96 (genuine mapped addresses)
       # are normalised to native IPv4 to match OPA.
+      # The cidr_merge range-merge port and cidr_contains_matches live in
+      # net/{cidr_merge,contains_matches}.rb, required at the bottom.
       module Net
         extend RegistryHelpers
 

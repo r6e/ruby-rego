@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "time"
-require "date"
 require "tzinfo"
 require "tzinfo/data" # pin the Ruby (tzinfo-data) timezone database explicitly, not host zoneinfo
 require_relative "base"

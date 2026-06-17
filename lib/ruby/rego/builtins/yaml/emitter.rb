@@ -16,6 +16,8 @@ module Ruby
         # This module supplies only what diverges from Psych's defaults: object keys are
         # sorted, floats use Go's strconv 'g' (shortest, eprec=6) formatting, nil emits as
         # `null`, and scalar styles are set explicitly (DOUBLE for type-ambiguous strings).
+        # Key comparison and float formatting live in emitter/{key_order,float_format}.rb,
+        # required at the bottom.
         module Emitter
           # Raised when a value cannot be marshaled (e.g. a non-finite number).
           class MarshalError < StandardError; end

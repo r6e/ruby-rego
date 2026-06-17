@@ -50,6 +50,10 @@ module Ruby
 
           extractor.call(node)
         end
+
+        def self.comprehension_node?(node)
+          node.is_a?(AST::ArrayComprehension) || node.is_a?(AST::SetComprehension) || node.is_a?(AST::ObjectComprehension)
+        end
       end
     end
   end

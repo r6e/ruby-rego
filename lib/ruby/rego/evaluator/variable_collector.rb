@@ -4,6 +4,9 @@ module Ruby
   module Rego
     class Evaluator
       # Collects variable names referenced in expressions and query literals.
+      # The node-class dispatch tables, some-pattern name extraction, and bound-variable
+      # collection live in variable_collector/{dispatch_tables,pattern_names,
+      # bound_variable_collector}.rb, required at the bottom.
       # :reek:TooManyMethods
       class VariableCollector
         def initialize

@@ -51,6 +51,8 @@ module Ruby
         # and OPA relies on context cancellation it lacks here. Globs exceeding the
         # length or flag caps, or an intersection exceeding the work budget, raise
         # GlobError (surfaced as undefined) rather than running unbounded.
+        # Tokenization, prefix/suffix trimming, and the intersection engine live in
+        # glob_intersection/{tokenizer,trim,intersector}.rb, required at the bottom.
         module GlobIntersection
           # Maximum byte length of a single glob pattern.
           MAX_GLOB_SOURCE = 100_000
