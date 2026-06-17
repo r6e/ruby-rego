@@ -409,7 +409,12 @@ RSpec.describe "time parsing builtins" do
       # Zone offsets are range-checked per field: hour ≤ 24, minute/second ≤ 60.
       ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+24:00", 1_709_987_445_000_000_000],
       ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+25:00", nil],
-      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+12:61", nil]
+      ["2006-01-02T15:04:05Z07:00", "2024-03-10T12:30:45+12:61", nil],
+      # An offset of exactly -1 second collides with Go's "no zone" sentinel and is not applied
+      # (kept naive); a -2s offset and a +1s offset apply normally — the boundary is exactly -1.
+      ["2006-01-02T15:04:05-07:00:00", "2024-03-04T10:20:30-00:00:01", 1_709_547_630_000_000_000],
+      ["2006-01-02T15:04:05-07:00:00", "2024-03-04T10:20:30-00:00:02", 1_709_547_632_000_000_000],
+      ["2006-01-02T15:04:05-07:00:00", "2024-03-04T10:20:30+00:00:01", 1_709_547_629_000_000_000]
     ].each do |layout, val, expected|
       it "parses #{layout.inspect} / #{val.inspect} (panel regression)" do
         expect(parse_ns(layout, val)).to eq(expected.nil? ? :undef : expected)
@@ -434,6 +439,13 @@ RSpec.describe "time parsing builtins" do
       expect(bad.valid_encoding?).to be(false)
       expect(parse_ns("January 2 2006", bad)).to eq(:undef)
       expect(parse_ns(bad, "March 2 2024")).to eq(:undef)
+    end
+
+    it "is undefined (not a crash) for a valid but ASCII-incompatible encoding (UTF-16)" do
+      utf16 = "March 2 2024".encode("UTF-16LE")
+      expect(utf16.valid_encoding?).to be(true) # the prior guard missed this; the crash is real
+      expect(parse_ns("January 2 2006", utf16)).to eq(:undef)
+      expect(parse_ns("2006".encode("UTF-16LE"), "2024")).to eq(:undef)
     end
   end
 end

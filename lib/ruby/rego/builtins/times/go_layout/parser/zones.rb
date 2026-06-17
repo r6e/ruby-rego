@@ -49,7 +49,11 @@ module Ruby
               return false if hh > 24 || mm > 60 || ss > 60
 
               magnitude = (hh * 3600) + (mm * 60) + ss
-              @zone_offset = text[0] == "-" ? -magnitude : magnitude
+              offset = text[0] == "-" ? -magnitude : magnitude
+              # Go's parse uses zoneOffset == -1 as the "no zone seen" sentinel, so an explicit
+              # offset of exactly -1 second (only reachable as `-00:00:01`) collides with it and is
+              # never applied — the instant keeps its naive value. Map it to 0 to match OPA.
+              @zone_offset = offset == -1 ? 0 : offset
               @value = @value[shape[:len]..]
               true
             end

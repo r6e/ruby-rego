@@ -194,18 +194,17 @@ module Ruby
         def self.string_arg(value, context)
           Base.assert_type(value, expected: StringValue, context: context)
           string = value.value
-          return string if string.valid_encoding?
+          encoding = string.encoding
+          return string if string.valid_encoding? && encoding.ascii_compatible?
 
-          # An invalid-encoding string raises (e.g. String#casecmp?/sub during parsing) rather
-          # than returning cleanly. OPA never sees these (JSON input is valid UTF-8); they reach
-          # the public Ruby API only. Reject them as undefined, mirroring regex.rb#string_arg
-          # (the encoding-normalisation refactor is deferred — see TODO.md).
+          # A string that is invalid-encoding OR in an ASCII-incompatible encoding (e.g. UTF-16)
+          # raises during parsing (String#casecmp?/sub/to_i) rather than returning cleanly. OPA
+          # never sees these (JSON input is valid UTF-8, which is ASCII-compatible); they reach
+          # the public Ruby API only. Reject them as undefined at this shared chokepoint (used by
+          # the whole time.* family), the encoding-normalisation refactor being deferred (TODO.md).
           raise Ruby::Rego::BuiltinArgumentError.new(
-            "Invalid string encoding",
-            expected: "valid #{string.encoding} string",
-            actual: "invalid byte sequence",
-            context: context,
-            location: nil
+            "Invalid string encoding", expected: "valid #{encoding} string",
+                                       actual: "invalid byte sequence", context: context, location: nil
           )
         end
         private_class_method :string_arg
