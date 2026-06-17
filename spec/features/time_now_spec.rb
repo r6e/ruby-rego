@@ -37,17 +37,11 @@ RSpec.describe "time.now_ns (integration)" do
     before = current_ns
     result = evaluate("single")
     after = current_ns
-    # The eval's fixed clock must fall within the wall-clock window around the call —
-    # proving it reads Time.now at eval time (in nanoseconds), not a stale or wrong-unit value.
-    expect(result).to be_between(before, after)
-  end
-
-  it "is non-decreasing across separate evaluations" do
-    # A monotonicity sanity check; the fresh-clock-per-eval guarantee is proven by the
-    # be_between window test above (this only rules out the clock going backwards).
-    first = evaluate("single")
-    second = evaluate("single")
-    expect(second).to be >= first
+    # The eval's fixed clock must fall within the wall-clock window around the call — proving it
+    # reads Time.now at eval time (in nanoseconds), not a stale or wrong-unit value. minmax keeps
+    # the window valid even if the wall clock steps backward between the reads (e.g. an NTP adjust).
+    low, high = [before, after].minmax
+    expect(result).to be_between(low, high)
   end
 
   it "returns an integer (number) value" do

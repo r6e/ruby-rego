@@ -94,7 +94,8 @@ module Ruby
         # serving as the single source of the timestamp computation and the value outside an evaluation.
         # @return [Integer]
         def self.now_ns
-          (::Time.now.to_r * NANOS_PER_SECOND).to_i
+          now = ::Time.now
+          (now.to_i * NANOS_PER_SECOND) + now.nsec
         end
 
         # Formats an instant (ns, [ns, tz], or [ns, tz, layout]) using a Go reference-time layout

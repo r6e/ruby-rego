@@ -103,7 +103,7 @@ module Ruby
       # @return [Result, nil] evaluation result, or nil when a query is undefined
       def evaluate(query = nil)
         environment.memoization.reset!
-        environment.with_builtin_registry(clock_registry) { evaluate_query_or_rules(query) }
+        environment.using_builtin_registry(clock_registry) { evaluate_query_or_rules(query) }
       end
 
       private
