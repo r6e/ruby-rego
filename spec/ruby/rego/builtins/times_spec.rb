@@ -414,7 +414,14 @@ RSpec.describe "time parsing builtins" do
       # (kept naive); a -2s offset and a +1s offset apply normally — the boundary is exactly -1.
       ["2006-01-02T15:04:05-07:00:00", "2024-03-04T10:20:30-00:00:01", 1_709_547_630_000_000_000],
       ["2006-01-02T15:04:05-07:00:00", "2024-03-04T10:20:30-00:00:02", 1_709_547_632_000_000_000],
-      ["2006-01-02T15:04:05-07:00:00", "2024-03-04T10:20:30+00:00:01", 1_709_547_629_000_000_000]
+      ["2006-01-02T15:04:05-07:00:00", "2024-03-04T10:20:30+00:00:01", 1_709_547_629_000_000_000],
+      # A 12-hour clock value of 0/"00" is ACCEPTED (Go's range is 0..12, rejecting only <0/>12),
+      # not rejected — "00:30 AM" is 00:30, "00:30 PM" is 12:30 (pm && hour<12 → +12). Do not
+      # "fix" consume_hour12 to 1..12; that would break OPA parity (verified via TZ=UTC opa eval).
+      ["2006-01-02 03:04 PM", "2024-03-10 00:30 AM", 1_710_030_600_000_000_000],
+      ["2006-01-02 03:04 PM", "2024-03-10 00:30 PM", 1_710_073_800_000_000_000],
+      ["2006-01-02 3:04 PM", "2024-03-10 0:30 AM", 1_710_030_600_000_000_000],
+      ["2006-01-02 03:04 PM", "2024-03-10 13:30 PM", nil] # >12 is still undefined
     ].each do |layout, val, expected|
       it "parses #{layout.inspect} / #{val.inspect} (panel regression)" do
         expect(parse_ns(layout, val)).to eq(expected.nil? ? :undef : expected)

@@ -204,9 +204,13 @@ module Ruby
           # input is UTF-8); they reach the public Ruby API only. Accept valid UTF-8 and any
           # pure-ASCII string; reject the rest as undefined at this shared chokepoint (used by the
           # whole time.* family). The encoding-normalisation refactor is deferred (TODO.md).
+          # Metadata accurate for all three rejected cases — invalid bytes, an ASCII-incompatible
+          # encoding (UTF-16), and a binary string with high bytes are all "non-UTF-8 content".
           raise Ruby::Rego::BuiltinArgumentError.new(
-            "Invalid string encoding", expected: "valid #{encoding} string",
-                                       actual: "invalid byte sequence", context: context, location: nil
+            "String not representable as UTF-8",
+            expected: "a valid UTF-8 or ASCII-only string",
+            actual: "#{encoding} string with non-UTF-8 content",
+            context: context, location: nil
           )
         end
         private_class_method :string_arg
