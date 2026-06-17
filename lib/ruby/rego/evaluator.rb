@@ -103,6 +103,14 @@ module Ruby
       # @return [Result, nil] evaluation result, or nil when a query is undefined
       def evaluate(query = nil)
         environment.memoization.reset!
+        environment.with_builtin_registry(clock_registry) { evaluate_query_or_rules(query) }
+      end
+
+      private
+
+      attr_reader :policy_set, :module_contexts, :expression_evaluator, :rule_evaluator
+
+      def evaluate_query_or_rules(query)
         return evaluate_policy_set(query) if policy_set
 
         value, bindings = query ? evaluate_query(query) : [evaluate_rules, nil]
@@ -111,9 +119,18 @@ module Ruby
         ResultBuilder.new(value, bindings).build
       end
 
-      private
-
-      attr_reader :policy_set, :module_contexts, :expression_evaluator, :rule_evaluator
+      # A per-evaluation overlay that fixes the impure time.now_ns builtin to a single timestamp,
+      # captured once here so every call within this evaluation returns the same value (OPA fixes
+      # the clock once per query). This overlay is the intended reuse point for a future impure
+      # builtin that needs a value fixed once per evaluation (e.g. uuid.rfc4122). A user
+      # `with time.now_ns as X` still composes — it overlays this overlay and so takes precedence.
+      def clock_registry
+        now_ns = Builtins::Times.now_ns
+        entry = Builtins::BuiltinRegistry::Entry.new(
+          name: "time.now_ns", arity: 0, handler: ->(*_args) { now_ns }
+        )
+        environment.builtin_registry.with_override("time.now_ns", entry)
+      end
 
       def initialize_with_environment(compiled_module, environment)
         @policy_set = nil

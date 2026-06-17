@@ -68,17 +68,18 @@ Remaining (~88), highest compat-per-effort first:
 - 🟡 Small / self-contained: ✅ `array.flatten`, `object.subset`, `uuid.parse`,
   `graph.reachable`/`graph.reachable_paths`. Remaining: `uri.parse`/`uri.is_valid` (thin
   wrappers over Go `net/url.Parse` — needs a faithful port of Go's lenient parser *and its exact
-  error set*, since Ruby `URI` diverges; own PR), `uuid.rfc4122` (per-eval random generator —
-  needs evaluator-scoped/impure builtin state the registry lacks), `strings.render_template`.
+  error set*, since Ruby `URI` diverges; own PR), `uuid.rfc4122` (per-eval random generator,
+  memoized by key — the per-eval registry overlay added for `time.now_ns` (Evaluator#evaluate) is
+  now the mechanism to thread this evaluator-scoped state), `strings.render_template`.
 - ✅ Net: `net.cidr_merge` (Cilium range-merge port; RFC 5952 IPv6 output). (`net.cidr_overlap`
   is deprecated and rejected by OPA at compile time — intentionally omitted. `net.lookup_ip_addr`
   does DNS — deferred as side-effecting.)
-- ⬜ Time (10): `time.now_ns`, ✅ `time.parse_rfc3339_ns`, ✅ `time.date`, ✅ `time.clock`,
-  ✅ `time.weekday`, ✅ `time.add_date`, ✅ `time.diff`, ✅ `time.format`, ✅ `time.parse_ns`,
-  ✅ `time.parse_duration_ns`. High value; Go reference-time layout + tz make `format`/`parse`
-  fiddly. parse_ns is a faithful Go time.Parse port (validate-don't-normalize; UTC-deterministic
-  zone abbreviations — see times/go_layout/parser.rb). Only `time.now_ns` remains: it needs
-  impure-builtin infra (a per-eval clock the registry lacks).
+- ✅ Time (10, complete): ✅ `time.now_ns`, ✅ `time.parse_rfc3339_ns`, ✅ `time.date`,
+  ✅ `time.clock`, ✅ `time.weekday`, ✅ `time.add_date`, ✅ `time.diff`, ✅ `time.format`,
+  ✅ `time.parse_ns`, ✅ `time.parse_duration_ns`. parse_ns is a faithful Go time.Parse port
+  (validate-don't-normalize; UTC-deterministic zone abbreviations — see times/go_layout/parser.rb).
+  `time.now_ns` is impure: the clock is fixed once per evaluation via a per-eval registry overlay
+  in Evaluator#evaluate (the reuse point for future impure builtins like uuid.rfc4122/rand.intn).
 - ⬜ JSON: ✅ `json.patch` (RFC 6902); ✅ `json.marshal_with_options`; `json.match_schema`/
   `json.verify_schema` need a JSON-Schema validator (dependency decision).
 - ⬜ Crypto: `crypto.x509.*` (7, OpenSSL), `crypto.parse_private_keys`.
