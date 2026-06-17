@@ -67,5 +67,22 @@ RSpec.describe "uuid.rfc4122 (integration)" do
   it "is overridable via `with uuid.rfc4122 as <value>`" do
     expect(evaluate("overridden")).to eq("fixed-uuid")
   end
+
+  it "coexists with time.now_ns in one evaluation (both impure overrides in the shared overlay)" do
+    # The per-eval overlay installs both time.now_ns and uuid.rfc4122; confirm both are fixed
+    # within the same evaluation and that unrelated builtins still fall through to the base.
+    policy = <<~REGO
+      package both
+      result := {
+        "now_consistent": time.now_ns() == time.now_ns(),
+        "uuid_consistent": uuid.rfc4122("k") == uuid.rfc4122("k"),
+        "uuid_valid": regex.match(`^\\h{8}-\\h{4}-4\\h{3}-[89ab]\\h{3}-\\h{12}$`, uuid.rfc4122("k")),
+        "base_builtin": upper("hi"),
+      }
+    REGO
+    result = Ruby::Rego.evaluate(policy, query: "data.both.result").value.to_ruby
+    expect(result).to eq("now_consistent" => true, "uuid_consistent" => true,
+                         "uuid_valid" => true, "base_builtin" => "HI")
+  end
 end
 # rubocop:enable Metrics/BlockLength

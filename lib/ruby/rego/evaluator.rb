@@ -128,12 +128,12 @@ module Ruby
         now_ns = Builtins::Times.now_ns
         uuids = {} # @type var uuids: Hash[Value, String]
         environment.builtin_registry
-                   .with_override("time.now_ns", impure_entry("time.now_ns", 0, ->(*_args) { now_ns }))
+                   .with_override("time.now_ns", override_entry("time.now_ns", 0, ->(*_args) { now_ns }))
                    .with_override("uuid.rfc4122",
-                                  impure_entry("uuid.rfc4122", 1, ->(key) { uuids[key] ||= Builtins::Uuid.generate }))
+                                  override_entry("uuid.rfc4122", 1, ->(key) { uuids[key] ||= Builtins::Uuid.generate }))
       end
 
-      def impure_entry(name, arity, handler)
+      def override_entry(name, arity, handler)
         Builtins::BuiltinRegistry::Entry.new(name: name, arity: arity, handler: handler)
       end
 
