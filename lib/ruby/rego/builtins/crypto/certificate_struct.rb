@@ -11,8 +11,11 @@ module Ruby
         # plus URIStrings. Every field name and shape mirrors the Go struct exactly. Fields default to
         # Go's zero value (nil for slices/pointers, 0 for ints, false for bools) and are overridden as
         # each is derived; the parsed-extension fields are filled in by certificate_extensions.rb.
+        # rubocop:disable Metrics/ModuleLength
         module CertificateStruct
-          # Go x509.SignatureAlgorithm enum, keyed by OpenSSL's signature-algorithm name.
+          # Go x509.SignatureAlgorithm enum, keyed by OpenSSL's signature-algorithm name. RSA-PSS shares
+          # one OID across digests (the digest lives in the parameters), so 13/14/15 are resolved from
+          # those parameters in pss_signature_algorithm, not this table.
           SIGNATURE_ALGORITHMS = {
             "md2WithRSAEncryption" => 1, "md5WithRSAEncryption" => 2, "sha1WithRSAEncryption" => 3,
             "sha256WithRSAEncryption" => 4, "sha384WithRSAEncryption" => 5, "sha512WithRSAEncryption" => 6,
@@ -20,8 +23,17 @@ module Ruby
             "ecdsa-with-SHA384" => 11, "ecdsa-with-SHA512" => 12, "ED25519" => 16
           }.freeze
 
+          # OpenSSL's name for the RSASSA-PSS signature algorithm, and the SHA-{256,384,512} digest OIDs
+          # in its parameters -> Go's SHA*WithRSAPSS enum values.
+          RSA_PSS_NAME = "rsassaPss"
+          PSS_DIGEST_ALGORITHMS = {
+            "2.16.840.1.101.3.4.2.1" => 13, "2.16.840.1.101.3.4.2.2" => 14, "2.16.840.1.101.3.4.2.3" => 15
+          }.freeze
+
           # Go x509.PublicKeyAlgorithm enum, keyed by the key's OpenSSL oid.
-          PUBLIC_KEY_ALGORITHMS = { "rsaEncryption" => 1, "id-ecPublicKey" => 3, "ED25519" => 4 }.freeze
+          PUBLIC_KEY_ALGORITHMS = {
+            "rsaEncryption" => 1, "DSA" => 2, "id-ecPublicKey" => 3, "ED25519" => 4
+          }.freeze
 
           # The certificate field hash at Go's zero values; computed fields override these.
           ZERO_FIELDS = {
@@ -85,11 +97,25 @@ module Ruby
               "SerialNumber" => cert.serial.to_i,
               "NotBefore" => rfc3339(cert.not_before),
               "NotAfter" => rfc3339(cert.not_after),
-              "SignatureAlgorithm" => SIGNATURE_ALGORITHMS.fetch(cert.signature_algorithm, 0),
+              "SignatureAlgorithm" => signature_algorithm(cert, decoded),
               "Signature" => b64(decoded.value[2].value)
             }
           end
           private_class_method :scalar_fields
+
+          # Go's x509.SignatureAlgorithm enum value. RSA-PSS is read from the signatureAlgorithm
+          # parameters (the [0] hashAlgorithm digest OID); everything else from the algorithm name.
+          # rubocop:disable Metrics/AbcSize
+          def self.signature_algorithm(cert, decoded)
+            name = cert.signature_algorithm
+            return SIGNATURE_ALGORITHMS.fetch(name, 0) unless name == RSA_PSS_NAME
+
+            parameters = decoded.value[1].value[1]
+            hash = parameters.value.find { |element| element.respond_to?(:tag) && element.tag.zero? }
+            hash ? PSS_DIGEST_ALGORITHMS.fetch(hash.value[0].value[0].oid, 0) : 0
+          end
+          private_class_method :signature_algorithm
+          # rubocop:enable Metrics/AbcSize
 
           # The Raw* sub-DER slices, lifted from the certificate's ASN.1 tree (Go keeps these as the
           # exact encoded bytes). issuer/subject/spki are the already-located TBSCertificate elements
@@ -135,6 +161,7 @@ module Ruby
             Base64.strict_encode64(bytes)
           end
         end
+        # rubocop:enable Metrics/ModuleLength
       end
     end
   end

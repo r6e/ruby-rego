@@ -33,6 +33,13 @@ module Ruby
             "1.3.6.1.5.5.7.48.2" => "IssuingCertificateURL"
           }.freeze
 
+          # Extension OIDs crypto/x509's parseCertificate recognizes; a *critical* extension whose OID
+          # is not here is reported in UnhandledCriticalExtensions (matching Go).
+          RECOGNIZED_EXTENSION_OIDS = %w[
+            2.5.29.14 2.5.29.35 2.5.29.15 2.5.29.37 2.5.29.19 2.5.29.17 2.5.29.31
+            1.3.6.1.5.5.7.1.1 2.5.29.30 2.5.29.32 2.5.29.36 2.5.29.54 2.5.29.33
+          ].freeze
+
           # Nesting cap for a known extension's DER. Far beyond any real certificate (extensions nest a
           # handful deep) yet well under the depth at which OpenSSL::ASN1.decode's C recursion overflows
           # the stack uncatchably; OPA's Go asn1 tolerates deeper input, so this diverges only on
@@ -49,12 +56,15 @@ module Ruby
           # Go keeping them as raw bytes. (SystemStackError from a pathologically nested extension is a
           # non-StandardError; it is caught by the certificate builder's outer rescue.)
           def self.apply_extensions(fields, cert)
+            unhandled = [] # : Array[untyped]
             certificate_extensions(cert).each do |oid, critical, der|
               dispatch_extension(fields, oid, critical, der)
+              unhandled << oid_ints(oid) if critical && !RECOGNIZED_EXTENSION_OIDS.include?(oid)
             # Fully qualified: Ruby::Rego::TypeError shadows ::TypeError in this nested module scope.
             rescue ::NoMethodError, ::TypeError, ::IndexError, ::ArgumentError, ::RangeError
               raise MalformedCertificate, "malformed extension #{oid}"
             end
+            fields["UnhandledCriticalExtensions"] = unhandled unless unhandled.empty?
             fields
           end
 
@@ -88,6 +98,9 @@ module Ruby
             when "1.3.6.1.5.5.7.1.1" then authority_info_access(fields, der)
             when "2.5.29.30" then name_constraints(fields, der, critical)
             when "2.5.29.32" then certificate_policies(fields, der)
+            when "2.5.29.36" then policy_constraints(fields, der)
+            when "2.5.29.54" then inhibit_any_policy(fields, der)
+            when "2.5.29.33" then policy_mappings(fields, der)
             end
           end
           private_class_method :dispatch_extension
@@ -107,13 +120,16 @@ module Ruby
           end
           private_class_method :authority_key_id
 
-          # KeyUsage (2.5.29.15): the BIT STRING bits, MSB-first, OR-ed into Go's KeyUsage bitmask
-          # (bit i -> 1 << i: DigitalSignature=1 … DecipherOnly=256).
+          # KeyUsage (2.5.29.15): only the 9 defined bits, MSB-first, OR-ed into Go's KeyUsage bitmask
+          # (bit i -> 1 << i: DigitalSignature=1 … DecipherOnly=256). Go's parseKeyUsageExtension reads
+          # exactly bits 0..8 and ignores the rest, so a bit string padded to megabytes stays O(1)
+          # (walking every bit into a growing Bignum would be O(n^2) — a DoS on attacker input).
           def self.key_usage(der)
             bytes = bounded_decode(der).value.bytes
             usage = 0
-            bytes.each_with_index do |byte, byte_index|
-              (0..7).each { |bit| usage |= (1 << ((byte_index * 8) + bit)) if byte.anybits?(0x80 >> bit) }
+            9.times do |bit|
+              byte = bytes[bit / 8] || 0
+              usage |= (1 << bit) if byte.anybits?(0x80 >> (bit % 8))
             end
             usage
           end
@@ -219,6 +235,35 @@ module Ruby
             fields["Policies"] = oids
           end
           private_class_method :certificate_policies
+
+          # PolicyConstraints (2.5.29.36): SEQUENCE { [0] requireExplicitPolicy, [1] inhibitPolicyMapping
+          # INTEGERs OPTIONAL }; each sets its field and a *Zero flag (present and equal to zero).
+          def self.policy_constraints(fields, der)
+            bounded_decode(der).value.each do |element|
+              field = element.tag.zero? ? "RequireExplicitPolicy" : "InhibitPolicyMapping"
+              value = OpenSSL::BN.new(element.value, 2).to_i
+              fields[field] = value
+              fields["#{field}Zero"] = value.zero?
+            end
+          end
+          private_class_method :policy_constraints
+
+          # InhibitAnyPolicy (2.5.29.54): a single INTEGER skip count, with its present-and-zero flag.
+          def self.inhibit_any_policy(fields, der)
+            value = bounded_decode(der).value.to_i
+            fields["InhibitAnyPolicy"] = value
+            fields["InhibitAnyPolicyZero"] = value.zero?
+          end
+          private_class_method :inhibit_any_policy
+
+          # PolicyMappings (2.5.29.33): SEQUENCE OF SEQUENCE { issuerDomainPolicy, subjectDomainPolicy OIDs }.
+          def self.policy_mappings(fields, der)
+            fields["PolicyMappings"] = bounded_decode(der).value.map do |mapping|
+              pair = mapping.value
+              { "IssuerDomainPolicy" => pair[0].oid, "SubjectDomainPolicy" => pair[1].oid }
+            end
+          end
+          private_class_method :policy_mappings
 
           # Recursively collect every primitive [6] uniformResourceIdentifier under an ASN.1 node
           # (CRL DistributionPoints nest the URI fullNames a few SEQUENCEs deep).

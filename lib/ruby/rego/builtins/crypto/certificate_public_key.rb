@@ -12,14 +12,17 @@ module Ruby
           # The PublicKey field, matching Go's json.Marshal of the concrete public-key type: an
           # rsa.PublicKey is {N, E}; an ecdsa.PublicKey is {Curve:{}, X, Y}; an ed25519.PublicKey is
           # the std-base64 of its 32 bytes.
+          # rubocop:disable Metrics/AbcSize
           def self.public_key(cert)
             key = cert.public_key
             case key.oid
             when "id-ecPublicKey" then ec_public_key(key)
             when "ED25519" then Base64.strict_encode64(key.raw_public_key)
+            when "DSA" then { "G" => key.g.to_i, "P" => key.p.to_i, "Q" => key.q.to_i, "Y" => key.pub_key.to_i }
             else { "N" => key.n.to_i, "E" => key.e.to_i }
             end
           end
+          # rubocop:enable Metrics/AbcSize
 
           # :reek:UncommunicativeVariableName -- x/y are the standard names for EC point coordinates.
           def self.ec_public_key(key)

@@ -432,11 +432,14 @@ module Ruby
         # URIStrings). Methods take/return untyped because they walk OpenSSL ASN.1/cert objects.
         module CertificateStruct
           SIGNATURE_ALGORITHMS: Hash[String, Integer]
+          RSA_PSS_NAME: String
+          PSS_DIGEST_ALGORITHMS: Hash[String, Integer]
           PUBLIC_KEY_ALGORITHMS: Hash[String, Integer]
           ZERO_FIELDS: Hash[String, untyped]
           EXT_KEY_USAGES: Hash[String, Integer]
           NAME_CONSTRAINT_FIELDS: Hash[Integer, Array[String]]
           ACCESS_METHODS: Hash[String, String]
+          RECOGNIZED_EXTENSION_OIDS: Array[String]
           MAX_ASN1_DEPTH: Integer
 
           def self.build: (untyped cert) -> Hash[String, untyped]
@@ -448,6 +451,7 @@ module Ruby
           private
 
           def self.scalar_fields: (untyped cert, untyped decoded) -> Hash[String, untyped]
+          def self.signature_algorithm: (untyped cert, untyped decoded) -> Integer
           def self.raw_fields: (untyped cert, untyped tbs, untyped issuer, untyped subject, untyped spki) -> Hash[String, untyped]
           def self.extension_list: (untyped tbs) -> Array[untyped]?
           def self.rfc3339: (untyped time) -> String
@@ -466,6 +470,9 @@ module Ruby
           def self.name_constraints: (Hash[String, untyped] fields, String der, bool critical) -> void
           def self.add_constraint: (Hash[String, untyped] fields, untyped base, Integer column) -> void
           def self.certificate_policies: (Hash[String, untyped] fields, String der) -> void
+          def self.policy_constraints: (Hash[String, untyped] fields, String der) -> void
+          def self.inhibit_any_policy: (Hash[String, untyped] fields, String der) -> void
+          def self.policy_mappings: (Hash[String, untyped] fields, String der) -> void
           def self.collect_uris: (untyped node) -> Array[String]?
           def self.bounded_decode: (String der) -> untyped
           def self.safe_asn1?: (String der) -> bool

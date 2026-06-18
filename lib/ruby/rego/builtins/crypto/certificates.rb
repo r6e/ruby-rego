@@ -55,7 +55,12 @@ module Ruby
         # :reek:NilCheck -- n/a; rescue maps OpenSSL/ASN.1 builder failures to OPA's undefined.
         def self.build_structs(certs)
           Value.from_ruby(certs.map { |cert| CertificateStruct.build(cert) })
-        rescue OpenSSL::OpenSSLError, MalformedCertificate, SystemStackError
+        # The structural exceptions are fully qualified: Ruby::Rego::TypeError shadows ::TypeError in
+        # this module's scope. They are the backstop for a certificate shape the field builder does not
+        # anticipate (an unsupported key type, a malformed name/signature-algorithm) — OPA returns the
+        # certificate that Go's typed parsers accept, but totality requires never aborting evaluation.
+        rescue OpenSSL::OpenSSLError, MalformedCertificate, SystemStackError,
+               ::NoMethodError, ::TypeError, ::IndexError, ::ArgumentError, ::RangeError
           UndefinedValue.new
         end
         private_class_method :build_structs
