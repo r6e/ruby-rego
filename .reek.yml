@@ -188,6 +188,8 @@ detectors:
       - Ruby::Rego::Builtins::Graph#self.build_paths
       # The extension dispatcher threads (fields, oid, critical, der) to each crypto/x509 parser.
       - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.dispatch_extension
+      # The Raw* slices take the cert, tbs, and the three pre-located issuer/subject/spki elements.
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.raw_fields
   Attribute:
     exclude:
       # Token#flag is set by the tokenizer and rewritten by Simplify (mirrors Go SetFlag).

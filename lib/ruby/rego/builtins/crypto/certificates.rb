@@ -48,11 +48,14 @@ module Ruby
 
         # Build the struct hash for every parsed certificate. A malformed *known* extension makes Go's
         # parseCertificate return an error, so OPA returns undefined for the whole call; a decode error
-        # in the field builder maps to that same undefined rather than aborting the evaluation.
+        # in the field builder maps to that same undefined rather than aborting the evaluation. The
+        # builtin must be total: the registry only rescues BuiltinArgumentError, so any other escaping
+        # exception would abort the whole policy. SystemStackError (a non-StandardError) guards against
+        # OpenSSL::ASN1.decode recursing without a depth limit on a pathologically nested extension.
         # :reek:NilCheck -- n/a; rescue maps OpenSSL/ASN.1 builder failures to OPA's undefined.
         def self.build_structs(certs)
           Value.from_ruby(certs.map { |cert| CertificateStruct.build(cert) })
-        rescue OpenSSL::OpenSSLError, MalformedCertificate
+        rescue OpenSSL::OpenSSLError, MalformedCertificate, SystemStackError
           UndefinedValue.new
         end
         private_class_method :build_structs

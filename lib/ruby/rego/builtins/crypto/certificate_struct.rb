@@ -58,13 +58,19 @@ module Ruby
             decoded = OpenSSL::ASN1.decode(cert.to_der)
             tbs = decoded.value[0]
             elements = tbs.value
+            # TBSCertificate omits the [0] EXPLICIT version field for v1 certs, shifting serialNumber
+            # to index 0 (it sits at index 1 once a version is present) and every later field with it.
+            serial_index = context_tag?(elements[0], 0) ? 1 : 0
+            issuer = elements[serial_index + 2]
+            subject = elements[serial_index + 4]
+            spki = elements[serial_index + 5]
             fields = ZERO_FIELDS.merge(
               scalar_fields(cert, decoded),
-              raw_fields(cert, tbs, elements),
+              raw_fields(cert, tbs, issuer, subject, spki),
               "PublicKey" => CertificateStruct.public_key(cert),
               "PublicKeyAlgorithm" => PUBLIC_KEY_ALGORITHMS.fetch(cert.public_key.oid, 0),
-              "Issuer" => Name.build(elements[3]),
-              "Subject" => Name.build(elements[5]),
+              "Issuer" => Name.build(issuer),
+              "Subject" => Name.build(subject),
               "Extensions" => extension_list(tbs)
             )
             apply_extensions(fields, cert)
@@ -86,15 +92,15 @@ module Ruby
           private_class_method :scalar_fields
 
           # The Raw* sub-DER slices, lifted from the certificate's ASN.1 tree (Go keeps these as the
-          # exact encoded bytes; tbs.value layout is [version, serial, sigalg, issuer, validity,
-          # subject, spki, extensions]).
-          def self.raw_fields(cert, tbs, elements)
+          # exact encoded bytes). issuer/subject/spki are the already-located TBSCertificate elements
+          # (their indices depend on whether the optional version field is present).
+          def self.raw_fields(cert, tbs, issuer, subject, spki)
             {
               "Raw" => b64(cert.to_der),
               "RawTBSCertificate" => b64(tbs.to_der),
-              "RawIssuer" => b64(elements[3].to_der),
-              "RawSubject" => b64(elements[5].to_der),
-              "RawSubjectPublicKeyInfo" => b64(elements[6].to_der)
+              "RawIssuer" => b64(issuer.to_der),
+              "RawSubject" => b64(subject.to_der),
+              "RawSubjectPublicKeyInfo" => b64(spki.to_der)
             }
           end
           private_class_method :raw_fields

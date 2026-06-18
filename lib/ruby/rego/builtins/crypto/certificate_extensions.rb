@@ -33,11 +33,28 @@ module Ruby
             "1.3.6.1.5.5.7.48.2" => "IssuingCertificateURL"
           }.freeze
 
+          # Nesting cap for a known extension's DER. Far beyond any real certificate (extensions nest a
+          # handful deep) yet well under the depth at which OpenSSL::ASN1.decode's C recursion overflows
+          # the stack uncatchably; OPA's Go asn1 tolerates deeper input, so this diverges only on
+          # adversarial certificates that no legitimate issuer produces.
+          MAX_ASN1_DEPTH = 1000
+
           # @param fields [Hash[String, untyped]]
           # @param cert [OpenSSL::X509::Certificate]
           # @return [Hash[String, untyped]]
+          # A known extension whose DER is not the shape crypto/x509 expects makes Go's asn1.Unmarshal
+          # fail, so parseCertificate errors and OPA returns undefined; the structural exceptions that
+          # surfaces in Ruby (nil/array/string where another node was assumed) are mapped to that same
+          # undefined via MalformedCertificate. Unknown extension OIDs never reach a handler, matching
+          # Go keeping them as raw bytes. (SystemStackError from a pathologically nested extension is a
+          # non-StandardError; it is caught by the certificate builder's outer rescue.)
           def self.apply_extensions(fields, cert)
-            certificate_extensions(cert).each { |oid, critical, der| dispatch_extension(fields, oid, critical, der) }
+            certificate_extensions(cert).each do |oid, critical, der|
+              dispatch_extension(fields, oid, critical, der)
+            # Fully qualified: Ruby::Rego::TypeError shadows ::TypeError in this nested module scope.
+            rescue ::NoMethodError, ::TypeError, ::IndexError, ::ArgumentError, ::RangeError
+              raise MalformedCertificate, "malformed extension #{oid}"
+            end
             fields
           end
 
@@ -67,7 +84,7 @@ module Ruby
             when "2.5.29.37" then ext_key_usage(fields, der)
             when "2.5.29.19" then basic_constraints(fields, der)
             when "2.5.29.17" then subject_alt_name(fields, der)
-            when "2.5.29.31" then fields["CRLDistributionPoints"] = collect_uris(OpenSSL::ASN1.decode(der))
+            when "2.5.29.31" then fields["CRLDistributionPoints"] = collect_uris(bounded_decode(der))
             when "1.3.6.1.5.5.7.1.1" then authority_info_access(fields, der)
             when "2.5.29.30" then name_constraints(fields, der, critical)
             when "2.5.29.32" then certificate_policies(fields, der)
@@ -78,14 +95,14 @@ module Ruby
 
           # SubjectKeyId (2.5.29.14): the keyIdentifier OCTET STRING content, base64.
           def self.subject_key_id(der)
-            b64(OpenSSL::ASN1.decode(der).value)
+            b64(bounded_decode(der).value)
           end
           private_class_method :subject_key_id
 
           # AuthorityKeyId (2.5.29.35): the [0] keyIdentifier from the AuthorityKeyIdentifier SEQUENCE.
           # :reek:NilCheck -- a SEQUENCE without the optional [0] keyIdentifier leaves AuthorityKeyId nil.
           def self.authority_key_id(der)
-            key_id = OpenSSL::ASN1.decode(der).value.find { |element| context_tag?(element, 0) }
+            key_id = bounded_decode(der).value.find { |element| context_tag?(element, 0) }
             key_id && b64(key_id.value)
           end
           private_class_method :authority_key_id
@@ -93,7 +110,7 @@ module Ruby
           # KeyUsage (2.5.29.15): the BIT STRING bits, MSB-first, OR-ed into Go's KeyUsage bitmask
           # (bit i -> 1 << i: DigitalSignature=1 … DecipherOnly=256).
           def self.key_usage(der)
-            bytes = OpenSSL::ASN1.decode(der).value.bytes
+            bytes = bounded_decode(der).value.bytes
             usage = 0
             bytes.each_with_index do |byte, byte_index|
               (0..7).each { |bit| usage |= (1 << ((byte_index * 8) + bit)) if byte.anybits?(0x80 >> bit) }
@@ -107,7 +124,7 @@ module Ruby
           def self.ext_key_usage(fields, der)
             known = [] # : Array[Integer]
             unknown = [] # : Array[untyped]
-            OpenSSL::ASN1.decode(der).value.each do |purpose|
+            bounded_decode(der).value.each do |purpose|
               oid = purpose.oid
               enum = EXT_KEY_USAGES[oid]
               enum ? known << enum : unknown << oid_ints(oid)
@@ -122,7 +139,7 @@ module Ruby
           # rubocop:disable Metrics/AbcSize
           def self.basic_constraints(fields, der)
             fields["BasicConstraintsValid"] = true
-            elements = OpenSSL::ASN1.decode(der).value
+            elements = bounded_decode(der).value
             fields["IsCA"] = elements.any? { |element| element.is_a?(OpenSSL::ASN1::Boolean) && element.value }
             path_len = elements.find { |element| element.is_a?(OpenSSL::ASN1::Integer) }
             # Go's parseBasicConstraintsExtension defaults maxPathLen to -1 when no pathLen is encoded.
@@ -142,13 +159,13 @@ module Ruby
             email = [] # : Array[String]
             ips = [] # : Array[String]
             uris = [] # : Array[String]
-            OpenSSL::ASN1.decode(der).value.each do |general_name|
+            bounded_decode(der).value.each do |general_name|
               value = general_name.value
               case general_name.tag
               when 2 then dns << value
               when 1 then email << value
               when 6 then uris << value
-              when 7 then ips << go_ip_string(value)
+              when 7 then ips << ip_address(value)
               end
             end
             fields["DNSNames"] = dns unless dns.empty?
@@ -162,7 +179,7 @@ module Ruby
           # AuthorityInfoAccess (1.3.6.1.5.5.7.1.1): SEQUENCE OF AccessDescription { method OID,
           # location GeneralName }; OCSP/caIssuers URI locations populate OCSPServer/IssuingCertificateURL.
           def self.authority_info_access(fields, der)
-            OpenSSL::ASN1.decode(der).value.each do |description|
+            bounded_decode(der).value.each do |description|
               access = description.value
               field = ACCESS_METHODS[access[0].oid]
               location = access[1]
@@ -177,7 +194,7 @@ module Ruby
           # PermittedDNSDomainsCritical carries the extension's critical flag regardless of content.
           def self.name_constraints(fields, der, critical)
             fields["PermittedDNSDomainsCritical"] = critical
-            OpenSSL::ASN1.decode(der).value.each do |subtrees|
+            bounded_decode(der).value.each do |subtrees|
               column = subtrees.tag # 0 = permitted, 1 = excluded
               subtrees.value.each { |subtree| add_constraint(fields, subtree.value[0], column) }
             end
@@ -197,7 +214,7 @@ module Ruby
 
           # CertificatePolicies (2.5.29.32): PolicyIdentifiers (OID int arrays) and Policies (dotted OIDs).
           def self.certificate_policies(fields, der)
-            oids = OpenSSL::ASN1.decode(der).value.map { |info| info.value[0].oid }
+            oids = bounded_decode(der).value.map { |info| info.value[0].oid }
             fields["PolicyIdentifiers"] = oids.map { |oid| oid_ints(oid) }
             fields["Policies"] = oids
           end
@@ -215,9 +232,78 @@ module Ruby
           end
           private_class_method :collect_uris
 
+          # Decode a known extension's inner DER, first rejecting pathologically nested input that would
+          # overflow OpenSSL::ASN1.decode's unbounded C recursion (an uncatchable crash). The depth
+          # bound applies only to extensions crypto/x509 actually parses; unknown extensions are kept as
+          # raw bytes and never decoded, matching OPA.
+          def self.bounded_decode(der)
+            raise MalformedCertificate, "extension nested beyond depth limit" unless safe_asn1?(der)
+
+            OpenSSL::ASN1.decode(der)
+          end
+          private_class_method :bounded_decode
+
+          # Iterative scan of definite-length DER TLV headers (no decode, no recursion, never raises):
+          # false once nesting would exceed MAX_ASN1_DEPTH. Indefinite/huge/truncated lengths are left
+          # for OpenSSL to reject shallowly (an ASN1Error, which already maps to undefined).
+          # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
+          # :reek:TooManyStatements -- a single byte-scanning loop is the clearest form.
+          def self.safe_asn1?(der)
+            bytes = der.b
+            size = bytes.bytesize
+            open_ends = [] # : Array[Integer]
+            pos = 0
+            while pos < size
+              open_ends.pop while !open_ends.empty? && pos >= open_ends.fetch(-1)
+              return false if open_ends.size >= MAX_ASN1_DEPTH
+
+              tag = bytes.getbyte(pos).to_i # to_i: pos < size guarantees a byte
+              pos += 1
+              if tag.allbits?(0x1f) # high-tag-number form: skip the multi-byte tag
+                pos += 1 while pos < size && bytes.getbyte(pos).to_i >= 0x80
+                pos += 1
+              end
+              return true if pos >= size
+
+              length_byte = bytes.getbyte(pos).to_i
+              pos += 1
+              content_len = length_byte
+              if length_byte >= 0x80
+                count = length_byte & 0x7f
+                return true if count.zero? || count > 4 || (pos + count) > size
+
+                content_len = 0
+                count.times do
+                  content_len = (content_len << 8) | bytes.getbyte(pos).to_i
+                  pos += 1
+                end
+              end
+              if tag.nobits?(0x20) # primitive: skip its content
+                pos += content_len
+              else
+                open_ends.push(pos + content_len)
+              end
+            end
+            true
+          end
+          private_class_method :safe_asn1?
+          # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
+
+          # An iPAddress SAN: Go's parseSANExtension accepts only 4- or 16-byte addresses and errors
+          # otherwise (-> OPA undefined), so a wrong length is a malformed certificate, not a "?hex".
+          def self.ip_address(bytes)
+            raise MalformedCertificate, "invalid IP SAN length" unless [4, 16].include?(bytes.bytesize)
+
+            go_ip_string(bytes)
+          end
+          private_class_method :ip_address
+
           # json.Marshal of Go's *net.IPNet for a nameConstraints IP subtree: net.IP marshals via
-          # MarshalText (its string form), net.IPMask has no MarshalText so the mask stays base64.
+          # MarshalText (its string form), net.IPMask has no MarshalText so the mask stays base64. Go's
+          # parseNameConstraintsExtension requires 8 bytes (IPv4 addr+mask) or 32 (IPv6), else errors.
           def self.ip_net(bytes)
+            raise MalformedCertificate, "invalid IP range length" unless [8, 32].include?(bytes.bytesize)
+
             half = bytes.bytesize / 2
             { "IP" => go_ip_string(bytes.byteslice(0, half).to_s), "Mask" => b64(bytes.byteslice(half..).to_s) }
           end
