@@ -357,6 +357,18 @@ module Ruby
 
         CRYPTO_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
         HMAC_ALGORITHMS: Hash[String, String]
+        RECOGNIZED_KEY_BLOCKS: Array[String]
+        PEM_START: String
+        PEM_START_NOLF: String
+        PEM_END: String
+        PEM_END_NOLF: String
+        PEM_EOL: String
+        BASE64_SKIP: String
+        NON_BASE64_BYTE: Regexp
+        EC_CURVE_NAMES: Hash[String, String]
+        EC_STRUCT_CURVES: Array[String]
+        BLOCK_FORMAT_ELEMENT: Hash[String, untyped]
+        MAX_KEY_DER_BYTES: Integer
 
         def self.register!: () -> BuiltinRegistry
         def self.md5: (Value value) -> StringValue
@@ -367,11 +379,43 @@ module Ruby
         def self.hmac_sha256: (Value message_value, Value key_value) -> StringValue
         def self.hmac_sha512: (Value message_value, Value key_value) -> StringValue
         def self.hmac_equal: (Value mac1_value, Value mac2_value) -> BooleanValue
+        def self.parse_private_keys: (Value value) -> Value
+        def self.parse_rsa_private_key: (Value value) -> Value
 
         private
 
         def self.hmac: (Value message_value, Value key_value, String context) -> StringValue
         def self.string_value: (Value value, String context) -> String
+        def self.pem_or_base64: (String string) -> String?
+        def self.supported_keys: (String pem) -> Array[untyped]?
+        def self.pem_blocks: (String pem) -> Array[[String, String]]
+        def self.std_base64_decode: (String string) -> String?
+        def self.pem_decode: (String data, Integer start) -> [String, String, Integer]?
+        def self.locate_end: (String data, Integer body_pos, bool any_headers, Integer? end_at) -> [Integer?, Integer?, Integer?]
+        def self.close_block: (String data, Integer body_start, Integer end_index, Integer trailer_index, String type) -> [String, Integer]?
+        def self.get_line: (String data, Integer pos) -> [String, Integer]
+        def self.trimmed_line: (String data, Integer from, Integer upto) -> String
+        def self.skip_headers: (String data, Integer pos) -> [Integer, bool]?
+        def self.decode_region: (String data, Integer from, Integer upto) -> String?
+        def self.scannable?: (String string) -> bool
+        def self.read_key: (String type, String der) -> untyped
+        def self.format_matches?: (String type, String der) -> bool
+        def self.leading_element_length: (String der) -> Integer?
+        def self.private_material?: (untyped key) -> bool
+        def self.go_supported?: (untyped key) -> bool
+        def self.jwk_for: (untyped key) -> Hash[String, untyped]?
+        def self.rsa_jwk: (untyped key) -> Hash[String, untyped]
+        def self.ec_jwk: (untyped key) -> Hash[String, untyped]
+        def self.okp_jwk: (untyped key, String curve) -> Hash[String, untyped]
+        def self.go_struct_for: (untyped key) -> untyped
+        def self.rsa_struct: (untyped key) -> Hash[String, untyped]
+        def self.ec_struct: (untyped key) -> Hash[String, untyped]
+        def self.point_coordinates: (untyped key) -> [String, String]
+        def self.coordinate_width: (untyped group) -> Integer
+        def self.bytes_to_int: (String bytes) -> Integer
+        def self.b64url_bn: (untyped big_number) -> String
+        def self.b64url: (String bytes) -> String
+        def self.left_pad: (String bytes, Integer width) -> String
       end
 
       module Net
