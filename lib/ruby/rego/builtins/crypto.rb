@@ -35,7 +35,9 @@ module Ruby
           "crypto.hmac.sha1" => { arity: 2, handler: :hmac_sha1 },
           "crypto.hmac.sha256" => { arity: 2, handler: :hmac_sha256 },
           "crypto.hmac.sha512" => { arity: 2, handler: :hmac_sha512 },
-          "crypto.hmac.equal" => { arity: 2, handler: :hmac_equal }
+          "crypto.hmac.equal" => { arity: 2, handler: :hmac_equal },
+          "crypto.x509.parse_rsa_private_key" => { arity: 1, handler: :parse_rsa_private_key },
+          "crypto.parse_private_keys" => { arity: 1, handler: :parse_private_keys }
         }.freeze
 
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
@@ -133,5 +135,7 @@ module Ruby
     end
   end
 end
+
+require_relative "crypto/keys"
 
 Ruby::Rego::Builtins::Crypto.register!

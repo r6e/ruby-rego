@@ -82,7 +82,11 @@ Remaining (~88), highest compat-per-effort first:
   overlay in Evaluator#impure_registry (now shared with uuid.rfc4122's per-key memoization).
 - ⬜ JSON: ✅ `json.patch` (RFC 6902); ✅ `json.marshal_with_options`; `json.match_schema`/
   `json.verify_schema` need a JSON-Schema validator (dependency decision).
-- ⬜ Crypto: `crypto.x509.*` (7, OpenSSL), `crypto.parse_private_keys`.
+- 🟡 Crypto: ✅ `crypto.parse_private_keys`, `crypto.x509.parse_rsa_private_key` (OpenSSL-backed
+  private-key parsing — JWK + Go-struct output, byte-exact with OPA across RSA/EC/Ed25519). ⬜ the
+  certificate parsers `crypto.x509.parse_certificates`/`parse_certificate_request`/`parse_keypair`/
+  `parse_and_verify_certificates(_with_options)` remain — each marshals Go's 53-field
+  `x509.Certificate` struct (shared pkix.Name/extension/public-key machinery); a separate PR.
 - ⬜ JWT: `io.jwt.*` (17 — decode/verify/encode_sign; OpenSSL-backed, large batch).
 - ⬜ GraphQL: `graphql.*` (6 — needs a GraphQL parser dependency).
 - ⬜ Deferred / out of scope: `rand.intn` (seeded/stateful), `http.send` (network),
@@ -125,7 +129,8 @@ Remaining (~88), highest compat-per-effort first:
   `time.parse_duration_ns`, `time.date`, `time.clock`, `time.weekday`, `time.diff`,
   `time.add_date`, `time.format`.
 - 🟡 Crypto: ✅ `crypto.md5`, `crypto.sha1`, `crypto.sha256`, `crypto.hmac.md5`/`sha1`/
-  `sha256`/`sha512`, `crypto.hmac.equal`; ⬜ `crypto.x509.*`.
+  `sha256`/`sha512`, `crypto.hmac.equal`, `crypto.parse_private_keys`,
+  `crypto.x509.parse_rsa_private_key`; ⬜ the `crypto.x509` certificate parsers.
 - ✅ Net/CIDR: `net.cidr_contains`, `net.cidr_intersects`, `net.cidr_is_valid`,
   `net.cidr_merge`, `net.cidr_expand` (with a DoS cap), `net.cidr_contains_matches`.
 - ✅ Bits: `bits.and`, `bits.or`, `bits.xor`, `bits.negate`, `bits.lsh`, `bits.rsh`
