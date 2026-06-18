@@ -370,7 +370,14 @@ module Ruby
         BLOCK_FORMAT_ELEMENT: Hash[String, untyped]
         MAX_KEY_DER_BYTES: Integer
 
+        CERTIFICATE_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        class MalformedCertificate < StandardError
+        end
+
         def self.register!: () -> BuiltinRegistry
+        def self.register_certificates!: () -> BuiltinRegistry
+        def self.parse_certificates: (Value value) -> Value
         def self.md5: (Value value) -> StringValue
         def self.sha1: (Value value) -> StringValue
         def self.sha256: (Value value) -> StringValue
@@ -416,6 +423,68 @@ module Ruby
         def self.b64url_bn: (untyped big_number) -> String
         def self.b64url: (String bytes) -> String
         def self.left_pad: (String bytes, Integer width) -> String
+        def self.build_structs: (Array[untyped] certs) -> Value
+        def self.certificates_from: (String string) -> Array[untyped]?
+        def self.der_certificates: (String der) -> Array[untyped]?
+        def self.pem_certificates: (String string) -> Array[untyped]?
+
+        # Builds the OPA JSON hash for one parsed certificate (json.Marshal of x509.Certificate +
+        # URIStrings). Methods take/return untyped because they walk OpenSSL ASN.1/cert objects.
+        module CertificateStruct
+          SIGNATURE_ALGORITHMS: Hash[String, Integer]
+          PUBLIC_KEY_ALGORITHMS: Hash[String, Integer]
+          ZERO_FIELDS: Hash[String, untyped]
+          EXT_KEY_USAGES: Hash[String, Integer]
+          NAME_CONSTRAINT_FIELDS: Hash[Integer, Array[String]]
+          ACCESS_METHODS: Hash[String, String]
+
+          def self.build: (untyped cert) -> Hash[String, untyped]
+          def self.public_key: (untyped cert) -> untyped
+          def self.oid_ints: (String oid) -> Array[Integer]
+          def self.uri_fields: (Array[String] uri_texts) -> Hash[String, untyped]
+          def self.apply_extensions: (Hash[String, untyped] fields, untyped cert) -> Hash[String, untyped]
+
+          private
+
+          def self.scalar_fields: (untyped cert, untyped decoded) -> Hash[String, untyped]
+          def self.raw_fields: (untyped cert, untyped tbs, Array[untyped] elements) -> Hash[String, untyped]
+          def self.extension_list: (untyped tbs) -> Array[untyped]?
+          def self.rfc3339: (untyped time) -> String
+          def self.b64: (String bytes) -> String
+          def self.ec_public_key: (untyped key) -> Hash[String, untyped]
+          def self.url_struct: (untyped components) -> Hash[String, untyped]
+          def self.certificate_extensions: (untyped cert) -> Array[untyped]
+          def self.dispatch_extension: (Hash[String, untyped] fields, String oid, bool critical, String der) -> void
+          def self.subject_key_id: (String der) -> String
+          def self.authority_key_id: (String der) -> String?
+          def self.key_usage: (String der) -> Integer
+          def self.ext_key_usage: (Hash[String, untyped] fields, String der) -> void
+          def self.basic_constraints: (Hash[String, untyped] fields, String der) -> void
+          def self.subject_alt_name: (Hash[String, untyped] fields, String der) -> void
+          def self.authority_info_access: (Hash[String, untyped] fields, String der) -> void
+          def self.name_constraints: (Hash[String, untyped] fields, String der, bool critical) -> void
+          def self.add_constraint: (Hash[String, untyped] fields, untyped base, Integer column) -> void
+          def self.certificate_policies: (Hash[String, untyped] fields, String der) -> void
+          def self.collect_uris: (untyped node) -> Array[String]?
+          def self.ip_net: (String bytes) -> Hash[String, untyped]
+          def self.context_tag?: (untyped node, Integer tag) -> bool
+          def self.go_ip_string: (String bytes) -> String
+          def self.v4_in_v6?: (Array[Integer] octets) -> bool
+          def self.longest_zero_run: (Array[Integer] octets) -> [Integer, Integer]
+          def self.render_ipv6: (Array[Integer] octets, Integer zero_start, Integer zero_end) -> String
+        end
+
+        # Builds the pkix.Name JSON from an RDNSequence ASN.1 element.
+        module Name
+          ATTRIBUTE_FIELDS: Hash[String, [String, bool]]
+          NAME_FIELDS: Array[String]
+
+          def self.build: (untyped rdn_sequence) -> Hash[String, untyped]
+
+          private
+
+          def self.assign: (Hash[String, untyped] name, String oid, String value) -> void
+        end
       end
 
       module Net
@@ -573,12 +642,18 @@ module Ruby
             attr_accessor raw_path: String?
             attr_accessor raw_query: String?
             attr_accessor fragment: String?
-            def initialize: (?scheme: String?, ?host: String?, ?path: String?, ?raw_path: String?, ?raw_query: String?, ?fragment: String?) -> void
+            attr_accessor opaque: String?
+            attr_accessor force_query: bool?
+            attr_accessor omit_host: bool?
+            attr_accessor raw_fragment: String?
+            attr_accessor user: String?
+            def initialize: (?scheme: String?, ?host: String?, ?path: String?, ?raw_path: String?, ?raw_query: String?, ?fragment: String?, ?opaque: String?, ?force_query: bool?, ?omit_host: bool?, ?raw_fragment: String?, ?user: String?) -> void
           end
 
           def self.parse: (String raw) -> Components?
           def self.hostname: (String host) -> String
           def self.port: (String host) -> String
+          def self.string: (Components components) -> String
 
           private
 
@@ -608,6 +683,11 @@ module Ruby
           def self.split_host_port: (String host_port) -> [String, String]
           def self.triplet_is_pct25?: (String bytes, Integer index) -> bool
           def self.illegal_zone_byte?: (String bytes, Integer index, Integer value) -> bool
+          def self.finish_query_fragment: (String buf, Components components) -> String
+          def self.write_authority: (String buf, Components components) -> void
+          def self.userinfo_string: (String userinfo) -> String
+          def self.escaped_path: (Components components) -> String
+          def self.escaped_fragment: (Components components) -> String
         end
       end
 

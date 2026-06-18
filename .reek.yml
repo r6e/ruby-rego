@@ -65,6 +65,13 @@ detectors:
       # Faithful ports of the yaml.v2 emitter and scalar resolver.
       - Ruby::Rego::Builtins::Yaml::Emitter
       - Ruby::Rego::Builtins::Yaml::ScalarResolver
+      # Re-derivation of Go crypto/x509's parseCertificate extension parsers + net.IP.String, each a
+      # statement-heavy faithful port (ASN.1 walks, the SAN/nameConstraints/policy field builders).
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct
+      # Concatenated-DER cert splitter (decode-len-advance loop with a parse guard).
+      - Ruby::Rego::Builtins::Crypto#self.der_certificates
+      # PEM cert collector: OPA's getX509CertsFromPem (empty/non-cert-block rejection per block).
+      - Ruby::Rego::Builtins::Crypto#self.pem_certificates
       # Recursive term-order comparator (single case over all value types).
       - Ruby::Rego::Builtins::TermOrder
       # Recursive canonicalizer (single case over all value types) for OPA number equality.
@@ -109,6 +116,13 @@ detectors:
       - Ruby::Rego::Builtins::Yaml::ScalarResolver
       # Recursive term-order comparator: repeats sort_key across case branches.
       - Ruby::Rego::Builtins::TermOrder
+      # x509 field builders: two maps over the parsed-URI list / a zero-run span compared each step.
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct
+  ManualDispatch:
+    exclude:
+      # Walks heterogeneous OpenSSL::ASN1 nodes whose element types vary (constructed vs primitive,
+      # context-tagged), so respond_to?(:tag)/(:tag_class) guards are inherent, not a code smell.
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct
   UtilityFunction:
     exclude:
       - Ruby::Rego::Lexer
@@ -151,6 +165,8 @@ detectors:
       - Ruby::Rego::Builtins::Yaml::Emitter
       # merge_key? dispatches on whether the resolved key is the merge token.
       - Ruby::Rego::Builtins::Yaml::ScalarResolver
+      # x509 builders dispatch on the GeneralName/OID/ASN.1 tag — a faithful port of crypto/x509.
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct
   NilCheck:
     exclude:
       - Ruby::Rego::Lexer
@@ -170,6 +186,8 @@ detectors:
       - Ruby::Rego::Builtins::Regex::GlobIntersection
       # Recursive path builder threads (graph, root, path, accumulator, visited) like OPA's.
       - Ruby::Rego::Builtins::Graph#self.build_paths
+      # The extension dispatcher threads (fields, oid, critical, der) to each crypto/x509 parser.
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.dispatch_extension
   Attribute:
     exclude:
       # Token#flag is set by the tokenizer and rewritten by Simplify (mirrors Go SetFlag).
@@ -191,6 +209,10 @@ detectors:
       - Ruby::Rego::Builtins::Strings#self.any_pair_match?
       # YAML merge keys: iterate merge sources, then each source's entries.
       - Ruby::Rego::Builtins::Yaml::ScalarResolver#self.merge_into
+      # X.509 ASN.1 is nested SEQUENCE-OF: KeyUsage bits, RDN attributes, nameConstraints subtrees.
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.key_usage
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.name_constraints
+      - Ruby::Rego::Builtins::Crypto::Name#self.build
   UncommunicativeVariableName:
     accept:
       - e
@@ -219,3 +241,8 @@ detectors:
       - Ruby::Rego::Builtins::Times::GoLayout::Parser#consume_hour24
       # The OPA builtin name uuid.rfc4122 → rfc4122; the digits are the RFC number, not a count.
       - Ruby::Rego::Builtins::Uuid#self.rfc4122
+      # Domain abbreviations: b64 = Base64 encode, rfc3339 = the RFC 3339 timestamp Go emits,
+      # render_ipv6 = the IPv6 branch of net.IP.String (the digits name the IP version).
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.b64
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.rfc3339
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.render_ipv6

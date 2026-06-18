@@ -1,0 +1,2637 @@
+{
+  "certs": {
+    "rsa_rich": [
+      {
+        "AuthorityKeyId": "FBMSERAPDg0MCwoJCAcGBQQDAgE=",
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": [
+          "http://crl.example.com/a.crl"
+        ],
+        "DNSNames": [
+          "example.com",
+          "*.example.com"
+        ],
+        "EmailAddresses": [
+          "a@example.com"
+        ],
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": [
+          1,
+          2
+        ],
+        "Extensions": [
+          {
+            "Critical": true,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAYBAf8CAQM="
+          },
+          {
+            "Critical": true,
+            "Id": [
+              2,
+              5,
+              29,
+              15
+            ],
+            "Value": "AwIAhg=="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              37
+            ],
+            "Value": "MBoGCCsGAQUFBwMBBggrBgEFBQcDAgYEKgMEBQ=="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              17
+            ],
+            "Value": "MEOCC2V4YW1wbGUuY29tgg0qLmV4YW1wbGUuY29tgQ1hQGV4YW1wbGUuY29thwR/AAABhxAAAAAAAAAAAAAAAAAAAAAB"
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              14
+            ],
+            "Value": "BBQBAgMEBQYHCAkKCwwNDg8QERITFA=="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              35
+            ],
+            "Value": "MBaAFBQTEhEQDw4NDAsKCQgHBgUEAwIB"
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              32
+            ],
+            "Value": "MBUwBQYDKgMEMAwGCisGAQQB1nkCBQM="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              31
+            ],
+            "Value": "MCQwIqAgoB6GHGh0dHA6Ly9jcmwuZXhhbXBsZS5jb20vYS5jcmw="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              1,
+              3,
+              6,
+              1,
+              5,
+              5,
+              7,
+              1,
+              1
+            ],
+            "Value": "ME8wIwYIKwYBBQUHMAGGF2h0dHA6Ly9vY3NwLmV4YW1wbGUuY29tMCgGCCsGAQUFBzAChhxodHRwOi8vY2EuZXhhbXBsZS5jb20vY2EuY3J0"
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": [
+          "127.0.0.1",
+          "::1"
+        ],
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": true,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": [
+          "http://ca.example.com/ca.crt"
+        ],
+        "KeyUsage": 97,
+        "MaxPathLen": 3,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": [
+          "http://ocsp.example.com"
+        ],
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": [
+          "1.2.3.4",
+          "1.3.6.1.4.1.11129.2.5.3"
+        ],
+        "PolicyIdentifiers": [
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          [
+            1,
+            3,
+            6,
+            1,
+            4,
+            1,
+            11129,
+            2,
+            5,
+            3
+          ]
+        ],
+        "PolicyMappings": null,
+        "PublicKey": {
+          "E": 65537,
+          "N": 19651153670373098659030728642359806478067396398755102395472744719929644990693130231011662779720234971114819045263934842081349670515109654185512516183252267890106130131662728677168245613017741938064352505578860352234376047206691261418513175968065989183668717583003333717906097192170476356153745967063822220252358938568734587755018232626250040651997581913924372294025603696459119459204734422450906581922334872579422121134192959574661174832331562177022629364456847256622647762802862530261755472912987642182582319740111961040551524599893673762738666798834432307772669207673166836149216223109103509924099672942365915266547
+        },
+        "PublicKeyAlgorithm": 1,
+        "Raw": "MIIEdjCCA16gAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcPjU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhTo7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNIqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUsOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjggGJMIIBhTASBgNVHRMBAf8ECDAGAQH/AgEDMA4GA1UdDwEB/wQEAwIAhjAjBgNVHSUEHDAaBggrBgEFBQcDAQYIKwYBBQUHAwIGBCoDBAUwTAYDVR0RBEUwQ4ILZXhhbXBsZS5jb22CDSouZXhhbXBsZS5jb22BDWFAZXhhbXBsZS5jb22HBH8AAAGHEAAAAAAAAAAAAAAAAAAAAAEwHQYDVR0OBBYEFAECAwQFBgcICQoLDA0ODxAREhMUMB8GA1UdIwQYMBaAFBQTEhEQDw4NDAsKCQgHBgUEAwIBMB4GA1UdIAQXMBUwBQYDKgMEMAwGCisGAQQB1nkCBQMwLQYDVR0fBCYwJDAioCCgHoYcaHR0cDovL2NybC5leGFtcGxlLmNvbS9hLmNybDBdBggrBgEFBQcBAQRRME8wIwYIKwYBBQUHMAGGF2h0dHA6Ly9vY3NwLmV4YW1wbGUuY29tMCgGCCsGAQUFBzAChhxodHRwOi8vY2EuZXhhbXBsZS5jb20vY2EuY3J0MA0GCSqGSIb3DQEBCwUAA4IBAQBzwe8HZIN4n1pZkrfHJDAGJ1BROBEFmPPEMfdZu8vknBHIjtpz2nO0BGa+oE+SXt3w4s6Qf+B2zlxcxqWVTTc66Uh3QeQzVqpp1vDI+ZvTrKT25aCvdWLaPN2KZLwP1I9+V0YX/45mCMuWmmIgd2Fv59kZ9aEPnVTwtfJDaUZHF4Eq5deJbglfJ29z6KF8437NOmBC7puPPfhQXpUhMcONxFmUwQrgwn2UyvtSfp4bNkpr0KNAFSJnflu0cxTmkEghtHVsnZ7gFQYaMcqLOiJMNTpUdoqUlix55rkih0pbcYgktfYiXGC4NjUAkC/c4C2hUgrxm7aBB3gJuvv2X72I",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm6rIiI6gmfJam+t/BtGbK/g/APzbkxoEay13D41O4bp1aA0HKGrf1XRsMNfIv3B4ntjL1AxdvPWYT7E7Q1g8gtJmtA/nVyeVcBpEx+gEDzfEoSF/dPajjfoqIcDo8OFugv01NZ2tInaG8oDM1O0j4AtVNwv0SqB/+usYU6O2ub71+5S4mN4AQOBht/GsH8ipupYKA7LwvQzhPVQXOTaYjfin58R21vvwmJGjSKn3/KGjnC0vTjHKJL31X5c4/z5hlh3+o/xCogO+LWwh5yLS38ExubjgrFQ5GQoFLDgWNWk86mqf+9SmRXdxtL10LwQQd7LMO7/BT211+CibLNy98wIDAQAB",
+        "RawTBSCertificate": "MIIDXqADAgECAgMKCwwwDQYJKoZIhvcNAQELBQAwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJuqyIiOoJnyWpvrfwbRmyv4PwD825MaBGstdw+NTuG6dWgNByhq39V0bDDXyL9weJ7Yy9QMXbz1mE+xO0NYPILSZrQP51cnlXAaRMfoBA83xKEhf3T2o436KiHA6PDhboL9NTWdrSJ2hvKAzNTtI+ALVTcL9Eqgf/rrGFOjtrm+9fuUuJjeAEDgYbfxrB/IqbqWCgOy8L0M4T1UFzk2mI34p+fEdtb78JiRo0ip9/yho5wtL04xyiS99V+XOP8+YZYd/qP8QqIDvi1sIeci0t/BMbm44KxUORkKBSw4FjVpPOpqn/vUpkV3cbS9dC8EEHeyzDu/wU9tdfgomyzcvfMCAwEAAaOCAYkwggGFMBIGA1UdEwEB/wQIMAYBAf8CAQMwDgYDVR0PAQH/BAQDAgCGMCMGA1UdJQQcMBoGCCsGAQUFBwMBBggrBgEFBQcDAgYEKgMEBTBMBgNVHREERTBDggtleGFtcGxlLmNvbYINKi5leGFtcGxlLmNvbYENYUBleGFtcGxlLmNvbYcEfwAAAYcQAAAAAAAAAAAAAAAAAAAAATAdBgNVHQ4EFgQUAQIDBAUGBwgJCgsMDQ4PEBESExQwHwYDVR0jBBgwFoAUFBMSERAPDg0MCwoJCAcGBQQDAgEwHgYDVR0gBBcwFTAFBgMqAwQwDAYKKwYBBAHWeQIFAzAtBgNVHR8EJjAkMCKgIKAehhxodHRwOi8vY3JsLmV4YW1wbGUuY29tL2EuY3JsMF0GCCsGAQUFBwEBBFEwTzAjBggrBgEFBQcwAYYXaHR0cDovL29jc3AuZXhhbXBsZS5jb20wKAYIKwYBBQUHMAKGHGh0dHA6Ly9jYS5leGFtcGxlLmNvbS9jYS5jcnQ=",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "c8HvB2SDeJ9aWZK3xyQwBidQUTgRBZjzxDH3WbvL5JwRyI7ac9pztARmvqBPkl7d8OLOkH/gds5cXMallU03OulId0HkM1aqadbwyPmb06yk9uWgr3Vi2jzdimS8D9SPfldGF/+OZgjLlppiIHdhb+fZGfWhD51U8LXyQ2lGRxeBKuXXiW4JXydvc+ihfON+zTpgQu6bjz34UF6VITHDjcRZlMEK4MJ9lMr7Un6eGzZKa9CjQBUiZ35btHMU5pBIIbR1bJ2e4BUGGjHKizoiTDU6VHaKlJYseea5IodKW3GIJLX2IlxguDY1AJAv3OAtoVIK8Zu2gQd4Cbr79l+9iA==",
+        "SignatureAlgorithm": 4,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": "AQIDBAUGBwgJCgsMDQ4PEBESExQ=",
+        "URIStrings": null,
+        "URIs": null,
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        ],
+        "Version": 3
+      }
+    ],
+    "ec256_uris": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": null,
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": null,
+        "Extensions": [
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAA="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              17
+            ],
+            "Value": "MHeGE2h0dHBzOi8vZXhhbXBsZS5jb22GP2h0dHBzOi8vam9lOnMlM0FjcmV0QGV4YW1wbGUuY29tOjg0NDMvcCUyMGF0aC94P3E9MSZyPTIjc2VjJTIwMYYfaHR0cHM6Ly9bMjAwMTpkYjg6OjFdOjkwMDAvcGF0aA=="
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": false,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": -1,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "Curve": {},
+          "X": 80527612254708336747106815715181406296025280908838692255815926123817433062651,
+          "Y": 115673565751581217905646036595678633507275212417454912740959438785024208126157
+        },
+        "PublicKeyAlgorithm": 3,
+        "Raw": "MIIB7zCCAZegAwIBAgIDCgsMMAoGCCqGSM49BAMCMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASyCQNqwNwoBkqehW0poEVzKe7gYXDZCtpIHWrQ0Nxc+/+86weTvWvIFgOAi0tSVVRV10t0oYOLtXqLtrpyy8DNo4GRMIGOMAkGA1UdEwQCMAAwgYAGA1UdEQR5MHeGE2h0dHBzOi8vZXhhbXBsZS5jb22GP2h0dHBzOi8vam9lOnMlM0FjcmV0QGV4YW1wbGUuY29tOjg0NDMvcCUyMGF0aC94P3E9MSZyPTIjc2VjJTIwMYYfaHR0cHM6Ly9bMjAwMTpkYjg6OjFdOjkwMDAvcGF0aDAKBggqhkjOPQQDAgNGADBDAiAFVjWVb53DrD2y3+FfHgVqJAL9JE5W/GyPkuXO3x8jeQIfE8vd/7Yf0anPKpy8o4KzGrZlEKUl94mcJKl+RupZEA==",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsgkDasDcKAZKnoVtKaBFcynu4GFw2QraSB1q0NDcXPv/vOsHk71ryBYDgItLUlVUVddLdKGDi7V6i7a6csvAzQ==",
+        "RawTBSCertificate": "MIIBl6ADAgECAgMKCwwwCgYIKoZIzj0EAwIwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLIJA2rA3CgGSp6FbSmgRXMp7uBhcNkK2kgdatDQ3Fz7/7zrB5O9a8gWA4CLS1JVVFXXS3Shg4u1eou2unLLwM2jgZEwgY4wCQYDVR0TBAIwADCBgAYDVR0RBHkwd4YTaHR0cHM6Ly9leGFtcGxlLmNvbYY/aHR0cHM6Ly9qb2U6cyUzQWNyZXRAZXhhbXBsZS5jb206ODQ0My9wJTIwYXRoL3g/cT0xJnI9MiNzZWMlMjAxhh9odHRwczovL1syMDAxOmRiODo6MV06OTAwMC9wYXRo",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "MEMCIAVWNZVvncOsPbLf4V8eBWokAv0kTlb8bI+S5c7fHyN5Ah8Ty93/th/Rqc8qnLyjgrMatmUQpSX3iZwkqX5G6lkQ",
+        "SignatureAlgorithm": 10,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": [
+          "https://example.com",
+          "https://joe:s%3Acret@example.com:8443/p%20ath/x?q=1&r=2#sec%201",
+          "https://[2001:db8::1]:9000/path"
+        ],
+        "URIs": [
+          {
+            "ForceQuery": false,
+            "Fragment": "",
+            "Host": "example.com",
+            "OmitHost": false,
+            "Opaque": "",
+            "Path": "",
+            "RawFragment": "",
+            "RawPath": "",
+            "RawQuery": "",
+            "Scheme": "https",
+            "User": null
+          },
+          {
+            "ForceQuery": false,
+            "Fragment": "sec 1",
+            "Host": "example.com:8443",
+            "OmitHost": false,
+            "Opaque": "",
+            "Path": "/p ath/x",
+            "RawFragment": "",
+            "RawPath": "",
+            "RawQuery": "q=1&r=2",
+            "Scheme": "https",
+            "User": {}
+          },
+          {
+            "ForceQuery": false,
+            "Fragment": "",
+            "Host": "[2001:db8::1]:9000",
+            "OmitHost": false,
+            "Opaque": "",
+            "Path": "/path",
+            "RawFragment": "",
+            "RawPath": "",
+            "RawQuery": "",
+            "Scheme": "https",
+            "User": null
+          }
+        ],
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ],
+    "ec384_pathlen0": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": null,
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": null,
+        "Extensions": [
+          {
+            "Critical": true,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAYBAf8CAQA="
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": true,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": 0,
+        "MaxPathLenZero": true,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "Curve": {},
+          "X": 35972717029566471108678196076793784253846662919613427394601868049109229727401250251452134793956777982249575296490452,
+          "Y": 30453948865670130450213537405613354563689270832251290911856210340888104381203094515638604183441382323990013675596804
+        },
+        "PublicKeyAlgorithm": 3,
+        "Raw": "MIIBsjCCATigAwIBAgIDCgsMMAoGCCqGSM49BAMCMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wdjAQBgcqhkjOPQIBBgUrgQQAIgNiAATpuC5x3ZHN+S8XfpReTwsyn4tUQiMr8/dPVZLrTqWrVksCfD53UUHCxv/Ne21XW9TF3QEfvGafl0vyynExUrTdSh6Igh4OfSFi11nU4gmEk1u0QYw+ZIz1zfN4/qvAbASjFjAUMBIGA1UdEwEB/wQIMAYBAf8CAQAwCgYIKoZIzj0EAwIDaAAwZQIwQr33Q4Q79cO72UNJY3GrX+7OZQqGrqIYOeB6Ny4uitho3jkAw6OkAnE68c5qo3fSAjEAplrbbpFV3wGXbZ1xtB2yXj+7IS6psvE4AGktto7muHz/BbRxym3nrH+XYy98qu6l",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE6bgucd2RzfkvF36UXk8LMp+LVEIjK/P3T1WS606lq1ZLAnw+d1FBwsb/zXttV1vUxd0BH7xmn5dL8spxMVK03UoeiIIeDn0hYtdZ1OIJhJNbtEGMPmSM9c3zeP6rwGwE",
+        "RawTBSCertificate": "MIIBOKADAgECAgMKCwwwCgYIKoZIzj0EAwIwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTB2MBAGByqGSM49AgEGBSuBBAAiA2IABOm4LnHdkc35Lxd+lF5PCzKfi1RCIyvz909VkutOpatWSwJ8PndRQcLG/817bVdb1MXdAR+8Zp+XS/LKcTFStN1KHoiCHg59IWLXWdTiCYSTW7RBjD5kjPXN83j+q8BsBKMWMBQwEgYDVR0TAQH/BAgwBgEB/wIBAA==",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "MGUCMEK990OEO/XDu9lDSWNxq1/uzmUKhq6iGDngejcuLorYaN45AMOjpAJxOvHOaqN30gIxAKZa226RVd8Bl22dcbQdsl4/uyEuqbLxOABpLbaO5rh8/wW0ccpt56x/l2MvfKrupQ==",
+        "SignatureAlgorithm": 10,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": null,
+        "URIs": null,
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ],
+    "ed_pathlen_absent": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": null,
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": null,
+        "Extensions": [
+          {
+            "Critical": true,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAMBAf8="
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": true,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": -1,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": "4pt0/Fp6NX8hFsGYUnSWKuaHvCUCObZzMHKZN/Y5SK4=",
+        "PublicKeyAlgorithm": 4,
+        "Raw": "MIIBMTCB5KADAgECAgMKCwwwBQYDK2VwMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wKjAFBgMrZXADIQDim3T8Wno1fyEWwZhSdJYq5oe8JQI5tnMwcpk39jlIrqMTMBEwDwYDVR0TAQH/BAUwAwEB/zAFBgMrZXADQQCrLCFyjzNu+T+jM2M2DTVSwL95w62d3gGg7wxeq2BQOZO/6k1VxxGVFBzG5YNXhbdaNyGTEVBBllV0gYrSlS0I",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MCowBQYDK2VwAyEA4pt0/Fp6NX8hFsGYUnSWKuaHvCUCObZzMHKZN/Y5SK4=",
+        "RawTBSCertificate": "MIHkoAMCAQICAwoLDDAFBgMrZXAwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTAqMAUGAytlcAMhAOKbdPxaejV/IRbBmFJ0lirmh7wlAjm2czBymTf2OUiuoxMwETAPBgNVHRMBAf8EBTADAQH/",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "qywhco8zbvk/ozNjNg01UsC/ecOtnd4BoO8MXqtgUDmTv+pNVccRlRQcxuWDV4W3WjchkxFQQZZVdIGK0pUtCA==",
+        "SignatureAlgorithm": 16,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": null,
+        "URIs": null,
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ],
+    "rsa_noca": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": [
+          "leaf.example.com"
+        ],
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": null,
+        "Extensions": [
+          {
+            "Critical": true,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAA="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              17
+            ],
+            "Value": "MBKCEGxlYWYuZXhhbXBsZS5jb20="
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": false,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": -1,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "E": 65537,
+          "N": 19651153670373098659030728642359806478067396398755102395472744719929644990693130231011662779720234971114819045263934842081349670515109654185512516183252267890106130131662728677168245613017741938064352505578860352234376047206691261418513175968065989183668717583003333717906097192170476356153745967063822220252358938568734587755018232626250040651997581913924372294025603696459119459204734422450906581922334872579422121134192959574661174832331562177022629364456847256622647762802862530261755472912987642182582319740111961040551524599893673762738666798834432307772669207673166836149216223109103509924099672942365915266547
+        },
+        "PublicKeyAlgorithm": 1,
+        "Raw": "MIIDGDCCAgCgAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcPjU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhTo7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNIqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUsOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjLTArMAwGA1UdEwEB/wQCMAAwGwYDVR0RBBQwEoIQbGVhZi5leGFtcGxlLmNvbTANBgkqhkiG9w0BAQsFAAOCAQEAZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++MonQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+VpBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWKvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XSj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uysbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm6rIiI6gmfJam+t/BtGbK/g/APzbkxoEay13D41O4bp1aA0HKGrf1XRsMNfIv3B4ntjL1AxdvPWYT7E7Q1g8gtJmtA/nVyeVcBpEx+gEDzfEoSF/dPajjfoqIcDo8OFugv01NZ2tInaG8oDM1O0j4AtVNwv0SqB/+usYU6O2ub71+5S4mN4AQOBht/GsH8ipupYKA7LwvQzhPVQXOTaYjfin58R21vvwmJGjSKn3/KGjnC0vTjHKJL31X5c4/z5hlh3+o/xCogO+LWwh5yLS38ExubjgrFQ5GQoFLDgWNWk86mqf+9SmRXdxtL10LwQQd7LMO7/BT211+CibLNy98wIDAQAB",
+        "RawTBSCertificate": "MIICAKADAgECAgMKCwwwDQYJKoZIhvcNAQELBQAwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJuqyIiOoJnyWpvrfwbRmyv4PwD825MaBGstdw+NTuG6dWgNByhq39V0bDDXyL9weJ7Yy9QMXbz1mE+xO0NYPILSZrQP51cnlXAaRMfoBA83xKEhf3T2o436KiHA6PDhboL9NTWdrSJ2hvKAzNTtI+ALVTcL9Eqgf/rrGFOjtrm+9fuUuJjeAEDgYbfxrB/IqbqWCgOy8L0M4T1UFzk2mI34p+fEdtb78JiRo0ip9/yho5wtL04xyiS99V+XOP8+YZYd/qP8QqIDvi1sIeci0t/BMbm44KxUORkKBSw4FjVpPOpqn/vUpkV3cbS9dC8EEHeyzDu/wU9tdfgomyzcvfMCAwEAAaMtMCswDAYDVR0TAQH/BAIwADAbBgNVHREEFDASghBsZWFmLmV4YW1wbGUuY29t",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "ZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++MonQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+VpBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWKvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XSj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uysbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==",
+        "SignatureAlgorithm": 4,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": null,
+        "URIs": null,
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ],
+    "nc_all8": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": null,
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": [
+          ".evil.com"
+        ],
+        "ExcludedEmailAddresses": [
+          "bad@evil.com"
+        ],
+        "ExcludedIPRanges": [
+          {
+            "IP": "10.0.0.0",
+            "Mask": "/wAAAA=="
+          }
+        ],
+        "ExcludedURIDomains": [
+          "https://evil.example.com"
+        ],
+        "ExtKeyUsage": null,
+        "Extensions": [
+          {
+            "Critical": true,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAYBAf8CAQU="
+          },
+          {
+            "Critical": true,
+            "Id": [
+              2,
+              5,
+              29,
+              30
+            ],
+            "Value": "MIGToEowDoIMLmV4YW1wbGUuY29tMBCBDm9rQGV4YW1wbGUuY29tMBqGGGh0dHBzOi8vZ29vZC5leGFtcGxlLmNvbTAKhwjAqAAA//8AAKFFMAuCCS5ldmlsLmNvbTAOgQxiYWRAZXZpbC5jb20wGoYYaHR0cHM6Ly9ldmlsLmV4YW1wbGUuY29tMAqHCAoAAAD/AAAA"
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": true,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": 5,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": [
+          ".example.com"
+        ],
+        "PermittedDNSDomainsCritical": true,
+        "PermittedEmailAddresses": [
+          "ok@example.com"
+        ],
+        "PermittedIPRanges": [
+          {
+            "IP": "192.168.0.0",
+            "Mask": "//8AAA=="
+          }
+        ],
+        "PermittedURIDomains": [
+          "https://good.example.com"
+        ],
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "E": 65537,
+          "N": 19651153670373098659030728642359806478067396398755102395472744719929644990693130231011662779720234971114819045263934842081349670515109654185512516183252267890106130131662728677168245613017741938064352505578860352234376047206691261418513175968065989183668717583003333717906097192170476356153745967063822220252358938568734587755018232626250040651997581913924372294025603696459119459204734422450906581922334872579422121134192959574661174832331562177022629364456847256622647762802862530261755472912987642182582319740111961040551524599893673762738666798834432307772669207673166836149216223109103509924099672942365915266547
+        },
+        "PublicKeyAlgorithm": 1,
+        "Raw": "MIIDpzCCAo+gAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcPjU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhTo7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNIqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUsOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjgbswgbgwEgYDVR0TAQH/BAgwBgEB/wIBBTCBoQYDVR0eAQH/BIGWMIGToEowDoIMLmV4YW1wbGUuY29tMBCBDm9rQGV4YW1wbGUuY29tMBqGGGh0dHBzOi8vZ29vZC5leGFtcGxlLmNvbTAKhwjAqAAA//8AAKFFMAuCCS5ldmlsLmNvbTAOgQxiYWRAZXZpbC5jb20wGoYYaHR0cHM6Ly9ldmlsLmV4YW1wbGUuY29tMAqHCAoAAAD/AAAAMA0GCSqGSIb3DQEBCwUAA4IBAQBpWZVZRAAGeXLJi9J3+2zfuoxMSDyQgex/8xuFy/1ZSrfPggKT3vlp2IsWxCz4Gl75E5U/4ACzyUzk6yBtCpvd8CGkACnvS+DFBwtYv8qTAK7DiLwqTUoyxde1lAg7+PQD38gQusiU6ipQ/pe+XXtBIiKv/9CW+B6B83ObDh4szB35X95/ORttuoXtk4X5fmLoEJOhrhRYPaFBIzlcv5E82pO/Gk8STTVJIumi0urUcYDCB4IkjZw//YEdI1DBklZFBJHkJtMep8FMpHOz/ah2QnfrikJ4JOrSoJ+q/gQ6XjjzykVZVgM6r8D8/GygyyUAegcMIpsaCQboTtyINsst",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm6rIiI6gmfJam+t/BtGbK/g/APzbkxoEay13D41O4bp1aA0HKGrf1XRsMNfIv3B4ntjL1AxdvPWYT7E7Q1g8gtJmtA/nVyeVcBpEx+gEDzfEoSF/dPajjfoqIcDo8OFugv01NZ2tInaG8oDM1O0j4AtVNwv0SqB/+usYU6O2ub71+5S4mN4AQOBht/GsH8ipupYKA7LwvQzhPVQXOTaYjfin58R21vvwmJGjSKn3/KGjnC0vTjHKJL31X5c4/z5hlh3+o/xCogO+LWwh5yLS38ExubjgrFQ5GQoFLDgWNWk86mqf+9SmRXdxtL10LwQQd7LMO7/BT211+CibLNy98wIDAQAB",
+        "RawTBSCertificate": "MIICj6ADAgECAgMKCwwwDQYJKoZIhvcNAQELBQAwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJuqyIiOoJnyWpvrfwbRmyv4PwD825MaBGstdw+NTuG6dWgNByhq39V0bDDXyL9weJ7Yy9QMXbz1mE+xO0NYPILSZrQP51cnlXAaRMfoBA83xKEhf3T2o436KiHA6PDhboL9NTWdrSJ2hvKAzNTtI+ALVTcL9Eqgf/rrGFOjtrm+9fuUuJjeAEDgYbfxrB/IqbqWCgOy8L0M4T1UFzk2mI34p+fEdtb78JiRo0ip9/yho5wtL04xyiS99V+XOP8+YZYd/qP8QqIDvi1sIeci0t/BMbm44KxUORkKBSw4FjVpPOpqn/vUpkV3cbS9dC8EEHeyzDu/wU9tdfgomyzcvfMCAwEAAaOBuzCBuDASBgNVHRMBAf8ECDAGAQH/AgEFMIGhBgNVHR4BAf8EgZYwgZOgSjAOggwuZXhhbXBsZS5jb20wEIEOb2tAZXhhbXBsZS5jb20wGoYYaHR0cHM6Ly9nb29kLmV4YW1wbGUuY29tMAqHCMCoAAD//wAAoUUwC4IJLmV2aWwuY29tMA6BDGJhZEBldmlsLmNvbTAahhhodHRwczovL2V2aWwuZXhhbXBsZS5jb20wCocICgAAAP8AAAA=",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "aVmVWUQABnlyyYvSd/ts37qMTEg8kIHsf/Mbhcv9WUq3z4ICk975adiLFsQs+Bpe+ROVP+AAs8lM5OsgbQqb3fAhpAAp70vgxQcLWL/KkwCuw4i8Kk1KMsXXtZQIO/j0A9/IELrIlOoqUP6Xvl17QSIir//QlvgegfNzmw4eLMwd+V/efzkbbbqF7ZOF+X5i6BCToa4UWD2hQSM5XL+RPNqTvxpPEk01SSLpotLq1HGAwgeCJI2cP/2BHSNQwZJWRQSR5CbTHqfBTKRzs/2odkJ364pCeCTq0qCfqv4EOl4488pFWVYDOq/A/PxsoMslAHoHDCKbGgkG6E7ciDbLLQ==",
+        "SignatureAlgorithm": 4,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": null,
+        "URIs": null,
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ],
+    "uri_opaque": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": null,
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": null,
+        "Extensions": [
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAA="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              17
+            ],
+            "Value": "MDGGFm1haWx0bzpqb2VAZXhhbXBsZS5jb22GF3VybjpleGFtcGxlOnJlc291cmNlOjQy"
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": false,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": -1,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "Curve": {},
+          "X": 80527612254708336747106815715181406296025280908838692255815926123817433062651,
+          "Y": 115673565751581217905646036595678633507275212417454912740959438785024208126157
+        },
+        "PublicKeyAlgorithm": 3,
+        "Raw": "MIIBqTCCAU6gAwIBAgIDCgsMMAoGCCqGSM49BAMCMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASyCQNqwNwoBkqehW0poEVzKe7gYXDZCtpIHWrQ0Nxc+/+86weTvWvIFgOAi0tSVVRV10t0oYOLtXqLtrpyy8DNo0kwRzAJBgNVHRMEAjAAMDoGA1UdEQQzMDGGFm1haWx0bzpqb2VAZXhhbXBsZS5jb22GF3VybjpleGFtcGxlOnJlc291cmNlOjQyMAoGCCqGSM49BAMCA0kAMEYCIQC2RQHWSqeL3P9wtn+RVIZ2hSpxp1GbDl9+z89qOrePQQIhAJw+AeCudOQ9wsXs7zB+C4FY5OjLFhfk2vEUBsS9UGmI",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsgkDasDcKAZKnoVtKaBFcynu4GFw2QraSB1q0NDcXPv/vOsHk71ryBYDgItLUlVUVddLdKGDi7V6i7a6csvAzQ==",
+        "RawTBSCertificate": "MIIBTqADAgECAgMKCwwwCgYIKoZIzj0EAwIwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLIJA2rA3CgGSp6FbSmgRXMp7uBhcNkK2kgdatDQ3Fz7/7zrB5O9a8gWA4CLS1JVVFXXS3Shg4u1eou2unLLwM2jSTBHMAkGA1UdEwQCMAAwOgYDVR0RBDMwMYYWbWFpbHRvOmpvZUBleGFtcGxlLmNvbYYXdXJuOmV4YW1wbGU6cmVzb3VyY2U6NDI=",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "MEYCIQC2RQHWSqeL3P9wtn+RVIZ2hSpxp1GbDl9+z89qOrePQQIhAJw+AeCudOQ9wsXs7zB+C4FY5OjLFhfk2vEUBsS9UGmI",
+        "SignatureAlgorithm": 10,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": [
+          "mailto:joe@example.com",
+          "urn:example:resource:42"
+        ],
+        "URIs": [
+          {
+            "ForceQuery": false,
+            "Fragment": "",
+            "Host": "",
+            "OmitHost": false,
+            "Opaque": "joe@example.com",
+            "Path": "",
+            "RawFragment": "",
+            "RawPath": "",
+            "RawQuery": "",
+            "Scheme": "mailto",
+            "User": null
+          },
+          {
+            "ForceQuery": false,
+            "Fragment": "",
+            "Host": "",
+            "OmitHost": false,
+            "Opaque": "example:resource:42",
+            "Path": "",
+            "RawFragment": "",
+            "RawPath": "",
+            "RawQuery": "",
+            "Scheme": "urn",
+            "User": null
+          }
+        ],
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ],
+    "uri_omithost": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": null,
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": null,
+        "Extensions": [
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAA="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              17
+            ],
+            "Value": "MB6GD2ZpbGU6L2V0Yy9ob3N0c4YLaHR0cHM6Ly94Lz8="
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": false,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": -1,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "Curve": {},
+          "X": 80527612254708336747106815715181406296025280908838692255815926123817433062651,
+          "Y": 115673565751581217905646036595678633507275212417454912740959438785024208126157
+        },
+        "PublicKeyAlgorithm": 3,
+        "Raw": "MIIBlDCCATugAwIBAgIDCgsMMAoGCCqGSM49BAMCMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASyCQNqwNwoBkqehW0poEVzKe7gYXDZCtpIHWrQ0Nxc+/+86weTvWvIFgOAi0tSVVRV10t0oYOLtXqLtrpyy8DNozYwNDAJBgNVHRMEAjAAMCcGA1UdEQQgMB6GD2ZpbGU6L2V0Yy9ob3N0c4YLaHR0cHM6Ly94Lz8wCgYIKoZIzj0EAwIDRwAwRAIgaAYCi6C5PCFQi+Epzr0XqSiD9X3fk4GL8Vn/oEe8JO4CIBjbg3Tx4vNsIPCXpUgWbkh0OV4MzH0USyJIPxpk32aQ",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsgkDasDcKAZKnoVtKaBFcynu4GFw2QraSB1q0NDcXPv/vOsHk71ryBYDgItLUlVUVddLdKGDi7V6i7a6csvAzQ==",
+        "RawTBSCertificate": "MIIBO6ADAgECAgMKCwwwCgYIKoZIzj0EAwIwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLIJA2rA3CgGSp6FbSmgRXMp7uBhcNkK2kgdatDQ3Fz7/7zrB5O9a8gWA4CLS1JVVFXXS3Shg4u1eou2unLLwM2jNjA0MAkGA1UdEwQCMAAwJwYDVR0RBCAwHoYPZmlsZTovZXRjL2hvc3RzhgtodHRwczovL3gvPw==",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "MEQCIGgGAouguTwhUIvhKc69F6kog/V935OBi/FZ/6BHvCTuAiAY24N08eLzbCDwl6VIFm5IdDleDMx9FEsiSD8aZN9mkA==",
+        "SignatureAlgorithm": 10,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": [
+          "file:/etc/hosts",
+          "https://x/?"
+        ],
+        "URIs": [
+          {
+            "ForceQuery": false,
+            "Fragment": "",
+            "Host": "",
+            "OmitHost": true,
+            "Opaque": "",
+            "Path": "/etc/hosts",
+            "RawFragment": "",
+            "RawPath": "",
+            "RawQuery": "",
+            "Scheme": "file",
+            "User": null
+          },
+          {
+            "ForceQuery": true,
+            "Fragment": "",
+            "Host": "x",
+            "OmitHost": false,
+            "Opaque": "",
+            "Path": "/",
+            "RawFragment": "",
+            "RawPath": "",
+            "RawQuery": "",
+            "Scheme": "https",
+            "User": null
+          }
+        ],
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ],
+    "ip_forms": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": null,
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": null,
+        "Extensions": [
+          {
+            "Critical": true,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAA="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              17
+            ],
+            "Value": "MGCHEAAAAAAAAAAAAAD//8AAAgGHEAAAAAAAAAAAAAAAAAAAAACHECABDbgAAAAAAAEAAAAAAAGHECABDbgAAAABAAEAAQABAAGHEP6AAAAAAAAAAAAAAAAAAAGHBMAAAns="
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": [
+          "192.0.2.1",
+          "::",
+          "2001:db8::1:0:0:1",
+          "2001:db8:0:1:1:1:1:1",
+          "fe80::1",
+          "192.0.2.123"
+        ],
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": false,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": -1,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "E": 65537,
+          "N": 19651153670373098659030728642359806478067396398755102395472744719929644990693130231011662779720234971114819045263934842081349670515109654185512516183252267890106130131662728677168245613017741938064352505578860352234376047206691261418513175968065989183668717583003333717906097192170476356153745967063822220252358938568734587755018232626250040651997581913924372294025603696459119459204734422450906581922334872579422121134192959574661174832331562177022629364456847256622647762802862530261755472912987642182582319740111961040551524599893673762738666798834432307772669207673166836149216223109103509924099672942365915266547
+        },
+        "PublicKeyAlgorithm": 1,
+        "Raw": "MIIDZjCCAk6gAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcPjU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhTo7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNIqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUsOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjezB5MAwGA1UdEwEB/wQCMAAwaQYDVR0RBGIwYIcQAAAAAAAAAAAAAP//wAACAYcQAAAAAAAAAAAAAAAAAAAAAIcQIAENuAAAAAAAAQAAAAAAAYcQIAENuAAAAAEAAQABAAEAAYcQ/oAAAAAAAAAAAAAAAAAAAYcEwAACezANBgkqhkiG9w0BAQsFAAOCAQEAQiigfuJxFLUCYE6n8GrURFPYD1OmQxoGqrKReV3/g9MCMCVNer2y8Oq/jbCVfy2UxSP9Mh+84ElSKzdwe5stNV02HX5kOe9x5W+FuA1826eF5GmIQRKpa4fD67I3Yj29FXk1VTTXOcy4bvPTQMIDouY3orFiyx+bEOf1pNRgRC6S9gCYxafeBmVmrfzO3F/AUpqd4SeV90Rv9a+QcWoP0IW35GOtEq3r7qQ0nuV8FkVT7V3n2QtNE0AsGOOK2qfGGPAMRHJJZ3Ok6vbf2d7Uwzj1YpTpnYMHg6Kc1nhP7ZQB02AQIGbl1jxM8zmwdJdlmNy43PZGNgz2Wh9CCZ4dWQ==",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm6rIiI6gmfJam+t/BtGbK/g/APzbkxoEay13D41O4bp1aA0HKGrf1XRsMNfIv3B4ntjL1AxdvPWYT7E7Q1g8gtJmtA/nVyeVcBpEx+gEDzfEoSF/dPajjfoqIcDo8OFugv01NZ2tInaG8oDM1O0j4AtVNwv0SqB/+usYU6O2ub71+5S4mN4AQOBht/GsH8ipupYKA7LwvQzhPVQXOTaYjfin58R21vvwmJGjSKn3/KGjnC0vTjHKJL31X5c4/z5hlh3+o/xCogO+LWwh5yLS38ExubjgrFQ5GQoFLDgWNWk86mqf+9SmRXdxtL10LwQQd7LMO7/BT211+CibLNy98wIDAQAB",
+        "RawTBSCertificate": "MIICTqADAgECAgMKCwwwDQYJKoZIhvcNAQELBQAwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJuqyIiOoJnyWpvrfwbRmyv4PwD825MaBGstdw+NTuG6dWgNByhq39V0bDDXyL9weJ7Yy9QMXbz1mE+xO0NYPILSZrQP51cnlXAaRMfoBA83xKEhf3T2o436KiHA6PDhboL9NTWdrSJ2hvKAzNTtI+ALVTcL9Eqgf/rrGFOjtrm+9fuUuJjeAEDgYbfxrB/IqbqWCgOy8L0M4T1UFzk2mI34p+fEdtb78JiRo0ip9/yho5wtL04xyiS99V+XOP8+YZYd/qP8QqIDvi1sIeci0t/BMbm44KxUORkKBSw4FjVpPOpqn/vUpkV3cbS9dC8EEHeyzDu/wU9tdfgomyzcvfMCAwEAAaN7MHkwDAYDVR0TAQH/BAIwADBpBgNVHREEYjBghxAAAAAAAAAAAAAA///AAAIBhxAAAAAAAAAAAAAAAAAAAAAAhxAgAQ24AAAAAAABAAAAAAABhxAgAQ24AAAAAQABAAEAAQABhxD+gAAAAAAAAAAAAAAAAAABhwTAAAJ7",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "QiigfuJxFLUCYE6n8GrURFPYD1OmQxoGqrKReV3/g9MCMCVNer2y8Oq/jbCVfy2UxSP9Mh+84ElSKzdwe5stNV02HX5kOe9x5W+FuA1826eF5GmIQRKpa4fD67I3Yj29FXk1VTTXOcy4bvPTQMIDouY3orFiyx+bEOf1pNRgRC6S9gCYxafeBmVmrfzO3F/AUpqd4SeV90Rv9a+QcWoP0IW35GOtEq3r7qQ0nuV8FkVT7V3n2QtNE0AsGOOK2qfGGPAMRHJJZ3Ok6vbf2d7Uwzj1YpTpnYMHg6Kc1nhP7ZQB02AQIGbl1jxM8zmwdJdlmNy43PZGNgz2Wh9CCZ4dWQ==",
+        "SignatureAlgorithm": 4,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": null,
+        "URIs": null,
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ],
+    "eku_any": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": null,
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": [
+          0
+        ],
+        "Extensions": [
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAA="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              37
+            ],
+            "Value": "MAYGBFUdJQA="
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": false,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": -1,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "Curve": {},
+          "X": 80527612254708336747106815715181406296025280908838692255815926123817433062651,
+          "Y": 115673565751581217905646036595678633507275212417454912740959438785024208126157
+        },
+        "PublicKeyAlgorithm": 3,
+        "Raw": "MIIBfjCCASOgAwIBAgIDCgsMMAoGCCqGSM49BAMCMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASyCQNqwNwoBkqehW0poEVzKe7gYXDZCtpIHWrQ0Nxc+/+86weTvWvIFgOAi0tSVVRV10t0oYOLtXqLtrpyy8DNox4wHDAJBgNVHRMEAjAAMA8GA1UdJQQIMAYGBFUdJQAwCgYIKoZIzj0EAwIDSQAwRgIhAOrwOFkSzSCOdm2sX/7/xaH/w6pgir921PwM839zSmBlAiEAzOG+zrRxwrOyLG5Q6s92mCN1aW8l74yMD0B5wdQs2JY=",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsgkDasDcKAZKnoVtKaBFcynu4GFw2QraSB1q0NDcXPv/vOsHk71ryBYDgItLUlVUVddLdKGDi7V6i7a6csvAzQ==",
+        "RawTBSCertificate": "MIIBI6ADAgECAgMKCwwwCgYIKoZIzj0EAwIwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLIJA2rA3CgGSp6FbSmgRXMp7uBhcNkK2kgdatDQ3Fz7/7zrB5O9a8gWA4CLS1JVVFXXS3Shg4u1eou2unLLwM2jHjAcMAkGA1UdEwQCMAAwDwYDVR0lBAgwBgYEVR0lAA==",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "MEYCIQDq8DhZEs0gjnZtrF/+/8Wh/8OqYIq/dtT8DPN/c0pgZQIhAMzhvs60ccKzsixuUOrPdpgjdWlvJe+MjA9AecHULNiW",
+        "SignatureAlgorithm": 10,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": null,
+        "URIs": null,
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ]
+  },
+  "edges": {
+    "empty": [],
+    "garbage": "__undef__",
+    "der_base64": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": [
+          "leaf.example.com"
+        ],
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": null,
+        "Extensions": [
+          {
+            "Critical": true,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAA="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              17
+            ],
+            "Value": "MBKCEGxlYWYuZXhhbXBsZS5jb20="
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": false,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": -1,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "E": 65537,
+          "N": 19651153670373098659030728642359806478067396398755102395472744719929644990693130231011662779720234971114819045263934842081349670515109654185512516183252267890106130131662728677168245613017741938064352505578860352234376047206691261418513175968065989183668717583003333717906097192170476356153745967063822220252358938568734587755018232626250040651997581913924372294025603696459119459204734422450906581922334872579422121134192959574661174832331562177022629364456847256622647762802862530261755472912987642182582319740111961040551524599893673762738666798834432307772669207673166836149216223109103509924099672942365915266547
+        },
+        "PublicKeyAlgorithm": 1,
+        "Raw": "MIIDGDCCAgCgAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcPjU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhTo7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNIqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUsOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjLTArMAwGA1UdEwEB/wQCMAAwGwYDVR0RBBQwEoIQbGVhZi5leGFtcGxlLmNvbTANBgkqhkiG9w0BAQsFAAOCAQEAZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++MonQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+VpBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWKvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XSj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uysbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm6rIiI6gmfJam+t/BtGbK/g/APzbkxoEay13D41O4bp1aA0HKGrf1XRsMNfIv3B4ntjL1AxdvPWYT7E7Q1g8gtJmtA/nVyeVcBpEx+gEDzfEoSF/dPajjfoqIcDo8OFugv01NZ2tInaG8oDM1O0j4AtVNwv0SqB/+usYU6O2ub71+5S4mN4AQOBht/GsH8ipupYKA7LwvQzhPVQXOTaYjfin58R21vvwmJGjSKn3/KGjnC0vTjHKJL31X5c4/z5hlh3+o/xCogO+LWwh5yLS38ExubjgrFQ5GQoFLDgWNWk86mqf+9SmRXdxtL10LwQQd7LMO7/BT211+CibLNy98wIDAQAB",
+        "RawTBSCertificate": "MIICAKADAgECAgMKCwwwDQYJKoZIhvcNAQELBQAwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJuqyIiOoJnyWpvrfwbRmyv4PwD825MaBGstdw+NTuG6dWgNByhq39V0bDDXyL9weJ7Yy9QMXbz1mE+xO0NYPILSZrQP51cnlXAaRMfoBA83xKEhf3T2o436KiHA6PDhboL9NTWdrSJ2hvKAzNTtI+ALVTcL9Eqgf/rrGFOjtrm+9fuUuJjeAEDgYbfxrB/IqbqWCgOy8L0M4T1UFzk2mI34p+fEdtb78JiRo0ip9/yho5wtL04xyiS99V+XOP8+YZYd/qP8QqIDvi1sIeci0t/BMbm44KxUORkKBSw4FjVpPOpqn/vUpkV3cbS9dC8EEHeyzDu/wU9tdfgomyzcvfMCAwEAAaMtMCswDAYDVR0TAQH/BAIwADAbBgNVHREEFDASghBsZWFmLmV4YW1wbGUuY29t",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "ZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++MonQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+VpBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWKvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XSj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uysbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==",
+        "SignatureAlgorithm": 4,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": null,
+        "URIs": null,
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ],
+    "multi_pem": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": [
+          "leaf.example.com"
+        ],
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": null,
+        "Extensions": [
+          {
+            "Critical": true,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAA="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              17
+            ],
+            "Value": "MBKCEGxlYWYuZXhhbXBsZS5jb20="
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": false,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": -1,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "E": 65537,
+          "N": 19651153670373098659030728642359806478067396398755102395472744719929644990693130231011662779720234971114819045263934842081349670515109654185512516183252267890106130131662728677168245613017741938064352505578860352234376047206691261418513175968065989183668717583003333717906097192170476356153745967063822220252358938568734587755018232626250040651997581913924372294025603696459119459204734422450906581922334872579422121134192959574661174832331562177022629364456847256622647762802862530261755472912987642182582319740111961040551524599893673762738666798834432307772669207673166836149216223109103509924099672942365915266547
+        },
+        "PublicKeyAlgorithm": 1,
+        "Raw": "MIIDGDCCAgCgAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcPjU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhTo7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNIqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUsOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjLTArMAwGA1UdEwEB/wQCMAAwGwYDVR0RBBQwEoIQbGVhZi5leGFtcGxlLmNvbTANBgkqhkiG9w0BAQsFAAOCAQEAZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++MonQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+VpBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWKvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XSj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uysbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm6rIiI6gmfJam+t/BtGbK/g/APzbkxoEay13D41O4bp1aA0HKGrf1XRsMNfIv3B4ntjL1AxdvPWYT7E7Q1g8gtJmtA/nVyeVcBpEx+gEDzfEoSF/dPajjfoqIcDo8OFugv01NZ2tInaG8oDM1O0j4AtVNwv0SqB/+usYU6O2ub71+5S4mN4AQOBht/GsH8ipupYKA7LwvQzhPVQXOTaYjfin58R21vvwmJGjSKn3/KGjnC0vTjHKJL31X5c4/z5hlh3+o/xCogO+LWwh5yLS38ExubjgrFQ5GQoFLDgWNWk86mqf+9SmRXdxtL10LwQQd7LMO7/BT211+CibLNy98wIDAQAB",
+        "RawTBSCertificate": "MIICAKADAgECAgMKCwwwDQYJKoZIhvcNAQELBQAwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJuqyIiOoJnyWpvrfwbRmyv4PwD825MaBGstdw+NTuG6dWgNByhq39V0bDDXyL9weJ7Yy9QMXbz1mE+xO0NYPILSZrQP51cnlXAaRMfoBA83xKEhf3T2o436KiHA6PDhboL9NTWdrSJ2hvKAzNTtI+ALVTcL9Eqgf/rrGFOjtrm+9fuUuJjeAEDgYbfxrB/IqbqWCgOy8L0M4T1UFzk2mI34p+fEdtb78JiRo0ip9/yho5wtL04xyiS99V+XOP8+YZYd/qP8QqIDvi1sIeci0t/BMbm44KxUORkKBSw4FjVpPOpqn/vUpkV3cbS9dC8EEHeyzDu/wU9tdfgomyzcvfMCAwEAAaMtMCswDAYDVR0TAQH/BAIwADAbBgNVHREEFDASghBsZWFmLmV4YW1wbGUuY29t",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "ZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++MonQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+VpBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWKvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XSj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uysbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==",
+        "SignatureAlgorithm": 4,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": null,
+        "URIs": null,
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      },
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": null,
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": [
+          0
+        ],
+        "Extensions": [
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAA="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              37
+            ],
+            "Value": "MAYGBFUdJQA="
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": false,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": -1,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "Curve": {},
+          "X": 80527612254708336747106815715181406296025280908838692255815926123817433062651,
+          "Y": 115673565751581217905646036595678633507275212417454912740959438785024208126157
+        },
+        "PublicKeyAlgorithm": 3,
+        "Raw": "MIIBfjCCASOgAwIBAgIDCgsMMAoGCCqGSM49BAMCMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASyCQNqwNwoBkqehW0poEVzKe7gYXDZCtpIHWrQ0Nxc+/+86weTvWvIFgOAi0tSVVRV10t0oYOLtXqLtrpyy8DNox4wHDAJBgNVHRMEAjAAMA8GA1UdJQQIMAYGBFUdJQAwCgYIKoZIzj0EAwIDSQAwRgIhAOrwOFkSzSCOdm2sX/7/xaH/w6pgir921PwM839zSmBlAiEAzOG+zrRxwrOyLG5Q6s92mCN1aW8l74yMD0B5wdQs2JY=",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsgkDasDcKAZKnoVtKaBFcynu4GFw2QraSB1q0NDcXPv/vOsHk71ryBYDgItLUlVUVddLdKGDi7V6i7a6csvAzQ==",
+        "RawTBSCertificate": "MIIBI6ADAgECAgMKCwwwCgYIKoZIzj0EAwIwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLIJA2rA3CgGSp6FbSmgRXMp7uBhcNkK2kgdatDQ3Fz7/7zrB5O9a8gWA4CLS1JVVFXXS3Shg4u1eou2unLLwM2jHjAcMAkGA1UdEwQCMAAwDwYDVR0lBAgwBgYEVR0lAA==",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "MEYCIQDq8DhZEs0gjnZtrF/+/8Wh/8OqYIq/dtT8DPN/c0pgZQIhAMzhvs60ccKzsixuUOrPdpgjdWlvJe+MjA9AecHULNiW",
+        "SignatureAlgorithm": 10,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": null,
+        "URIs": null,
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ],
+    "bad_uri_san": "__undef__",
+    "pem_with_key_block": "__undef__",
+    "trailing_junk": [
+      {
+        "AuthorityKeyId": null,
+        "BasicConstraintsValid": true,
+        "CRLDistributionPoints": null,
+        "DNSNames": [
+          "leaf.example.com"
+        ],
+        "EmailAddresses": null,
+        "ExcludedDNSDomains": null,
+        "ExcludedEmailAddresses": null,
+        "ExcludedIPRanges": null,
+        "ExcludedURIDomains": null,
+        "ExtKeyUsage": null,
+        "Extensions": [
+          {
+            "Critical": true,
+            "Id": [
+              2,
+              5,
+              29,
+              19
+            ],
+            "Value": "MAA="
+          },
+          {
+            "Critical": false,
+            "Id": [
+              2,
+              5,
+              29,
+              17
+            ],
+            "Value": "MBKCEGxlYWYuZXhhbXBsZS5jb20="
+          }
+        ],
+        "ExtraExtensions": null,
+        "IPAddresses": null,
+        "InhibitAnyPolicy": 0,
+        "InhibitAnyPolicyZero": false,
+        "InhibitPolicyMapping": 0,
+        "InhibitPolicyMappingZero": false,
+        "IsCA": false,
+        "Issuer": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "IssuingCertificateURL": null,
+        "KeyUsage": 0,
+        "MaxPathLen": -1,
+        "MaxPathLenZero": false,
+        "NotAfter": "2030-06-07T08:09:10Z",
+        "NotBefore": "2026-01-02T03:04:05Z",
+        "OCSPServer": null,
+        "PermittedDNSDomains": null,
+        "PermittedDNSDomainsCritical": false,
+        "PermittedEmailAddresses": null,
+        "PermittedIPRanges": null,
+        "PermittedURIDomains": null,
+        "Policies": null,
+        "PolicyIdentifiers": null,
+        "PolicyMappings": null,
+        "PublicKey": {
+          "E": 65537,
+          "N": 19651153670373098659030728642359806478067396398755102395472744719929644990693130231011662779720234971114819045263934842081349670515109654185512516183252267890106130131662728677168245613017741938064352505578860352234376047206691261418513175968065989183668717583003333717906097192170476356153745967063822220252358938568734587755018232626250040651997581913924372294025603696459119459204734422450906581922334872579422121134192959574661174832331562177022629364456847256622647762802862530261755472912987642182582319740111961040551524599893673762738666798834432307772669207673166836149216223109103509924099672942365915266547
+        },
+        "PublicKeyAlgorithm": 1,
+        "Raw": "MIIDGDCCAgCgAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcPjU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhTo7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNIqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUsOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjLTArMAwGA1UdEwEB/wQCMAAwGwYDVR0RBBQwEoIQbGVhZi5leGFtcGxlLmNvbTANBgkqhkiG9w0BAQsFAAOCAQEAZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++MonQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+VpBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWKvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XSj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uysbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==",
+        "RawIssuer": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubject": "MDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29t",
+        "RawSubjectPublicKeyInfo": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm6rIiI6gmfJam+t/BtGbK/g/APzbkxoEay13D41O4bp1aA0HKGrf1XRsMNfIv3B4ntjL1AxdvPWYT7E7Q1g8gtJmtA/nVyeVcBpEx+gEDzfEoSF/dPajjfoqIcDo8OFugv01NZ2tInaG8oDM1O0j4AtVNwv0SqB/+usYU6O2ub71+5S4mN4AQOBht/GsH8ipupYKA7LwvQzhPVQXOTaYjfin58R21vvwmJGjSKn3/KGjnC0vTjHKJL31X5c4/z5hlh3+o/xCogO+LWwh5yLS38ExubjgrFQ5GQoFLDgWNWk86mqf+9SmRXdxtL10LwQQd7LMO7/BT211+CibLNy98wIDAQAB",
+        "RawTBSCertificate": "MIICAKADAgECAgMKCwwwDQYJKoZIhvcNAQELBQAwNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wHhcNMjYwMTAyMDMwNDA1WhcNMzAwNjA3MDgwOTEwWjA3MQswCQYDVQQGEwJVUzENMAsGA1UECgwEQWNtZTEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJuqyIiOoJnyWpvrfwbRmyv4PwD825MaBGstdw+NTuG6dWgNByhq39V0bDDXyL9weJ7Yy9QMXbz1mE+xO0NYPILSZrQP51cnlXAaRMfoBA83xKEhf3T2o436KiHA6PDhboL9NTWdrSJ2hvKAzNTtI+ALVTcL9Eqgf/rrGFOjtrm+9fuUuJjeAEDgYbfxrB/IqbqWCgOy8L0M4T1UFzk2mI34p+fEdtb78JiRo0ip9/yho5wtL04xyiS99V+XOP8+YZYd/qP8QqIDvi1sIeci0t/BMbm44KxUORkKBSw4FjVpPOpqn/vUpkV3cbS9dC8EEHeyzDu/wU9tdfgomyzcvfMCAwEAAaMtMCswDAYDVR0TAQH/BAIwADAbBgNVHREEFDASghBsZWFmLmV4YW1wbGUuY29t",
+        "RequireExplicitPolicy": 0,
+        "RequireExplicitPolicyZero": false,
+        "SerialNumber": 658188,
+        "Signature": "ZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++MonQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+VpBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWKvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XSj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uysbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==",
+        "SignatureAlgorithm": 4,
+        "Subject": {
+          "CommonName": "test.example.com",
+          "Country": [
+            "US"
+          ],
+          "ExtraNames": null,
+          "Locality": null,
+          "Names": [
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                6
+              ],
+              "Value": "US"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                10
+              ],
+              "Value": "Acme"
+            },
+            {
+              "Type": [
+                2,
+                5,
+                4,
+                3
+              ],
+              "Value": "test.example.com"
+            }
+          ],
+          "Organization": [
+            "Acme"
+          ],
+          "OrganizationalUnit": null,
+          "PostalCode": null,
+          "Province": null,
+          "SerialNumber": "",
+          "StreetAddress": null
+        },
+        "SubjectKeyId": null,
+        "URIStrings": null,
+        "URIs": null,
+        "UnhandledCriticalExtensions": null,
+        "UnknownExtKeyUsage": null,
+        "Version": 3
+      }
+    ],
+    "leading_junk": "__undef__",
+    "leading_space": "__undef__"
+  },
+  "edge_inputs": {
+    "empty": "",
+    "garbage": "not a certificate",
+    "der_base64": "MIIDGDCCAgCgAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcPjU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhTo7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNIqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUsOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjLTArMAwGA1UdEwEB/wQCMAAwGwYDVR0RBBQwEoIQbGVhZi5leGFtcGxlLmNvbTANBgkqhkiG9w0BAQsFAAOCAQEAZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++MonQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+VpBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWKvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XSj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uysbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==",
+    "multi_pem": "-----BEGIN CERTIFICATE-----\nMIIDGDCCAgCgAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVT\nMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2\nMDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNV\nBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcP\njU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH\n6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhT\no7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNI\nqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUs\nOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjLTArMAwG\nA1UdEwEB/wQCMAAwGwYDVR0RBBQwEoIQbGVhZi5leGFtcGxlLmNvbTANBgkqhkiG\n9w0BAQsFAAOCAQEAZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++Mo\nnQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+V\npBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWK\nvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XS\nj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uy\nsbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIBfjCCASOgAwIBAgIDCgsMMAoGCCqGSM49BAMCMDcxCzAJBgNVBAYTAlVTMQ0w\nCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEw\nMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoM\nBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggq\nhkjOPQMBBwNCAASyCQNqwNwoBkqehW0poEVzKe7gYXDZCtpIHWrQ0Nxc+/+86weT\nvWvIFgOAi0tSVVRV10t0oYOLtXqLtrpyy8DNox4wHDAJBgNVHRMEAjAAMA8GA1Ud\nJQQIMAYGBFUdJQAwCgYIKoZIzj0EAwIDSQAwRgIhAOrwOFkSzSCOdm2sX/7/xaH/\nw6pgir921PwM839zSmBlAiEAzOG+zrRxwrOyLG5Q6s92mCN1aW8l74yMD0B5wdQs\n2JY=\n-----END CERTIFICATE-----\n",
+    "bad_uri_san": "-----BEGIN CERTIFICATE-----\nMIIBkDCCATWgAwIBAgIDCgsMMAoGCCqGSM49BAMCMDcxCzAJBgNVBAYTAlVTMQ0w\nCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2MDEw\nMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNVBAoM\nBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggq\nhkjOPQMBBwNCAASyCQNqwNwoBkqehW0poEVzKe7gYXDZCtpIHWrQ0Nxc+/+86weT\nvWvIFgOAi0tSVVRV10t0oYOLtXqLtrpyy8DNozAwLjAJBgNVHRMEAjAAMCEGA1Ud\nEQQaMBiGFmh0dHA6Ly9leGFtcGxlLmNvbS8lenowCgYIKoZIzj0EAwIDSQAwRgIh\nAJN/A3rfj2ltddZpsalbLbUH3RKW0pjpVAHZpKsy1KLwAiEAk9dnzqqjOtQ4qo9G\na8Zqf5ACBQQpLaZaBE9BjVz+N6s=\n-----END CERTIFICATE-----\n",
+    "pem_with_key_block": "-----BEGIN CERTIFICATE-----\nMIIDGDCCAgCgAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVT\nMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2\nMDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNV\nBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcP\njU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH\n6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhT\no7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNI\nqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUs\nOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjLTArMAwG\nA1UdEwEB/wQCMAAwGwYDVR0RBBQwEoIQbGVhZi5leGFtcGxlLmNvbTANBgkqhkiG\n9w0BAQsFAAOCAQEAZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++Mo\nnQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+V\npBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWK\nvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XS\nj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uy\nsbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==\n-----END CERTIFICATE-----\n-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n",
+    "trailing_junk": "-----BEGIN CERTIFICATE-----\nMIIDGDCCAgCgAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVT\nMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2\nMDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNV\nBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcP\njU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH\n6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhT\no7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNI\nqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUs\nOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjLTArMAwG\nA1UdEwEB/wQCMAAwGwYDVR0RBBQwEoIQbGVhZi5leGFtcGxlLmNvbTANBgkqhkiG\n9w0BAQsFAAOCAQEAZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++Mo\nnQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+V\npBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWK\nvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XS\nj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uy\nsbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==\n-----END CERTIFICATE-----\ntrailing junk\n",
+    "leading_junk": "leading junk\n-----BEGIN CERTIFICATE-----\nMIIDGDCCAgCgAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVT\nMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2\nMDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNV\nBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcP\njU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH\n6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhT\no7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNI\nqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUs\nOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjLTArMAwG\nA1UdEwEB/wQCMAAwGwYDVR0RBBQwEoIQbGVhZi5leGFtcGxlLmNvbTANBgkqhkiG\n9w0BAQsFAAOCAQEAZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++Mo\nnQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+V\npBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWK\nvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XS\nj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uy\nsbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==\n-----END CERTIFICATE-----\n",
+    "leading_space": " -----BEGIN CERTIFICATE-----\nMIIDGDCCAgCgAwIBAgIDCgsMMA0GCSqGSIb3DQEBCwUAMDcxCzAJBgNVBAYTAlVT\nMQ0wCwYDVQQKDARBY21lMRkwFwYDVQQDDBB0ZXN0LmV4YW1wbGUuY29tMB4XDTI2\nMDEwMjAzMDQwNVoXDTMwMDYwNzA4MDkxMFowNzELMAkGA1UEBhMCVVMxDTALBgNV\nBAoMBEFjbWUxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3\nDQEBAQUAA4IBDwAwggEKAoIBAQCbqsiIjqCZ8lqb638G0Zsr+D8A/NuTGgRrLXcP\njU7hunVoDQcoat/VdGww18i/cHie2MvUDF289ZhPsTtDWDyC0ma0D+dXJ5VwGkTH\n6AQPN8ShIX909qON+iohwOjw4W6C/TU1na0idobygMzU7SPgC1U3C/RKoH/66xhT\no7a5vvX7lLiY3gBA4GG38awfyKm6lgoDsvC9DOE9VBc5NpiN+KfnxHbW+/CYkaNI\nqff8oaOcLS9OMcokvfVflzj/PmGWHf6j/EKiA74tbCHnItLfwTG5uOCsVDkZCgUs\nOBY1aTzqap/71KZFd3G0vXQvBBB3ssw7v8FPbXX4KJss3L3zAgMBAAGjLTArMAwG\nA1UdEwEB/wQCMAAwGwYDVR0RBBQwEoIQbGVhZi5leGFtcGxlLmNvbTANBgkqhkiG\n9w0BAQsFAAOCAQEAZM/ymmOpYoqTp2SBdIEd/4pFFc1KhH/chocLPC4T/kt9++Mo\nnQfuoH+Q9hDytDpvr6/MoU3i3NfVnFxorZI7LOXJiu+g0bTt1NWpNCyJQS+6aW+V\npBZ221NmaHxRwiVNWJbBCY5vkyD9XieUsehgyaNBQXnkTLe0h0r9UqYvLeYaODWK\nvvSEeX3Ue0eSRURxxbWLcGf/zT/4QsOXQ243CyWVT/TxRNzHp99Mw1x3Do1jm4XS\nj9rW6kOVNcwN3zKtIpoaVcjJhGOgHzlHbUfCck2iNZVm82c65cAtDMwbCpCps7uy\nsbR9fNyFwfOJ+7LDxbZNblm4j7Kla63G+tB75Q==\n-----END CERTIFICATE-----\n"
+  }
+}
