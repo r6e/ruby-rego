@@ -494,6 +494,79 @@ module Ruby
         def self.uint32: (Array[Integer] bytes, Integer offset) -> Integer
       end
 
+      module Uri
+        extend RegistryHelpers
+
+        URI_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.parse: (Value value) -> (Hash[String, untyped] | UndefinedValue)
+        def self.is_valid: (Value value) -> BooleanValue
+
+        private
+
+        def self.parseable_encoding?: (String string) -> bool
+        def self.uri_object: (Uri::Parser::Components components) -> Hash[String, untyped]
+        def self.add_path: (Hash[String, untyped] object, Uri::Parser::Components components) -> void
+        def self.add: (Hash[String, untyped] object, String key, String? value) -> void
+
+        # Faithful port of Go's net/url.Parse.
+        module Parser
+          PATH: Symbol
+          HOST: Symbol
+          ZONE: Symbol
+          USER_PASSWORD: Symbol
+          FRAGMENT: Symbol
+          UPPERHEX: String
+          HOST_SUBDELIMS: Array[Integer]
+          FRAGMENT_SUBDELIMS: Array[Integer]
+          USERINFO_PUNCT: Array[Integer]
+
+          class Components
+            attr_accessor scheme: String?
+            attr_accessor host: String?
+            attr_accessor path: String?
+            attr_accessor raw_path: String?
+            attr_accessor raw_query: String?
+            attr_accessor fragment: String?
+            def initialize: (?scheme: String?, ?host: String?, ?path: String?, ?raw_path: String?, ?raw_query: String?, ?fragment: String?) -> void
+          end
+
+          def self.parse: (String raw) -> Components?
+          def self.hostname: (String host) -> String
+          def self.port: (String host) -> String
+
+          private
+
+          def self.parse_url: (String raw, via_request: bool) -> Components?
+          def self.get_scheme: (String raw) -> [String, String]?
+          def self.parse_host: (String host) -> String?
+          def self.unescape: (String string, Symbol mode) -> String?
+          def self.escape: (String string, Symbol mode) -> String
+          def self.should_escape?: (Integer byte, Symbol mode) -> bool
+          def self.path_only: (Components url, String path) -> Components
+          def self.split_query: (Components url, String rest) -> String
+          def self.first_segment_has_colon?: (String rest) -> bool
+          def self.authority?: (String scheme, String rest, bool via_request) -> bool
+          def self.split_authority: (String rest) -> [String, String]
+          def self.parse_authority: (String authority) -> String?
+          def self.parse_bracketed_host: (String host) -> String?
+          def self.unescape_bracketed: (String content) -> String?
+          def self.valid_ipv6?: (String unescaped) -> bool
+          def self.set_path: (Components url, String escaped) -> bool
+          def self.alphanumeric?: (Integer byte) -> bool
+          def self.reserved_should_escape?: (Integer byte, Symbol mode) -> bool
+          def self.valid_optional_port?: (String port) -> bool
+          def self.valid_userinfo?: (String string) -> bool
+          def self.contains_ctl_byte?: (String string) -> bool
+          def self.ishex?: (Integer? byte) -> bool
+          def self.unhex: (Integer byte) -> Integer
+          def self.split_host_port: (String host_port) -> [String, String]
+          def self.triplet_is_pct25?: (String bytes, Integer index) -> bool
+          def self.illegal_zone_byte?: (String bytes, Integer index, Integer value) -> bool
+        end
+      end
+
       module Times
         extend RegistryHelpers
 

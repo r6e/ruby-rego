@@ -67,9 +67,10 @@ Remaining (~88), highest compat-per-effort first:
 
 - 🟡 Small / self-contained: ✅ `array.flatten`, `object.subset`, `uuid.parse`,
   `uuid.rfc4122` (per-eval random generator memoized by key via the Evaluator#impure_registry
-  overlay), `graph.reachable`/`graph.reachable_paths`. Remaining: `uri.parse`/`uri.is_valid` (thin
-  wrappers over Go `net/url.Parse` — needs a faithful port of Go's lenient parser *and its exact
-  error set*, since Ruby `URI` diverges; own PR), `strings.render_template`.
+  overlay), `graph.reachable`/`graph.reachable_paths`, `uri.parse`/`uri.is_valid` (a full
+  byte-exact port of Go's net/url.Parse — lenient parsing, the RawPath quirk, host/port rules,
+  IPv6-literal validation, and the exact error set — since Ruby's URI diverges; see uri/parser.rb).
+  Remaining: `strings.render_template`.
 - ✅ Net: `net.cidr_merge` (Cilium range-merge port; RFC 5952 IPv6 output). (`net.cidr_overlap`
   is deprecated and rejected by OPA at compile time — intentionally omitted. `net.lookup_ip_addr`
   does DNS — deferred as side-effecting.)
