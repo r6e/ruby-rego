@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "base64"
 require "json"
 require_relative "base"
+require_relative "base64url"
 require_relative "registry"
 require_relative "registry_helpers"
 
@@ -102,36 +102,19 @@ module Ruby
         end
         private_class_method :decode_object
 
-        # The raw bytes of one base64url segment (padding optional, as OPA tolerates), or nil when the
-        # segment is not valid base64url (a standard-base64 '+'/'/' or bad padding -> nil -> undefined).
-        # Base64.urlsafe_decode64 maps '-'/'_' to '+'/'/' then strict-decodes, so a standard-base64
-        # '+'/'/' would slip through; reject those explicitly to match Go's base64url alphabet.
-        #
-        # Gem-more-strict divergence (safe direction, crafted input only): strict_decode64 rejects a
-        # final base64url character whose unused low bits are non-zero (e.g. a 2-char segment "AB"),
-        # whereas Go masks those bits and decodes. The gem returns undefined where OPA would decode;
-        # canonical encoders never emit such a segment, so real tokens are unaffected.
+        # The raw bytes of one base64url segment, or nil when the segment is not canonical base64url (a
+        # standard-base64 '+'/'/' or non-canonical padding -> nil -> undefined). Base64Url.strict_decode
+        # enforces Go's URL-safe alphabet/padding (shared with base64url.decode); see it for the
+        # gem-more-strict trailing-bits divergence. The rescue is ArgumentError-only because `decode`'s
+        # ascii_compatible? guard already excludes the encodings whose strict_decode match? would raise
+        # Encoding::CompatibilityError — a segment of an ascii-compatible token is itself ascii-compatible.
         # :reek:NilCheck -- nil is the decode-failure sentinel.
         def self.decode_segment(segment)
-          return nil if segment.match?(%r{[+/]})
-
-          Base64.urlsafe_decode64(restore_padding(segment))
+          Base64Url.strict_decode(segment)
         rescue ArgumentError
           nil
         end
         private_class_method :decode_segment
-
-        # Restore '=' padding so an unpadded base64url segment (the JWT norm) decodes. A segment that
-        # already carries '=' is left untouched so a non-canonical pad (e.g. one '=' short of a 4-char
-        # block) stays un-decodable and maps to undefined, matching Go: padding the length out would let
-        # the gem decode a token OPA rejects.
-        def self.restore_padding(segment)
-          return segment if segment.end_with?("=")
-
-          remainder = segment.length % 4
-          remainder.zero? ? segment : segment + ("=" * (4 - remainder))
-        end
-        private_class_method :restore_padding
 
         # @param value [Ruby::Rego::Value]
         # @param context [String]
