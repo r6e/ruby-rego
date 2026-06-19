@@ -41,7 +41,8 @@ module Ruby
                 assign(name, oid, value)
               end
             end
-            name["Names"] = names
+            # Go's FillFromRDNSequence only appends, so an empty RDNSequence leaves Names a nil slice.
+            name["Names"] = names unless names.empty?
             name
           end
           # rubocop:enable Metrics/AbcSize, Metrics/MethodLength

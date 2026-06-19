@@ -435,7 +435,7 @@ module Ruby
           SUPPORTED_EC_CURVES: Array[String]
           RSA_PSS_NAME: String
           PSS_DIGEST_ALGORITHMS: Hash[String, Integer]
-          PUBLIC_KEY_ALGORITHMS: Hash[String, Integer]
+          PUBLIC_KEY_ALGORITHM_OIDS: Hash[String, Integer]
           ZERO_FIELDS: Hash[String, untyped]
           EXT_KEY_USAGES: Hash[String, Integer]
           NAME_CONSTRAINT_FIELDS: Hash[Integer, Array[String]]
@@ -458,6 +458,7 @@ module Ruby
           def self.scalar_fields: (untyped cert, untyped decoded) -> Hash[String, untyped]
           def self.signature_algorithm: (untyped cert, untyped decoded) -> Integer
           def self.raw_fields: (untyped cert, untyped tbs, untyped issuer, untyped subject, untyped spki) -> Hash[String, untyped]
+          def self.extension_nodes: (untyped tbs) -> untyped
           def self.extension_list: (untyped tbs) -> Array[untyped]?
           def self.rfc3339: (untyped time) -> String
           def self.b64: (String bytes) -> String

@@ -30,9 +30,12 @@ module Ruby
             "2.16.840.1.101.3.4.2.1" => 13, "2.16.840.1.101.3.4.2.2" => 14, "2.16.840.1.101.3.4.2.3" => 15
           }.freeze
 
-          # Go x509.PublicKeyAlgorithm enum, keyed by the key's OpenSSL oid.
-          PUBLIC_KEY_ALGORITHMS = {
-            "rsaEncryption" => 1, "DSA" => 2, "id-ecPublicKey" => 3, "ED25519" => 4
+          # Go x509.PublicKeyAlgorithm enum, keyed by the SubjectPublicKeyInfo algorithm OID. Keying on
+          # the DER OID (not OpenSSL's key object) lets an unsupported algorithm (e.g. X25519/Ed448,
+          # whose key OpenSSL cannot expose) map to UnknownPublicKeyAlgorithm(0) without raising.
+          PUBLIC_KEY_ALGORITHM_OIDS = {
+            "1.2.840.113549.1.1.1" => 1, "1.2.840.10040.4.1" => 2,
+            "1.2.840.10045.2.1" => 3, "1.3.101.112" => 4
           }.freeze
 
           # The certificate field hash at Go's zero values; computed fields override these.
@@ -76,11 +79,14 @@ module Ruby
             issuer = elements[serial_index + 2]
             subject = elements[serial_index + 4]
             spki = elements[serial_index + 5]
+            # A 0 (unknown) algorithm has PublicKey null and never calls cert.public_key (it raises for
+            # key types OpenSSL cannot represent), matching Go's UnknownPublicKeyAlgorithm handling.
+            algorithm = PUBLIC_KEY_ALGORITHM_OIDS.fetch(spki.value[0].value[0].oid, 0)
             fields = ZERO_FIELDS.merge(
               scalar_fields(cert, decoded),
               raw_fields(cert, tbs, issuer, subject, spki),
-              "PublicKey" => CertificateStruct.public_key(cert),
-              "PublicKeyAlgorithm" => PUBLIC_KEY_ALGORITHMS.fetch(cert.public_key.oid, 0),
+              "PublicKey" => algorithm.zero? ? nil : CertificateStruct.public_key(cert),
+              "PublicKeyAlgorithm" => algorithm,
               "Issuer" => Name.build(issuer),
               "Subject" => Name.build(subject),
               "Extensions" => extension_list(tbs)
@@ -154,21 +160,27 @@ module Ruby
           end
           private_class_method :raw_fields
 
-          # The Extensions[] array: {Critical, Id (OID as integer array), Value (base64 of the raw DER
-          # octet content)} in certificate order.
-          # rubocop:disable Metrics/AbcSize
-          def self.extension_list(tbs)
-            wrapper = tbs.value.find { |element| element.respond_to?(:tag) && element.tag == 3 }
+          # The raw Extension nodes (the [3] EXPLICIT wrapper's SEQUENCE OF Extension), or nil when the
+          # certificate carries no extensions. Shared by extension_list and the extension parsers.
+          def self.extension_nodes(tbs)
+            wrapper = tbs.value.find { |element| context_tag?(element, 3) }
             return nil unless wrapper
 
-            wrapper.value[0].value.map do |ext|
+            wrapper.value[0].value
+          end
+
+          # The Extensions[] array: {Critical, Id (OID as integer array), Value (base64 of the raw DER
+          # octet content)} in certificate order; nil when there are no extensions.
+          # :reek:NilCheck -- a certificate without extensions has Extensions = nil (Go's zero value).
+          def self.extension_list(tbs)
+            nodes = extension_nodes(tbs)
+            nodes&.map do |ext|
               parts = ext.value
-              critical = parts.size == 3 && parts[1].value
-              { "Critical" => critical == true, "Id" => oid_ints(parts[0].oid), "Value" => b64(parts.last.value) }
+              { "Critical" => parts.size == 3 && parts[1].value == true,
+                "Id" => oid_ints(parts[0].oid), "Value" => b64(parts.last.value) }
             end
           end
           private_class_method :extension_list
-          # rubocop:enable Metrics/AbcSize
 
           # OID dotted string -> array of integer arcs (Go marshals asn1.ObjectIdentifier as []int).
           def self.oid_ints(oid)

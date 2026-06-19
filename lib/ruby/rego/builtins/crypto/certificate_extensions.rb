@@ -61,25 +61,25 @@ module Ruby
           # Go keeping them as raw bytes. (SystemStackError from a pathologically nested extension is a
           # non-StandardError; it is caught by the certificate builder's outer rescue.)
           def self.apply_extensions(fields, tbs)
-            unhandled = [] # : Array[untyped]
-            certificate_extensions(tbs).each do |oid, critical, der|
+            extensions = certificate_extensions(tbs)
+            oids = extensions.map(&:first)
+            # Go's parseCertificate rejects a certificate with a repeated extension OID -> OPA undefined.
+            raise MalformedCertificate, "duplicate extension" if oids.uniq.length != oids.length
+
+            unhandled = extensions.filter_map do |oid, critical, der|
               dispatch_extension(fields, oid, critical, der)
-              unhandled << oid_ints(oid) if critical && !RECOGNIZED_EXTENSION_OIDS.include?(oid)
-            # Fully qualified: Ruby::Rego::TypeError shadows ::TypeError in this nested module scope.
-            rescue ::NoMethodError, ::TypeError, ::IndexError, ::ArgumentError, ::RangeError
-              raise MalformedCertificate, "malformed extension #{oid}"
+              oid_ints(oid) if critical && !RECOGNIZED_EXTENSION_OIDS.include?(oid)
             end
             fields["UnhandledCriticalExtensions"] = unhandled unless unhandled.empty?
             fields
           end
 
           # [oid, critical?, inner_der] for each extension, walked from the already-decoded TBS tree
-          # (the [3] EXPLICIT extensions wrapper); avoids a second full-certificate ASN.1 decode.
+          # (the [3] EXPLICIT extensions wrapper); avoids a second full-certificate ASN.1 decode. A
+          # structural surprise (wrong-shape DER) raises a structural exception that the certificate
+          # builder's outer rescue maps to OPA's undefined.
           def self.certificate_extensions(tbs)
-            wrapper = tbs.value.find { |element| context_tag?(element, 3) }
-            return [] unless wrapper
-
-            wrapper.value[0].value.map do |ext|
+            (extension_nodes(tbs) || []).map do |ext|
               parts = ext.value
               [parts[0].oid, parts.size == 3 && parts[1].value == true, parts.last.value]
             end
@@ -367,7 +367,7 @@ module Ruby
           # A uniformResourceIdentifier SAN: crypto/x509 runs it through net/url.Parse, which (unlike the
           # uri.parse builtin) rejects any non-ASCII byte -> OPA undefined; so it must be pure ASCII.
           def self.ascii_uri(value)
-            raise MalformedCertificate, "non-ASCII URI SAN" if value.bytes.any? { |byte| byte >= 0x80 }
+            raise MalformedCertificate, "non-ASCII URI SAN" if value.each_byte.any? { |byte| byte >= 0x80 }
 
             value
           end
