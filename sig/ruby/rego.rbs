@@ -469,6 +469,9 @@ module Ruby
         def self.chain_output: (Array[Hash[String, untyped]] structs, bool uri_strings) -> Array[Hash[String, untyped]]
         def self.verified_chain: (String string, Hash[Symbol, untyped] opts) -> Array[untyped]?
         def self.insecure_chain?: (Array[untyped] certs) -> bool
+        def self.hostname_ok?: (Hash[String, untyped] leaf, String? dns_name) -> bool
+        def self.parse_ip: (String string) -> IPAddr?
+        def self.dns_name_match?: (String pattern, String host) -> bool
         def self.key_usage_satisfied?: (Array[Hash[String, untyped]] chain, Array[Integer] required) -> bool
         def self.usage_permitted?: (Hash[String, untyped] struct, Integer usage) -> bool
         def self.verify_options: (Value options_value) -> (Hash[Symbol, untyped] | Symbol)

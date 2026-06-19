@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "ipaddr"
 require "openssl"
 
 module Ruby
@@ -90,12 +91,16 @@ module Ruby
         # exceptions are fully qualified since Ruby::Rego::TypeError shadows ::TypeError here.
         # :reek:NilCheck :reek:BooleanParameter -- nil = "did not verify"; uri_strings is the field switch.
         # :reek:TooManyStatements -- the verify -> build -> EKU-check -> wrap sequence reads clearest inline.
+        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         def self.verify_result(string, opts, uri_strings:)
           chain = verified_chain(string, opts)
           return unverified if chain.nil?
 
           structs = chain.map { |cert| CertificateStruct.build(cert) }
-          return unverified unless key_usage_satisfied?(structs, opts[:key_usages])
+          leaf = structs.first
+          return unverified if leaf.nil?
+          return unverified unless key_usage_satisfied?(structs,
+                                                        opts[:key_usages]) && hostname_ok?(leaf, opts[:dns_name])
 
           Value.from_ruby([true, chain_output(structs, uri_strings)])
         rescue OpenSSL::OpenSSLError, MalformedCertificate, SystemStackError,
@@ -103,6 +108,7 @@ module Ruby
           unverified
         end
         private_class_method :verify_result
+        # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
         # OPA's verification-failed result, [false, []].
         def self.unverified
@@ -121,10 +127,49 @@ module Ruby
         end
         private_class_method :chain_output
 
+        # Go's VerifyHostname against the leaf's SANs — with NO Subject-CN fallback (Go dropped it in
+        # 1.15) and NO partial-label wildcards (only a full leftmost "*" label), unlike OpenSSL's
+        # verify_certificate_identity. An IP DNSName matches an iPAddress SAN; any other name matches a
+        # dNSName SAN. An empty (or absent) DNSName is no check (Go skips hostname verification then).
+        # :reek:NilCheck -- nil/"" dns_name means "no hostname constraint".
+        # :reek:TooManyStatements -- the no-check / IP-SAN / dNSName-SAN branches read clearest inline.
+        # rubocop:disable Metrics/CyclomaticComplexity
+        def self.hostname_ok?(leaf, dns_name)
+          return true if dns_name.nil? || dns_name.empty?
+
+          ip = parse_ip(dns_name)
+          return (leaf["IPAddresses"] || []).any? { |entry| parse_ip(entry) == ip } if ip
+
+          host = dns_name.downcase.chomp(".")
+          (leaf["DNSNames"] || []).any? { |pattern| dns_name_match?(pattern.downcase.chomp("."), host) }
+        end
+        private_class_method :hostname_ok?
+        # rubocop:enable Metrics/CyclomaticComplexity
+
+        # An IPAddr for an IPv4/IPv6 string, or nil when it is not an IP literal.
+        # :reek:NilCheck -- nil distinguishes a hostname from an IP DNSName.
+        def self.parse_ip(string)
+          IPAddr.new(string)
+        rescue IPAddr::Error
+          nil
+        end
+        private_class_method :parse_ip
+
+        # Go's matchHostnames: equal label counts and every label equal, except a leftmost label of
+        # exactly "*" (a partial-label wildcard such as "f*" is a literal label, not a wildcard).
+        def self.dns_name_match?(pattern, host)
+          pattern_labels = pattern.split(".", -1)
+          host_labels = host.split(".", -1)
+          return false if pattern.empty? || host.empty? || pattern_labels.length != host_labels.length
+
+          pattern_labels.each_with_index.all? { |label, idx| (idx.zero? && label == "*") || label == host_labels[idx] }
+        end
+        private_class_method :dns_name_match?
+
         # The verified chain (leaf -> root) as OpenSSL certs, or nil when the bundle does not parse, has
         # fewer than two certs, carries an insecure (MD2/MD5/SHA-1) non-root signature, or fails OpenSSL
-        # path validation or the DNSName hostname check. EKU is checked separately (key_usage_satisfied?).
-        # certs[0] is the trusted root and certs[-1] the leaf.
+        # path validation. The EKU and DNSName policy checks are applied separately on the built structs
+        # (verify_result). certs[0] is the trusted root and certs[-1] the leaf.
         # :reek:NilCheck :reek:TooManyStatements -- a sequence of verification gates, each returning nil.
         # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
         def self.verified_chain(string, opts)
@@ -139,12 +184,7 @@ module Ruby
           return nil unless store.verify(leaf, certs[1...-1] || [])
 
           chain = store.chain
-          return nil if chain.nil? || insecure_chain?(chain)
-
-          dns_name = opts[:dns_name]
-          return nil if dns_name && !OpenSSL::SSL.verify_certificate_identity(leaf, dns_name)
-
-          chain
+          chain unless chain.nil? || insecure_chain?(chain)
         rescue OpenSSL::OpenSSLError
           nil
         end
@@ -202,7 +242,10 @@ module Ruby
           end
           if options.key?("CurrentTime")
             nanos = options["CurrentTime"]
-            return :invalid unless nanos.is_a?(Integer)
+            # OPA decodes CurrentTime into a Go int64; a value outside that range fails decode -> undefined.
+            unless nanos.is_a?(Integer) && nanos.between?(CertificateStruct::INT64_MIN, CertificateStruct::INT64_MAX)
+              return :invalid
+            end
 
             # Integer arithmetic (not float division) so a large nanosecond count keeps full precision.
             opts[:time] = Time.at(nanos / 1_000_000_000, nanos % 1_000_000_000, :nanosecond)
