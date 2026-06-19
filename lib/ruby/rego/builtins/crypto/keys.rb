@@ -350,7 +350,7 @@ module Ruby
         # stack on a small-stack thread and escape the registry's narrow rescue.
         def self.format_matches?(type, der)
           OpenSSL::ASN1.decode(der).value[1].is_a?(BLOCK_FORMAT_ELEMENT.fetch(type))
-        rescue OpenSSL::ASN1::ASN1Error, TypeError, NoMethodError, SystemStackError
+        rescue OpenSSL::ASN1::ASN1Error, ::TypeError, ::NoMethodError, SystemStackError
           false
         end
         private_class_method :format_matches?
