@@ -33,6 +33,7 @@ module Ruby
             subject = info.value[1]
             spki = info.value[2]
             attributes = info.value.find { |element| context_tag?(element, 0) }
+            extension_nodes = request_extension_nodes(attributes) # walked once, shared by Extensions + SANs
             algorithm = PUBLIC_KEY_ALGORITHM_OIDS.fetch(spki.value[0].value[0].oid, 0)
             fields = REQUEST_ZERO_FIELDS.merge(
               "Version" => request.version.to_i,
@@ -43,9 +44,10 @@ module Ruby
               "PublicKeyAlgorithm" => algorithm,
               "SignatureAlgorithm" => signature_algorithm(request, decoded),
               "Signature" => b64(decoded.value[2].value),
-              "Attributes" => request_attributes(attributes), "Extensions" => request_extensions(attributes)
+              "Attributes" => request_attributes(attributes),
+              "Extensions" => extension_nodes&.map { |ext| extension_entry(ext) }
             )
-            request_sans(fields, attributes)
+            request_sans(fields, extension_nodes)
             scrub(fields)
           end
           # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
@@ -69,17 +71,10 @@ module Ruby
           private_class_method :request_extension_nodes
           # rubocop:enable Metrics/AbcSize
 
-          # Extensions[] from the requested extensions (same shape as a certificate's), or nil.
-          def self.request_extensions(attributes)
-            request_extension_nodes(attributes)&.map { |ext| extension_entry(ext) }
-          end
-          private_class_method :request_extensions
-
           # The DNSNames/EmailAddresses/IPAddresses/URIs requested via the SAN extension. Unlike a
           # certificate, a CSR has no injected URIStrings field.
           # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
-          def self.request_sans(fields, attributes)
-            nodes = request_extension_nodes(attributes)
+          def self.request_sans(fields, nodes)
             san = nodes&.find { |ext| ext.value[0].oid == "2.5.29.17" }
             return unless san
 
@@ -131,6 +126,12 @@ module Ruby
           # -> base64, OID -> int array, BIT STRING -> {Bytes, BitLength}, the string types -> the
           # decoded string (BMPString/TeletexString transcoded), UTC/GeneralizedTime -> RFC3339; an
           # unsupported type (NULL, ENUMERATED, UniversalString, SEQUENCE, SET) -> null (kept).
+          # The only attribute a real CSR carries is extensionRequest (OCTET STRING / BOOLEAN values),
+          # which is exact. A custom attribute deliberately shaped as AttributeTypeAndValueSET with an
+          # exotic or malformed inner value can diverge: Go's strict per-tag asn1 parsers reject some
+          # forms OpenSSL accepts (so the gem keeps a value Go drops), and OpenSSL's stricter decoder
+          # rejects others Go keeps (so the whole CSR is undefined) — a structural limit of using
+          # OpenSSL as the ASN.1 layer, accepted because no conforming CSR exercises it.
           # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
           def self.attribute_value(node)
             case node.tag

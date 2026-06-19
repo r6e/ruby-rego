@@ -472,8 +472,7 @@ module Ruby
           def self.extension_entry: (untyped ext) -> Hash[String, untyped]
           def self.build_request: (untyped request) -> Hash[String, untyped]
           def self.request_extension_nodes: (untyped attributes) -> untyped
-          def self.request_extensions: (untyped attributes) -> Array[untyped]?
-          def self.request_sans: (Hash[String, untyped] fields, untyped attributes) -> void
+          def self.request_sans: (Hash[String, untyped] fields, untyped nodes) -> void
           def self.request_attributes: (untyped attributes) -> Array[untyped]?
           def self.attribute_set: (untyped attr) -> Hash[String, untyped]?
           def self.attribute_group: (untyped group) -> Array[untyped]

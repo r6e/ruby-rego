@@ -7,10 +7,12 @@ module Ruby
   module Rego
     module Builtins
       module Crypto
-        # Builds the JSON hash OPA emits for one certificate: json.Marshal of Go's x509.Certificate
-        # plus URIStrings. Every field name and shape mirrors the Go struct exactly. Fields default to
-        # Go's zero value (nil for slices/pointers, 0 for ints, false for bools) and are overridden as
-        # each is derived; the parsed-extension fields are filled in by certificate_extensions.rb.
+        # Builds the JSON hash OPA emits for an X.509 structure: the certificate (build, here) and the
+        # CSR (build_request, in certificate_request_struct.rb) both reopen this module, and it hosts the
+        # shared atoms both use (Name/public-key/signature-algorithm builders, the ASN.1 depth/type
+        # guards, the SAN validators, scrub, transcode, b64, oid_ints, context_tag?). Every field name
+        # and shape mirrors the Go struct exactly; fields default to Go's zero value and are overridden
+        # as each is derived. The certificate's parsed-extension fields live in certificate_extensions.rb.
         # rubocop:disable Metrics/ModuleLength
         module CertificateStruct
           # Go x509.SignatureAlgorithm enum, keyed by OpenSSL's signature-algorithm name. RSA-PSS shares
