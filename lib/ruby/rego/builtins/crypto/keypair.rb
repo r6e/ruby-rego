@@ -169,7 +169,7 @@ module Ruby
         # d2i (depth-capped), and der is the already length-checked leading element.
         # :reek:NilCheck -- n/a; the rescue maps a non-key DER to false.
         def self.pkcs1_rsa?(der)
-          key = OpenSSL::PKey.read(der)
+          key = OpenSSL::PKey.read(der, "") # "" passphrase: fail cleanly on an encrypted key, never prompt
           key.is_a?(OpenSSL::PKey::RSA) && key.to_der == der
         rescue OpenSSL::OpenSSLError, ::ArgumentError
           false
