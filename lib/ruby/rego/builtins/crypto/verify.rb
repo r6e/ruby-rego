@@ -33,11 +33,14 @@ module Ruby
             { arity: 2, handler: :parse_and_verify_certificates_with_options }
         }.freeze
 
-        # Signature digests Go's x509 rejects as insecure (InsecureAlgorithmError) on non-root certs.
-        INSECURE_SIGNATURE = /\b(?:md2|md5|sha1)\b/i
+        # Signature digests Go's x509 rejects as insecure (InsecureAlgorithmError) on non-root certs. The
+        # token appears mid-word in OpenSSL's algorithm names (sha1WithRSAEncryption, ecdsa-with-SHA1,
+        # md5WithRSAEncryption), and none of the safe names (sha256/384/512, …) contain it, so no anchors.
+        INSECURE_SIGNATURE = /md2|md5|sha1/i
 
         # OPA's KeyUsages option enum -> Go's ExtKeyUsage integer (the value CertificateStruct emits in a
-        # cert's ExtKeyUsage field). KeyUsageAny (0) drops the EKU constraint entirely.
+        # cert's ExtKeyUsage field). KeyUsageAny (0) drops the EKU constraint entirely. The integers MUST
+        # match CertificateStruct::EXT_KEY_USAGES (the OID->enum map the chain structs are built with).
         KEY_USAGE_ENUM = {
           "KeyUsageAny" => 0, "KeyUsageServerAuth" => 1, "KeyUsageClientAuth" => 2,
           "KeyUsageCodeSigning" => 3, "KeyUsageEmailProtection" => 4, "KeyUsageIPSECEndSystem" => 5,
@@ -126,7 +129,7 @@ module Ruby
         # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
         def self.verified_chain(string, opts)
           certs = certificates_from(string)
-          return nil if certs.nil? || certs.length < 2 || insecure_chain?(certs)
+          return nil if certs.nil? || certs.length < 2
 
           store = OpenSSL::X509::Store.new
           store.add_cert(certs.first)
@@ -135,20 +138,25 @@ module Ruby
           leaf = certs.last
           return nil unless store.verify(leaf, certs[1...-1] || [])
 
+          chain = store.chain
+          return nil if chain.nil? || insecure_chain?(chain)
+
           dns_name = opts[:dns_name]
           return nil if dns_name && !OpenSSL::SSL.verify_certificate_identity(leaf, dns_name)
 
-          store.chain
+          chain
         rescue OpenSSL::OpenSSLError
           nil
         end
         private_class_method :verified_chain
         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
 
-        # Whether any NON-root cert carries an MD2/MD5/SHA-1 signature (Go's InsecureAlgorithmError; the
-        # trusted root at certs[0] is exempt, as Go does not check the trust anchor's own signature).
-        def self.insecure_chain?(certs)
-          certs.drop(1).any? { |cert| INSECURE_SIGNATURE.match?(cert.signature_algorithm) }
+        # Whether any NON-root cert of the VERIFIED chain (every cert but the trust anchor — the last in
+        # the leaf->root chain) carries an MD2/MD5/SHA-1 signature: Go's InsecureAlgorithmError. The
+        # anchor's self-signature is not verified during path building, so the root — and a self-signed
+        # leaf, which is its own anchor (a one-element chain) — is exempt.
+        def self.insecure_chain?(chain)
+          (chain[0...-1] || []).any? { |cert| INSECURE_SIGNATURE.match?(cert.signature_algorithm) }
         end
         private_class_method :insecure_chain?
 
@@ -196,7 +204,8 @@ module Ruby
             nanos = options["CurrentTime"]
             return :invalid unless nanos.is_a?(Integer)
 
-            opts[:time] = Time.at(nanos / 1_000_000_000.0)
+            # Integer arithmetic (not float division) so a large nanosecond count keeps full precision.
+            opts[:time] = Time.at(nanos / 1_000_000_000, nanos % 1_000_000_000, :nanosecond)
           end
           if options.key?("KeyUsages")
             usages = key_usage_enums(options["KeyUsages"])
