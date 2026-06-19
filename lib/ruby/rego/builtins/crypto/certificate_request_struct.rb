@@ -74,6 +74,12 @@ module Ruby
 
           # The SEQUENCE OF Extension in one extensionRequest attribute's first value-SET member, or []
           # when the value SET is empty (Go's parseCSRExtensions skips a zero-value attribute).
+          # `attr.value[1]` is always a SET here: OpenSSL's X509::Request decoder enforces the PKCS#10
+          # Attribute schema (`type, values SET OF ...`), so a request whose extensionRequest attribute
+          # has an absent or non-SET value is rejected before this runs (the gem returns undefined).
+          # Go's lenient RawValue parser instead keeps such a CSR and skips the bad attribute, so OPA
+          # returns a struct — an accepted structural divergence pinned in the request spec, of the same
+          # class as the exotic-ATV-value limitation documented on attribute_value.
           # :reek:NilCheck -- an empty value SET has no first member.
           def self.extension_request_extensions(attr)
             first_member = attr.value[1].value[0]
