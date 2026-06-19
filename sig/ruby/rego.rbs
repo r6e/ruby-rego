@@ -584,6 +584,24 @@ module Ruby
         end
       end
 
+      module Jwt
+        extend RegistryHelpers
+
+        JWT_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        def self.register!: () -> BuiltinRegistry
+        def self.decode: (Value value) -> Value
+
+        private
+
+        def self.decode_parts: (Array[String] segments) -> Array[untyped]?
+        def self.decode_object: (String segment) -> Hash[String, untyped]?
+        def self.signature_hex: (String segment) -> String?
+        def self.decode_segment: (String segment) -> String?
+        def self.restore_padding: (String segment) -> String
+        def self.string_value: (Value value, String context) -> String
+      end
+
       module Net
         extend RegistryHelpers
 
