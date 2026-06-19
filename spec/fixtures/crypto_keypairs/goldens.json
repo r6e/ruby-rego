@@ -1,0 +1,3017 @@
+{
+  "pairs": {
+    "ec256": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "ec384": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBZDCB7KADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMHYwEAYHKoZIzj0CAQYFK4EEACID\nYgAEoEuDzWC8eB2MiGcr4pQ0f69/9sz7J+s6S2mRk50mD9wa5LcE89KJ+gwmaP2C\nNoJzLo7HajLkXSbfzxeucYjU9h6CMdbUO61/FL9HCxEgE9qyYvJT/dTah9ILfHho\n4z3FMAoGCCqGSM49BAMCA2cAMGQCMBT5yTXASBCWDNZeS4kAc5FSc13LGhA0L4MI\n0YSvMVfi+yVLdp0Aelr6KVNlJo0LzAIwaQ/EPumLBqQevYz0FV4CdEJLubh0hBQ5\n0kjcvLiarT2k3JQa1AsoZqc3lbc8f21m\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMIGkAgEBBDDPOqw6E48GzY9e+Kfwxoves4hLz3aNdn1eWoCo/cZzVFO8N7OcaLJK\nfF+yMh/PZkGgBwYFK4EEACKhZANiAASgS4PNYLx4HYyIZyvilDR/r3/2zPsn6zpL\naZGTnSYP3BrktwTz0on6DCZo/YI2gnMujsdqMuRdJt/PF65xiNT2HoIx1tQ7rX8U\nv0cLESAT2rJi8lP91NqH0gt8eGjjPcU=\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBZDCB7KADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEoEuDzWC8eB2MiGcr4pQ0f69/9sz7J+s6S2mRk50mD9wa5LcE89KJ+gwmaP2CNoJzLo7HajLkXSbfzxeucYjU9h6CMdbUO61/FL9HCxEgE9qyYvJT/dTah9ILfHho4z3FMAoGCCqGSM49BAMCA2cAMGQCMBT5yTXASBCWDNZeS4kAc5FSc13LGhA0L4MI0YSvMVfi+yVLdp0Aelr6KVNlJo0LzAIwaQ/EPumLBqQevYz0FV4CdEJLubh0hBQ50kjcvLiarT2k3JQa1AsoZqc3lbc8f21m"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 24671655433549646195004998767631748497448684926152351891476823499297110914917672845824085007727828679862985243918963,
+            "Y": 7165890542624775634491829629963453581581255233897008209932629219701653819338888247783781994545720015126909226794437
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBZDCB7KADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEoEuDzWC8eB2MiGcr4pQ0f69/9sz7J+s6S2mRk50mD9wa5LcE89KJ+gwmaP2CNoJzLo7HajLkXSbfzxeucYjU9h6CMdbUO61/FL9HCxEgE9qyYvJT/dTah9ILfHho4z3FMAoGCCqGSM49BAMCA2cAMGQCMBT5yTXASBCWDNZeS4kAc5FSc13LGhA0L4MI0YSvMVfi+yVLdp0Aelr6KVNlJo0LzAIwaQ/EPumLBqQevYz0FV4CdEJLubh0hBQ50kjcvLiarT2k3JQa1AsoZqc3lbc8f21m",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEoEuDzWC8eB2MiGcr4pQ0f69/9sz7J+s6S2mRk50mD9wa5LcE89KJ+gwmaP2CNoJzLo7HajLkXSbfzxeucYjU9h6CMdbUO61/FL9HCxEgE9qyYvJT/dTah9ILfHho4z3F",
+          "RawTBSCertificate": "MIHsoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAASgS4PNYLx4HYyIZyvilDR/r3/2zPsn6zpLaZGTnSYP3BrktwTz0on6DCZo/YI2gnMujsdqMuRdJt/PF65xiNT2HoIx1tQ7rX8Uv0cLESAT2rJi8lP91NqH0gt8eGjjPcU=",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MGQCMBT5yTXASBCWDNZeS4kAc5FSc13LGhA0L4MI0YSvMVfi+yVLdp0Aelr6KVNlJo0LzAIwaQ/EPumLBqQevYz0FV4CdEJLubh0hBQ50kjcvLiarT2k3JQa1AsoZqc3lbc8f21m",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 31895491590251694150538186284728710632463282574257583944788336855458633599673232517804688019570811757004168060954177,
+          "X": 24671655433549646195004998767631748497448684926152351891476823499297110914917672845824085007727828679862985243918963,
+          "Y": 7165890542624775634491829629963453581581255233897008209932629219701653819338888247783781994545720015126909226794437
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "ec521": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBsTCCARKgAwIBAgIBATAKBggqhkjOPQQDAjAeMQ0wCwYDVQQDDARsZWFmMQ0w\nCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjEN\nMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCBmzAQBgcqhkjOPQIBBgUrgQQA\nIwOBhgAEAMj09Ve/nYztVtnHtmvzGAdu+NFZWh2pGDXRYM05nzJ/6igvfv43x8QK\nlgkel9j3OJQ+9RnjHHOyXJC+BoilO2aqABh0w4RRaPxBf/b1XLWxEFfoz1in0uBH\nMLITfA7F/046NPIY21eIqfJZgmT/Xi5lQykCspvzrOHHnBX6nCLsMlS9MAoGCCqG\nSM49BAMCA4GMADCBiAJCATeylKaytJ2MLwynUFA4fAjJP56TcXxjh/loLccfprH3\npLKELPUIITpu2MifwTABabq+yE+98IIkkZRcvqQrSg1DAkIArNia7wyqDbmaNm2U\nU/L64Ul7Rqfw73WDqvy+KB3KVlY+/Do9Xk/gKydk6noccAeunAsIedkxP5PyZWRt\nRRe72aY=\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMIHcAgEBBEIAio7ZWY8fQB/yfsWram/4PnEB9IAVIeNBkYcLbzBf2UNb0uAJxkJU\nB3LudNBejyjWJzt4TFeWp29oN4WDYPPYIPWgBwYFK4EEACOhgYkDgYYABADI9PVX\nv52M7VbZx7Zr8xgHbvjRWVodqRg10WDNOZ8yf+ooL37+N8fECpYJHpfY9ziUPvUZ\n4xxzslyQvgaIpTtmqgAYdMOEUWj8QX/29Vy1sRBX6M9Yp9LgRzCyE3wOxf9OOjTy\nGNtXiKnyWYJk/14uZUMpArKb86zhx5wV+pwi7DJUvQ==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBsTCCARKgAwIBAgIBATAKBggqhkjOPQQDAjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCBmzAQBgcqhkjOPQIBBgUrgQQAIwOBhgAEAMj09Ve/nYztVtnHtmvzGAdu+NFZWh2pGDXRYM05nzJ/6igvfv43x8QKlgkel9j3OJQ+9RnjHHOyXJC+BoilO2aqABh0w4RRaPxBf/b1XLWxEFfoz1in0uBHMLITfA7F/046NPIY21eIqfJZgmT/Xi5lQykCspvzrOHHnBX6nCLsMlS9MAoGCCqGSM49BAMCA4GMADCBiAJCATeylKaytJ2MLwynUFA4fAjJP56TcXxjh/loLccfprH3pLKELPUIITpu2MifwTABabq+yE+98IIkkZRcvqQrSg1DAkIArNia7wyqDbmaNm2UU/L64Ul7Rqfw73WDqvy+KB3KVlY+/Do9Xk/gKydk6noccAeunAsIedkxP5PyZWRtRRe72aY="
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 2694391096841188275985232538573331439481359500784263399642580070581641935393573851618824795438515362542792636751787033383091791108111334105680187769162000042,
+            "Y": 327902803479180175113202779397434480074657659283396796664790502180771290618243664421227200054097678551142186198242998106899205634754880271067304102229857469
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBsTCCARKgAwIBAgIBATAKBggqhkjOPQQDAjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCBmzAQBgcqhkjOPQIBBgUrgQQAIwOBhgAEAMj09Ve/nYztVtnHtmvzGAdu+NFZWh2pGDXRYM05nzJ/6igvfv43x8QKlgkel9j3OJQ+9RnjHHOyXJC+BoilO2aqABh0w4RRaPxBf/b1XLWxEFfoz1in0uBHMLITfA7F/046NPIY21eIqfJZgmT/Xi5lQykCspvzrOHHnBX6nCLsMlS9MAoGCCqGSM49BAMCA4GMADCBiAJCATeylKaytJ2MLwynUFA4fAjJP56TcXxjh/loLccfprH3pLKELPUIITpu2MifwTABabq+yE+98IIkkZRcvqQrSg1DAkIArNia7wyqDbmaNm2UU/L64Ul7Rqfw73WDqvy+KB3KVlY+/Do9Xk/gKydk6noccAeunAsIedkxP5PyZWRtRRe72aY=",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAyPT1V7+djO1W2ce2a/MYB2740VlaHakYNdFgzTmfMn/qKC9+/jfHxAqWCR6X2Pc4lD71GeMcc7JckL4GiKU7ZqoAGHTDhFFo/EF/9vVctbEQV+jPWKfS4EcwshN8DsX/Tjo08hjbV4ip8lmCZP9eLmVDKQKym/Os4cecFfqcIuwyVL0=",
+          "RawTBSCertificate": "MIIBEqADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAyPT1V7+djO1W2ce2a/MYB2740VlaHakYNdFgzTmfMn/qKC9+/jfHxAqWCR6X2Pc4lD71GeMcc7JckL4GiKU7ZqoAGHTDhFFo/EF/9vVctbEQV+jPWKfS4EcwshN8DsX/Tjo08hjbV4ip8lmCZP9eLmVDKQKym/Os4cecFfqcIuwyVL0=",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MIGIAkIBN7KUprK0nYwvDKdQUDh8CMk/npNxfGOH+Wgtxx+msfeksoQs9QghOm7YyJ/BMAFpur7IT73wgiSRlFy+pCtKDUMCQgCs2JrvDKoNuZo2bZRT8vrhSXtGp/DvdYOq/L4oHcpWVj78Oj1eT+ArJ2TqehxwB66cCwh52TE/k/JlZG1FF7vZpg==",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 1857759104726048117354281875174219940647417446236371604579468884308455169586985155061178425073698325017743198966554965811176470032795882594127774366784037109,
+          "X": 2694391096841188275985232538573331439481359500784263399642580070581641935393573851618824795438515362542792636751787033383091791108111334105680187769162000042,
+          "Y": 327902803479180175113202779397434480074657659283396796664790502180771290618243664421227200054097678551142186198242998106899205634754880271067304102229857469
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "ec224": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBFTCBxKADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lME4wEAYHKoZIzj0CAQYFK4EEACED\nOgAEG0HnPnBV0A3CHmLvK9n6WU+QGbNX5yEO5/Hd+sbhJdPcxBhLHdbYAbLQsDE1\nKN8yTPCTDUr0nGwwCgYIKoZIzj0EAwIDQAAwPQIdAKSNOwIswLkJAhluSnmkJZrt\n2IEFrgBr9exHTx4CHG3A7M3sKDThJer1i1Vx8Y/78t7VozpJGqWdsh0=\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMGgCAQEEHACU2ndbxN/Tz60AwNd75dLHHBduvZ4Aypa8ulGgBwYFK4EEACGhPAM6\nAAQbQec+cFXQDcIeYu8r2fpZT5AZs1fnIQ7n8d36xuEl09zEGEsd1tgBstCwMTUo\n3zJM8JMNSvScbA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBFTCBxKADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lME4wEAYHKoZIzj0CAQYFK4EEACEDOgAEG0HnPnBV0A3CHmLvK9n6WU+QGbNX5yEO5/Hd+sbhJdPcxBhLHdbYAbLQsDE1KN8yTPCTDUr0nGwwCgYIKoZIzj0EAwIDQAAwPQIdAKSNOwIswLkJAhluSnmkJZrt2IEFrgBr9exHTx4CHG3A7M3sKDThJer1i1Vx8Y/78t7VozpJGqWdsh0="
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 2870542918730496293696113147982023106364927297410069062443483651578,
+            "Y": 20944454168312911018761393109314207761536345719637409492178717416556
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBFTCBxKADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lME4wEAYHKoZIzj0CAQYFK4EEACEDOgAEG0HnPnBV0A3CHmLvK9n6WU+QGbNX5yEO5/Hd+sbhJdPcxBhLHdbYAbLQsDE1KN8yTPCTDUr0nGwwCgYIKoZIzj0EAwIDQAAwPQIdAKSNOwIswLkJAhluSnmkJZrt2IEFrgBr9exHTx4CHG3A7M3sKDThJer1i1Vx8Y/78t7VozpJGqWdsh0=",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "ME4wEAYHKoZIzj0CAQYFK4EEACEDOgAEG0HnPnBV0A3CHmLvK9n6WU+QGbNX5yEO5/Hd+sbhJdPcxBhLHdbYAbLQsDE1KN8yTPCTDUr0nGw=",
+          "RawTBSCertificate": "MIHEoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwTjAQBgcqhkjOPQIBBgUrgQQAIQM6AAQbQec+cFXQDcIeYu8r2fpZT5AZs1fnIQ7n8d36xuEl09zEGEsd1tgBstCwMTUo3zJM8JMNSvScbA==",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MD0CHQCkjTsCLMC5CQIZbkp5pCWa7diBBa4Aa/XsR08eAhxtwOzN7Cg04SXq9YtVcfGP+/Le1aM6SRqlnbId",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 61234730339809916099090827741169240513308837778913681958057589329,
+          "X": 2870542918730496293696113147982023106364927297410069062443483651578,
+          "Y": 20944454168312911018761393109314207761536345719637409492178717416556
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "rsa2048": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIICtTCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMQ0wCwYDVQQDDARsZWFm\nMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFow\nHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCCASIwDQYJKoZIhvcNAQEB\nBQADggEPADCCAQoCggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPh\nUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghoke\nOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs3\n66PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE\n7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz\n6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAATANBgkqhkiG9w0B\nAQsFAAOCAQEARaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoH\nrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNc\nAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJ\nmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR\n12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+J\ndpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w==\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEArhK7btZV8IFkdgv7LsZeFWJIcSxs2/REInUKbMW6A+FQWvSl\ndWiwcDYd4pqTlW8Kj7R3XVSdu8ZTrv6kxJ0crVH4RfsP1A6Dv+xjM6CGiR46rtN6\nSuh1aj07UgkNGfEt4AcrVdfzZo6n1c03iP715gU9rJwcPpBzarBnlAp9yzfro+hD\n4XZdyuWmGQfAHz4AJjBfllWql+Wbap8aP8WBr3/R/mJU5LcKthH9BBW9KwTvBb0e\ngB1SJetAinv2k41RGPyvFOPh24uuKrmnfNZx21gMyfFmyiXmBeCGh3sjufPphevZ\nZiRNSSsJ7e/VzIsztZDo9Q0vzGhtf7M0YcZlKwIDAQABAoIBAEgcUHMY7V8FayWP\nzw1QdbcsENB5U9tGdFdF3vyyaF2lIBGd2VEq/jRt5rFx0YONDXX8j5olLHaWMSKE\nMKOWZkPSeiQbXjI9lQyTk4DWlgUFdc/ooXeYltNc7E8OmtPNWnC855HXNOieXh6u\ntbvVyu3v692uifDNDFL9IttsATKGl/QfgOxfh3yV3+CnrOoVr6B8JE0C1wm4YEuQ\nYKmik/KvfDHziDKYEZUdAfDtFrW//h7YfNZJP7Oy6iih2ZSGZkyUDU1TbUJ5gTcc\n0hA5VlNqj2W2gQNpjYzgWSSLrK4zwZkbti7gjBcUHQAyhP+/Hm5NIp6TanFy9EZI\nyFR42SECgYEA1w4MgVaU/+SynXra7o0KBJSbOONVKj9FyD6XPitwqTOjhdZcovZa\ncIkIkfLkZVM8qJpAmbSWfpUbpINSuBEXb5jN0PpBGgAbC9C8MzS2U41E74BA9WTi\nIJMUnbbFWg18IGpNtEbk4bMVWCe+5+HLnY+k6sy86Iscqj0uSbU/cxECgYEAzzcz\njDE9YXGQKfb+x1oSxmAlbuFT1pxjzAGVGeh93h7CcW1D5lHlfOLoBy6CND0kaVHc\nYadTgvHEpPZBCFy5WaaiDw7jqyoQnfhuxCYSa/Ce2eIztnxjy0WS6IO4bQfTYCs6\n4OT8WVMwule1+htT6PaGLKW5kT1hBPFvU6/wXHsCgYEAgWWBnr0C8CmiU2EdpBWW\n5oSoFQWsM7xYd5E5nX2zzws0JA6ENMW4SygY0QBt7o2z3NrbbeCcANQlCsq9leUq\nzcoKZOh/DW7s1yIka0cXQZSp2tW3wC+QY/s7l13mxzV/710nHgbeJvODL0TS+GED\nC+3nVCQWsnEpsUEYvd7hq5ECgYEAlfYoKwwzlMLAB27GQfWQ4toQHSebKhSyMKDw\ni/hypv5xz+64lgWs5G2+Z/wjpLSfFk11BYM37+sSWiQROoEIbrYmUGmBII1nyztQ\nxkmbSVyxSZPnwuhQvHpUcEtrfBSOx+lhSgLOEcMf36u8eg2u80j+H2+sVU0rWo1z\n+Qe6FuMCgYBzfGe+REabFfeBJRos5sL94VQ9mqBvPgJkwB3EHIzpQ3V4Qc/WBX3G\nxZ3cBeU+C7cTATSYZf9rtJ5aC7OFSKeMmpHZ5l5tR2FhE9apFvNd9gaZRKm9dVrx\nbAZXF4IEhLseCs77JOzKhqDnrsJv3wV11BOQoB/vOXB+byAHr+gpVg==\n-----END RSA PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIICtTCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPhUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghokeOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs366PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEARaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoHrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNcAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+JdpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w=="
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "E": 65537,
+            "N": 21974702236460482974544780134201696947924615706854487789356383274816871848082237732388379417656964302909502620383777926269381318365766053328509461650590046093179615831147815325011763198091813263150087394446565143213903182330998208309515098066078259614147079140615081660270804038643407969033030644353784407723314805892320817499037507915673067713545433670121725706626238074893697646754037017359047555410387556378520852324813632988783042675033442954303117995829895523076067815360861103369108330877206013180143128191367211999884999868816372856090404254097710472564071284701998865272373226170482386162907058214533788493099
+          },
+          "PublicKeyAlgorithm": 1,
+          "Raw": "MIICtTCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPhUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghokeOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs366PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEARaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoHrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNcAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+JdpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w==",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhK7btZV8IFkdgv7LsZeFWJIcSxs2/REInUKbMW6A+FQWvSldWiwcDYd4pqTlW8Kj7R3XVSdu8ZTrv6kxJ0crVH4RfsP1A6Dv+xjM6CGiR46rtN6Suh1aj07UgkNGfEt4AcrVdfzZo6n1c03iP715gU9rJwcPpBzarBnlAp9yzfro+hD4XZdyuWmGQfAHz4AJjBfllWql+Wbap8aP8WBr3/R/mJU5LcKthH9BBW9KwTvBb0egB1SJetAinv2k41RGPyvFOPh24uuKrmnfNZx21gMyfFmyiXmBeCGh3sjufPphevZZiRNSSsJ7e/VzIsztZDo9Q0vzGhtf7M0YcZlKwIDAQAB",
+          "RawTBSCertificate": "MIIBnaADAgECAgEBMA0GCSqGSIb3DQEBCwUAMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhK7btZV8IFkdgv7LsZeFWJIcSxs2/REInUKbMW6A+FQWvSldWiwcDYd4pqTlW8Kj7R3XVSdu8ZTrv6kxJ0crVH4RfsP1A6Dv+xjM6CGiR46rtN6Suh1aj07UgkNGfEt4AcrVdfzZo6n1c03iP715gU9rJwcPpBzarBnlAp9yzfro+hD4XZdyuWmGQfAHz4AJjBfllWql+Wbap8aP8WBr3/R/mJU5LcKthH9BBW9KwTvBb0egB1SJetAinv2k41RGPyvFOPh24uuKrmnfNZx21gMyfFmyiXmBeCGh3sjufPphevZZiRNSSsJ7e/VzIsztZDo9Q0vzGhtf7M0YcZlKwIDAQAB",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "RaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoHrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNcAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+JdpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w==",
+          "SignatureAlgorithm": 4,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "D": 9103120237692687371651376106068966697273378272203373498836328326411084636214423488969774521414909499362041085811056150270647625193588088893536527066418498884351334211206372556857109099668807517604738127650484414500423539330519711878710124012328282806116835552261453102746418951815461234894452736066052655526988162636073174844618013580954704692398852293473050147182889495781861280434748435979899545531226778074751869868203643771801187585252393732957691070861179736127046367380501753073287889559458329982085499149375419842205840814175944207408983657252227788684504793128967401997701898039648417477959216770668199205153,
+          "E": 65537,
+          "N": 21974702236460482974544780134201696947924615706854487789356383274816871848082237732388379417656964302909502620383777926269381318365766053328509461650590046093179615831147815325011763198091813263150087394446565143213903182330998208309515098066078259614147079140615081660270804038643407969033030644353784407723314805892320817499037507915673067713545433670121725706626238074893697646754037017359047555410387556378520852324813632988783042675033442954303117995829895523076067815360861103369108330877206013180143128191367211999884999868816372856090404254097710472564071284701998865272373226170482386162907058214533788493099,
+          "Precomputed": {
+            "CRTValues": [],
+            "Dp": 90865318779619156586331204063118459988605871496992443566061347753881179808444885065721818608328465577256915280900286818073266421875034728960469690641141193465939758827622821449568660233284779803210962831986144643764279470572952319773930772848096098732629484911132729305845679393164055339226691571484320705425,
+            "Dq": 105306581905732276515304356858349564712704715498577447385307830862877825266761711773310534725865752667658911962650524841074939375329134943549657735336146904648738545904160793264336136418499480084000964251271852140349152940676303552089402464148685756594348648535668023175931565491843317672173022509534637856483,
+            "Qinv": 81096997602539693857556381701346648558160640298197267648470235965358236837845139185683299544204356665357461753719985327278039425942640307271990087963245593854547969090113271698088464050492578049609539229526200350028185282198156099757798377129715251460867728304299210317672778103947594294168122111841383491926
+          },
+          "Primes": [
+            151016671236271667517013367501447886599377754680049546673825540733550855402988675285984095202850978838452221661155937848909990654792284407270111381724658798371346181479621556801166061058219882178962718310041740712560027988307751786093477571073610276231591270068747132617787342844566548189762373786431869907729,
+            145511764075902426911457159868975846477398404765655404273565103865998103154352027335331812062853187555722492848177854192783493260261559737616519829655380878575647348308439686861725892860047659159273254636100347334374800992496213411484179917200708815912707992559026655313859179144382877781129759771603271441531
+          ]
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "ed25519": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIHoMIGboAMCAQICAQEwBQYDK2VwMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoM\nBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQD\nDARsZWFmMQ0wCwYDVQQKDARBY21lMCowBQYDK2VwAyEAIyDqdC9pwEI6v9bRtVfG\nYxGVeJrydsRPrw++yvnPMUswBQYDK2VwA0EAK5xElzl1LU/qWpSNLasxB6suH1Ff\nm1DFuZJTHdJaYZLZMj+A73bnA90yzCIEHLELteye3roruf5RCPFPfDMpDQ==\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEILdFl3PSzhF0wbJtXEQPAWT6S+7cT+Y9AkTeNvayuStS\n-----END PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIHoMIGboAMCAQICAQEwBQYDK2VwMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMCowBQYDK2VwAyEAIyDqdC9pwEI6v9bRtVfGYxGVeJrydsRPrw++yvnPMUswBQYDK2VwA0EAK5xElzl1LU/qWpSNLasxB6suH1Ffm1DFuZJTHdJaYZLZMj+A73bnA90yzCIEHLELteye3roruf5RCPFPfDMpDQ=="
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": "IyDqdC9pwEI6v9bRtVfGYxGVeJrydsRPrw++yvnPMUs=",
+          "PublicKeyAlgorithm": 4,
+          "Raw": "MIHoMIGboAMCAQICAQEwBQYDK2VwMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMCowBQYDK2VwAyEAIyDqdC9pwEI6v9bRtVfGYxGVeJrydsRPrw++yvnPMUswBQYDK2VwA0EAK5xElzl1LU/qWpSNLasxB6suH1Ffm1DFuZJTHdJaYZLZMj+A73bnA90yzCIEHLELteye3roruf5RCPFPfDMpDQ==",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MCowBQYDK2VwAyEAIyDqdC9pwEI6v9bRtVfGYxGVeJrydsRPrw++yvnPMUs=",
+          "RawTBSCertificate": "MIGboAMCAQICAQEwBQYDK2VwMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMCowBQYDK2VwAyEAIyDqdC9pwEI6v9bRtVfGYxGVeJrydsRPrw++yvnPMUs=",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "K5xElzl1LU/qWpSNLasxB6suH1Ffm1DFuZJTHdJaYZLZMj+A73bnA90yzCIEHLELteye3roruf5RCPFPfDMpDQ==",
+          "SignatureAlgorithm": 16,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": "t0WXc9LOEXTBsm1cRA8BZPpL7txP5j0CRN429rK5K1IjIOp0L2nAQjq/1tG1V8ZjEZV4mvJ2xE+vD77K+c8xSw==",
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "rich_leaf": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBlTCCATugAwIBAgIBATAKBggqhkjOPQQDAjAeMQ0wCwYDVQQDDARsZWFmMQ0w\nCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjEN\nMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTBZMBMGByqGSM49AgEGCCqGSM49\nAwEHA0IABO3vQlfCxMRNgAD7AKNUF3snCirA+5voKadZHvPl2R8qTwbClda2tHNb\nQznLQv363vxuXmEoWmIbNqhPC12TZRijajBoMEUGA1UdEQQ+MDyGGWh0dHBzOi8v\nZXhhbXBsZS5jb20vcD9xPTGCEHJpY2guZXhhbXBsZS5jb22BDWFAZXhhbXBsZS5j\nb20wDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAoQwCgYIKoZIzj0EAwID\nSAAwRQIhAI86boOTIrKz9367S7tqGOis0nQYe/NW8x5CKQqI1GW8AiAVYP7xg0aT\nTVBWoAcRlge/H4oGNJaLV79cVqWafjMXAQ==\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBlTCCATugAwIBAgIBATAKBggqhkjOPQQDAjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABO3vQlfCxMRNgAD7AKNUF3snCirA+5voKadZHvPl2R8qTwbClda2tHNbQznLQv363vxuXmEoWmIbNqhPC12TZRijajBoMEUGA1UdEQQ+MDyGGWh0dHBzOi8vZXhhbXBsZS5jb20vcD9xPTGCEHJpY2guZXhhbXBsZS5jb22BDWFAZXhhbXBsZS5jb20wDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAoQwCgYIKoZIzj0EAwIDSAAwRQIhAI86boOTIrKz9367S7tqGOis0nQYe/NW8x5CKQqI1GW8AiAVYP7xg0aTTVBWoAcRlge/H4oGNJaLV79cVqWafjMXAQ=="
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": true,
+          "CRLDistributionPoints": null,
+          "DNSNames": [
+            "rich.example.com"
+          ],
+          "EmailAddresses": [
+            "a@example.com"
+          ],
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": [
+            {
+              "Critical": false,
+              "Id": [
+                2,
+                5,
+                29,
+                17
+              ],
+              "Value": "MDyGGWh0dHBzOi8vZXhhbXBsZS5jb20vcD9xPTGCEHJpY2guZXhhbXBsZS5jb22BDWFAZXhhbXBsZS5jb20="
+            },
+            {
+              "Critical": true,
+              "Id": [
+                2,
+                5,
+                29,
+                19
+              ],
+              "Value": "MAMBAf8="
+            },
+            {
+              "Critical": true,
+              "Id": [
+                2,
+                5,
+                29,
+                15
+              ],
+              "Value": "AwIChA=="
+            }
+          ],
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": true,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 33,
+          "MaxPathLen": -1,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBlTCCATugAwIBAgIBATAKBggqhkjOPQQDAjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABO3vQlfCxMRNgAD7AKNUF3snCirA+5voKadZHvPl2R8qTwbClda2tHNbQznLQv363vxuXmEoWmIbNqhPC12TZRijajBoMEUGA1UdEQQ+MDyGGWh0dHBzOi8vZXhhbXBsZS5jb20vcD9xPTGCEHJpY2guZXhhbXBsZS5jb22BDWFAZXhhbXBsZS5jb20wDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAoQwCgYIKoZIzj0EAwIDSAAwRQIhAI86boOTIrKz9367S7tqGOis0nQYe/NW8x5CKQqI1GW8AiAVYP7xg0aTTVBWoAcRlge/H4oGNJaLV79cVqWafjMXAQ==",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIIBO6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGKNqMGgwRQYDVR0RBD4wPIYZaHR0cHM6Ly9leGFtcGxlLmNvbS9wP3E9MYIQcmljaC5leGFtcGxlLmNvbYENYUBleGFtcGxlLmNvbTAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIChA==",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIQCPOm6DkyKys/d+u0u7ahjorNJ0GHvzVvMeQikKiNRlvAIgFWD+8YNGk01QVqAHEZYHvx+KBjSWi1e/XFalmn4zFwE=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": [
+            {
+              "ForceQuery": false,
+              "Fragment": "",
+              "Host": "example.com",
+              "OmitHost": false,
+              "Opaque": "",
+              "Path": "/p",
+              "RawFragment": "",
+              "RawPath": "",
+              "RawQuery": "q=1",
+              "Scheme": "https",
+              "User": null
+            }
+          ],
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "chain": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIBGTCBwaADAgECAgECMAoGCCqGSM49BAMCMBcxFTATBgNVBAMMDGludGVybWVk\naWF0ZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMBcxFTATBgNVBAMM\nDGludGVybWVkaWF0ZTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLwbRt5N6YfE\nBaDwC2G9DWy0wXmJDmI7H0HdpVhdxaHw95YH1RDyII/IX8kWVTem5VbYg7rSxB6G\nbH/SQ5BlR8gwCgYIKoZIzj0EAwIDRwAwRAIgJfiRhjs9KWImJDD9pQQYc0UlMDiQ\n1lGwCgaUrLFWjmcCIA6Qx6dlPJRCT6WpJ3Xp9JEsWiI2bwC/s/WWTE56o+jB\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "MIIBGTCBwaADAgECAgECMAoGCCqGSM49BAMCMBcxFTATBgNVBAMMDGludGVybWVkaWF0ZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMBcxFTATBgNVBAMMDGludGVybWVkaWF0ZTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLwbRt5N6YfEBaDwC2G9DWy0wXmJDmI7H0HdpVhdxaHw95YH1RDyII/IX8kWVTem5VbYg7rSxB6GbH/SQ5BlR8gwCgYIKoZIzj0EAwIDRwAwRAIgJfiRhjs9KWImJDD9pQQYc0UlMDiQ1lGwCgaUrLFWjmcCIA6Qx6dlPJRCT6WpJ3Xp9JEsWiI2bwC/s/WWTE56o+jB"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "pkcs8_key": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIICtTCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMQ0wCwYDVQQDDARsZWFm\nMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFow\nHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCCASIwDQYJKoZIhvcNAQEB\nBQADggEPADCCAQoCggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPh\nUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghoke\nOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs3\n66PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE\n7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz\n6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAATANBgkqhkiG9w0B\nAQsFAAOCAQEARaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoH\nrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNc\nAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJ\nmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR\n12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+J\ndpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w==\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCuErtu1lXwgWR2\nC/suxl4VYkhxLGzb9EQidQpsxboD4VBa9KV1aLBwNh3impOVbwqPtHddVJ27xlOu\n/qTEnRytUfhF+w/UDoO/7GMzoIaJHjqu03pK6HVqPTtSCQ0Z8S3gBytV1/NmjqfV\nzTeI/vXmBT2snBw+kHNqsGeUCn3LN+uj6EPhdl3K5aYZB8AfPgAmMF+WVaqX5Ztq\nnxo/xYGvf9H+YlTktwq2Ef0EFb0rBO8FvR6AHVIl60CKe/aTjVEY/K8U4+Hbi64q\nuad81nHbWAzJ8WbKJeYF4IaHeyO58+mF69lmJE1JKwnt79XMizO1kOj1DS/MaG1/\nszRhxmUrAgMBAAECggEASBxQcxjtXwVrJY/PDVB1tywQ0HlT20Z0V0Xe/LJoXaUg\nEZ3ZUSr+NG3msXHRg40NdfyPmiUsdpYxIoQwo5ZmQ9J6JBteMj2VDJOTgNaWBQV1\nz+ihd5iW01zsTw6a081acLznkdc06J5eHq61u9XK7e/r3a6J8M0MUv0i22wBMoaX\n9B+A7F+HfJXf4Kes6hWvoHwkTQLXCbhgS5BgqaKT8q98MfOIMpgRlR0B8O0Wtb/+\nHth81kk/s7LqKKHZlIZmTJQNTVNtQnmBNxzSEDlWU2qPZbaBA2mNjOBZJIusrjPB\nmRu2LuCMFxQdADKE/78ebk0inpNqcXL0RkjIVHjZIQKBgQDXDgyBVpT/5LKdetru\njQoElJs441UqP0XIPpc+K3CpM6OF1lyi9lpwiQiR8uRlUzyomkCZtJZ+lRukg1K4\nERdvmM3Q+kEaABsL0LwzNLZTjUTvgED1ZOIgkxSdtsVaDXwgak20RuThsxVYJ77n\n4cudj6TqzLzoixyqPS5JtT9zEQKBgQDPNzOMMT1hcZAp9v7HWhLGYCVu4VPWnGPM\nAZUZ6H3eHsJxbUPmUeV84ugHLoI0PSRpUdxhp1OC8cSk9kEIXLlZpqIPDuOrKhCd\n+G7EJhJr8J7Z4jO2fGPLRZLog7htB9NgKzrg5PxZUzC6V7X6G1Po9oYspbmRPWEE\n8W9Tr/BcewKBgQCBZYGevQLwKaJTYR2kFZbmhKgVBawzvFh3kTmdfbPPCzQkDoQ0\nxbhLKBjRAG3ujbPc2ttt4JwA1CUKyr2V5SrNygpk6H8NbuzXIiRrRxdBlKna1bfA\nL5Bj+zuXXebHNX/vXSceBt4m84MvRNL4YQML7edUJBaycSmxQRi93uGrkQKBgQCV\n9igrDDOUwsAHbsZB9ZDi2hAdJ5sqFLIwoPCL+HKm/nHP7riWBazkbb5n/COktJ8W\nTXUFgzfv6xJaJBE6gQhutiZQaYEgjWfLO1DGSZtJXLFJk+fC6FC8elRwS2t8FI7H\n6WFKAs4Rwx/fq7x6Da7zSP4fb6xVTStajXP5B7oW4wKBgHN8Z75ERpsV94ElGizm\nwv3hVD2aoG8+AmTAHcQcjOlDdXhBz9YFfcbFndwF5T4LtxMBNJhl/2u0nloLs4VI\np4yakdnmXm1HYWET1qkW8132BplEqb11WvFsBlcXggSEux4Kzvsk7MqGoOeuwm/f\nBXXUE5CgH+85cH5vIAev6ClW\n-----END PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIICtTCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPhUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghokeOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs366PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEARaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoHrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNcAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+JdpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w=="
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "E": 65537,
+            "N": 21974702236460482974544780134201696947924615706854487789356383274816871848082237732388379417656964302909502620383777926269381318365766053328509461650590046093179615831147815325011763198091813263150087394446565143213903182330998208309515098066078259614147079140615081660270804038643407969033030644353784407723314805892320817499037507915673067713545433670121725706626238074893697646754037017359047555410387556378520852324813632988783042675033442954303117995829895523076067815360861103369108330877206013180143128191367211999884999868816372856090404254097710472564071284701998865272373226170482386162907058214533788493099
+          },
+          "PublicKeyAlgorithm": 1,
+          "Raw": "MIICtTCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPhUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghokeOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs366PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEARaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoHrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNcAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+JdpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w==",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhK7btZV8IFkdgv7LsZeFWJIcSxs2/REInUKbMW6A+FQWvSldWiwcDYd4pqTlW8Kj7R3XVSdu8ZTrv6kxJ0crVH4RfsP1A6Dv+xjM6CGiR46rtN6Suh1aj07UgkNGfEt4AcrVdfzZo6n1c03iP715gU9rJwcPpBzarBnlAp9yzfro+hD4XZdyuWmGQfAHz4AJjBfllWql+Wbap8aP8WBr3/R/mJU5LcKthH9BBW9KwTvBb0egB1SJetAinv2k41RGPyvFOPh24uuKrmnfNZx21gMyfFmyiXmBeCGh3sjufPphevZZiRNSSsJ7e/VzIsztZDo9Q0vzGhtf7M0YcZlKwIDAQAB",
+          "RawTBSCertificate": "MIIBnaADAgECAgEBMA0GCSqGSIb3DQEBCwUAMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhK7btZV8IFkdgv7LsZeFWJIcSxs2/REInUKbMW6A+FQWvSldWiwcDYd4pqTlW8Kj7R3XVSdu8ZTrv6kxJ0crVH4RfsP1A6Dv+xjM6CGiR46rtN6Suh1aj07UgkNGfEt4AcrVdfzZo6n1c03iP715gU9rJwcPpBzarBnlAp9yzfro+hD4XZdyuWmGQfAHz4AJjBfllWql+Wbap8aP8WBr3/R/mJU5LcKthH9BBW9KwTvBb0egB1SJetAinv2k41RGPyvFOPh24uuKrmnfNZx21gMyfFmyiXmBeCGh3sjufPphevZZiRNSSsJ7e/VzIsztZDo9Q0vzGhtf7M0YcZlKwIDAQAB",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "RaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoHrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNcAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+JdpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w==",
+          "SignatureAlgorithm": 4,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "D": 9103120237692687371651376106068966697273378272203373498836328326411084636214423488969774521414909499362041085811056150270647625193588088893536527066418498884351334211206372556857109099668807517604738127650484414500423539330519711878710124012328282806116835552261453102746418951815461234894452736066052655526988162636073174844618013580954704692398852293473050147182889495781861280434748435979899545531226778074751869868203643771801187585252393732957691070861179736127046367380501753073287889559458329982085499149375419842205840814175944207408983657252227788684504793128967401997701898039648417477959216770668199205153,
+          "E": 65537,
+          "N": 21974702236460482974544780134201696947924615706854487789356383274816871848082237732388379417656964302909502620383777926269381318365766053328509461650590046093179615831147815325011763198091813263150087394446565143213903182330998208309515098066078259614147079140615081660270804038643407969033030644353784407723314805892320817499037507915673067713545433670121725706626238074893697646754037017359047555410387556378520852324813632988783042675033442954303117995829895523076067815360861103369108330877206013180143128191367211999884999868816372856090404254097710472564071284701998865272373226170482386162907058214533788493099,
+          "Precomputed": {
+            "CRTValues": [],
+            "Dp": 90865318779619156586331204063118459988605871496992443566061347753881179808444885065721818608328465577256915280900286818073266421875034728960469690641141193465939758827622821449568660233284779803210962831986144643764279470572952319773930772848096098732629484911132729305845679393164055339226691571484320705425,
+            "Dq": 105306581905732276515304356858349564712704715498577447385307830862877825266761711773310534725865752667658911962650524841074939375329134943549657735336146904648738545904160793264336136418499480084000964251271852140349152940676303552089402464148685756594348648535668023175931565491843317672173022509534637856483,
+            "Qinv": 81096997602539693857556381701346648558160640298197267648470235965358236837845139185683299544204356665357461753719985327278039425942640307271990087963245593854547969090113271698088464050492578049609539229526200350028185282198156099757798377129715251460867728304299210317672778103947594294168122111841383491926
+          },
+          "Primes": [
+            151016671236271667517013367501447886599377754680049546673825540733550855402988675285984095202850978838452221661155937848909990654792284407270111381724658798371346181479621556801166061058219882178962718310041740712560027988307751786093477571073610276231591270068747132617787342844566548189762373786431869907729,
+            145511764075902426911457159868975846477398404765655404273565103865998103154352027335331812062853187555722492848177854192783493260261559737616519829655380878575647348308439686861725892860047659159273254636100347334374800992496213411484179917200708815912707992559026655313859179144382877781129759771603271441531
+          ]
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "base64_der": {
+      "cert": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+      "key": "MHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49AwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "base64_der_key_only": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "MHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49AwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "cert_with_key_block": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "key_then_cert": {
+      "cert": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "base64_of_pem": {
+      "cert": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJLRENCejZBREFnRUNBZ0VCTUFvR0NDcUdTTTQ5QkFNQ01CNHhEVEFMQmdOVkJBTU1CR3hsWVdZeERUQUwKQmdOVkJBb01CRUZqYldVd0hoY05NakF3TVRBeE1EQXdNREF3V2hjTk16QXdNVEF4TURBd01EQXdXakFlTVEwdwpDd1lEVlFRRERBUnNaV0ZtTVEwd0N3WURWUVFLREFSQlkyMWxNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBECkFRY0RRZ0FFN2U5Q1Y4TEV4RTJBQVBzQW8xUVhleWNLS3NEN20rZ3BwMWtlOCtYWkh5cFBCc0tWMXJhMGMxdEQKT2N0Qy9mcmUvRzVlWVNoYVloczJxRThMWFpObEdEQUtCZ2dxaGtqT1BRUURBZ05JQURCRkFpQUVQeVhvMkVqQgpScUxlUUd4MFpiamlsbk56bytvaDJuUTQ3MitFQ0IyMFN3SWhBTEhURVNrUE5nbFlNczROSTAveDJHN0VSK2RXCms0UXV6ejN0V0JjdTVpQmYKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "cert_trailing_text": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n\ntrailing text\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "key_arg_with_cert": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "two_keys_first_matches": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIKP3tqmx2fnPqqaq5ysf96NhXQ2n2EzYxUKsFYB8QZhUoAoGCCqGSM49\nAwEHoUQDQgAE8e9YAnpZz02uESYQCs1u0BfoWIIv6kkUZ8AHYaagM7ZgGibtzCXq\naNW6ahI8o+2rcPWS/iD5TgOLiSGwd+TwjQ==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "chain_garbage_intermediate": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nQUJDREVGR0g=\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "QUJDREVGR0g="
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "rsa_pkcs8_base64_trailing": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIICtTCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMQ0wCwYDVQQDDARsZWFm\nMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFow\nHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCCASIwDQYJKoZIhvcNAQEB\nBQADggEPADCCAQoCggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPh\nUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghoke\nOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs3\n66PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE\n7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz\n6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAATANBgkqhkiG9w0B\nAQsFAAOCAQEARaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoH\nrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNc\nAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJ\nmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR\n12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+J\ndpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w==\n-----END CERTIFICATE-----\n",
+      "key": "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCuErtu1lXwgWR2C/suxl4VYkhxLGzb9EQidQpsxboD4VBa9KV1aLBwNh3impOVbwqPtHddVJ27xlOu/qTEnRytUfhF+w/UDoO/7GMzoIaJHjqu03pK6HVqPTtSCQ0Z8S3gBytV1/NmjqfVzTeI/vXmBT2snBw+kHNqsGeUCn3LN+uj6EPhdl3K5aYZB8AfPgAmMF+WVaqX5Ztqnxo/xYGvf9H+YlTktwq2Ef0EFb0rBO8FvR6AHVIl60CKe/aTjVEY/K8U4+Hbi64quad81nHbWAzJ8WbKJeYF4IaHeyO58+mF69lmJE1JKwnt79XMizO1kOj1DS/MaG1/szRhxmUrAgMBAAECggEASBxQcxjtXwVrJY/PDVB1tywQ0HlT20Z0V0Xe/LJoXaUgEZ3ZUSr+NG3msXHRg40NdfyPmiUsdpYxIoQwo5ZmQ9J6JBteMj2VDJOTgNaWBQV1z+ihd5iW01zsTw6a081acLznkdc06J5eHq61u9XK7e/r3a6J8M0MUv0i22wBMoaX9B+A7F+HfJXf4Kes6hWvoHwkTQLXCbhgS5BgqaKT8q98MfOIMpgRlR0B8O0Wtb/+Hth81kk/s7LqKKHZlIZmTJQNTVNtQnmBNxzSEDlWU2qPZbaBA2mNjOBZJIusrjPBmRu2LuCMFxQdADKE/78ebk0inpNqcXL0RkjIVHjZIQKBgQDXDgyBVpT/5LKdetrujQoElJs441UqP0XIPpc+K3CpM6OF1lyi9lpwiQiR8uRlUzyomkCZtJZ+lRukg1K4ERdvmM3Q+kEaABsL0LwzNLZTjUTvgED1ZOIgkxSdtsVaDXwgak20RuThsxVYJ77n4cudj6TqzLzoixyqPS5JtT9zEQKBgQDPNzOMMT1hcZAp9v7HWhLGYCVu4VPWnGPMAZUZ6H3eHsJxbUPmUeV84ugHLoI0PSRpUdxhp1OC8cSk9kEIXLlZpqIPDuOrKhCd+G7EJhJr8J7Z4jO2fGPLRZLog7htB9NgKzrg5PxZUzC6V7X6G1Po9oYspbmRPWEE8W9Tr/BcewKBgQCBZYGevQLwKaJTYR2kFZbmhKgVBawzvFh3kTmdfbPPCzQkDoQ0xbhLKBjRAG3ujbPc2ttt4JwA1CUKyr2V5SrNygpk6H8NbuzXIiRrRxdBlKna1bfAL5Bj+zuXXebHNX/vXSceBt4m84MvRNL4YQML7edUJBaycSmxQRi93uGrkQKBgQCV9igrDDOUwsAHbsZB9ZDi2hAdJ5sqFLIwoPCL+HKm/nHP7riWBazkbb5n/COktJ8WTXUFgzfv6xJaJBE6gQhutiZQaYEgjWfLO1DGSZtJXLFJk+fC6FC8elRwS2t8FI7H6WFKAs4Rwx/fq7x6Da7zSP4fb6xVTStajXP5B7oW4wKBgHN8Z75ERpsV94ElGizmwv3hVD2aoG8+AmTAHcQcjOlDdXhBz9YFfcbFndwF5T4LtxMBNJhl/2u0nloLs4VIp4yakdnmXm1HYWET1qkW8132BplEqb11WvFsBlcXggSEux4Kzvsk7MqGoOeuwm/fBXXUE5CgH+85cH5vIAev6ClWAA==",
+      "expected": {
+        "Certificate": [
+          "MIICtTCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPhUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghokeOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs366PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEARaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoHrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNcAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+JdpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w=="
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "E": 65537,
+            "N": 21974702236460482974544780134201696947924615706854487789356383274816871848082237732388379417656964302909502620383777926269381318365766053328509461650590046093179615831147815325011763198091813263150087394446565143213903182330998208309515098066078259614147079140615081660270804038643407969033030644353784407723314805892320817499037507915673067713545433670121725706626238074893697646754037017359047555410387556378520852324813632988783042675033442954303117995829895523076067815360861103369108330877206013180143128191367211999884999868816372856090404254097710472564071284701998865272373226170482386162907058214533788493099
+          },
+          "PublicKeyAlgorithm": 1,
+          "Raw": "MIICtTCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPhUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghokeOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs366PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEARaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoHrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNcAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+JdpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w==",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhK7btZV8IFkdgv7LsZeFWJIcSxs2/REInUKbMW6A+FQWvSldWiwcDYd4pqTlW8Kj7R3XVSdu8ZTrv6kxJ0crVH4RfsP1A6Dv+xjM6CGiR46rtN6Suh1aj07UgkNGfEt4AcrVdfzZo6n1c03iP715gU9rJwcPpBzarBnlAp9yzfro+hD4XZdyuWmGQfAHz4AJjBfllWql+Wbap8aP8WBr3/R/mJU5LcKthH9BBW9KwTvBb0egB1SJetAinv2k41RGPyvFOPh24uuKrmnfNZx21gMyfFmyiXmBeCGh3sjufPphevZZiRNSSsJ7e/VzIsztZDo9Q0vzGhtf7M0YcZlKwIDAQAB",
+          "RawTBSCertificate": "MIIBnaADAgECAgEBMA0GCSqGSIb3DQEBCwUAMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhK7btZV8IFkdgv7LsZeFWJIcSxs2/REInUKbMW6A+FQWvSldWiwcDYd4pqTlW8Kj7R3XVSdu8ZTrv6kxJ0crVH4RfsP1A6Dv+xjM6CGiR46rtN6Suh1aj07UgkNGfEt4AcrVdfzZo6n1c03iP715gU9rJwcPpBzarBnlAp9yzfro+hD4XZdyuWmGQfAHz4AJjBfllWql+Wbap8aP8WBr3/R/mJU5LcKthH9BBW9KwTvBb0egB1SJetAinv2k41RGPyvFOPh24uuKrmnfNZx21gMyfFmyiXmBeCGh3sjufPphevZZiRNSSsJ7e/VzIsztZDo9Q0vzGhtf7M0YcZlKwIDAQAB",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "RaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoHrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNcAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+JdpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w==",
+          "SignatureAlgorithm": 4,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "D": 9103120237692687371651376106068966697273378272203373498836328326411084636214423488969774521414909499362041085811056150270647625193588088893536527066418498884351334211206372556857109099668807517604738127650484414500423539330519711878710124012328282806116835552261453102746418951815461234894452736066052655526988162636073174844618013580954704692398852293473050147182889495781861280434748435979899545531226778074751869868203643771801187585252393732957691070861179736127046367380501753073287889559458329982085499149375419842205840814175944207408983657252227788684504793128967401997701898039648417477959216770668199205153,
+          "E": 65537,
+          "N": 21974702236460482974544780134201696947924615706854487789356383274816871848082237732388379417656964302909502620383777926269381318365766053328509461650590046093179615831147815325011763198091813263150087394446565143213903182330998208309515098066078259614147079140615081660270804038643407969033030644353784407723314805892320817499037507915673067713545433670121725706626238074893697646754037017359047555410387556378520852324813632988783042675033442954303117995829895523076067815360861103369108330877206013180143128191367211999884999868816372856090404254097710472564071284701998865272373226170482386162907058214533788493099,
+          "Precomputed": {
+            "CRTValues": [],
+            "Dp": 90865318779619156586331204063118459988605871496992443566061347753881179808444885065721818608328465577256915280900286818073266421875034728960469690641141193465939758827622821449568660233284779803210962831986144643764279470572952319773930772848096098732629484911132729305845679393164055339226691571484320705425,
+            "Dq": 105306581905732276515304356858349564712704715498577447385307830862877825266761711773310534725865752667658911962650524841074939375329134943549657735336146904648738545904160793264336136418499480084000964251271852140349152940676303552089402464148685756594348648535668023175931565491843317672173022509534637856483,
+            "Qinv": 81096997602539693857556381701346648558160640298197267648470235965358236837845139185683299544204356665357461753719985327278039425942640307271990087963245593854547969090113271698088464050492578049609539229526200350028185282198156099757798377129715251460867728304299210317672778103947594294168122111841383491926
+          },
+          "Primes": [
+            151016671236271667517013367501447886599377754680049546673825540733550855402988675285984095202850978838452221661155937848909990654792284407270111381724658798371346181479621556801166061058219882178962718310041740712560027988307751786093477571073610276231591270068747132617787342844566548189762373786431869907729,
+            145511764075902426911457159868975846477398404765655404273565103865998103154352027335331812062853187555722492848177854192783493260261559737616519829655380878575647348308439686861725892860047659159273254636100347334374800992496213411484179917200708815912707992559026655313859179144382877781129759771603271441531
+          ]
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    },
+    "ec_sec1_base64_trailing": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "MHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49AwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGAA=",
+      "expected": {
+        "Certificate": [
+          "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf"
+        ],
+        "Leaf": {
+          "AuthorityKeyId": null,
+          "BasicConstraintsValid": false,
+          "CRLDistributionPoints": null,
+          "DNSNames": null,
+          "EmailAddresses": null,
+          "ExcludedDNSDomains": null,
+          "ExcludedEmailAddresses": null,
+          "ExcludedIPRanges": null,
+          "ExcludedURIDomains": null,
+          "ExtKeyUsage": null,
+          "Extensions": null,
+          "ExtraExtensions": null,
+          "IPAddresses": null,
+          "InhibitAnyPolicy": 0,
+          "InhibitAnyPolicyZero": false,
+          "InhibitPolicyMapping": 0,
+          "InhibitPolicyMappingZero": false,
+          "IsCA": false,
+          "Issuer": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "IssuingCertificateURL": null,
+          "KeyUsage": 0,
+          "MaxPathLen": 0,
+          "MaxPathLenZero": false,
+          "NotAfter": "2030-01-01T00:00:00Z",
+          "NotBefore": "2020-01-01T00:00:00Z",
+          "OCSPServer": null,
+          "PermittedDNSDomains": null,
+          "PermittedDNSDomainsCritical": false,
+          "PermittedEmailAddresses": null,
+          "PermittedIPRanges": null,
+          "PermittedURIDomains": null,
+          "Policies": null,
+          "PolicyIdentifiers": null,
+          "PolicyMappings": null,
+          "PublicKey": {
+            "Curve": {},
+            "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+            "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+          },
+          "PublicKeyAlgorithm": 3,
+          "Raw": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBf",
+          "RawIssuer": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubject": "MB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWU=",
+          "RawSubjectPublicKeyInfo": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==",
+          "RawTBSCertificate": "MIHPoAMCAQICAQEwCgYIKoZIzj0EAwIwHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATt70JXwsTETYAA+wCjVBd7JwoqwPub6CmnWR7z5dkfKk8GwpXWtrRzW0M5y0L9+t78bl5hKFpiGzaoTwtdk2UY",
+          "RequireExplicitPolicy": 0,
+          "RequireExplicitPolicyZero": false,
+          "SerialNumber": 1,
+          "Signature": "MEUCIAQ/JejYSMFGot5AbHRluOKWc3Oj6iHadDjvb4QIHbRLAiEAsdMRKQ82CVgyzg0jT/HYbsRH51aThC7PPe1YFy7mIF8=",
+          "SignatureAlgorithm": 10,
+          "Subject": {
+            "CommonName": "leaf",
+            "Country": null,
+            "ExtraNames": null,
+            "Locality": null,
+            "Names": [
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  3
+                ],
+                "Value": "leaf"
+              },
+              {
+                "Type": [
+                  2,
+                  5,
+                  4,
+                  10
+                ],
+                "Value": "Acme"
+              }
+            ],
+            "Organization": [
+              "Acme"
+            ],
+            "OrganizationalUnit": null,
+            "PostalCode": null,
+            "Province": null,
+            "SerialNumber": "",
+            "StreetAddress": null
+          },
+          "SubjectKeyId": null,
+          "URIs": null,
+          "UnhandledCriticalExtensions": null,
+          "UnknownExtKeyUsage": null,
+          "Version": 3
+        },
+        "OCSPStaple": null,
+        "PrivateKey": {
+          "Curve": {},
+          "D": 45437212262065260059931544107692597610990426093051921808456628029993407847452,
+          "X": 107620879444001945871904853378874237992604829987771281718524994374915826720554,
+          "Y": 35744659098902036609671971659919457431889094411063947793377031397322570032408
+        },
+        "SignedCertificateTimestamps": null,
+        "SupportedSignatureAlgorithms": null
+      }
+    }
+  },
+  "edges": {
+    "garbage_cert": {
+      "cert": "not a cert",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "garbage_key": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "not a key",
+      "expected": "__undef__"
+    },
+    "empty_cert": {
+      "cert": "",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "empty_key": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "",
+      "expected": "__undef__"
+    },
+    "mismatched_key": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIPVRhG2AwoTMd8++YkHCug8PCt+hLNm0QhN3u5s9BHO3oAoGCCqGSM49\nAwEHoUQDQgAEeg5azMNogZ8orYT/qQxAFL4VPgwrtHRxIlc+UylBW+Dbvwyh3iJV\nH81dINtFFdI1iE+vVTAjp3xg38ZDWviAHg==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "type_mismatch_rsa_key": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEArhK7btZV8IFkdgv7LsZeFWJIcSxs2/REInUKbMW6A+FQWvSl\ndWiwcDYd4pqTlW8Kj7R3XVSdu8ZTrv6kxJ0crVH4RfsP1A6Dv+xjM6CGiR46rtN6\nSuh1aj07UgkNGfEt4AcrVdfzZo6n1c03iP715gU9rJwcPpBzarBnlAp9yzfro+hD\n4XZdyuWmGQfAHz4AJjBfllWql+Wbap8aP8WBr3/R/mJU5LcKthH9BBW9KwTvBb0e\ngB1SJetAinv2k41RGPyvFOPh24uuKrmnfNZx21gMyfFmyiXmBeCGh3sjufPphevZ\nZiRNSSsJ7e/VzIsztZDo9Q0vzGhtf7M0YcZlKwIDAQABAoIBAEgcUHMY7V8FayWP\nzw1QdbcsENB5U9tGdFdF3vyyaF2lIBGd2VEq/jRt5rFx0YONDXX8j5olLHaWMSKE\nMKOWZkPSeiQbXjI9lQyTk4DWlgUFdc/ooXeYltNc7E8OmtPNWnC855HXNOieXh6u\ntbvVyu3v692uifDNDFL9IttsATKGl/QfgOxfh3yV3+CnrOoVr6B8JE0C1wm4YEuQ\nYKmik/KvfDHziDKYEZUdAfDtFrW//h7YfNZJP7Oy6iih2ZSGZkyUDU1TbUJ5gTcc\n0hA5VlNqj2W2gQNpjYzgWSSLrK4zwZkbti7gjBcUHQAyhP+/Hm5NIp6TanFy9EZI\nyFR42SECgYEA1w4MgVaU/+SynXra7o0KBJSbOONVKj9FyD6XPitwqTOjhdZcovZa\ncIkIkfLkZVM8qJpAmbSWfpUbpINSuBEXb5jN0PpBGgAbC9C8MzS2U41E74BA9WTi\nIJMUnbbFWg18IGpNtEbk4bMVWCe+5+HLnY+k6sy86Iscqj0uSbU/cxECgYEAzzcz\njDE9YXGQKfb+x1oSxmAlbuFT1pxjzAGVGeh93h7CcW1D5lHlfOLoBy6CND0kaVHc\nYadTgvHEpPZBCFy5WaaiDw7jqyoQnfhuxCYSa/Ce2eIztnxjy0WS6IO4bQfTYCs6\n4OT8WVMwule1+htT6PaGLKW5kT1hBPFvU6/wXHsCgYEAgWWBnr0C8CmiU2EdpBWW\n5oSoFQWsM7xYd5E5nX2zzws0JA6ENMW4SygY0QBt7o2z3NrbbeCcANQlCsq9leUq\nzcoKZOh/DW7s1yIka0cXQZSp2tW3wC+QY/s7l13mxzV/710nHgbeJvODL0TS+GED\nC+3nVCQWsnEpsUEYvd7hq5ECgYEAlfYoKwwzlMLAB27GQfWQ4toQHSebKhSyMKDw\ni/hypv5xz+64lgWs5G2+Z/wjpLSfFk11BYM37+sSWiQROoEIbrYmUGmBII1nyztQ\nxkmbSVyxSZPnwuhQvHpUcEtrfBSOx+lhSgLOEcMf36u8eg2u80j+H2+sVU0rWo1z\n+Qe6FuMCgYBzfGe+REabFfeBJRos5sL94VQ9mqBvPgJkwB3EHIzpQ3V4Qc/WBX3G\nxZ3cBeU+C7cTATSYZf9rtJ5aC7OFSKeMmpHZ5l5tR2FhE9apFvNd9gaZRKm9dVrx\nbAZXF4IEhLseCs77JOzKhqDnrsJv3wV11BOQoB/vOXB+byAHr+gpVg==\n-----END RSA PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "public_key_arg": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7\nm+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END PUBLIC KEY-----\n",
+      "expected": "__undef__"
+    },
+    "encrypted_key": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-128-CBC,1B4F834944A691AC97703A7BEF2C61FF\n\nyp8eAnPXOVo1VfXgQiDTGBW4zazc9qHF4ZoCZrdhKeojrnK0hWazRiYjYtcFrPCG\njlUTMlg4P7RifGhAW7kdV4/yV+wZ15IUVnSFHXFAs2h2NHiKvibLUrbseyTb21Ip\n5fBvdXjB6arE7lM8hkex4t1SeDpogHbU+xckWMa4ZCg4q8pplpLYJ50pGlFKdQI4\n3X5sJpkLPA7StEPQUNCEpMLU70Yo7zMAjqY+AX6v9OM9LNHyQ7BDDD+TOQzjRhgQ\nEFipst1EeNU2P3xSJ5mKP4BtuKD3WcYcAzRempyDllF4R7OuijVGIClyptkjib9W\nwX8dPMPlSDD4gpO4vqSkF7VXveX2b9TXJ/O2APbhOb2YQktIBz4ZFmND+VQygjCs\nIzq/+p/ZC71ixKFmwcoPgTD1OjkBIGFxrBqxZHttZsMXGMxjmuhu2CAPM3ifs6A9\nRQWX4nlSjBnuNxD8NlxoymROTlrTnBv+UN8/z4ClB0ziD9EdEAhY1nXJCyScspRv\nGsYrRwHNosyD492ZaII2mP0AsMxLm4JmI1CXjk2AeotA0tgTJssd3QPR0C054EgP\n1YzvXDAkbKGOlkmhjpkguFP2BisZ6tw7Xq1WHX7ZfxcxkRBZIX5xFHxgLB8tJCXf\nPqqBuTO01txc+a0WBUR/Xcb1+QXd3rDWNR+C6EU6E/shamvQe39EP3mIfJKIh5Vw\ndq/6Q8D53RcVYjxYOx0MtM+l5COPktf0J2JGuauGGv8xw0aIKo6WLHzekC7IUNQV\nyalItiNDJUU5L9f/y+I1p6eQbi94O+VMl7S/wg1VX1IWCeIx+I85HT4pfLlU1wv4\n8/vSLniCLDchtT+RJrTTvVtiulRU3hMFmAOdOktRa4spQ5sqbSukEEwi6v2Ikmfi\nVMNku+DwU7/s5UQTA799nBFl7ZV6Fi+y2tW/uRXOgHM7P3h2LqFjuNjZo+rRuidZ\nfALhU9CDP8sxLd8RaSRmBknkFA8lJPbL6nDMX4s2yy/Jb6xaOa3yBDlFftjTX8Fq\nWIRCVNF8WFnNu10IR4k33mOkmqaFQx0/UPUVdeEr9jH25xhrYcWsvTDr2XMHuOZ1\nFrC1EeAcTM7/Eu9TnieEY3yo/qweZvTiFbTHoi3JjikA/D4bPEgOs8tXVITvdGvc\nLk+Fvo68vooRL4q+q35pXlVG9fDYi2beTymbriJDaEH8NWNIRTibF7kEepYV6wCA\nkbKyrUTVuj59HfFEWD5JG3bvDk+wpb/YLr68IWEXOcDafSwFB4Fcr4XMmjiEoOX5\nWl4wMHEDB+0y2sTimZyNyF/XPWmvVQvnMbt8G+8IQT1OFQrs9hdnhFOHwFnmda3W\n0MV5F3oezD1VOJowcItTsdEJXAgxEuuveQS069EVSCes+xZDVnLt9KWyeqZIl4Oi\nnlQjxJWzIBLIvGsWrIK+x9aOFaOh/gAGVh/j0zPavno6wQ1h9Hz7xeDuan5mdqDq\ntUMMNuB98/zmmkBZWWlhEPS5dVN0kVItnKOAN6bZ7vLMOUfkp9LPEI3uttNR0ZBJ\nNaq/BHB2jfjGdCWBKlIS26Z31FewtOLMqQDdqrLBVWmgx7yWAGjH+J6TXRvy36C2\n-----END RSA PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "swapped_args": {
+      "cert": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "key": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "expected": "__undef__"
+    },
+    "chain_key_matches_2nd": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIBGzCBwaADAgECAgECMAoGCCqGSM49BAMCMBcxFTATBgNVBAMMDGludGVybWVk\naWF0ZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMBcxFTATBgNVBAMM\nDGludGVybWVkaWF0ZTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKE2hLKeZjKN\n/DBuYJMgfLwtcRJe8t8b2zyhFQZfn+plCEIADcxBVeigvQ3vkNxVSP/VWYcsbjAu\n1oFaroYU3YYwCgYIKoZIzj0EAwIDSQAwRgIhAOIGZRC0f8D2Zir6nnUcBJbBCTjN\n6CnHUThDwiNOSsMwAiEAyAb8IyyY7uXXoB7MdhdoMsynppUrxG2sA7wriaZx5p8=\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEILtI/xMSEaAHUzVKbeOasMdz1L9+8ZGzUaKG8z5c1n9noAoGCCqGSM49\nAwEHoUQDQgAEoTaEsp5mMo38MG5gkyB8vC1xEl7y3xvbPKEVBl+f6mUIQgANzEFV\n6KC9De+Q3FVI/9VZhyxuMC7WgVquhhTdhg==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "csr_block_as_cert": {
+      "cert": "-----BEGIN CERTIFICATE REQUEST-----\nMIHHMG4CAQAwDDEKMAgGA1UEAwwBeDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IA\nBO3vQlfCxMRNgAD7AKNUF3snCirA+5voKadZHvPl2R8qTwbClda2tHNbQznLQv36\n3vxuXmEoWmIbNqhPC12TZRigADAKBggqhkjOPQQDAgNJADBGAiEA7LWHMyOnMk/V\n+TrgeZ895tv0bVWGEFyzoVWmaqPPaDQCIQDMlS29hUAPIPXMOFzYztGtMBqa4Eij\ngwVVmx3NwAYZRQ==\n-----END CERTIFICATE REQUEST-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "dsa_keypair": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIEGzCCA8CgAwIBAgIBATALBglghkgBZQMEAwIwHjENMAsGA1UEAwwEbGVhZjEN\nMAsGA1UECgwEQWNtZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMB4x\nDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwggNHMIICOgYHKoZIzjgEATCC\nAi0CggEBAOKqUMcH1NTl4r4D6DTMBnxd+WIPW3uSVYLN7VSK4xG2/aDZwVLSkllO\nj9kEVRxw+J3DHOrTJjRNrwJ75JQYC8+zvyW6GGz66Qe55ciAnutChGNph7zWrzqW\nujOPqBOxpW8TucJFmQAYe+gLJ+e6TNEa0yY2R1xBc5J1q2zVxUjLAg58VxRlwlcy\n243h3e7KL7s4iftXU4lrCRh/YaYm7lh4b6GTVJFqrA75og516msal2/VLFfaSftS\nD9JTpZmdYOiVLrxoCoWfHNCVNGDC2M0p01SlC020w9n1b78KtkNN8gRD8JmXCswc\nBPvQS8h6Az7Iq/8Jf1YWH9wXkyOACE8CIQC4iulESn/iI01CyuoOOzrN2RAYf0jw\n+T/aA/tHyrJK9wKCAQEAujUBqmVyZIk+6kxD6n6SosTv6XOGDAcoZpkS//kcNkYR\nYXRa5xQXciTDxTNxqnfZKS/tHaf/4zyCsQdj4Id4QPnZLYsbcjYPTxdZ9ftS9Yx/\n53nmopePOktXOpCHm2bSkDerpg/oZpxnq+SsU99zxtlNP39WOBMaaYR9Q2z+f3t7\nu2Mtp4Hwi3QEg6N6DyLXbdKOzkJzDBPXRxyYgIyFLHIZ+ecsdqNt7+WrxhIOovoy\nbGSHr4dTNWH3GcvF9Gi67QcshUOcCUWnBWEh3VqpWo3iFRqsqU35S+bgM6pb55mR\n7S30E12lR+3EQsRxpSht9WIGSsJEqyjiL0Gl/EIMHgOCAQUAAoIBADhR8k1+GxdR\naT85ZnETOqhjiH0XWjYhy7jU+kj9cxk5WQNdJJok04kB1o98giIXimdGJh5v6VSv\nTTPWTEhp3Leqt+RpjuU67knKYqZErA82Mk3HxbzhS1ZZvzK8UReQInxKspSLiF1J\nY01gWndYNmcg6hn7MdzkDc/7+zXKokiwZLSTuT21NSnpwJLB9VpYb7A49loYgZAj\nouxd235lHKWZGkW+WG5yOX80kFEdp/Ver3Kksfzf1oasP839st+MdIzU1hMpi4ei\nRkkBRxXcRXfS5GkOQno8wcP4jexxs80+Iizn0w8DfeE+oS5RuWCIZfef5VV99JLh\n9QqO4YH97C0wCwYJYIZIAWUDBAMCA0gAMEUCICda8US9dezENbnWdq4Woe13wLej\nSKK29oY5QeWEgNtvAiEAiCm3e45/mz7qMfE8GsdDAMzqWpBF+2f5DteTC1NNVxw=\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN DSA PRIVATE KEY-----\nMIIDVgIBAAKCAQEA4qpQxwfU1OXivgPoNMwGfF35Yg9be5JVgs3tVIrjEbb9oNnB\nUtKSWU6P2QRVHHD4ncMc6tMmNE2vAnvklBgLz7O/JboYbPrpB7nlyICe60KEY2mH\nvNavOpa6M4+oE7GlbxO5wkWZABh76Asn57pM0RrTJjZHXEFzknWrbNXFSMsCDnxX\nFGXCVzLbjeHd7sovuziJ+1dTiWsJGH9hpibuWHhvoZNUkWqsDvmiDnXqaxqXb9Us\nV9pJ+1IP0lOlmZ1g6JUuvGgKhZ8c0JU0YMLYzSnTVKULTbTD2fVvvwq2Q03yBEPw\nmZcKzBwE+9BLyHoDPsir/wl/VhYf3BeTI4AITwIhALiK6URKf+IjTULK6g47Os3Z\nEBh/SPD5P9oD+0fKskr3AoIBAQC6NQGqZXJkiT7qTEPqfpKixO/pc4YMByhmmRL/\n+Rw2RhFhdFrnFBdyJMPFM3Gqd9kpL+0dp//jPIKxB2Pgh3hA+dktixtyNg9PF1n1\n+1L1jH/neeail486S1c6kIebZtKQN6umD+hmnGer5KxT33PG2U0/f1Y4ExpphH1D\nbP5/e3u7Yy2ngfCLdASDo3oPItdt0o7OQnMME9dHHJiAjIUschn55yx2o23v5avG\nEg6i+jJsZIevh1M1YfcZy8X0aLrtByyFQ5wJRacFYSHdWqlajeIVGqypTflL5uAz\nqlvnmZHtLfQTXaVH7cRCxHGlKG31YgZKwkSrKOIvQaX8QgweAoIBADhR8k1+GxdR\naT85ZnETOqhjiH0XWjYhy7jU+kj9cxk5WQNdJJok04kB1o98giIXimdGJh5v6VSv\nTTPWTEhp3Leqt+RpjuU67knKYqZErA82Mk3HxbzhS1ZZvzK8UReQInxKspSLiF1J\nY01gWndYNmcg6hn7MdzkDc/7+zXKokiwZLSTuT21NSnpwJLB9VpYb7A49loYgZAj\nouxd235lHKWZGkW+WG5yOX80kFEdp/Ver3Kksfzf1oasP839st+MdIzU1hMpi4ei\nRkkBRxXcRXfS5GkOQno8wcP4jexxs80+Iizn0w8DfeE+oS5RuWCIZfef5VV99JLh\n9QqO4YH97C0CIFUOp7dWAAkMRh5d1XUJq/s/q1T9BmVFcmXtb89vc94Y\n-----END DSA PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "base64_der_chain": {
+      "cert": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBfMIIBGTCBwaADAgECAgECMAoGCCqGSM49BAMCMBcxFTATBgNVBAMMDGludGVybWVkaWF0ZTAeFw0yMDAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMBcxFTATBgNVBAMMDGludGVybWVkaWF0ZTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLwbRt5N6YfEBaDwC2G9DWy0wXmJDmI7H0HdpVhdxaHw95YH1RDyII/IX8kWVTem5VbYg7rSxB6GbH/SQ5BlR8gwCgYIKoZIzj0EAwIDRwAwRAIgJfiRhjs9KWImJDD9pQQYc0UlMDiQ1lGwCgaUrLFWjmcCIA6Qx6dlPJRCT6WpJ3Xp9JEsWiI2bwC/s/WWTE56o+jB",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "base64_der_trailing": {
+      "cert": "MIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTALBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0wCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tDOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjBRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dWk4Quzz3tWBcu5iBfAA==",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "key_only_no_cert": {
+      "cert": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "two_keys_first_other": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIBmdQXYQYtdP7kHHfWmAvlXYZB0Vy53G2OywM77KZ4rCoAoGCCqGSM49\nAwEHoUQDQgAExQuCHlmXEVFCMW3heTEjrQYhPG/5BJBunzA9azpYpAjLCwTr9ZiV\nHlte9SAC3t48HBcUSStStjB29x277gftbQ==\n-----END EC PRIVATE KEY-----\n-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "key_malformed_first": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nQUJDREVG\n-----END EC PRIVATE KEY-----\n-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "key_unrecognized_type_first": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN FOO PRIVATE KEY-----\nQUJDREVG\n-----END FOO PRIVATE KEY-----\n-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "garbage_leaf": {
+      "cert": "-----BEGIN CERTIFICATE-----\nQUJDREVGR0g=\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIBKDCBz6ADAgECAgEBMAoGCCqGSM49BAMCMB4xDTALBgNVBAMMBGxlYWYxDTAL\nBgNVBAoMBEFjbWUwHhcNMjAwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAeMQ0w\nCwYDVQQDDARsZWFmMQ0wCwYDVQQKDARBY21lMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0c1tD\nOctC/fre/G5eYShaYhs2qE8LXZNlGDAKBggqhkjOPQQDAgNIADBFAiAEPyXo2EjB\nRqLeQGx0ZbjilnNzo+oh2nQ472+ECB20SwIhALHTESkPNglYMs4NI0/x2G7ER+dW\nk4Quzz3tWBcu5iBf\n-----END CERTIFICATE-----\n",
+      "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIGR0jP/s6JPyJ4MBVzu8XRZiTho22SEUFb3bSyQdfZwcoAoGCCqGSM49\nAwEHoUQDQgAE7e9CV8LExE2AAPsAo1QXeycKKsD7m+gpp1ke8+XZHypPBsKV1ra0\nc1tDOctC/fre/G5eYShaYhs2qE8LXZNlGA==\n-----END EC PRIVATE KEY-----\n",
+      "expected": "__undef__"
+    },
+    "rsa_pkcs1_base64_trailing": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIICtTCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMQ0wCwYDVQQDDARsZWFm\nMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFow\nHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCCASIwDQYJKoZIhvcNAQEB\nBQADggEPADCCAQoCggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPh\nUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghoke\nOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs3\n66PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE\n7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz\n6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAATANBgkqhkiG9w0B\nAQsFAAOCAQEARaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoH\nrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNc\nAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJ\nmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR\n12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+J\ndpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w==\n-----END CERTIFICATE-----\n",
+      "key": "MIIEpAIBAAKCAQEArhK7btZV8IFkdgv7LsZeFWJIcSxs2/REInUKbMW6A+FQWvSldWiwcDYd4pqTlW8Kj7R3XVSdu8ZTrv6kxJ0crVH4RfsP1A6Dv+xjM6CGiR46rtN6Suh1aj07UgkNGfEt4AcrVdfzZo6n1c03iP715gU9rJwcPpBzarBnlAp9yzfro+hD4XZdyuWmGQfAHz4AJjBfllWql+Wbap8aP8WBr3/R/mJU5LcKthH9BBW9KwTvBb0egB1SJetAinv2k41RGPyvFOPh24uuKrmnfNZx21gMyfFmyiXmBeCGh3sjufPphevZZiRNSSsJ7e/VzIsztZDo9Q0vzGhtf7M0YcZlKwIDAQABAoIBAEgcUHMY7V8FayWPzw1QdbcsENB5U9tGdFdF3vyyaF2lIBGd2VEq/jRt5rFx0YONDXX8j5olLHaWMSKEMKOWZkPSeiQbXjI9lQyTk4DWlgUFdc/ooXeYltNc7E8OmtPNWnC855HXNOieXh6utbvVyu3v692uifDNDFL9IttsATKGl/QfgOxfh3yV3+CnrOoVr6B8JE0C1wm4YEuQYKmik/KvfDHziDKYEZUdAfDtFrW//h7YfNZJP7Oy6iih2ZSGZkyUDU1TbUJ5gTcc0hA5VlNqj2W2gQNpjYzgWSSLrK4zwZkbti7gjBcUHQAyhP+/Hm5NIp6TanFy9EZIyFR42SECgYEA1w4MgVaU/+SynXra7o0KBJSbOONVKj9FyD6XPitwqTOjhdZcovZacIkIkfLkZVM8qJpAmbSWfpUbpINSuBEXb5jN0PpBGgAbC9C8MzS2U41E74BA9WTiIJMUnbbFWg18IGpNtEbk4bMVWCe+5+HLnY+k6sy86Iscqj0uSbU/cxECgYEAzzczjDE9YXGQKfb+x1oSxmAlbuFT1pxjzAGVGeh93h7CcW1D5lHlfOLoBy6CND0kaVHcYadTgvHEpPZBCFy5WaaiDw7jqyoQnfhuxCYSa/Ce2eIztnxjy0WS6IO4bQfTYCs64OT8WVMwule1+htT6PaGLKW5kT1hBPFvU6/wXHsCgYEAgWWBnr0C8CmiU2EdpBWW5oSoFQWsM7xYd5E5nX2zzws0JA6ENMW4SygY0QBt7o2z3NrbbeCcANQlCsq9leUqzcoKZOh/DW7s1yIka0cXQZSp2tW3wC+QY/s7l13mxzV/710nHgbeJvODL0TS+GEDC+3nVCQWsnEpsUEYvd7hq5ECgYEAlfYoKwwzlMLAB27GQfWQ4toQHSebKhSyMKDwi/hypv5xz+64lgWs5G2+Z/wjpLSfFk11BYM37+sSWiQROoEIbrYmUGmBII1nyztQxkmbSVyxSZPnwuhQvHpUcEtrfBSOx+lhSgLOEcMf36u8eg2u80j+H2+sVU0rWo1z+Qe6FuMCgYBzfGe+REabFfeBJRos5sL94VQ9mqBvPgJkwB3EHIzpQ3V4Qc/WBX3GxZ3cBeU+C7cTATSYZf9rtJ5aC7OFSKeMmpHZ5l5tR2FhE9apFvNd9gaZRKm9dVrxbAZXF4IEhLseCs77JOzKhqDnrsJv3wV11BOQoB/vOXB+byAHr+gpVgA=",
+      "expected": "__undef__"
+    },
+    "key_ber_outer_length": {
+      "cert": "-----BEGIN CERTIFICATE-----\nMIICtTCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMQ0wCwYDVQQDDARsZWFm\nMQ0wCwYDVQQKDARBY21lMB4XDTIwMDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFow\nHjENMAsGA1UEAwwEbGVhZjENMAsGA1UECgwEQWNtZTCCASIwDQYJKoZIhvcNAQEB\nBQADggEPADCCAQoCggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPh\nUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghoke\nOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs3\n66PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE\n7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz\n6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAATANBgkqhkiG9w0B\nAQsFAAOCAQEARaszjfyVcQPBQ19WkTcrQbsCo4oUMcqUYp5p9sQ/UIY/92zP1FoH\nrH8bGIz9wY4ToQzrPI2uSovs+JRgzK0c2/P0Eyz7AMYQSQ1KfjTqsseTkKRTfSNc\nAgwzyrPgeivalX5Qih9gF0m2vMRmxk6qGqKkM8ov6FBswVd6GkVe25qX6mLPH1uJ\nmJFwQtyVUuuGG+L35jisaRN5QQOh/uCr14UKkQtggpLZifduzvrroyuhEIs0gYSR\n12ybKbikaVDSQe6SdauQVirXYCvTl6MPumEiRJu5/9MmyMSfqcBPuFqj9iPfJi+J\ndpV0W0/3bmCLDsiKh49sO+Jgu+MCN3Bs9w==\n-----END CERTIFICATE-----\n",
+      "key": "MIMABKQCAQACggEBAK4Su27WVfCBZHYL+y7GXhViSHEsbNv0RCJ1CmzFugPhUFr0pXVosHA2HeKak5VvCo+0d11UnbvGU67+pMSdHK1R+EX7D9QOg7/sYzOghokeOq7TekrodWo9O1IJDRnxLeAHK1XX82aOp9XNN4j+9eYFPaycHD6Qc2qwZ5QKfcs366PoQ+F2XcrlphkHwB8+ACYwX5ZVqpflm2qfGj/Fga9/0f5iVOS3CrYR/QQVvSsE7wW9HoAdUiXrQIp79pONURj8rxTj4duLriq5p3zWcdtYDMnxZsol5gXghod7I7nz6YXr2WYkTUkrCe3v1cyLM7WQ6PUNL8xobX+zNGHGZSsCAwEAAQKCAQBIHFBzGO1fBWslj88NUHW3LBDQeVPbRnRXRd78smhdpSARndlRKv40beaxcdGDjQ11/I+aJSx2ljEihDCjlmZD0nokG14yPZUMk5OA1pYFBXXP6KF3mJbTXOxPDprTzVpwvOeR1zTonl4errW71crt7+vdronwzQxS/SLbbAEyhpf0H4DsX4d8ld/gp6zqFa+gfCRNAtcJuGBLkGCpopPyr3wx84gymBGVHQHw7Ra1v/4e2HzWST+zsuooodmUhmZMlA1NU21CeYE3HNIQOVZTao9ltoEDaY2M4Fkki6yuM8GZG7Yu4IwXFB0AMoT/vx5uTSKek2pxcvRGSMhUeNkhAoGBANcODIFWlP/ksp162u6NCgSUmzjjVSo/Rcg+lz4rcKkzo4XWXKL2WnCJCJHy5GVTPKiaQJm0ln6VG6SDUrgRF2+YzdD6QRoAGwvQvDM0tlONRO+AQPVk4iCTFJ22xVoNfCBqTbRG5OGzFVgnvufhy52PpOrMvOiLHKo9Lkm1P3MRAoGBAM83M4wxPWFxkCn2/sdaEsZgJW7hU9acY8wBlRnofd4ewnFtQ+ZR5Xzi6AcugjQ9JGlR3GGnU4LxxKT2QQhcuVmmog8O46sqEJ34bsQmEmvwntniM7Z8Y8tFkuiDuG0H02ArOuDk/FlTMLpXtfobU+j2hiyluZE9YQTxb1Ov8Fx7AoGBAIFlgZ69AvApolNhHaQVluaEqBUFrDO8WHeROZ19s88LNCQOhDTFuEsoGNEAbe6Ns9za223gnADUJQrKvZXlKs3KCmTofw1u7NciJGtHF0GUqdrVt8AvkGP7O5dd5sc1f+9dJx4G3ibzgy9E0vhhAwvt51QkFrJxKbFBGL3e4auRAoGBAJX2KCsMM5TCwAduxkH1kOLaEB0nmyoUsjCg8Iv4cqb+cc/uuJYFrORtvmf8I6S0nxZNdQWDN+/rElokETqBCG62JlBpgSCNZ8s7UMZJm0lcsUmT58LoULx6VHBLa3wUjsfpYUoCzhHDH9+rvHoNrvNI/h9vrFVNK1qNc/kHuhbjAoGAc3xnvkRGmxX3gSUaLObC/eFUPZqgbz4CZMAdxByM6UN1eEHP1gV9xsWd3AXlPgu3EwE0mGX/a7SeWguzhUinjJqR2eZebUdhYRPWqRbzXfYGmUSpvXVa8WwGVxeCBIS7HgrO+yTsyoag567Cb98FddQTkKAf7zlwfm8gB6/oKVY=",
+      "expected": "__undef__"
+    }
+  }
+}

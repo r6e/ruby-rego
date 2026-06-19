@@ -139,5 +139,6 @@ end
 require_relative "crypto/keys"
 require_relative "crypto/certificates"
 require_relative "crypto/certificate_request"
+require_relative "crypto/keypair"
 
 Ruby::Rego::Builtins::Crypto.register!
