@@ -127,24 +127,32 @@ module Ruby
         end
         private_class_method :chain_output
 
-        # Go's VerifyHostname against the leaf's SANs — with NO Subject-CN fallback (Go dropped it in
-        # 1.15) and NO partial-label wildcards (only a full leftmost "*" label), unlike OpenSSL's
-        # verify_certificate_identity. An IP DNSName matches an iPAddress SAN; any other name matches a
-        # dNSName SAN. An empty (or absent) DNSName is no check (Go skips hostname verification then).
-        # :reek:NilCheck -- nil/"" dns_name means "no hostname constraint".
-        # :reek:TooManyStatements -- the no-check / IP-SAN / dNSName-SAN branches read clearest inline.
-        # rubocop:disable Metrics/CyclomaticComplexity
+        # Go's VerifyHostname against the leaf's SANs — with NO Subject-CN fallback (Go dropped it in 1.15)
+        # and NO partial-label wildcards, unlike OpenSSL's verify_certificate_identity. An IP DNSName
+        # matches an iPAddress SAN. Otherwise, when BOTH the name and the SAN are valid hostnames, Go's
+        # wildcard matchHostnames applies; when either is invalid (a bad char, a trailing-dot pattern, a
+        # bare "*"), Go falls back to exact-string matchExactly. An empty/absent DNSName is no check.
+        # :reek:NilCheck :reek:TooManyStatements -- the no-check / IP-SAN / dNSName-SAN branches, inline.
+        # rubocop:disable Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
         def self.hostname_ok?(leaf, dns_name)
           return true if dns_name.nil? || dns_name.empty?
 
           ip = parse_ip(dns_name)
           return (leaf["IPAddresses"] || []).any? { |entry| parse_ip(entry) == ip } if ip
 
-          host = dns_name.downcase.chomp(".")
-          (leaf["DNSNames"] || []).any? { |pattern| dns_name_match?(pattern.downcase.chomp("."), host) }
+          valid_input = valid_hostname?(dns_name, pattern: false)
+          (leaf["DNSNames"] || []).any? do |san|
+            if valid_input && valid_hostname?(san,
+                                              pattern: true)
+              match_hostnames?(san,
+                               dns_name)
+            else
+              match_exactly?(san, dns_name)
+            end
+          end
         end
         private_class_method :hostname_ok?
-        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
 
         # An IPAddr for an IPv4/IPv6 string, or nil when it is not an IP literal.
         # :reek:NilCheck -- nil distinguishes a hostname from an IP DNSName.
@@ -155,16 +163,58 @@ module Ruby
         end
         private_class_method :parse_ip
 
-        # Go's matchHostnames: equal label counts and every label equal, except a leftmost label of
-        # exactly "*" (a partial-label wildcard such as "f*" is a literal label, not a wildcard).
-        def self.dns_name_match?(pattern, host)
+        # Go's validHostname: a non-empty host whose every label is non-empty and made of [A-Za-z0-9_-]
+        # (a '-' not at the label start). A pattern may have a full "*" leftmost label only when more
+        # labels follow; an input (non-pattern) has its trailing dot trimmed first.
+        # :reek:BooleanParameter :reek:ControlParameter -- pattern selects Go's input-vs-pattern rules.
+        # rubocop:disable Metrics/CyclomaticComplexity
+        def self.valid_hostname?(host, pattern:)
+          host = host.chomp(".") unless pattern
+          return false if host.empty?
+
+          labels = host.split(".", -1)
+          labels.each_with_index.all? do |label, index|
+            (pattern && index.zero? && label == "*" && labels.length > 1) || valid_label?(label)
+          end
+        end
+        private_class_method :valid_hostname?
+        # rubocop:enable Metrics/CyclomaticComplexity
+
+        def self.valid_label?(label)
+          !label.empty? &&
+            label.each_char.with_index.all? do |char, pos|
+              char.match?(/[A-Za-z0-9_]/) || (char == "-" && pos.positive?)
+            end
+        end
+        private_class_method :valid_label?
+
+        # Go's matchHostnames: ASCII-lowercase both, trim the host's trailing dot, require equal label
+        # counts, and match every label except a leftmost "*".
+        # :reek:TooManyStatements -- the normalize + split + length-gate + label-match reads clearest inline.
+        def self.match_hostnames?(pattern, host)
+          pattern = ascii_downcase(pattern)
+          host = ascii_downcase(host.chomp("."))
           pattern_labels = pattern.split(".", -1)
           host_labels = host.split(".", -1)
           return false if pattern.empty? || host.empty? || pattern_labels.length != host_labels.length
 
           pattern_labels.each_with_index.all? { |label, idx| (idx.zero? && label == "*") || label == host_labels[idx] }
         end
-        private_class_method :dns_name_match?
+        private_class_method :match_hostnames?
+
+        # Go's matchExactly: ASCII-lowercase literal equality, rejecting "" and "." on either side.
+        def self.match_exactly?(host_a, host_b)
+          return false if [host_a, host_b].any? { |host| host.empty? || host == "." }
+
+          ascii_downcase(host_a) == ascii_downcase(host_b)
+        end
+        private_class_method :match_exactly?
+
+        # Go's toLowerCaseASCII: fold only A-Z, leaving non-ASCII bytes unchanged (unlike String#downcase).
+        def self.ascii_downcase(string)
+          string.gsub(/[A-Z]/) { |char| (char.ord + 32).chr }
+        end
+        private_class_method :ascii_downcase
 
         # The verified chain (leaf -> root) as OpenSSL certs, or nil when the bundle does not parse, has
         # fewer than two certs, carries an insecure (MD2/MD5/SHA-1) non-root signature, or fails OpenSSL
