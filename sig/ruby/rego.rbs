@@ -481,6 +481,8 @@ module Ruby
           def self.policy_mappings: (Hash[String, untyped] fields, String der) -> void
           def self.collect_uris: (untyped node) -> Array[String]?
           def self.bounded_decode: (String der, untyped type) -> untyped
+          def self.decode_sequence: (String der) -> Array[untyped]
+          def self.signed_int: (String bytes) -> Integer
           def self.safe_asn1?: (String der) -> bool
           def self.ip_address: (String bytes) -> String
           def self.utf8_string: (String value) -> String

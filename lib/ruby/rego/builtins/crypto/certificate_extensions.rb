@@ -117,7 +117,7 @@ module Ruby
           # AuthorityKeyId (2.5.29.35): the [0] keyIdentifier from the AuthorityKeyIdentifier SEQUENCE.
           # :reek:NilCheck -- a SEQUENCE without the optional [0] keyIdentifier leaves AuthorityKeyId nil.
           def self.authority_key_id(der)
-            key_id = bounded_decode(der, OpenSSL::ASN1::Sequence).value.find { |element| context_tag?(element, 0) }
+            key_id = decode_sequence(der).find { |element| context_tag?(element, 0) }
             key_id && b64(key_id.value)
           end
           private_class_method :authority_key_id
@@ -142,7 +142,7 @@ module Ruby
           def self.ext_key_usage(fields, der)
             known = [] # : Array[Integer]
             unknown = [] # : Array[untyped]
-            bounded_decode(der, OpenSSL::ASN1::Sequence).value.each do |purpose|
+            decode_sequence(der).each do |purpose|
               oid = purpose.oid
               enum = EXT_KEY_USAGES[oid]
               enum ? known << enum : unknown << oid_ints(oid)
@@ -154,10 +154,9 @@ module Ruby
 
           # BasicConstraints (2.5.29.19): SEQUENCE { cA BOOLEAN DEFAULT FALSE, pathLen INTEGER OPTIONAL }.
           # :reek:TooManyStatements -- a faithful port of parseBasicConstraintsExtension.
-          # rubocop:disable Metrics/AbcSize
           def self.basic_constraints(fields, der)
             fields["BasicConstraintsValid"] = true
-            elements = bounded_decode(der, OpenSSL::ASN1::Sequence).value
+            elements = decode_sequence(der)
             fields["IsCA"] = elements.any? { |element| element.is_a?(OpenSSL::ASN1::Boolean) && element.value }
             path_len = elements.find { |element| element.is_a?(OpenSSL::ASN1::Integer) }
             # Go's parseBasicConstraintsExtension defaults maxPathLen to -1 when no pathLen is encoded.
@@ -166,8 +165,6 @@ module Ruby
             fields["MaxPathLenZero"] = length.zero?
           end
           private_class_method :basic_constraints
-          # rubocop:enable Metrics/AbcSize
-
           # SubjectAltName (2.5.29.17): GeneralNames -> DNSNames/EmailAddresses/IPAddresses by tag.
           # URI SANs (tag 6) are handled by the URIs/URIStrings builder, not here.
           # :reek:TooManyStatements -- one pass over the GeneralName CHOICE alternatives.
@@ -177,7 +174,7 @@ module Ruby
             email = [] # : Array[String]
             ips = [] # : Array[String]
             uris = [] # : Array[String]
-            bounded_decode(der, OpenSSL::ASN1::Sequence).value.each do |general_name|
+            decode_sequence(der).each do |general_name|
               value = general_name.value
               case general_name.tag
               when 2 then dns << utf8_string(value)
@@ -197,7 +194,7 @@ module Ruby
           # AuthorityInfoAccess (1.3.6.1.5.5.7.1.1): SEQUENCE OF AccessDescription { method OID,
           # location GeneralName }; OCSP/caIssuers URI locations populate OCSPServer/IssuingCertificateURL.
           def self.authority_info_access(fields, der)
-            bounded_decode(der, OpenSSL::ASN1::Sequence).value.each do |description|
+            decode_sequence(der).each do |description|
               access = description.value
               field = ACCESS_METHODS[access[0].oid]
               location = access[1]
@@ -212,7 +209,7 @@ module Ruby
           # PermittedDNSDomainsCritical carries the extension's critical flag regardless of content.
           def self.name_constraints(fields, der, critical)
             fields["PermittedDNSDomainsCritical"] = critical
-            bounded_decode(der, OpenSSL::ASN1::Sequence).value.each do |subtrees|
+            decode_sequence(der).each do |subtrees|
               column = subtrees.tag # 0 = permitted, 1 = excluded
               subtrees.value.each { |subtree| add_constraint(fields, subtree.value[0], column) }
             end
@@ -232,7 +229,7 @@ module Ruby
 
           # CertificatePolicies (2.5.29.32): PolicyIdentifiers (OID int arrays) and Policies (dotted OIDs).
           def self.certificate_policies(fields, der)
-            oids = bounded_decode(der, OpenSSL::ASN1::Sequence).value.map { |info| info.value[0].oid }
+            oids = decode_sequence(der).map { |info| info.value[0].oid }
             fields["PolicyIdentifiers"] = oids.map { |oid| oid_ints(oid) }
             fields["Policies"] = oids
           end
@@ -241,14 +238,24 @@ module Ruby
           # PolicyConstraints (2.5.29.36): SEQUENCE { [0] requireExplicitPolicy, [1] inhibitPolicyMapping
           # INTEGERs OPTIONAL }; each sets its field and a *Zero flag (present and equal to zero).
           def self.policy_constraints(fields, der)
-            bounded_decode(der, OpenSSL::ASN1::Sequence).value.each do |element|
+            decode_sequence(der).each do |element|
               field = element.tag.zero? ? "RequireExplicitPolicy" : "InhibitPolicyMapping"
-              value = go_int(OpenSSL::BN.new(element.value, 2))
+              value = go_int(signed_int(element.value))
               fields[field] = value
               fields["#{field}Zero"] = value.zero?
             end
           end
           private_class_method :policy_constraints
+
+          # A two's-complement big-endian INTEGER from an IMPLICIT context-tagged primitive (OpenSSL
+          # hands back the raw content bytes, which OpenSSL::BN reads as an unsigned magnitude). Go's
+          # asn1 decodes these policyConstraints counts as a signed int.
+          def self.signed_int(bytes)
+            value = OpenSSL::BN.new(bytes, 2).to_i
+            value -= (1 << (8 * bytes.bytesize)) if !bytes.empty? && bytes.getbyte(0).to_i >= 0x80
+            value
+          end
+          private_class_method :signed_int
 
           # InhibitAnyPolicy (2.5.29.54): a single INTEGER skip count, with its present-and-zero flag.
           def self.inhibit_any_policy(fields, der)
@@ -270,7 +277,7 @@ module Ruby
 
           # PolicyMappings (2.5.29.33): SEQUENCE OF SEQUENCE { issuerDomainPolicy, subjectDomainPolicy OIDs }.
           def self.policy_mappings(fields, der)
-            fields["PolicyMappings"] = bounded_decode(der, OpenSSL::ASN1::Sequence).value.map do |mapping|
+            fields["PolicyMappings"] = decode_sequence(der).map do |mapping|
               pair = mapping.value
               { "IssuerDomainPolicy" => pair[0].oid, "SubjectDomainPolicy" => pair[1].oid }
             end
@@ -306,9 +313,16 @@ module Ruby
           end
           private_class_method :bounded_decode
 
+          # The element array of an extension whose top-level type is a SEQUENCE (the common case).
+          def self.decode_sequence(der)
+            bounded_decode(der, OpenSSL::ASN1::Sequence).value
+          end
+          private_class_method :decode_sequence
+
           # Iterative scan of definite-length DER TLV headers (no decode, no recursion, never raises):
-          # false once nesting would exceed MAX_ASN1_DEPTH. Indefinite/huge/truncated lengths are left
-          # for OpenSSL to reject shallowly (an ASN1Error, which already maps to undefined).
+          # false once nesting would exceed MAX_ASN1_DEPTH, and false on a BER indefinite length (which
+          # would otherwise bypass the depth count, and which DER — so Go — rejects anyway). Huge or
+          # truncated definite lengths are left for OpenSSL to reject shallowly (ASN1Error -> undefined).
           # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
           # :reek:TooManyStatements -- a single byte-scanning loop is the clearest form.
           def self.safe_asn1?(der)
@@ -333,7 +347,8 @@ module Ruby
               content_len = length_byte
               if length_byte >= 0x80
                 count = length_byte & 0x7f
-                return true if count.zero? || count > 4 || (pos + count) > size
+                return false if count.zero? # BER indefinite length: bypasses the depth count; reject
+                return true if count > 4 || (pos + count) > size
 
                 content_len = 0
                 count.times do
