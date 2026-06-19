@@ -94,16 +94,16 @@ module Ruby
         end
         private_class_method :matching_key
 
-        # The single private key from a PEM or base64-DER input, or nil when it is missing, encrypted,
-        # public-only, or of a type Go's x509 does not support (all -> OPA undefined). Bounded by
-        # MAX_KEY_DER_BYTES so OpenSSL::PKey.read never trial-parses an unbounded buffer.
+        # The single private key Go's tls.X509KeyPair would use, or nil when it is missing, malformed,
+        # encrypted, public-only, or of a type Go's x509 does not support (all -> OPA undefined). Bounded
+        # by MAX_KEY_DER_BYTES so OpenSSL::PKey.read never trial-parses an unbounded buffer.
         # :reek:NilCheck -- nil is the parse-failure sentinel.
         # :reek:TooManyStatements -- the bound + read + type-gate sequence reads clearest inline.
         def self.keypair_key(string)
-          data = pem_or_base64(string)
-          return nil if data.nil? || data.bytesize > MAX_KEY_DER_BYTES
+          der = key_der(string)
+          return nil if der.nil? || der.bytesize > MAX_KEY_DER_BYTES
 
-          key = OpenSSL::PKey.read(data, "")
+          key = OpenSSL::PKey.read(der, "")
           return nil unless private_material?(key) && go_supported?(key)
 
           key
@@ -111,6 +111,28 @@ module Ruby
           nil
         end
         private_class_method :keypair_key
+
+        # The DER of the key block Go's tls.X509KeyPair selects: the FIRST PEM block whose type is
+        # "PRIVATE KEY" or "<algo> PRIVATE KEY". Go parses ONLY that block and errors if it fails — it
+        # never falls through to a later block — so a malformed or wrong-typed first key block must map to
+        # undefined even when a valid key follows (OpenSSL::PKey.read on the whole input would instead
+        # skip to the parseable one). A non-PEM input is the raw base64-DER key.
+        # :reek:NilCheck -- nil means no private-key block / bad base64 (-> OPA undefined).
+        def self.key_der(string)
+          blocks = pem_blocks(string)
+          return std_base64_decode(string) if blocks.empty?
+
+          _, der = blocks.find { |type, _| private_key_block?(type) }
+          der
+        end
+        private_class_method :key_der
+
+        # Go's tls.X509KeyPair private-key block predicate: an exact "PRIVATE KEY" or an "<algo> PRIVATE
+        # KEY" (RSA / EC / …) type.
+        def self.private_key_block?(type)
+          type == "PRIVATE KEY" || type.end_with?(" PRIVATE KEY")
+        end
+        private_class_method :private_key_block?
 
         # Whether the private key's SubjectPublicKeyInfo matches the leaf certificate's. A public-only key
         # arg is already dropped by keypair_key.

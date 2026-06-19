@@ -443,6 +443,8 @@ module Ruby
         def self.single_der_cert: (String der) -> Array[untyped]?
         def self.matching_key: (untyped leaf, String string) -> untyped
         def self.keypair_key: (String string) -> untyped
+        def self.key_der: (String string) -> String?
+        def self.private_key_block?: (String type) -> bool
         def self.key_matches_leaf?: (untyped leaf, untyped key) -> bool
         def self.build_keypair_struct: (Array[untyped] certs, untyped key) -> Value
 
