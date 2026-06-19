@@ -64,8 +64,7 @@ module Ruby
         def self.keypair_cert_ders(string)
           blocks = pem_blocks(string)
           unless blocks.empty?
-            ders = [] # : Array[String]
-            blocks.each { |type, der| ders << der if type == "CERTIFICATE" }
+            ders = blocks.filter_map { |type, der| der if type == "CERTIFICATE" }
             return ders.empty? ? nil : ders
           end
 
@@ -149,12 +148,16 @@ module Ruby
         # PKCS#1 RSAPrivateKey rejects trailing bytes (ParsePKCS1 checks the asn1 rest), while PKCS#8 and
         # SEC1 tolerate them. OpenSSL::PKey.read tolerates all three, so a trailing-padded PKCS#1 key —
         # which OPA returns undefined for — is dropped here; a PEM block never has trailing bytes.
-        # :reek:NilCheck -- nil means bad base64 (-> OPA undefined).
+        # :reek:NilCheck -- nil means bad base64 / over the size bound (-> OPA undefined).
+        # :reek:TooManyStatements -- the bound + trailing check + PKCS#1 branch reads clearest inline.
         def self.raw_base64_key(der)
           return nil if der.nil?
 
+          size = der.bytesize
+          return nil if size > MAX_KEY_DER_BYTES # bound before pkcs1_rsa?'s PKey.read
+
           total = leading_element_length(der)
-          return der if total.nil? || total == der.bytesize # no trailing; PKey.read handles every form
+          return der if total.nil? || total == size # no trailing; PKey.read handles every form
 
           pkcs1_rsa?(der.byteslice(0, total).to_s) ? nil : der
         end
@@ -168,7 +171,7 @@ module Ruby
         def self.pkcs1_rsa?(der)
           key = OpenSSL::PKey.read(der)
           key.is_a?(OpenSSL::PKey::RSA) && key.to_der == der
-        rescue OpenSSL::OpenSSLError
+        rescue OpenSSL::OpenSSLError, ::ArgumentError
           false
         end
         private_class_method :pkcs1_rsa?
