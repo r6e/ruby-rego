@@ -178,34 +178,29 @@ module Ruby
           end
           private_class_method :extension_list
 
-          # One Extensions[] entry from an Extension SEQUENCE node, validating Go's pkix.Extension shape
-          # { extnID OID, critical BOOLEAN OPTIONAL, extnValue OCTET STRING }. A certificate's extensions
-          # are pre-validated by OpenSSL so this never rejects them; a CSR's requested extensions are
-          # parsed raw, so an ill-formed one (wrong-type value/critical) maps to OPA's undefined.
+          # One Extensions[] entry from an Extension SEQUENCE node. Go decodes pkix.Extension
+          # { Id OID, Critical BOOLEAN OPTIONAL, Value OCTET STRING } positionally and ignores any
+          # trailing element: the OID, then an optional BOOLEAN critical, then the OCTET STRING value.
+          # A certificate's extensions are pre-validated by OpenSSL; a CSR's requested extensions are
+          # parsed raw, so an ill-formed one (no OID / no OCTET STRING value) maps to OPA's undefined.
+          # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
           def self.extension_entry(ext)
             parts = ext.value
-            unless parts[0].is_a?(OpenSSL::ASN1::ObjectId) && parts.last.is_a?(OpenSSL::ASN1::OctetString)
-              raise MalformedCertificate, "malformed extension"
-            end
+            raise MalformedCertificate, "malformed extension" unless parts[0].is_a?(OpenSSL::ASN1::ObjectId)
 
-            { "Critical" => extension_critical(parts), "Id" => oid_ints(parts[0].oid),
-              "Value" => b64(parts.last.value) }
+            index = 1
+            critical = false
+            if parts[index].is_a?(OpenSSL::ASN1::Boolean)
+              critical = parts[index].value
+              index += 1
+            end
+            value = parts[index]
+            raise MalformedCertificate, "malformed extension" unless value.is_a?(OpenSSL::ASN1::OctetString)
+
+            { "Critical" => critical, "Id" => oid_ints(parts[0].oid), "Value" => b64(value.value) }
           end
           private_class_method :extension_entry
-
-          # The critical flag: a 2-element extension defaults to false; a 3-element one's middle element
-          # must be the BOOLEAN (else the extension is malformed).
-          def self.extension_critical(parts)
-            case parts.size
-            when 2 then false
-            when 3
-              raise MalformedCertificate, "malformed extension critical" unless parts[1].is_a?(OpenSSL::ASN1::Boolean)
-
-              parts[1].value
-            else raise MalformedCertificate, "malformed extension"
-            end
-          end
-          private_class_method :extension_critical
+          # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
           # OID dotted string -> array of integer arcs (Go marshals asn1.ObjectIdentifier as []int).
           def self.oid_ints(oid)
@@ -221,6 +216,14 @@ module Ruby
             Base64.strict_encode64(bytes)
           end
           private_class_method :b64
+
+          # Transcode raw bytes from an ASN.1 string encoding to UTF-8, replacing invalid bytes with
+          # U+FFFD as Go's json.Marshal does. Shared by the pkix.Name builder and the CSR attribute
+          # value marshaler (both reproduce Go's asn1 string decoding). Called cross-module, so public.
+          # :reek:UtilityFunction -- a pure byte-encoding transform.
+          def self.transcode(bytes, encoding)
+            bytes.dup.force_encoding(encoding).encode(Encoding::UTF_8, invalid: :replace, undef: :replace)
+          end
 
           # Whether an ASN.1 node is a context-specific element with the given tag number. Shared by the
           # struct builder and the extension parsers (both reopen this module).

@@ -38,7 +38,7 @@ module Ruby
               "Version" => request.version.to_i,
               "Raw" => b64(request.to_der), "RawTBSCertificateRequest" => b64(info.to_der),
               "RawSubject" => b64(subject.to_der), "RawSubjectPublicKeyInfo" => b64(spki.to_der),
-              "Subject" => Name.build(subject),
+              "Subject" => Name.build(subject, lenient: true),
               "PublicKey" => algorithm.zero? ? nil : public_key(request),
               "PublicKeyAlgorithm" => algorithm,
               "SignatureAlgorithm" => signature_algorithm(request, decoded),
@@ -126,15 +126,37 @@ module Ruby
           end
           private_class_method :attribute_group
 
-          # json.Marshal of Go's asn1-into-`any` for the ATV value: a BOOLEAN marshals as true/false, an
-          # OCTET STRING (a non-critical extension's extnValue) as base64 of its content.
+          # json.Marshal of Go's asn1.Unmarshal-into-`any` for an ATV value, by universal tag: BOOLEAN
+          # -> bool, INTEGER -> number (an over-int64 value errors, dropping the attribute), OCTET STRING
+          # -> base64, OID -> int array, BIT STRING -> {Bytes, BitLength}, the string types -> the
+          # decoded string (BMPString/TeletexString transcoded), UTC/GeneralizedTime -> RFC3339; an
+          # unsupported type (NULL, ENUMERATED, UniversalString, SEQUENCE, SET) -> null (kept).
+          # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
           def self.attribute_value(node)
-            case node
-            when OpenSSL::ASN1::Boolean then node.value
-            else b64(node.value)
+            case node.tag
+            when 1 then node.value
+            when 2 then attribute_integer(node.value)
+            when 3 then { "Bytes" => b64(node.value), "BitLength" => (node.value.bytesize * 8) - node.unused_bits }
+            when 4 then b64(node.value)
+            when 6 then oid_ints(node.oid)
+            when 12, 18, 19, 22 then node.value.to_s
+            when 20 then transcode(node.value, Encoding::ISO_8859_1)
+            when 30 then transcode(node.value, Encoding::UTF_16BE)
+            when 23, 24 then rfc3339(node.value)
             end
           end
           private_class_method :attribute_value
+          # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
+
+          # An ATV INTEGER value: Go reads it via parseInt64, so an over-int64 value errors and the whole
+          # attribute is dropped (the error is caught by attribute_set).
+          def self.attribute_integer(big_number)
+            value = big_number.to_i
+            raise ::ArgumentError, "integer out of range" unless value.between?(INT64_MIN, INT64_MAX)
+
+            value
+          end
+          private_class_method :attribute_integer
         end
       end
     end

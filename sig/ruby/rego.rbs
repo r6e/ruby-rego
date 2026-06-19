@@ -470,7 +470,6 @@ module Ruby
           def self.extension_nodes: (untyped tbs) -> untyped
           def self.extension_list: (untyped tbs) -> Array[untyped]?
           def self.extension_entry: (untyped ext) -> Hash[String, untyped]
-          def self.extension_critical: (Array[untyped] parts) -> bool
           def self.build_request: (untyped request) -> Hash[String, untyped]
           def self.request_extension_nodes: (untyped attributes) -> untyped
           def self.request_extensions: (untyped attributes) -> Array[untyped]?
@@ -479,6 +478,8 @@ module Ruby
           def self.attribute_set: (untyped attr) -> Hash[String, untyped]?
           def self.attribute_group: (untyped group) -> Array[untyped]
           def self.attribute_value: (untyped node) -> untyped
+          def self.attribute_integer: (untyped big_number) -> Integer
+          def self.transcode: (String bytes, Encoding encoding) -> String
           def self.parsed_uris: (Array[String] uri_texts) -> Array[untyped]
           def self.rfc3339: (untyped time) -> String
           def self.b64: (String bytes) -> String
@@ -525,12 +526,11 @@ module Ruby
           ATTRIBUTE_FIELDS: Hash[String, [String, bool]]
           NAME_FIELDS: Array[String]
 
-          def self.build: (untyped rdn_sequence) -> Hash[String, untyped]
+          def self.build: (untyped rdn_sequence, ?lenient: bool) -> Hash[String, untyped]
 
           private
 
-          def self.attribute_value: (untyped node) -> String
-          def self.transcode: (String bytes, Encoding encoding) -> String
+          def self.attribute_value: (untyped node, bool lenient) -> untyped
           def self.assign: (Hash[String, untyped] name, String oid, String value) -> void
         end
       end

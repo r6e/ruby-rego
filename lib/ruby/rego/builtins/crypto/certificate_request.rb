@@ -49,12 +49,12 @@ module Ruby
         end
         private_class_method :request_from
 
-        # The DER of the single "CERTIFICATE REQUEST" PEM block, or nil if the input is not exactly that.
+        # The DER of the FIRST PEM block (Go's pem.Decode reads the first block and ignores the rest),
+        # or nil unless that block is a "CERTIFICATE REQUEST".
         # :reek:NilCheck -- nil flows from pem_blocks as the failure sentinel.
         def self.pem_request_der(string)
-          blocks = pem_blocks(string)
-          type, der = blocks[0]
-          der if blocks.length == 1 && type == "CERTIFICATE REQUEST"
+          type, der = pem_blocks(string).first
+          der if type == "CERTIFICATE REQUEST"
         end
         private_class_method :pem_request_der
 
