@@ -59,11 +59,11 @@ module Ruby
             return nil unless attributes
 
             # Go's parseCSRExtensions iterates EVERY extensionRequest attribute, taking each one's first
-            # value SET member, and unions the extensions; nil when there is no extensionRequest.
+            # value SET member, and unions the extensions; an empty union (or none) -> nil.
             requests = attributes.value.select { |attr| attr.value[0].oid == EXTENSION_REQUEST_OID }
-            return nil if requests.empty?
+            nodes = requests.flat_map { |attr| extension_request_extensions(attr) }
+            return nil if nodes.empty?
 
-            nodes = requests.flat_map { |attr| attr.value[1].value[0].value }
             oids = nodes.map { |ext| ext.value[0].oid }
             # A repeated requested-extension OID across the union is rejected -> OPA undefined.
             raise MalformedCertificate, "duplicate requested extension" if oids.uniq.length != oids.length
@@ -71,6 +71,15 @@ module Ruby
             nodes
           end
           private_class_method :request_extension_nodes
+
+          # The SEQUENCE OF Extension in one extensionRequest attribute's first value-SET member, or []
+          # when the value SET is empty (Go's parseCSRExtensions skips a zero-value attribute).
+          # :reek:NilCheck -- an empty value SET has no first member.
+          def self.extension_request_extensions(attr)
+            first_member = attr.value[1].value[0]
+            first_member ? first_member.value : []
+          end
+          private_class_method :extension_request_extensions
           # rubocop:enable Metrics/AbcSize
 
           # The DNSNames/EmailAddresses/IPAddresses/URIs requested via the SAN extension. Unlike a
