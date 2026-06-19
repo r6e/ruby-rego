@@ -38,14 +38,52 @@ module Ruby
           key_string = string_value(key_value, "crypto.x509.parse_keypair")
           return UndefinedValue.new unless scannable?(cert_string) && scannable?(key_string)
 
-          certs = certificates_from(cert_string)
-          return UndefinedValue.new if certs.nil? || certs.empty?
+          certs = keypair_certs(cert_string)
+          return UndefinedValue.new if certs.nil?
 
           key = matching_key(certs.first, key_string)
           return UndefinedValue.new if key.nil?
 
           build_keypair_struct(certs, key)
         end
+
+        # The certificate chain, the way Go's tls.X509KeyPair reads it — NOT parse_certificates' dual
+        # dispatch. A PEM input contributes every CERTIFICATE block and silently ignores the rest (a key
+        # block, comments); at least one CERTIFICATE is required. A non-PEM input is ONE base64-DER
+        # certificate (Go x509.ParseCertificate rejects trailing bytes — OpenSSL tolerates them, so the
+        # length is checked); base64-of-PEM is decoded by pem_blocks then scanned as PEM.
+        # :reek:NilCheck -- nil sentinels: no CERTIFICATE block / bad base64 / trailing DER -> undefined.
+        # :reek:TooManyStatements -- the PEM-blocks vs single-DER branch reads clearest inline.
+        def self.keypair_certs(string)
+          blocks = pem_blocks(string)
+          return pem_chain_certs(blocks) unless blocks.empty?
+
+          der = std_base64_decode(string)
+          der && single_der_cert(der)
+        rescue OpenSSL::OpenSSLError
+          nil
+        end
+        private_class_method :keypair_certs
+
+        # The CERTIFICATE blocks of a PEM input as parsed certs, ignoring any non-CERTIFICATE block, or
+        # nil when none is present (Go's tls.X509KeyPair requires at least one certificate).
+        def self.pem_chain_certs(blocks)
+          certs = blocks.filter_map { |type, der| OpenSSL::X509::Certificate.new(der) if type == "CERTIFICATE" }
+          certs.empty? ? nil : certs
+        end
+        private_class_method :pem_chain_certs
+
+        # A single DER certificate as a one-element chain, rejecting trailing bytes: Go's
+        # x509.ParseCertificate errors on them, but OpenSSL::X509::Certificate.new silently keeps only the
+        # leading element, so the encoded length is compared against the buffer explicitly.
+        # :reek:NilCheck -- nil means a truncated or trailing-padded DER (-> OPA undefined).
+        def self.single_der_cert(der)
+          total = leading_element_length(der)
+          return nil if total.nil? || total != der.bytesize
+
+          [OpenSSL::X509::Certificate.new(der)]
+        end
+        private_class_method :single_der_cert
 
         # The private key for this leaf, or nil unless it parses and its public half matches the leaf's
         # public key (Go's tls.X509KeyPair validates the key against the FIRST certificate).

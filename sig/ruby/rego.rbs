@@ -438,6 +438,9 @@ module Ruby
         def self.request_from: (String string) -> untyped
         def self.pem_request_der: (String string) -> String?
         def self.build_request_struct: (untyped request) -> Value
+        def self.keypair_certs: (String string) -> Array[untyped]?
+        def self.pem_chain_certs: (Array[[ String, String ]] blocks) -> Array[untyped]?
+        def self.single_der_cert: (String der) -> Array[untyped]?
         def self.matching_key: (untyped leaf, String string) -> untyped
         def self.keypair_key: (String string) -> untyped
         def self.key_matches_leaf?: (untyped leaf, untyped key) -> bool
