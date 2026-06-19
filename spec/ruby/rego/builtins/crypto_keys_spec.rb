@@ -69,6 +69,25 @@ RSpec.describe "crypto private-key builtins" do
       end
     end
 
+    it "is undefined (never overflows) for a deeply-nested DER key block within the size bound" do
+      # format_matches? decodes the block DER with OpenSSL::ASN1.decode, which recurses without a depth
+      # limit and can hard-overflow the C stack uncatchably on a small-stack thread. The safe_asn1?
+      # pre-scan must reject nesting beyond MAX_ASN1_DEPTH before the decode. Build a maximally-nested
+      # definite-length DER just under MAX_KEY_DER_BYTES so it passes read_key's size guard and reaches
+      # format_matches?. (No real key is more than a few levels deep, so this only ever rejects garbage.)
+      der = [0x02, 0x01, 0x01].pack("C*")
+      loop do
+        len = der.bytesize
+        header = len < 0x80 ? [0x30, len].pack("C*") : [0x30, 0x82, (len >> 8) & 0xff, len & 0xff].pack("C*")
+        break if (header + der).bytesize > Ruby::Rego::Builtins::Crypto::MAX_KEY_DER_BYTES - 64
+
+        der = header + der
+      end
+      arg = [Ruby::Rego::StringValue.new(block("PRIVATE KEY", der))]
+      expect { Timeout.timeout(5) { @result = registry.call("crypto.parse_private_keys", arg) } }.not_to raise_error
+      expect(@result).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
     it "distinguishes null (empty input) from undefined (no key found)" do
       # parse_private_keys("") is a Rego null; parse_rsa_private_key("") is undefined.
       expect(registry.call("crypto.parse_private_keys", [Ruby::Rego::StringValue.new("")]))

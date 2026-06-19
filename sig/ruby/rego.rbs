@@ -478,6 +478,7 @@ module Ruby
           def self.apply_extensions: (Hash[String, untyped] fields, untyped cert) -> Hash[String, untyped]
           def self.build_request: (untyped request) -> Hash[String, untyped]
           def self.transcode: (String bytes, Encoding encoding) -> String
+          def self.safe_asn1?: (String der) -> bool
 
           private
 
@@ -524,7 +525,6 @@ module Ruby
           def self.set_policy_int: (Hash[String, untyped] fields, String field, String bytes) -> void
           def self.primitive_context?: (untyped node, Integer tag) -> bool
           def self.der_integer?: (String bytes) -> bool
-          def self.safe_asn1?: (String der) -> bool
           def self.ip_address: (String bytes) -> String
           def self.utf8_string: (String value) -> String
           def self.ascii_uri: (String value) -> String
