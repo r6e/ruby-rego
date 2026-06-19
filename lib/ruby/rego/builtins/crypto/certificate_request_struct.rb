@@ -28,7 +28,16 @@ module Ruby
           # @return [Hash[String, untyped]]
           # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
           def self.build_request(request)
-            decoded = OpenSSL::ASN1.decode(request.to_der)
+            der = request.to_der
+            # DoS guard. X509::Request.new stores attribute values as opaque ASN.1 ANY (its template
+            # parse caps recursion at the d2i depth limit), but OpenSSL::ASN1.decode below recurses into
+            # them eagerly, so a deeply-nested attribute value can overflow the C stack uncatchably.
+            # Pre-scan depth like the extension decode path; a CSR nested beyond MAX_ASN1_DEPTH (which no
+            # conforming CSR reaches) maps to undefined — a deliberate divergence from OPA, which stores
+            # the value un-recursed and tolerates arbitrary nesting, traded for not crashing.
+            raise MalformedCertificate, "request nested beyond depth limit" unless safe_asn1?(der)
+
+            decoded = OpenSSL::ASN1.decode(der)
             info = decoded.value[0] # CertificationRequestInfo: [version, subject, spki, [0] attributes]
             subject = info.value[1]
             spki = info.value[2]
@@ -37,7 +46,7 @@ module Ruby
             algorithm = PUBLIC_KEY_ALGORITHM_OIDS.fetch(spki.value[0].value[0].oid, 0)
             fields = REQUEST_ZERO_FIELDS.merge(
               "Version" => request.version.to_i,
-              "Raw" => b64(request.to_der), "RawTBSCertificateRequest" => b64(info.to_der),
+              "Raw" => b64(der), "RawTBSCertificateRequest" => b64(info.to_der),
               "RawSubject" => b64(subject.to_der), "RawSubjectPublicKeyInfo" => b64(spki.to_der),
               "Subject" => Name.build(subject, lenient: true),
               "PublicKey" => algorithm.zero? ? nil : public_key(request),

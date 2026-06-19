@@ -77,6 +77,35 @@ RSpec.describe "crypto.x509.parse_certificate_request" do
     end
   end
 
+  # DoS guard: OpenSSL::X509::Request.new stores attribute values as opaque ASN.1 ANY without
+  # recursing, but build_request's OpenSSL::ASN1.decode recurses into them eagerly — a deeply-nested
+  # attribute value would overflow the C stack uncatchably. build_request pre-scans depth (safe_asn1?,
+  # MAX_ASN1_DEPTH) and maps a CSR nested beyond the bound to undefined. This is a deliberate
+  # divergence from OPA (which stores the value un-recursed and returns a struct at any depth), traded
+  # for not crashing — reachable only by hand-assembled DER no conforming CSR produces. A depth past
+  # the bound but below any crash threshold pins the guard: if it were removed this fails as a clean
+  # assertion (struct, not undefined) rather than crashing the suite.
+  describe "deeply-nested attribute value (DoS guard)" do
+    it "is undefined for an attribute value nested beyond the depth bound (OPA returns a struct)" do
+      asn1 = OpenSSL::ASN1
+      key = OpenSSL::PKey::EC.generate("prime256v1")
+      inner = asn1::Integer.new(1)
+      2_000.times { inner = asn1::Sequence.new([inner]) }
+      attribute = asn1::Sequence.new([asn1::ObjectId.new("1.2.3.4"), asn1::Set.new([inner])])
+      subject = asn1.decode(OpenSSL::X509::Name.parse("/CN=t").to_der)
+      spki = asn1.decode(key.public_to_der)
+      info = asn1::Sequence.new([asn1::Integer.new(0), subject, spki,
+                                 asn1::ASN1Data.new([attribute], 0, :CONTEXT_SPECIFIC)])
+      signature = key.sign(OpenSSL::Digest.new("SHA256"), info.to_der)
+      der = asn1::Sequence.new([info, asn1::Sequence.new([asn1::ObjectId.new("ecdsa-with-SHA256")]),
+                                asn1::BitString.new(signature)]).to_der
+      pem = "-----BEGIN CERTIFICATE REQUEST-----\n#{[der].pack("m0").scan(/.{1,64}/).join("\n")}\n" \
+            "-----END CERTIFICATE REQUEST-----\n"
+      result = registry.call("crypto.x509.parse_certificate_request", [Ruby::Rego::StringValue.new(pem)])
+      expect(result).to be_a(Ruby::Rego::UndefinedValue)
+    end
+  end
+
   describe "type handling" do
     it "is undefined for a non-string argument" do
       [42, true, [1], { "a" => 1 }, nil].each do |bad|
