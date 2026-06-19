@@ -375,9 +375,16 @@ module Ruby
         class MalformedCertificate < StandardError
         end
 
+        REQUEST_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
         def self.register!: () -> BuiltinRegistry
         def self.register_certificates!: () -> BuiltinRegistry
+        def self.register_requests!: () -> BuiltinRegistry
         def self.parse_certificates: (Value value) -> Value
+        def self.parse_certificate_request: (Value value) -> Value
+        def self.request_from: (String string) -> untyped
+        def self.pem_request_der: (String string) -> String?
+        def self.build_request_struct: (untyped request) -> Value
         def self.md5: (Value value) -> StringValue
         def self.sha1: (Value value) -> StringValue
         def self.sha256: (Value value) -> StringValue
@@ -441,6 +448,8 @@ module Ruby
           NAME_CONSTRAINT_FIELDS: Hash[Integer, Array[String]]
           ACCESS_METHODS: Hash[String, String]
           RECOGNIZED_EXTENSION_OIDS: Array[String]
+          EXTENSION_REQUEST_OID: String
+          REQUEST_ZERO_FIELDS: Hash[String, untyped]
           MAX_ASN1_DEPTH: Integer
           INT64_MIN: Integer
           INT64_MAX: Integer
@@ -460,6 +469,17 @@ module Ruby
           def self.raw_fields: (untyped cert, untyped tbs, untyped issuer, untyped subject, untyped spki) -> Hash[String, untyped]
           def self.extension_nodes: (untyped tbs) -> untyped
           def self.extension_list: (untyped tbs) -> Array[untyped]?
+          def self.extension_entry: (untyped ext) -> Hash[String, untyped]
+          def self.extension_critical: (Array[untyped] parts) -> bool
+          def self.build_request: (untyped request) -> Hash[String, untyped]
+          def self.request_extension_nodes: (untyped attributes) -> untyped
+          def self.request_extensions: (untyped attributes) -> Array[untyped]?
+          def self.request_sans: (Hash[String, untyped] fields, untyped attributes) -> void
+          def self.request_attributes: (untyped attributes) -> Array[untyped]?
+          def self.attribute_set: (untyped attr) -> Hash[String, untyped]?
+          def self.attribute_group: (untyped group) -> Array[untyped]
+          def self.attribute_value: (untyped node) -> untyped
+          def self.parsed_uris: (Array[String] uri_texts) -> Array[untyped]
           def self.rfc3339: (untyped time) -> String
           def self.b64: (String bytes) -> String
           def self.ec_public_key: (untyped key) -> Hash[String, untyped]
@@ -472,6 +492,7 @@ module Ruby
           def self.ext_key_usage: (Hash[String, untyped] fields, String der) -> void
           def self.basic_constraints: (Hash[String, untyped] fields, String der) -> void
           def self.subject_alt_name: (Hash[String, untyped] fields, String der) -> void
+          def self.general_names: (String der) -> [ Array[String], Array[String], Array[String], Array[String] ]
           def self.authority_info_access: (Hash[String, untyped] fields, String der) -> void
           def self.name_constraints: (Hash[String, untyped] fields, String der, bool critical) -> void
           def self.add_constraint: (Hash[String, untyped] fields, untyped base, Integer column) -> void

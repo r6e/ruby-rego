@@ -14,12 +14,19 @@ module Ruby
           # @param uri_texts [Array[String]]
           # @return [Hash[String, untyped]]
           def self.uri_fields(uri_texts)
-            parsed = uri_texts.map do |text|
-              Uri::Parser.parse(text) || raise(MalformedCertificate, "invalid URI SAN")
-            end
+            parsed = parsed_uris(uri_texts)
             { "URIs" => parsed.map { |components| url_struct(components) },
               "URIStrings" => parsed.map { |components| Uri::Parser.string(components) } }
           end
+
+          # Parse each URI SAN text into url.URL Components, raising (-> undefined) on any net/url.Parse
+          # rejection, exactly as crypto/x509 does. Shared by the certificate URIs+URIStrings builder
+          # and the CSR URIs builder (the CSR has no injected URIStrings field).
+          # :reek:NilCheck -- nil is Parser.parse's reject sentinel (Go's url.Parse failure).
+          def self.parsed_uris(uri_texts)
+            uri_texts.map { |text| Uri::Parser.parse(text) || raise(MalformedCertificate, "invalid URI SAN") }
+          end
+          private_class_method :parsed_uris
 
           # json.Marshal of Go's url.URL: every exported field, with User marshaling as {} when
           # userinfo is present (its fields are unexported) and null otherwise.

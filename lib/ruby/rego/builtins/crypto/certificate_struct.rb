@@ -174,13 +174,38 @@ module Ruby
           # :reek:NilCheck -- a certificate without extensions has Extensions = nil (Go's zero value).
           def self.extension_list(tbs)
             nodes = extension_nodes(tbs)
-            nodes&.map do |ext|
-              parts = ext.value
-              { "Critical" => parts.size == 3 && parts[1].value == true,
-                "Id" => oid_ints(parts[0].oid), "Value" => b64(parts.last.value) }
-            end
+            nodes&.map { |ext| extension_entry(ext) }
           end
           private_class_method :extension_list
+
+          # One Extensions[] entry from an Extension SEQUENCE node, validating Go's pkix.Extension shape
+          # { extnID OID, critical BOOLEAN OPTIONAL, extnValue OCTET STRING }. A certificate's extensions
+          # are pre-validated by OpenSSL so this never rejects them; a CSR's requested extensions are
+          # parsed raw, so an ill-formed one (wrong-type value/critical) maps to OPA's undefined.
+          def self.extension_entry(ext)
+            parts = ext.value
+            unless parts[0].is_a?(OpenSSL::ASN1::ObjectId) && parts.last.is_a?(OpenSSL::ASN1::OctetString)
+              raise MalformedCertificate, "malformed extension"
+            end
+
+            { "Critical" => extension_critical(parts), "Id" => oid_ints(parts[0].oid),
+              "Value" => b64(parts.last.value) }
+          end
+          private_class_method :extension_entry
+
+          # The critical flag: a 2-element extension defaults to false; a 3-element one's middle element
+          # must be the BOOLEAN (else the extension is malformed).
+          def self.extension_critical(parts)
+            case parts.size
+            when 2 then false
+            when 3
+              raise MalformedCertificate, "malformed extension critical" unless parts[1].is_a?(OpenSSL::ASN1::Boolean)
+
+              parts[1].value
+            else raise MalformedCertificate, "malformed extension"
+            end
+          end
+          private_class_method :extension_critical
 
           # OID dotted string -> array of integer arcs (Go marshals asn1.ObjectIdentifier as []int).
           def self.oid_ints(oid)
