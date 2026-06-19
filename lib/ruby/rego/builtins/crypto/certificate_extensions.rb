@@ -238,14 +238,34 @@ module Ruby
           # PolicyConstraints (2.5.29.36): SEQUENCE { [0] requireExplicitPolicy, [1] inhibitPolicyMapping
           # INTEGERs OPTIONAL }; each sets its field and a *Zero flag (present and equal to zero).
           def self.policy_constraints(fields, der)
-            decode_sequence(der).each do |element|
-              field = element.tag.zero? ? "RequireExplicitPolicy" : "InhibitPolicyMapping"
-              value = signed_int(element.value)
-              fields[field] = value
-              fields["#{field}Zero"] = value.zero?
+            elements = decode_sequence(der)
+            index = 0
+            if primitive_context?(elements[index], 0)
+              set_policy_int(fields, "RequireExplicitPolicy", elements[index].value)
+              index += 1
             end
+            return unless primitive_context?(elements[index], 1)
+
+            set_policy_int(fields, "InhibitPolicyMapping", elements[index].value)
           end
           private_class_method :policy_constraints
+
+          # Set a policyConstraints int field and its present-and-zero flag from raw INTEGER bytes.
+          def self.set_policy_int(fields, field, bytes)
+            value = signed_int(bytes)
+            fields[field] = value
+            fields["#{field}Zero"] = value.zero?
+          end
+          private_class_method :set_policy_int
+
+          # Whether a node is a PRIMITIVE context-tagged element with the given tag. Go matches the
+          # OPTIONAL [0]/[1] policyConstraints fields positionally and only against the primitive
+          # IMPLICIT INTEGER form; a different tag or a constructed encoding is skipped (field absent),
+          # not consumed.
+          def self.primitive_context?(node, tag)
+            context_tag?(node, tag) && node.value.is_a?(String)
+          end
+          private_class_method :primitive_context?
 
           # A signed two's-complement big-endian INTEGER from an IMPLICIT context-tagged primitive.
           # OpenSSL hands back the raw content bytes (which OpenSSL::BN reads as an unsigned magnitude),

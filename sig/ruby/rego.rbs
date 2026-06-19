@@ -483,6 +483,8 @@ module Ruby
           def self.bounded_decode: (String der, untyped type) -> untyped
           def self.decode_sequence: (String der) -> Array[untyped]
           def self.signed_int: (String bytes) -> Integer
+          def self.set_policy_int: (Hash[String, untyped] fields, String field, String bytes) -> void
+          def self.primitive_context?: (untyped node, Integer tag) -> bool
           def self.der_integer?: (String bytes) -> bool
           def self.safe_asn1?: (String der) -> bool
           def self.ip_address: (String bytes) -> String
