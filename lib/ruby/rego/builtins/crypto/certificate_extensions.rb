@@ -240,22 +240,37 @@ module Ruby
           def self.policy_constraints(fields, der)
             decode_sequence(der).each do |element|
               field = element.tag.zero? ? "RequireExplicitPolicy" : "InhibitPolicyMapping"
-              value = go_int(signed_int(element.value))
+              value = signed_int(element.value)
               fields[field] = value
               fields["#{field}Zero"] = value.zero?
             end
           end
           private_class_method :policy_constraints
 
-          # A two's-complement big-endian INTEGER from an IMPLICIT context-tagged primitive (OpenSSL
-          # hands back the raw content bytes, which OpenSSL::BN reads as an unsigned magnitude). Go's
-          # asn1 decodes these policyConstraints counts as a signed int.
+          # A signed two's-complement big-endian INTEGER from an IMPLICIT context-tagged primitive.
+          # OpenSSL hands back the raw content bytes (which OpenSSL::BN reads as an unsigned magnitude),
+          # bypassing the INTEGER decoder, so Go's asn1 int rules are enforced here: 1..8 content bytes
+          # (an int field; empty or >8 errors) and minimal DER encoding (no redundant 0x00/0xFF prefix).
           def self.signed_int(bytes)
+            raise MalformedCertificate, "invalid policy-constraints integer" unless der_integer?(bytes)
+
             value = OpenSSL::BN.new(bytes, 2).to_i
-            value -= (1 << (8 * bytes.bytesize)) if !bytes.empty? && bytes.getbyte(0).to_i >= 0x80
-            value
+            bytes.getbyte(0).to_i >= 0x80 ? value - (1 << (8 * bytes.bytesize)) : value
           end
           private_class_method :signed_int
+
+          # Whether `bytes` is a valid minimally-encoded DER INTEGER content for a Go int (1..8 bytes,
+          # no redundant leading 0x00 before a clear high bit or 0xFF before a set high bit).
+          def self.der_integer?(bytes)
+            size = bytes.bytesize
+            return false unless size.between?(1, 8)
+            return true if size == 1
+
+            first = bytes.getbyte(0).to_i
+            second = bytes.getbyte(1).to_i
+            !(first.zero? && second < 0x80) && !(first == 0xff && second >= 0x80)
+          end
+          private_class_method :der_integer?
 
           # InhibitAnyPolicy (2.5.29.54): a single INTEGER skip count, with its present-and-zero flag.
           def self.inhibit_any_policy(fields, der)
