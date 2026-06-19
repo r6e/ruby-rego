@@ -366,6 +366,8 @@ module Ruby
           # false once nesting would exceed MAX_ASN1_DEPTH, and false on a BER indefinite length (which
           # would otherwise bypass the depth count, and which DER — so Go — rejects anyway). Huge or
           # truncated definite lengths are left for OpenSSL to reject shallowly (ASN1Error -> undefined).
+          # Public: the generic ASN.1-depth DoS guard, also called cross-module by the key parser's
+          # format_matches? before it hands attacker DER to OpenSSL::ASN1.decode.
           # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
           # :reek:TooManyStatements -- a single byte-scanning loop is the clearest form.
           def self.safe_asn1?(der)
@@ -407,7 +409,6 @@ module Ruby
             end
             true
           end
-          private_class_method :safe_asn1?
           # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
 
           # An iPAddress SAN: Go's parseSANExtension accepts only 4- or 16-byte addresses and errors

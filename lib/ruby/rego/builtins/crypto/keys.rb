@@ -344,11 +344,16 @@ module Ruby
 
         # Whether the DER's format matches the one Go's parser for this block type accepts (see
         # BLOCK_FORMAT_ELEMENT) — gating out a key re-encoded under a mislabelled block header. A
-        # structurally-invalid DER (decode raises) is simply "no match"; SystemStackError is rescued
-        # because OpenSSL::ASN1.decode recurses through nested constructed types with no depth limit
-        # (openssl < master), so a deeply-nested DER within the size cap could otherwise overflow the
-        # stack on a small-stack thread and escape the registry's narrow rescue.
+        # structurally-invalid DER (decode raises) is simply "no match". OpenSSL::ASN1.decode recurses
+        # through nested constructed types with no depth limit (openssl < master), so a deeply-nested DER
+        # within MAX_KEY_DER_BYTES could overflow the C stack — uncatchably on a small-stack thread,
+        # escaping the registry's narrow rescue and aborting evaluation. The safe_asn1? pre-scan (the
+        # shared iterative depth guard the cert/CSR/keypair paths use) rejects such input before the
+        # decode; the SystemStackError rescue is the catchable-range backstop. A real private key is only
+        # a handful of levels deep, so MAX_ASN1_DEPTH never rejects one (no OPA divergence).
         def self.format_matches?(type, der)
+          return false unless CertificateStruct.safe_asn1?(der)
+
           OpenSSL::ASN1.decode(der).value[1].is_a?(BLOCK_FORMAT_ELEMENT.fetch(type))
         rescue OpenSSL::ASN1::ASN1Error, ::TypeError, ::NoMethodError, SystemStackError
           false
