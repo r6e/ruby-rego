@@ -85,9 +85,23 @@ module Ruby
               "Subject" => Name.build(subject),
               "Extensions" => extension_list(tbs)
             )
-            apply_extensions(fields, cert)
+            scrub(apply_extensions(fields, cert))
           end
           # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+
+          # Re-encode every string in the field tree to valid UTF-8, replacing invalid bytes with U+FFFD
+          # exactly as Go's json.Marshal does for the raw-byte fields (URI SAN components, pkix.Name
+          # attribute values). This also normalizes the ASCII-8BIT tag OpenSSL hands back so the result
+          # serializes to JSON without raising. dNSName/email SANs are rejected upstream, matching Go.
+          def self.scrub(value)
+            case value
+            when ::String then value.dup.force_encoding(Encoding::UTF_8).scrub
+            when ::Array then value.map { |element| scrub(element) }
+            when ::Hash then value.transform_values { |element| scrub(element) }
+            else value
+            end
+          end
+          private_class_method :scrub
 
           # Scalars available directly from the certificate accessors. `decoded` is the certificate's
           # decoded ASN.1 (SEQUENCE { tbsCertificate, signatureAlgorithm, signatureValue }).

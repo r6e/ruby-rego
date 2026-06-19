@@ -46,6 +46,11 @@ module Ruby
           # adversarial certificates that no legitimate issuer produces.
           MAX_ASN1_DEPTH = 1000
 
+          # Go's int is 64-bit on OPA's platforms; asn1.Unmarshal into an int field errors (-> OPA
+          # undefined) when the value does not fit, so the int-typed extension fields are bounded here.
+          INT64_MIN = -(2**63)
+          INT64_MAX = (2**63) - 1
+
           # @param fields [Hash[String, untyped]]
           # @param cert [OpenSSL::X509::Certificate]
           # @return [Hash[String, untyped]]
@@ -159,7 +164,7 @@ module Ruby
             fields["IsCA"] = elements.any? { |element| element.is_a?(OpenSSL::ASN1::Boolean) && element.value }
             path_len = elements.find { |element| element.is_a?(OpenSSL::ASN1::Integer) }
             # Go's parseBasicConstraintsExtension defaults maxPathLen to -1 when no pathLen is encoded.
-            length = path_len ? path_len.value.to_i : -1
+            length = path_len ? go_int(path_len.value) : -1
             fields["MaxPathLen"] = length
             fields["MaxPathLenZero"] = length.zero?
           end
@@ -178,8 +183,8 @@ module Ruby
             bounded_decode(der).value.each do |general_name|
               value = general_name.value
               case general_name.tag
-              when 2 then dns << value
-              when 1 then email << value
+              when 2 then dns << utf8_string(value)
+              when 1 then email << utf8_string(value)
               when 6 then uris << value
               when 7 then ips << ip_address(value)
               end
@@ -241,7 +246,7 @@ module Ruby
           def self.policy_constraints(fields, der)
             bounded_decode(der).value.each do |element|
               field = element.tag.zero? ? "RequireExplicitPolicy" : "InhibitPolicyMapping"
-              value = OpenSSL::BN.new(element.value, 2).to_i
+              value = go_int(OpenSSL::BN.new(element.value, 2))
               fields[field] = value
               fields["#{field}Zero"] = value.zero?
             end
@@ -250,11 +255,21 @@ module Ruby
 
           # InhibitAnyPolicy (2.5.29.54): a single INTEGER skip count, with its present-and-zero flag.
           def self.inhibit_any_policy(fields, der)
-            value = bounded_decode(der).value.to_i
+            value = go_int(bounded_decode(der).value)
             fields["InhibitAnyPolicy"] = value
             fields["InhibitAnyPolicyZero"] = value.zero?
           end
           private_class_method :inhibit_any_policy
+
+          # An ASN.1 INTEGER coerced to Go's int range; out-of-range makes asn1.Unmarshal error in Go,
+          # so OPA returns undefined (mapped here to a malformed certificate).
+          def self.go_int(big_number)
+            value = big_number.to_i
+            raise MalformedCertificate, "integer out of range" unless value.between?(INT64_MIN, INT64_MAX)
+
+            value
+          end
+          private_class_method :go_int
 
           # PolicyMappings (2.5.29.33): SEQUENCE OF SEQUENCE { issuerDomainPolicy, subjectDomainPolicy OIDs }.
           def self.policy_mappings(fields, der)
@@ -342,6 +357,15 @@ module Ruby
             go_ip_string(bytes)
           end
           private_class_method :ip_address
+
+          # A dNSName / rfc822Name SAN: Go's parseSANExtension rejects an invalid-UTF-8 value (-> OPA
+          # undefined), unlike the URI/Name byte fields that json.Marshal later scrubs to U+FFFD.
+          def self.utf8_string(value)
+            return value if value.dup.force_encoding(Encoding::UTF_8).valid_encoding?
+
+            raise MalformedCertificate, "invalid SAN string"
+          end
+          private_class_method :utf8_string
 
           # json.Marshal of Go's *net.IPNet for a nameConstraints IP subtree: net.IP marshals via
           # MarshalText (its string form), net.IPMask has no MarshalText so the mask stays base64. Go's

@@ -29,6 +29,9 @@ detectors:
       - Ruby::Rego::Builtins::Yaml::ScalarResolver
       # Two multiplier tables (SI/binary) plus the exponent bound and numeric-scan constants.
       - Ruby::Rego::Builtins::Units
+      # Go enum tables (EKU), name-constraint/access-method maps, the recognized-OID list, and the
+      # depth / int64 DoS bounds — each an independent crypto/x509 constant.
+      - Ruby::Rego::Builtins::Crypto::CertificateStruct
   TooManyInstanceVariables:
     exclude:
       - Ruby::Rego::Lexer
