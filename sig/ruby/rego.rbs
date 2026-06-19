@@ -471,6 +471,7 @@ module Ruby
           def self.raw_fields: (untyped cert, untyped tbs, untyped issuer, untyped subject, untyped spki) -> Hash[String, untyped]
           def self.extension_nodes: (untyped tbs) -> untyped
           def self.extension_list: (untyped tbs) -> Array[untyped]?
+          def self.extension_critical_value: (untyped ext) -> [ bool, untyped ]
           def self.extension_entry: (untyped ext) -> Hash[String, untyped]
           def self.request_extension_nodes: (untyped attributes) -> untyped
           def self.extension_request_extensions: (untyped attr) -> Array[untyped]

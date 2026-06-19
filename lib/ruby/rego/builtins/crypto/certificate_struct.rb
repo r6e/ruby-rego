@@ -180,29 +180,32 @@ module Ruby
           end
           private_class_method :extension_list
 
-          # One Extensions[] entry from an Extension SEQUENCE node. Go decodes pkix.Extension
-          # { Id OID, Critical BOOLEAN OPTIONAL, Value OCTET STRING } positionally and ignores any
-          # trailing element: the OID, then an optional BOOLEAN critical, then the OCTET STRING value.
-          # A certificate's extensions are pre-validated by OpenSSL; a CSR's requested extensions are
-          # parsed raw, so an ill-formed one (no OID / no OCTET STRING value) maps to OPA's undefined.
-          # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
-          def self.extension_entry(ext)
+          # The [critical, OCTET STRING value node] of an Extension SEQUENCE, located the way Go decodes
+          # pkix.Extension { Id OID, Critical BOOLEAN OPTIONAL, Value OCTET STRING }: positionally — the
+          # OID, then an optional BOOLEAN critical, then the OCTET STRING value — ignoring any trailing
+          # element. A certificate's extensions are pre-validated by OpenSSL; a CSR's requested extensions
+          # are parsed raw, so an ill-formed one (no OID / no OCTET STRING value) maps to OPA's undefined.
+          # Shared by extension_entry (Extensions[]) and the CSR SAN walk (request_sans) so both read the
+          # value identically — reading the last element instead would crash on a trailing element that
+          # Go (and extension_entry) ignore, diverging to undefined where OPA returns the struct.
+          def self.extension_critical_value(ext)
             parts = ext.value
             raise MalformedCertificate, "malformed extension" unless parts[0].is_a?(OpenSSL::ASN1::ObjectId)
 
-            index = 1
-            critical = false
-            if parts[index].is_a?(OpenSSL::ASN1::Boolean)
-              critical = parts[index].value
-              index += 1
-            end
+            index = parts[1].is_a?(OpenSSL::ASN1::Boolean) ? 2 : 1
             value = parts[index]
             raise MalformedCertificate, "malformed extension" unless value.is_a?(OpenSSL::ASN1::OctetString)
 
-            { "Critical" => critical, "Id" => oid_ints(parts[0].oid), "Value" => b64(value.value) }
+            [index == 2 ? parts[1].value : false, value]
+          end
+          private_class_method :extension_critical_value
+
+          # One Extensions[] entry from an Extension SEQUENCE node (see extension_critical_value).
+          def self.extension_entry(ext)
+            critical, value = extension_critical_value(ext)
+            { "Critical" => critical, "Id" => oid_ints(ext.value[0].oid), "Value" => b64(value.value) }
           end
           private_class_method :extension_entry
-          # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
           # OID dotted string -> array of integer arcs (Go marshals asn1.ObjectIdentifier as []int).
           def self.oid_ints(oid)

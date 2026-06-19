@@ -95,7 +95,9 @@ module Ruby
             san = nodes&.find { |ext| ext.value[0].oid == "2.5.29.17" }
             return unless san
 
-            dns, email, ips, uris = general_names(san.value.last.value)
+            # Positional value extraction (shared with extension_entry): reading san.value.last instead
+            # would crash on a trailing element that Go ignores, diverging to undefined vs OPA's struct.
+            dns, email, ips, uris = general_names(extension_critical_value(san).last.value)
             fields["DNSNames"] = dns unless dns.empty?
             fields["EmailAddresses"] = email unless email.empty?
             fields["IPAddresses"] = ips unless ips.empty?
