@@ -438,15 +438,17 @@ module Ruby
         def self.request_from: (String string) -> untyped
         def self.pem_request_der: (String string) -> String?
         def self.build_request_struct: (untyped request) -> Value
-        def self.keypair_certs: (String string) -> Array[untyped]?
-        def self.pem_chain_certs: (Array[[ String, String ]] blocks) -> Array[untyped]?
-        def self.single_der_cert: (String der) -> Array[untyped]?
+        def self.keypair_cert_ders: (String string) -> Array[String]?
+        def self.single_der: (String? der) -> Array[String]?
+        def self.leaf_certificate: (String? der) -> untyped
         def self.matching_key: (untyped leaf, String string) -> untyped
         def self.keypair_key: (String string) -> untyped
         def self.key_der: (String string) -> String?
         def self.private_key_block?: (String type) -> bool
+        def self.raw_base64_key: (String? der) -> String?
+        def self.pkcs1_rsa?: (String der) -> bool
         def self.key_matches_leaf?: (untyped leaf, untyped key) -> bool
-        def self.build_keypair_struct: (Array[untyped] certs, untyped key) -> Value
+        def self.build_keypair_struct: (Array[String] cert_ders, untyped leaf, untyped key) -> Value
 
         # Builds the OPA JSON hash for one parsed certificate (json.Marshal of x509.Certificate +
         # URIStrings). Methods take/return untyped because they walk OpenSSL ASN.1/cert objects.

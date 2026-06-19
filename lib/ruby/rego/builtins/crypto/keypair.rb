@@ -16,6 +16,7 @@ module Ruby
       # match the leaf certificate's public key (Go's tls.X509KeyPair validates this) — a mismatched,
       # missing, encrypted, public-only, or unsupported key makes the call undefined. Reopens Crypto to
       # share the certificate chain parser, the key reader, and the Go private-key struct renderer.
+      # rubocop:disable Metrics/ModuleLength
       module Crypto
         KEYPAIR_FUNCTIONS = {
           "crypto.x509.parse_keypair" => { arity: 2, handler: :parse_keypair }
@@ -31,59 +32,69 @@ module Ruby
         # @param cert_value [Ruby::Rego::Value]
         # @param key_value [Ruby::Rego::Value]
         # @return [Ruby::Rego::Value]
-        # :reek:NilCheck -- nil is the parse-failure sentinel from certificates_from / matching_key.
+        # :reek:NilCheck -- nil is the parse-failure sentinel from keypair_cert_ders / matching_key.
         # :reek:TooManyStatements -- a faithful port of OPA's keypair parse + validation flow.
+        # rubocop:disable Metrics/AbcSize
         def self.parse_keypair(cert_value, key_value)
           cert_string = string_value(cert_value, "crypto.x509.parse_keypair")
           key_string = string_value(key_value, "crypto.x509.parse_keypair")
           return UndefinedValue.new unless scannable?(cert_string) && scannable?(key_string)
 
-          certs = keypair_certs(cert_string)
-          return UndefinedValue.new if certs.nil?
+          cert_ders = keypair_cert_ders(cert_string)
+          return UndefinedValue.new if cert_ders.nil?
 
-          key = matching_key(certs.first, key_string)
+          leaf = leaf_certificate(cert_ders.first)
+          return UndefinedValue.new if leaf.nil?
+
+          key = matching_key(leaf, key_string)
           return UndefinedValue.new if key.nil?
 
-          build_keypair_struct(certs, key)
+          build_keypair_struct(cert_ders, leaf, key)
         end
+        # rubocop:enable Metrics/AbcSize
 
-        # The certificate chain, the way Go's tls.X509KeyPair reads it — NOT parse_certificates' dual
-        # dispatch. A PEM input contributes every CERTIFICATE block and silently ignores the rest (a key
-        # block, comments); at least one CERTIFICATE is required. A non-PEM input is ONE base64-DER
-        # certificate (Go x509.ParseCertificate rejects trailing bytes — OpenSSL tolerates them, so the
-        # length is checked); base64-of-PEM is decoded by pem_blocks then scanned as PEM.
+        # The RAW DER of each certificate, the way Go's tls.X509KeyPair collects them: it stores the
+        # certificate bytes verbatim and parses ONLY the leaf (certs[0]), so an unparseable INTERMEDIATE
+        # is kept as-is. A PEM input contributes every CERTIFICATE block's bytes and ignores other blocks
+        # (a key block, comments); a non-PEM input is ONE base64-DER certificate (Go's x509.ParseCertificate
+        # rejects trailing bytes, so the length is checked; OpenSSL tolerates them); base64-of-PEM is
+        # decoded by pem_blocks then scanned as PEM. At least one CERTIFICATE block is required.
         # :reek:NilCheck -- nil sentinels: no CERTIFICATE block / bad base64 / trailing DER -> undefined.
         # :reek:TooManyStatements -- the PEM-blocks vs single-DER branch reads clearest inline.
-        def self.keypair_certs(string)
+        def self.keypair_cert_ders(string)
           blocks = pem_blocks(string)
-          return pem_chain_certs(blocks) unless blocks.empty?
+          unless blocks.empty?
+            ders = [] # : Array[String]
+            blocks.each { |type, der| ders << der if type == "CERTIFICATE" }
+            return ders.empty? ? nil : ders
+          end
 
-          der = std_base64_decode(string)
-          der && single_der_cert(der)
+          single_der(std_base64_decode(string))
+        end
+        private_class_method :keypair_cert_ders
+
+        # A lone base64-DER certificate as a one-element list, or nil if it is truncated or carries
+        # trailing bytes: Go's x509.ParseCertificate errors on trailing data, but OpenSSL keeps only the
+        # leading element, so the encoded length is compared against the buffer explicitly.
+        # :reek:NilCheck -- nil means bad base64 / a trailing-padded or truncated DER (-> OPA undefined).
+        def self.single_der(der)
+          return nil if der.nil?
+
+          total = leading_element_length(der)
+          total == der.bytesize ? [der] : nil
+        end
+        private_class_method :single_der
+
+        # The parsed leaf certificate (certs[0]), or nil if it does not parse — Go's tls.X509KeyPair
+        # parses the leaf for the Leaf field and the key match and errors if it fails (intermediates are
+        # not parsed).
+        # :reek:NilCheck -- nil is the leaf-parse-failure sentinel.
+        def self.leaf_certificate(der)
+          der && OpenSSL::X509::Certificate.new(der)
         rescue OpenSSL::OpenSSLError
           nil
         end
-        private_class_method :keypair_certs
-
-        # The CERTIFICATE blocks of a PEM input as parsed certs, ignoring any non-CERTIFICATE block, or
-        # nil when none is present (Go's tls.X509KeyPair requires at least one certificate).
-        def self.pem_chain_certs(blocks)
-          certs = blocks.filter_map { |type, der| OpenSSL::X509::Certificate.new(der) if type == "CERTIFICATE" }
-          certs.empty? ? nil : certs
-        end
-        private_class_method :pem_chain_certs
-
-        # A single DER certificate as a one-element chain, rejecting trailing bytes: Go's
-        # x509.ParseCertificate errors on them, but OpenSSL::X509::Certificate.new silently keeps only the
-        # leading element, so the encoded length is compared against the buffer explicitly.
-        # :reek:NilCheck -- nil means a truncated or trailing-padded DER (-> OPA undefined).
-        def self.single_der_cert(der)
-          total = leading_element_length(der)
-          return nil if total.nil? || total != der.bytesize
-
-          [OpenSSL::X509::Certificate.new(der)]
-        end
-        private_class_method :single_der_cert
+        private_class_method :leaf_certificate
 
         # The private key for this leaf, or nil unless it parses and its public half matches the leaf's
         # public key (Go's tls.X509KeyPair validates the key against the FIRST certificate).
@@ -120,7 +131,7 @@ module Ruby
         # :reek:NilCheck -- nil means no private-key block / bad base64 (-> OPA undefined).
         def self.key_der(string)
           blocks = pem_blocks(string)
-          return std_base64_decode(string) if blocks.empty?
+          return raw_base64_key(std_base64_decode(string)) if blocks.empty?
 
           _, der = blocks.find { |type, _| private_key_block?(type) }
           der
@@ -133,6 +144,34 @@ module Ruby
           type == "PRIVATE KEY" || type.end_with?(" PRIVATE KEY")
         end
         private_class_method :private_key_block?
+
+        # A raw base64-DER key, or nil to drop trailing bytes the way Go's parsePrivateKey does: a bare
+        # PKCS#1 RSAPrivateKey rejects trailing bytes (ParsePKCS1 checks the asn1 rest), while PKCS#8 and
+        # SEC1 tolerate them. OpenSSL::PKey.read tolerates all three, so a trailing-padded PKCS#1 key —
+        # which OPA returns undefined for — is dropped here; a PEM block never has trailing bytes.
+        # :reek:NilCheck -- nil means bad base64 (-> OPA undefined).
+        def self.raw_base64_key(der)
+          return nil if der.nil?
+
+          total = leading_element_length(der)
+          return der if total.nil? || total == der.bytesize # no trailing; PKey.read handles every form
+
+          pkcs1_rsa?(der.byteslice(0, total).to_s) ? nil : der
+        end
+        private_class_method :raw_base64_key
+
+        # True when der is a bare PKCS#1 RSAPrivateKey — the one private-key form Go's parsePrivateKey
+        # rejects trailing bytes for (PKCS#8 and SEC1 tolerate them). OpenSSL re-encodes an RSA key as
+        # PKCS#1, so a PKCS#1 input round-trips to itself while a PKCS#8 RSA input does not; PKey.read is
+        # d2i (depth-capped), and der is the already length-checked leading element.
+        # :reek:NilCheck -- n/a; the rescue maps a non-key DER to false.
+        def self.pkcs1_rsa?(der)
+          key = OpenSSL::PKey.read(der)
+          key.is_a?(OpenSSL::PKey::RSA) && key.to_der == der
+        rescue OpenSSL::OpenSSLError
+          false
+        end
+        private_class_method :pkcs1_rsa?
 
         # Whether the private key's SubjectPublicKeyInfo matches the leaf certificate's. A public-only key
         # arg is already dropped by keypair_key.
@@ -148,12 +187,12 @@ module Ruby
         # Ruby::Rego::TypeError shadows ::TypeError in this module's scope.
         # :reek:NilCheck -- n/a; rescue maps OpenSSL/ASN.1 builder failures to OPA's undefined.
         # rubocop:disable Metrics/MethodLength
-        def self.build_keypair_struct(certs, key)
-          leaf = CertificateStruct.build(certs.first)
-          leaf.delete("URIStrings") # tls.Certificate.Leaf is Go's raw x509.Certificate (no OPA injection)
+        def self.build_keypair_struct(cert_ders, leaf, key)
+          leaf_struct = CertificateStruct.build(leaf)
+          leaf_struct.delete("URIStrings") # tls.Certificate.Leaf is Go's raw x509.Certificate (no injection)
           Value.from_ruby(
-            "Certificate" => certs.map { |cert| Base64.strict_encode64(cert.to_der) },
-            "Leaf" => leaf,
+            "Certificate" => cert_ders.map { |der| Base64.strict_encode64(der) },
+            "Leaf" => leaf_struct,
             "OCSPStaple" => nil,
             "PrivateKey" => go_struct_for(key),
             "SignedCertificateTimestamps" => nil,
@@ -166,6 +205,7 @@ module Ruby
         private_class_method :build_keypair_struct
         # rubocop:enable Metrics/MethodLength
       end
+      # rubocop:enable Metrics/ModuleLength
     end
   end
 end
