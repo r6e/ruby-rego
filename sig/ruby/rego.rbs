@@ -461,6 +461,8 @@ module Ruby
           def self.oid_ints: (String oid) -> Array[Integer]
           def self.uri_fields: (Array[String] uri_texts) -> Hash[String, untyped]
           def self.apply_extensions: (Hash[String, untyped] fields, untyped cert) -> Hash[String, untyped]
+          def self.build_request: (untyped request) -> Hash[String, untyped]
+          def self.transcode: (String bytes, Encoding encoding) -> String
 
           private
 
@@ -470,7 +472,6 @@ module Ruby
           def self.extension_nodes: (untyped tbs) -> untyped
           def self.extension_list: (untyped tbs) -> Array[untyped]?
           def self.extension_entry: (untyped ext) -> Hash[String, untyped]
-          def self.build_request: (untyped request) -> Hash[String, untyped]
           def self.request_extension_nodes: (untyped attributes) -> untyped
           def self.extension_request_extensions: (untyped attr) -> Array[untyped]
           def self.request_sans: (Hash[String, untyped] fields, untyped nodes) -> void
@@ -479,7 +480,6 @@ module Ruby
           def self.attribute_group: (untyped group) -> Array[untyped]
           def self.attribute_value: (untyped node) -> untyped
           def self.attribute_integer: (untyped big_number) -> Integer
-          def self.transcode: (String bytes, Encoding encoding) -> String
           def self.parsed_uris: (Array[String] uri_texts) -> Array[untyped]
           def self.rfc3339: (untyped time) -> String
           def self.b64: (String bytes) -> String
