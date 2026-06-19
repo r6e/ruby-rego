@@ -58,12 +58,14 @@ module Ruby
           def self.request_extension_nodes(attributes)
             return nil unless attributes
 
-            extension_request = attributes.value.find { |attr| attr.value[0].oid == EXTENSION_REQUEST_OID }
-            return nil unless extension_request
+            # Go's parseCSRExtensions iterates EVERY extensionRequest attribute, taking each one's first
+            # value SET member, and unions the extensions; nil when there is no extensionRequest.
+            requests = attributes.value.select { |attr| attr.value[0].oid == EXTENSION_REQUEST_OID }
+            return nil if requests.empty?
 
-            nodes = extension_request.value[1].value[0].value
+            nodes = requests.flat_map { |attr| attr.value[1].value[0].value }
             oids = nodes.map { |ext| ext.value[0].oid }
-            # Go's parseCSRExtensions rejects a repeated requested-extension OID -> OPA undefined.
+            # A repeated requested-extension OID across the union is rejected -> OPA undefined.
             raise MalformedCertificate, "duplicate requested extension" if oids.uniq.length != oids.length
 
             nodes
@@ -126,9 +128,10 @@ module Ruby
           # -> base64, OID -> int array, BIT STRING -> {Bytes, BitLength}, the string types -> the
           # decoded string (BMPString/TeletexString transcoded), UTC/GeneralizedTime -> RFC3339; an
           # unsupported type (NULL, ENUMERATED, UniversalString, SEQUENCE, SET) -> null (kept).
-          # The only attribute a real CSR carries is extensionRequest (OCTET STRING / BOOLEAN values),
-          # which is exact. A custom attribute deliberately shaped as AttributeTypeAndValueSET with an
-          # exotic or malformed inner value can diverge: Go's strict per-tag asn1 parsers reject some
+          # The only attribute whose value is decoded as an ATV set is extensionRequest (OCTET STRING /
+          # BOOLEAN values), which is exact; challengePassword and other string attributes are dropped.
+          # A custom attribute deliberately shaped as AttributeTypeAndValueSET with an exotic or
+          # malformed inner value can diverge: Go's strict per-tag asn1 parsers reject some
           # forms OpenSSL accepts (so the gem keeps a value Go drops), and OpenSSL's stricter decoder
           # rejects others Go keeps (so the whole CSR is undefined) — a structural limit of using
           # OpenSSL as the ASN.1 layer, accepted because no conforming CSR exercises it.
