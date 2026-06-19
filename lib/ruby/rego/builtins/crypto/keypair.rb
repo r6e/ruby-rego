@@ -148,6 +148,11 @@ module Ruby
         # PKCS#1 RSAPrivateKey rejects trailing bytes (ParsePKCS1 checks the asn1 rest), while PKCS#8 and
         # SEC1 tolerate them. OpenSSL::PKey.read tolerates all three, so a trailing-padded PKCS#1 key —
         # which OPA returns undefined for — is dropped here; a PEM block never has trailing bytes.
+        # A non-minimal OUTER length (BER) is rejected to match Go's DER-strict parsers (and the cert
+        # path's leading_element_length check). A residual accepted divergence remains: OpenSSL::PKey.read
+        # also tolerates inner BER (e.g. a non-minimal inner integer length) that Go rejects, so such a
+        # hand-crafted key is a struct here vs OPA's undefined — a structural limit of OpenSSL as the
+        # ASN.1 layer (it does not expose DER-canonicality), shared by every crypto.x509 builtin.
         # :reek:NilCheck -- nil means bad base64 / over the size bound (-> OPA undefined).
         # :reek:TooManyStatements -- the bound + trailing check + PKCS#1 branch reads clearest inline.
         def self.raw_base64_key(der)
@@ -157,7 +162,8 @@ module Ruby
           return nil if size > MAX_KEY_DER_BYTES # bound before pkcs1_rsa?'s PKey.read
 
           total = leading_element_length(der)
-          return der if total.nil? || total == size # no trailing; PKey.read handles every form
+          return nil if total.nil? # not a minimal-DER SEQUENCE: Go's DER-strict parsers reject it
+          return der if total == size # exact DER, no trailing; PKey.read handles every form
 
           pkcs1_rsa?(der.byteslice(0, total).to_s) ? nil : der
         end
