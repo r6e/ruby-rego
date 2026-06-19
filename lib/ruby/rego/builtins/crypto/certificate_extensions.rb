@@ -168,8 +168,19 @@ module Ruby
           # SubjectAltName (2.5.29.17): GeneralNames -> DNSNames/EmailAddresses/IPAddresses by tag.
           # URI SANs (tag 6) are handled by the URIs/URIStrings builder, not here.
           # :reek:TooManyStatements -- one pass over the GeneralName CHOICE alternatives.
-          # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
           def self.subject_alt_name(fields, der)
+            dns, email, ips, uris = general_names(der)
+            fields["DNSNames"] = dns unless dns.empty?
+            fields["EmailAddresses"] = email unless email.empty?
+            fields["IPAddresses"] = ips unless ips.empty?
+            fields.merge!(uri_fields(uris)) unless uris.empty?
+          end
+          private_class_method :subject_alt_name
+          # Parse a SAN GeneralNames SEQUENCE into [dnsNames, emailAddresses, ipStrings, uriTexts] using
+          # the same per-type validation as certificates; the caller turns uriTexts into URIs (and, for
+          # certificates only, URIStrings). Shared by the certificate and CSR SAN handlers.
+          # rubocop:disable Metrics/MethodLength
+          def self.general_names(der)
             dns = [] # : Array[String]
             email = [] # : Array[String]
             ips = [] # : Array[String]
@@ -183,13 +194,10 @@ module Ruby
               when 7 then ips << ip_address(value)
               end
             end
-            fields["DNSNames"] = dns unless dns.empty?
-            fields["EmailAddresses"] = email unless email.empty?
-            fields["IPAddresses"] = ips unless ips.empty?
-            fields.merge!(uri_fields(uris)) unless uris.empty?
+            [dns, email, ips, uris]
           end
-          private_class_method :subject_alt_name
-          # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
+          private_class_method :general_names
+          # rubocop:enable Metrics/MethodLength
 
           # AuthorityInfoAccess (1.3.6.1.5.5.7.1.1): SEQUENCE OF AccessDescription { method OID,
           # location GeneralName }; OCSP/caIssuers URI locations populate OCSPServer/IssuingCertificateURL.

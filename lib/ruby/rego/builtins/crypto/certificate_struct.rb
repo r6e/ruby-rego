@@ -7,10 +7,12 @@ module Ruby
   module Rego
     module Builtins
       module Crypto
-        # Builds the JSON hash OPA emits for one certificate: json.Marshal of Go's x509.Certificate
-        # plus URIStrings. Every field name and shape mirrors the Go struct exactly. Fields default to
-        # Go's zero value (nil for slices/pointers, 0 for ints, false for bools) and are overridden as
-        # each is derived; the parsed-extension fields are filled in by certificate_extensions.rb.
+        # Builds the JSON hash OPA emits for an X.509 structure: the certificate (build, here) and the
+        # CSR (build_request, in certificate_request_struct.rb) both reopen this module, and it hosts the
+        # shared atoms both use (Name/public-key/signature-algorithm builders, the ASN.1 depth/type
+        # guards, the SAN validators, scrub, transcode, b64, oid_ints, context_tag?). Every field name
+        # and shape mirrors the Go struct exactly; fields default to Go's zero value and are overridden
+        # as each is derived. The certificate's parsed-extension fields live in certificate_extensions.rb.
         # rubocop:disable Metrics/ModuleLength
         module CertificateStruct
           # Go x509.SignatureAlgorithm enum, keyed by OpenSSL's signature-algorithm name. RSA-PSS shares
@@ -174,13 +176,36 @@ module Ruby
           # :reek:NilCheck -- a certificate without extensions has Extensions = nil (Go's zero value).
           def self.extension_list(tbs)
             nodes = extension_nodes(tbs)
-            nodes&.map do |ext|
-              parts = ext.value
-              { "Critical" => parts.size == 3 && parts[1].value == true,
-                "Id" => oid_ints(parts[0].oid), "Value" => b64(parts.last.value) }
-            end
+            nodes&.map { |ext| extension_entry(ext) }
           end
           private_class_method :extension_list
+
+          # The [critical, OCTET STRING value node] of an Extension SEQUENCE, located the way Go decodes
+          # pkix.Extension { Id OID, Critical BOOLEAN OPTIONAL, Value OCTET STRING }: positionally — the
+          # OID, then an optional BOOLEAN critical, then the OCTET STRING value — ignoring any trailing
+          # element. A certificate's extensions are pre-validated by OpenSSL; a CSR's requested extensions
+          # are parsed raw, so an ill-formed one (no OID / no OCTET STRING value) maps to OPA's undefined.
+          # Shared by extension_entry (Extensions[]) and the CSR SAN walk (request_sans) so both read the
+          # value identically — reading the last element instead would crash on a trailing element that
+          # Go (and extension_entry) ignore, diverging to undefined where OPA returns the struct.
+          def self.extension_critical_value(ext)
+            parts = ext.value
+            raise MalformedCertificate, "malformed extension" unless parts[0].is_a?(OpenSSL::ASN1::ObjectId)
+
+            index = parts[1].is_a?(OpenSSL::ASN1::Boolean) ? 2 : 1
+            value = parts[index]
+            raise MalformedCertificate, "malformed extension" unless value.is_a?(OpenSSL::ASN1::OctetString)
+
+            [index == 2 ? parts[1].value : false, value]
+          end
+          private_class_method :extension_critical_value
+
+          # One Extensions[] entry from an Extension SEQUENCE node (see extension_critical_value).
+          def self.extension_entry(ext)
+            critical, value = extension_critical_value(ext)
+            { "Critical" => critical, "Id" => oid_ints(ext.value[0].oid), "Value" => b64(value.value) }
+          end
+          private_class_method :extension_entry
 
           # OID dotted string -> array of integer arcs (Go marshals asn1.ObjectIdentifier as []int).
           def self.oid_ints(oid)
@@ -196,6 +221,14 @@ module Ruby
             Base64.strict_encode64(bytes)
           end
           private_class_method :b64
+
+          # Transcode raw bytes from an ASN.1 string encoding to UTF-8, replacing invalid bytes with
+          # U+FFFD as Go's json.Marshal does. Shared by the pkix.Name builder and the CSR attribute
+          # value marshaler (both reproduce Go's asn1 string decoding). Called cross-module, so public.
+          # :reek:UtilityFunction -- a pure byte-encoding transform.
+          def self.transcode(bytes, encoding)
+            bytes.dup.force_encoding(encoding).encode(Encoding::UTF_8, invalid: :replace, undef: :replace)
+          end
 
           # Whether an ASN.1 node is a context-specific element with the given tag number. Shared by the
           # struct builder and the extension parsers (both reopen this module).

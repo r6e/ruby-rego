@@ -375,9 +375,13 @@ module Ruby
         class MalformedCertificate < StandardError
         end
 
+        REQUEST_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
         def self.register!: () -> BuiltinRegistry
         def self.register_certificates!: () -> BuiltinRegistry
+        def self.register_requests!: () -> BuiltinRegistry
         def self.parse_certificates: (Value value) -> Value
+        def self.parse_certificate_request: (Value value) -> Value
         def self.md5: (Value value) -> StringValue
         def self.sha1: (Value value) -> StringValue
         def self.sha256: (Value value) -> StringValue
@@ -427,6 +431,9 @@ module Ruby
         def self.certificates_from: (String string) -> Array[untyped]?
         def self.der_certificates: (String der) -> Array[untyped]?
         def self.pem_certificates: (String string) -> Array[untyped]?
+        def self.request_from: (String string) -> untyped
+        def self.pem_request_der: (String string) -> String?
+        def self.build_request_struct: (untyped request) -> Value
 
         # Builds the OPA JSON hash for one parsed certificate (json.Marshal of x509.Certificate +
         # URIStrings). Methods take/return untyped because they walk OpenSSL ASN.1/cert objects.
@@ -441,6 +448,8 @@ module Ruby
           NAME_CONSTRAINT_FIELDS: Hash[Integer, Array[String]]
           ACCESS_METHODS: Hash[String, String]
           RECOGNIZED_EXTENSION_OIDS: Array[String]
+          EXTENSION_REQUEST_OID: String
+          REQUEST_ZERO_FIELDS: Hash[String, untyped]
           MAX_ASN1_DEPTH: Integer
           INT64_MIN: Integer
           INT64_MAX: Integer
@@ -452,6 +461,8 @@ module Ruby
           def self.oid_ints: (String oid) -> Array[Integer]
           def self.uri_fields: (Array[String] uri_texts) -> Hash[String, untyped]
           def self.apply_extensions: (Hash[String, untyped] fields, untyped cert) -> Hash[String, untyped]
+          def self.build_request: (untyped request) -> Hash[String, untyped]
+          def self.transcode: (String bytes, Encoding encoding) -> String
 
           private
 
@@ -460,6 +471,17 @@ module Ruby
           def self.raw_fields: (untyped cert, untyped tbs, untyped issuer, untyped subject, untyped spki) -> Hash[String, untyped]
           def self.extension_nodes: (untyped tbs) -> untyped
           def self.extension_list: (untyped tbs) -> Array[untyped]?
+          def self.extension_critical_value: (untyped ext) -> [ bool, untyped ]
+          def self.extension_entry: (untyped ext) -> Hash[String, untyped]
+          def self.request_extension_nodes: (untyped attributes) -> untyped
+          def self.extension_request_extensions: (untyped attr) -> Array[untyped]
+          def self.request_sans: (Hash[String, untyped] fields, untyped nodes) -> void
+          def self.request_attributes: (untyped attributes) -> Array[untyped]?
+          def self.attribute_set: (untyped attr) -> Hash[String, untyped]?
+          def self.attribute_group: (untyped group) -> Array[untyped]
+          def self.attribute_value: (untyped node) -> untyped
+          def self.attribute_integer: (untyped big_number) -> Integer
+          def self.parsed_uris: (Array[String] uri_texts) -> Array[untyped]
           def self.rfc3339: (untyped time) -> String
           def self.b64: (String bytes) -> String
           def self.ec_public_key: (untyped key) -> Hash[String, untyped]
@@ -472,6 +494,7 @@ module Ruby
           def self.ext_key_usage: (Hash[String, untyped] fields, String der) -> void
           def self.basic_constraints: (Hash[String, untyped] fields, String der) -> void
           def self.subject_alt_name: (Hash[String, untyped] fields, String der) -> void
+          def self.general_names: (String der) -> [ Array[String], Array[String], Array[String], Array[String] ]
           def self.authority_info_access: (Hash[String, untyped] fields, String der) -> void
           def self.name_constraints: (Hash[String, untyped] fields, String der, bool critical) -> void
           def self.add_constraint: (Hash[String, untyped] fields, untyped base, Integer column) -> void
@@ -504,12 +527,11 @@ module Ruby
           ATTRIBUTE_FIELDS: Hash[String, [String, bool]]
           NAME_FIELDS: Array[String]
 
-          def self.build: (untyped rdn_sequence) -> Hash[String, untyped]
+          def self.build: (untyped rdn_sequence, ?lenient: bool) -> Hash[String, untyped]
 
           private
 
-          def self.attribute_value: (untyped node) -> String
-          def self.transcode: (String bytes, Encoding encoding) -> String
+          def self.attribute_value: (untyped node, bool lenient) -> untyped
           def self.assign: (Hash[String, untyped] name, String oid, String value) -> void
         end
       end
