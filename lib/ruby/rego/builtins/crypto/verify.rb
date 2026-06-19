@@ -137,15 +137,13 @@ module Ruby
         def self.hostname_ok?(leaf, dns_name)
           return true if dns_name.nil? || dns_name.empty?
 
-          ip = parse_ip(dns_name)
-          return (leaf["IPAddresses"] || []).any? { |entry| parse_ip(entry) == ip } if ip
+          ip = parse_ip(unbracket(dns_name))
+          return (leaf["IPAddresses"] || []).any? { |entry| ip_equal?(entry, ip) } if ip
 
           valid_input = valid_hostname?(dns_name, pattern: false)
           (leaf["DNSNames"] || []).any? do |san|
-            if valid_input && valid_hostname?(san,
-                                              pattern: true)
-              match_hostnames?(san,
-                               dns_name)
+            if valid_input && valid_hostname?(san, pattern: true)
+              match_hostnames?(san, dns_name)
             else
               match_exactly?(san, dns_name)
             end
@@ -153,6 +151,21 @@ module Ruby
         end
         private_class_method :hostname_ok?
         # rubocop:enable Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
+
+        # Strip one surrounding "[ ]" pair (Go's VerifyHostname unwraps a bracketed IPv6 DNSName literal).
+        def self.unbracket(name)
+          name.length >= 3 && name.start_with?("[") && name.end_with?("]") ? name[1..-2].to_s : name
+        end
+        private_class_method :unbracket
+
+        # Go's net.IP.Equal: equal after normalizing an IPv4-mapped IPv6 to IPv4 (IPAddr#native), so e.g.
+        # "::ffff:1.2.3.4" matches a "1.2.3.4" iPAddress SAN.
+        # :reek:NilCheck -- a malformed SAN entry (no IPAddr) cannot match.
+        def self.ip_equal?(entry, ip)
+          other = parse_ip(entry)
+          !other.nil? && other.native == ip.native
+        end
+        private_class_method :ip_equal?
 
         # An IPAddr for an IPv4/IPv6 string, or nil when it is not an IP literal.
         # :reek:NilCheck -- nil distinguishes a hostname from an IP DNSName.
