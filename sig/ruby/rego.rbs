@@ -377,11 +377,15 @@ module Ruby
 
         REQUEST_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
 
+        KEYPAIR_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
         def self.register!: () -> BuiltinRegistry
         def self.register_certificates!: () -> BuiltinRegistry
         def self.register_requests!: () -> BuiltinRegistry
+        def self.register_keypairs!: () -> BuiltinRegistry
         def self.parse_certificates: (Value value) -> Value
         def self.parse_certificate_request: (Value value) -> Value
+        def self.parse_keypair: (Value cert_value, Value key_value) -> Value
         def self.md5: (Value value) -> StringValue
         def self.sha1: (Value value) -> StringValue
         def self.sha256: (Value value) -> StringValue
@@ -434,6 +438,10 @@ module Ruby
         def self.request_from: (String string) -> untyped
         def self.pem_request_der: (String string) -> String?
         def self.build_request_struct: (untyped request) -> Value
+        def self.matching_key: (untyped leaf, String string) -> untyped
+        def self.keypair_key: (String string) -> untyped
+        def self.key_matches_leaf?: (untyped leaf, untyped key) -> bool
+        def self.build_keypair_struct: (Array[untyped] certs, untyped key) -> Value
 
         # Builds the OPA JSON hash for one parsed certificate (json.Marshal of x509.Certificate +
         # URIStrings). Methods take/return untyped because they walk OpenSSL ASN.1/cert objects.
