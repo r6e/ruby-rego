@@ -379,13 +379,28 @@ module Ruby
 
         KEYPAIR_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
 
+        VERIFY_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+
+        INSECURE_SIGNATURE: Regexp
+
+        KEY_USAGE_ENUM: Hash[String, Integer]
+
+        ANY_EXT_KEY_USAGE: Integer
+
+        SERVER_AUTH_EXT_KEY_USAGE: Integer
+
+        VERIFY_OPTION_KEYS: Array[String]
+
         def self.register!: () -> BuiltinRegistry
         def self.register_certificates!: () -> BuiltinRegistry
         def self.register_requests!: () -> BuiltinRegistry
         def self.register_keypairs!: () -> BuiltinRegistry
+        def self.register_verifications!: () -> BuiltinRegistry
         def self.parse_certificates: (Value value) -> Value
         def self.parse_certificate_request: (Value value) -> Value
         def self.parse_keypair: (Value cert_value, Value key_value) -> Value
+        def self.parse_and_verify_certificates: (Value value) -> Value
+        def self.parse_and_verify_certificates_with_options: (Value value, Value options_value) -> Value
         def self.md5: (Value value) -> StringValue
         def self.sha1: (Value value) -> StringValue
         def self.sha256: (Value value) -> StringValue
@@ -449,6 +464,15 @@ module Ruby
         def self.pkcs1_rsa?: (String der) -> bool
         def self.key_matches_leaf?: (untyped leaf, untyped key) -> bool
         def self.build_keypair_struct: (Array[String] cert_ders, untyped leaf, untyped key) -> Value
+        def self.verify_result: (String string, Hash[Symbol, untyped] opts, uri_strings: bool) -> Value
+        def self.unverified: () -> Value
+        def self.chain_output: (Array[Hash[String, untyped]] structs, bool uri_strings) -> Array[Hash[String, untyped]]
+        def self.verified_chain: (String string, Hash[Symbol, untyped] opts) -> Array[untyped]?
+        def self.insecure_chain?: (Array[untyped] certs) -> bool
+        def self.key_usage_satisfied?: (Array[Hash[String, untyped]] chain, Array[Integer] required) -> bool
+        def self.usage_permitted?: (Hash[String, untyped] struct, Integer usage) -> bool
+        def self.verify_options: (Value options_value) -> (Hash[Symbol, untyped] | Symbol)
+        def self.key_usage_enums: (untyped usages) -> (Array[Integer] | Symbol)
 
         # Builds the OPA JSON hash for one parsed certificate (json.Marshal of x509.Certificate +
         # URIStrings). Methods take/return untyped because they walk OpenSSL ASN.1/cert objects.
