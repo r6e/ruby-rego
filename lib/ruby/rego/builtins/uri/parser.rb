@@ -13,6 +13,7 @@ module Ruby
         # rules) runs so the accept/undefined set matches Go exactly. Percent-decoding yields raw
         # bytes (a UTF-8-tagged string that may be invalid UTF-8 for sequences like %FF), matching
         # the gem's urlquery.decode and Go's byte-oriented url.Path.
+        # rubocop:disable Metrics/ModuleLength
         module Parser
           # unescape/escape modes (Go's `encoding` enum); only the ones the parse path uses.
           PATH = :path
@@ -21,9 +22,13 @@ module Ruby
           USER_PASSWORD = :user_password
           FRAGMENT = :fragment
 
-          # The broken-down URL fields OPA reads. host is the raw authority host[:port]; hostname
-          # and port are split lazily for output. opaque/omit_host are internal flow only.
-          Components = Struct.new(:scheme, :host, :path, :raw_path, :raw_query, :fragment, keyword_init: true)
+          # The broken-down URL fields. uri.parse reads only scheme/host/path/raw_path/raw_query/
+          # fragment; the rest (opaque, force_query, omit_host, raw_fragment, user) complete Go's
+          # url.URL so consumers needing the whole struct (crypto.x509 URI SANs) can reconstruct it.
+          # user is the raw userinfo substring (Go keeps it un-decoded) or nil.
+          Components = Struct.new(:scheme, :host, :path, :raw_path, :raw_query, :fragment,
+                                  :opaque, :force_query, :omit_host, :raw_fragment, :user,
+                                  keyword_init: true)
 
           # Parse a raw URI, returning Components or nil when Go's url.Parse would error.
           # @param raw [String]
@@ -39,6 +44,9 @@ module Ruby
             return nil unless decoded
 
             url.fragment = decoded
+            # RawFragment keeps the original encoding only when the default re-escape differs (Go's
+            # setFragment invariant, mirroring setPath's RawPath rule).
+            url.raw_fragment = escape(decoded, FRAGMENT) == frag ? nil : frag
             url
           end
 
@@ -54,16 +62,25 @@ module Ruby
             scheme, rest = get_scheme(raw) || (return nil)
             scheme = scheme.downcase
             url.scheme = scheme
+            scheme_present = !scheme.empty?
             rest = split_query(url, rest)
+            rooted = rest.start_with?("/")
 
-            unless rest.start_with?("/")
-              return url unless scheme.empty? # rootless path with scheme -> opaque (no path)
+            unless rooted
+              if scheme_present # rootless path with scheme -> opaque (no path)
+                url.opaque = rest
+                return url
+              end
               return nil if first_segment_has_colon?(rest)
             end
 
             if authority?(scheme, rest, via_request)
               authority, rest = split_authority(rest)
               url.host = parse_authority(authority) || (return nil)
+              at = authority.rindex("@")
+              url.user = authority[0...at].to_s if at
+            elsif scheme_present && rooted
+              url.omit_host = true # "scheme:/path" with no authority (Go's OmitHost)
             end
             set_path(url, rest) ? url : nil
           end
@@ -80,6 +97,7 @@ module Ruby
           # everything after the first `?` is the (raw) query.
           def self.split_query(url, rest)
             if rest.end_with?("?") && rest.count("?") == 1
+              url.force_query = true
               rest[0...-1].to_s
             else
               before, sep, query = rest.partition("?")
@@ -151,6 +169,7 @@ module Ruby
           end
           private_class_method :contains_ctl_byte?
         end
+        # rubocop:enable Metrics/ModuleLength
       end
     end
   end
@@ -158,3 +177,4 @@ end
 
 require_relative "parser/escaping"
 require_relative "parser/host"
+require_relative "parser/serialize"

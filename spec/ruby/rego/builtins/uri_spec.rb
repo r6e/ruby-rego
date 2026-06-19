@@ -93,6 +93,8 @@ RSpec.describe "uri builtins" do
        "raw_query" => "%20=%26", "scheme" => "http" }, true],
     ["opaque:x?q#f", { "fragment" => "f", "raw_query" => "q", "scheme" => "opaque" }, true],
     ["mailto:a@b.com", { "scheme" => "mailto" }, true],
+    # "scheme:/path" with no authority (Go's OmitHost branch).
+    ["file:/etc/hosts", { "path" => "/etc/hosts", "raw_path" => "/etc/hosts", "scheme" => "file" }, true],
     ["urn:isbn:0451450523", { "scheme" => "urn" }, true],
     ["tel:+1-555", { "scheme" => "tel" }, true],
     ["a:b:c", { "scheme" => "a" }, true],
