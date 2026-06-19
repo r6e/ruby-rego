@@ -36,7 +36,7 @@ module Ruby
               rdn.value.each do |attribute|
                 type_and_value = attribute.value
                 oid = type_and_value[0].oid
-                value = type_and_value[1].value.to_s
+                value = attribute_value(type_and_value[1])
                 names << { "Type" => CertificateStruct.oid_ints(oid), "Value" => value }
                 assign(name, oid, value)
               end
@@ -45,6 +45,27 @@ module Ruby
             name
           end
           # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+
+          # The AttributeValue string, transcoded to UTF-8 by ASN.1 string type the way Go's asn1
+          # decodes a pkix.Name: BMPString is UTF-16BE, TeletexString (T61) is ISO-8859-1, and a
+          # UniversalString is rejected (Go errors -> OPA undefined); the rest (PrintableString /
+          # UTF8String / IA5String / …) are already UTF-8/ASCII and pass through.
+          def self.attribute_value(node)
+            bytes = node.value
+            case node.tag
+            when 30 then transcode(bytes, Encoding::UTF_16BE)
+            when 28 then raise MalformedCertificate, "UniversalString attribute value"
+            when 20 then transcode(bytes, Encoding::ISO_8859_1)
+            else bytes.to_s
+            end
+          end
+          private_class_method :attribute_value
+
+          # :reek:UtilityFunction -- a pure byte-encoding transform shared by the typed and Names paths.
+          def self.transcode(bytes, encoding)
+            bytes.dup.force_encoding(encoding).encode(Encoding::UTF_8, invalid: :replace, undef: :replace)
+          end
+          private_class_method :transcode
 
           # Populate the typed field for a standard attribute OID (array fields accumulate; CommonName
           # and SerialNumber take the value directly, last-wins like Go).

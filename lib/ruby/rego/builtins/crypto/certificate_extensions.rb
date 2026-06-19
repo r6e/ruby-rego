@@ -60,9 +60,9 @@ module Ruby
           # undefined via MalformedCertificate. Unknown extension OIDs never reach a handler, matching
           # Go keeping them as raw bytes. (SystemStackError from a pathologically nested extension is a
           # non-StandardError; it is caught by the certificate builder's outer rescue.)
-          def self.apply_extensions(fields, cert)
+          def self.apply_extensions(fields, tbs)
             unhandled = [] # : Array[untyped]
-            certificate_extensions(cert).each do |oid, critical, der|
+            certificate_extensions(tbs).each do |oid, critical, der|
               dispatch_extension(fields, oid, critical, der)
               unhandled << oid_ints(oid) if critical && !RECOGNIZED_EXTENSION_OIDS.include?(oid)
             # Fully qualified: Ruby::Rego::TypeError shadows ::TypeError in this nested module scope.
@@ -73,21 +73,18 @@ module Ruby
             fields
           end
 
-          # [oid, critical?, inner_der] for each extension, from an ASN.1 walk of the certificate.
-          # rubocop:disable Metrics/AbcSize
-          def self.certificate_extensions(cert)
-            tbs = OpenSSL::ASN1.decode(cert.to_der).value[0]
-            wrapper = tbs.value.find { |element| element.respond_to?(:tag) && element.tag == 3 }
+          # [oid, critical?, inner_der] for each extension, walked from the already-decoded TBS tree
+          # (the [3] EXPLICIT extensions wrapper); avoids a second full-certificate ASN.1 decode.
+          def self.certificate_extensions(tbs)
+            wrapper = tbs.value.find { |element| context_tag?(element, 3) }
             return [] unless wrapper
 
             wrapper.value[0].value.map do |ext|
               parts = ext.value
-              critical = parts.size == 3 && parts[1].value == true
-              [parts[0].oid, critical, parts.last.value]
+              [parts[0].oid, parts.size == 3 && parts[1].value == true, parts.last.value]
             end
           end
           private_class_method :certificate_extensions
-          # rubocop:enable Metrics/AbcSize
 
           # :reek:TooManyStatements -- a flat dispatch over the extension OIDs crypto/x509 parses.
           # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
@@ -185,7 +182,7 @@ module Ruby
               case general_name.tag
               when 2 then dns << utf8_string(value)
               when 1 then email << utf8_string(value)
-              when 6 then uris << value
+              when 6 then uris << ascii_uri(value)
               when 7 then ips << ip_address(value)
               end
             end
@@ -367,6 +364,15 @@ module Ruby
           end
           private_class_method :utf8_string
 
+          # A uniformResourceIdentifier SAN: crypto/x509 runs it through net/url.Parse, which (unlike the
+          # uri.parse builtin) rejects any non-ASCII byte -> OPA undefined; so it must be pure ASCII.
+          def self.ascii_uri(value)
+            raise MalformedCertificate, "non-ASCII URI SAN" if value.bytes.any? { |byte| byte >= 0x80 }
+
+            value
+          end
+          private_class_method :ascii_uri
+
           # json.Marshal of Go's *net.IPNet for a nameConstraints IP subtree: net.IP marshals via
           # MarshalText (its string form), net.IPMask has no MarshalText so the mask stays base64. Go's
           # parseNameConstraintsExtension requires 8 bytes (IPv4 addr+mask) or 32 (IPv6), else errors.
@@ -377,13 +383,6 @@ module Ruby
             { "IP" => go_ip_string(bytes.byteslice(0, half).to_s), "Mask" => b64(bytes.byteslice(half..).to_s) }
           end
           private_class_method :ip_net
-
-          # Whether an ASN.1 node is a context-specific element with the given tag number.
-          def self.context_tag?(node, tag)
-            node.respond_to?(:tag) && node.tag == tag && node.respond_to?(:tag_class) &&
-              node.tag_class == :CONTEXT_SPECIFIC
-          end
-          private_class_method :context_tag?
 
           # Port of Go's net.IP.String for the raw address bytes of an iPAddress SAN (4 or 16 bytes):
           # dotted-decimal for IPv4 (and v4-in-v6), else IPv6 with one "::" run-of-zeros compression.

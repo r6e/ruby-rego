@@ -9,6 +9,9 @@ module Ruby
       module Crypto
         # Public-key field of the certificate struct (see certificate_struct.rb for the module role).
         module CertificateStruct
+          # The named curves Go's crypto/x509 supports (P-224/256/384/521); any other curve makes
+          # ParseCertificate error -> OPA undefined.
+          SUPPORTED_EC_CURVES = %w[secp224r1 prime256v1 secp384r1 secp521r1].freeze
           # The PublicKey field, matching Go's json.Marshal of the concrete public-key type: an
           # rsa.PublicKey is {N, E}; an ecdsa.PublicKey is {Curve:{}, X, Y}; an ed25519.PublicKey is
           # the std-base64 of its 32 bytes.
@@ -25,7 +28,10 @@ module Ruby
           # rubocop:enable Metrics/AbcSize
 
           # :reek:UncommunicativeVariableName -- x/y are the standard names for EC point coordinates.
+          # rubocop:disable Metrics/AbcSize
           def self.ec_public_key(key)
+            raise MalformedCertificate, "unsupported curve" unless SUPPORTED_EC_CURVES.include?(key.group.curve_name)
+
             width = (key.group.degree + 7) / 8
             encoded = key.public_key.to_bn(:uncompressed).to_s(2)
             x = OpenSSL::BN.new(encoded[1, width].to_s, 2).to_i
@@ -33,6 +39,7 @@ module Ruby
             { "Curve" => {}, "X" => x, "Y" => y }
           end
           private_class_method :ec_public_key
+          # rubocop:enable Metrics/AbcSize
         end
       end
     end

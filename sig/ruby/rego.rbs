@@ -432,6 +432,7 @@ module Ruby
         # URIStrings). Methods take/return untyped because they walk OpenSSL ASN.1/cert objects.
         module CertificateStruct
           SIGNATURE_ALGORITHMS: Hash[String, Integer]
+          SUPPORTED_EC_CURVES: Array[String]
           RSA_PSS_NAME: String
           PSS_DIGEST_ALGORITHMS: Hash[String, Integer]
           PUBLIC_KEY_ALGORITHMS: Hash[String, Integer]
@@ -446,6 +447,7 @@ module Ruby
 
           def self.build: (untyped cert) -> Hash[String, untyped]
           def self.scrub: (untyped value) -> untyped
+          def self.serial_number: (untyped cert) -> Integer
           def self.public_key: (untyped cert) -> untyped
           def self.oid_ints: (String oid) -> Array[Integer]
           def self.uri_fields: (Array[String] uri_texts) -> Hash[String, untyped]
@@ -481,6 +483,7 @@ module Ruby
           def self.safe_asn1?: (String der) -> bool
           def self.ip_address: (String bytes) -> String
           def self.utf8_string: (String value) -> String
+          def self.ascii_uri: (String value) -> String
           def self.go_int: (untyped big_number) -> Integer
           def self.ip_net: (String bytes) -> Hash[String, untyped]
           def self.context_tag?: (untyped node, Integer tag) -> bool
@@ -499,6 +502,8 @@ module Ruby
 
           private
 
+          def self.attribute_value: (untyped node) -> String
+          def self.transcode: (String bytes, Encoding encoding) -> String
           def self.assign: (Hash[String, untyped] name, String oid, String value) -> void
         end
       end

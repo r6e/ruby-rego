@@ -85,7 +85,7 @@ module Ruby
               "Subject" => Name.build(subject),
               "Extensions" => extension_list(tbs)
             )
-            scrub(apply_extensions(fields, cert))
+            scrub(apply_extensions(fields, tbs))
           end
           # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
@@ -108,7 +108,7 @@ module Ruby
           def self.scalar_fields(cert, decoded)
             {
               "Version" => cert.version + 1,
-              "SerialNumber" => cert.serial.to_i,
+              "SerialNumber" => serial_number(cert),
               "NotBefore" => rfc3339(cert.not_before),
               "NotAfter" => rfc3339(cert.not_after),
               "SignatureAlgorithm" => signature_algorithm(cert, decoded),
@@ -116,6 +116,15 @@ module Ruby
             }
           end
           private_class_method :scalar_fields
+
+          # Go's ParseCertificate rejects a negative serial number (RFC 5280 forbids it) -> OPA undefined.
+          def self.serial_number(cert)
+            value = cert.serial.to_i
+            raise MalformedCertificate, "negative serial number" if value.negative?
+
+            value
+          end
+          private_class_method :serial_number
 
           # Go's x509.SignatureAlgorithm enum value. RSA-PSS is read from the signatureAlgorithm
           # parameters (the [0] hashAlgorithm digest OID); everything else from the algorithm name.
@@ -174,6 +183,15 @@ module Ruby
           def self.b64(bytes)
             Base64.strict_encode64(bytes)
           end
+          private_class_method :b64
+
+          # Whether an ASN.1 node is a context-specific element with the given tag number. Shared by the
+          # struct builder and the extension parsers (both reopen this module).
+          def self.context_tag?(node, tag)
+            node.respond_to?(:tag) && node.tag == tag && node.respond_to?(:tag_class) &&
+              node.tag_class == :CONTEXT_SPECIFIC
+          end
+          private_class_method :context_tag?
         end
         # rubocop:enable Metrics/ModuleLength
       end
