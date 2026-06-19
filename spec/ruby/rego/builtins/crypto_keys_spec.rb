@@ -79,7 +79,7 @@ RSpec.describe "crypto private-key builtins" do
       loop do
         len = der.bytesize
         header = len < 0x80 ? [0x30, len].pack("C*") : [0x30, 0x82, (len >> 8) & 0xff, len & 0xff].pack("C*")
-        break if (header + der).bytesize > (64 * 1024) - 64
+        break if (header + der).bytesize > Ruby::Rego::Builtins::Crypto::MAX_KEY_DER_BYTES - 64
 
         der = header + der
       end
