@@ -145,7 +145,9 @@ RSpec.describe "io.jwt.encode_sign / encode_sign_raw" do
   # OpenSSL signs with any e (including e=1, the identity), so without this check the gem would emit a
   # signed token OPA refuses. Both cases confirmed undefined on OPA 1.17 (40/40 race-hardened reads).
   describe "RSA public-exponent bounds (Go checkPub)" do
-    b64u = ->(int) { Base64.urlsafe_encode64(int.to_s(2), padding: false) }
+    # Encode an integer (or OpenSSL::BN) as big-endian JWK bytes — BN#to_s(2) gives the byte string,
+    # whereas Integer#to_s(2) would give a binary-DIGIT string ("1" not "\x01"), encoding the wrong value.
+    b64u = ->(int) { Base64.urlsafe_encode64(OpenSSL::BN.new(int.to_i).to_s(2), padding: false) }
     rsa = OpenSSL::PKey::RSA.generate(2048)
     base = { "kty" => "RSA", "n" => b64u[rsa.n], "p" => b64u[rsa.p], "q" => b64u[rsa.q] }
     header = '{"alg":"RS256"}'
@@ -158,14 +160,19 @@ RSpec.describe "io.jwt.encode_sign / encode_sign_raw" do
 
     it "is undefined for e > 2^31-1 (above Go's maximum)" do
       lambda_n = (rsa.p.to_i - 1) * (rsa.q.to_i - 1) / (rsa.p.to_i - 1).gcd(rsa.q.to_i - 1)
-      big_e = (2**32) + 1
-      skip "exponent not coprime to lambda" unless big_e.gcd(lambda_n) == 1
+      # smallest odd e just above the max that is coprime to lambda (so big_d exists and the key is
+      # otherwise consistent — only RSA_MAX_EXPONENT rejects it). Deterministic; never skips.
+      big_e = (2**31) + 1
+      big_e += 2 until big_e.gcd(lambda_n) == 1
       big_d = OpenSSL::BN.new(big_e.to_s).mod_inverse(OpenSSL::BN.new(lambda_n.to_s))
       key = JSON.generate(base.merge("e" => b64u[big_e], "d" => b64u[big_d.to_i]))
       expect(call_builtin("io.jwt.encode_sign_raw", header, payload, key)).to eq(undef_sentinel)
     end
 
-    it "is undefined for an even exponent (Go checkPub requires odd e)" do
+    # An even e can never have a consistent d (no inverse exists mod the even p-1/q-1), so this is
+    # rejected by both valid_exponent?'s odd? clause and the e*d≡1 consistency check — it pins the
+    # outcome (undefined, matching OPA), not the odd? clause in isolation.
+    it "is undefined for an even exponent" do
       key = JSON.generate(base.merge("e" => b64u[4], "d" => b64u[rsa.d]))
       expect(call_builtin("io.jwt.encode_sign_raw", header, payload, key)).to eq(undef_sentinel)
     end
@@ -184,7 +191,6 @@ RSpec.describe "io.jwt.encode_sign / encode_sign_raw" do
   describe "EC x/y coordinates (not checked against d, matching OPA)" do
     ec = OpenSSL::PKey::EC.generate("prime256v1")
     width = 32
-    ec.public_key.to_bn(:uncompressed).to_s(2)
     b64u = ->(bytes) { Base64.urlsafe_encode64(bytes, padding: false) }
     base = { "kty" => "EC", "crv" => "P-256", "d" => b64u[ec.private_key.to_s(2).rjust(width, "\x00".b)] }
 
