@@ -13,9 +13,9 @@ module Ruby
     module Builtins
       # io.jwt.encode_sign(headers, payload, key) and io.jwt.encode_sign_raw(headers, payload, key): build a
       # signed compact JWS "b64(headers).b64(payload).b64(signature)", matching OPA's builtinJWTEncodeSign.
-      # encode_sign takes Rego OBJECTS and serialises each with sorted keys / no HTML escaping
-      # (Codecs.canonical_json — OPA signs those exact bytes); encode_sign_raw takes JSON STRINGS and
-      # base64url-encodes them verbatim, but still validates each is JSON. The key is a JWK with private
+      # encode_sign takes Rego OBJECTS and serialises each with sorted keys and Go HTML escaping of <>&
+      # and U+2028/U+2029 (Codecs.canonical_json — OPA signs those exact bytes); encode_sign_raw takes JSON
+      # STRINGS and base64url-encodes them verbatim, but still validates each is JSON. The key is a JWK with private
       # material (an `oct` secret for HS*, or RSA/EC/OKP private params); the signing algorithm comes from
       # the header `alg`. An unsupported/absent alg, a non-JSON header or payload, or a key that does not
       # match the algorithm (wrong kty, missing private material) is undefined. ES*/PS* signatures are
@@ -56,6 +56,18 @@ module Ruby
         # quote. Shared by every JSON scan below — first_alg's value reader, the container skipper, and the
         # comment gate — so each consumes a string token whole and never mistakes its contents for syntax.
         JSON_STRING_TOKEN = /"(?:\\.|[^"\\])*"/
+
+        # json >= 2.14 added the allow_duplicate_key keyword; the gemspec allows json ~> 2.0, where the
+        # keyword is unknown and JSON.parse would raise ArgumentError (escaping the totality boundary).
+        # Probe once so the validity gate can keep a repeated key valid on json that supports it (OPA
+        # accepts dup keys; first_alg selects, and json 3.0 would otherwise raise) and fall back to the
+        # plain parse on older json, whose default already accepts duplicate keys.
+        DUP_KEY_SUPPORTED = begin
+          JSON.parse("{}", allow_duplicate_key: true)
+          true
+        rescue ::ArgumentError
+          false
+        end
 
         # @return [Ruby::Rego::Builtins::BuiltinRegistry]
         def self.register_encoders!
@@ -293,15 +305,15 @@ module Ruby
         # UTF-16, or invalid UTF-8) would make StringScanner#scan with an ASCII/UTF-8 regexp raise
         # Encoding::CompatibilityError / ArgumentError out of contains_json_comment? (and first_alg) — not
         # JSON::ParserError — and so escape the registry's totality boundary. Mapping it to undefined here
-        # keeps every downstream scan on a safe string. allow_duplicate_key keeps a repeated key valid
-        # (OPA/Go accept it, taking the first — first_alg does the selection); without it json 3.0 would
-        # raise by default and reject a header OPA signs.
+        # keeps every downstream scan on a safe string. The parse keeps a repeated key valid (OPA/Go accept
+        # it, taking the first — first_alg does the selection) via DUP_KEY_SUPPORTED.
         def self.strict_json_parse(string)
           usable_encoding = string.encoding.ascii_compatible? && string.valid_encoding?
           raise JSON::ParserError, "invalid string encoding" unless usable_encoding
           raise JSON::ParserError, "comments are not valid JSON" if contains_json_comment?(string)
+          return JSON.parse(string, allow_duplicate_key: true) if DUP_KEY_SUPPORTED
 
-          JSON.parse(string, allow_duplicate_key: true)
+          JSON.parse(string)
         end
         private_class_method :strict_json_parse
 

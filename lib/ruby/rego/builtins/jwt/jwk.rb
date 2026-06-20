@@ -204,8 +204,10 @@ module Ruby
 
           # Go's minimum signing key size (crypto/rsa rejects a modulus below this).
           RSA_MIN_MODULUS_BITS = 1024
-          # Go's checkPub bounds the public exponent to 2 <= e <= 2^31-1; OpenSSL signs with any e (incl.
-          # e=1, the identity), so OPA rejects keys outside this range that the gem would otherwise sign.
+          # Go's checkPub requires an ODD public exponent in 2 <= e <= 2^31-1; OpenSSL signs with any e
+          # (incl. e=1, the identity), so OPA rejects keys outside this that the gem would otherwise sign.
+          # An even e is already rejected by the e*d≡1 consistency check (no inverse exists mod the even
+          # p-1/q-1), but the explicit odd? mirrors checkPub exactly.
           RSA_MIN_EXPONENT = OpenSSL::BN.new(2)
           RSA_MAX_EXPONENT = OpenSSL::BN.new(((2**31) - 1).to_s)
 
@@ -221,9 +223,9 @@ module Ruby
           end
           private_class_method :rsa_consistent?
 
-          # @return [bool] e is within Go checkPub's 2..2^31-1 range.
+          # @return [bool] e is odd and within Go checkPub's 2..2^31-1 range.
           def self.valid_exponent?(exponent)
-            exponent.between?(RSA_MIN_EXPONENT, RSA_MAX_EXPONENT)
+            exponent.odd? && exponent.between?(RSA_MIN_EXPONENT, RSA_MAX_EXPONENT)
           end
           private_class_method :valid_exponent?
 

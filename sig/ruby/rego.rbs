@@ -600,6 +600,7 @@ module Ruby
         SIGNERS: Hash[Symbol, Symbol]
         ENCODE_CONTEXT: String
         JSON_STRING_TOKEN: Regexp
+        DUP_KEY_SUPPORTED: bool
 
         def self.register!: () -> BuiltinRegistry
         def self.register_verifications!: () -> BuiltinRegistry

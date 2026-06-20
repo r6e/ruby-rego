@@ -165,6 +165,11 @@ RSpec.describe "io.jwt.encode_sign / encode_sign_raw" do
       expect(call_builtin("io.jwt.encode_sign_raw", header, payload, key)).to eq(undef_sentinel)
     end
 
+    it "is undefined for an even exponent (Go checkPub requires odd e)" do
+      key = JSON.generate(base.merge("e" => b64u[4], "d" => b64u[rsa.d]))
+      expect(call_builtin("io.jwt.encode_sign_raw", header, payload, key)).to eq(undef_sentinel)
+    end
+
     it "still signs with a normal exponent (e=65537)" do
       key = JSON.generate(base.merge("e" => b64u[rsa.e], "d" => b64u[rsa.d]))
       token = call_builtin("io.jwt.encode_sign_raw", header, payload, key)
