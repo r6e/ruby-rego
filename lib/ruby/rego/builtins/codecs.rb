@@ -55,15 +55,30 @@ module Ruby
 
         private_class_method :register_configured_functions, :register_configured_function
 
+        # The exact bytes OPA's io.jwt.encode_sign signs for a header/payload object — json.marshal's
+        # serialization (sorted keys, sets as sorted arrays, Go HTML escaping of <>& and U+2028/U+2029) as
+        # a raw String. Raises BuiltinArgumentError (-> undefined) on a non-marshalable value.
+        #
+        # Float formatting follows Ruby's Float#to_s (json.marshal's shared number model), so a claim like
+        # 1e308 serialises as "1e+308" where Go emits "1e308" — the same gem-wide JSON-number divergence
+        # json.marshal/json.unmarshal already carry, not specific to encode_sign. Integers (any magnitude,
+        # via Bignum) are byte-exact, so practical JWT claims are unaffected.
+        #
+        # @param value [Ruby::Rego::Value]
+        # @return [String]
+        def self.canonical_json(value)
+          escape_html(JSON.generate(jsonify(value.to_ruby)))
+        rescue JSON::JSONError, ArgumentError => e
+          raise_marshal_error(e, "json.marshal")
+        end
+
         # Compact JSON with object keys sorted, sets rendered as sorted arrays, and
         # Go-style HTML escaping, matching OPA's json.marshal output.
         #
         # @param value [Ruby::Rego::Value]
         # @return [Ruby::Rego::StringValue]
         def self.json_marshal(value)
-          StringValue.new(escape_html(JSON.generate(jsonify(value.to_ruby))))
-        rescue JSON::JSONError, ArgumentError => e
-          raise_marshal_error(e, "json.marshal")
+          StringValue.new(canonical_json(value))
         end
 
         # Compact or pretty-printed JSON, matching OPA's json.marshal_with_options. The options

@@ -13,6 +13,7 @@ target :lib do
   library "optparse"
   library "psych"
   library "securerandom"
+  library "strscan"
   library "time"
   library "yaml"
 end

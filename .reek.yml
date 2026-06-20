@@ -251,3 +251,5 @@ detectors:
       - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.b64
       - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.rfc3339
       - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.render_ipv6
+      # b64 = the base64url (no-pad) JWS-segment encoder.
+      - Ruby::Rego::Builtins::Jwt#self.b64

@@ -297,17 +297,6 @@ module Ruby
           end
         end
         private_class_method :supported_public_key?
-
-        # Maps a verification precondition failure to OPA's undefined.
-        # @return [void]
-        def self.undefined!(context)
-          raise BuiltinArgumentError.new(
-            "Invalid #{context} input",
-            expected: "a three-segment JWS with a base64url signature and a usable key",
-            actual: "invalid", context: context, location: nil
-          )
-        end
-        private_class_method :undefined!
       end
     end
   end
