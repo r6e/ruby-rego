@@ -129,4 +129,7 @@ module Ruby
   end
 end
 
+require_relative "jwt/verify"
+
 Ruby::Rego::Builtins::Jwt.register!
+Ruby::Rego::Builtins::Jwt.register_verifications!
