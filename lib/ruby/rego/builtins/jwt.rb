@@ -144,7 +144,9 @@ end
 
 require_relative "jwt/verify"
 require_relative "jwt/sign"
+require_relative "jwt/decode_verify"
 
 Ruby::Rego::Builtins::Jwt.register!
 Ruby::Rego::Builtins::Jwt.register_verifications!
 Ruby::Rego::Builtins::Jwt.register_encoders!
+Ruby::Rego::Builtins::Jwt.register_decode_verify!
