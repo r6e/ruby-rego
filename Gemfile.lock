@@ -6,7 +6,7 @@ PATH
       cgi
       digest
       ipaddr
-      json
+      json (~> 2.0)
       openssl
       tzinfo (~> 2.0)
       tzinfo-data

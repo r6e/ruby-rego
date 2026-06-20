@@ -4,6 +4,7 @@ require "json"
 require "base64"
 require "cgi"
 require_relative "base"
+require_relative "base64url"
 require_relative "registry"
 require_relative "registry_helpers"
 require_relative "codecs/url_query"
@@ -203,14 +204,15 @@ module Ruby
           StringValue.new(Base64.urlsafe_encode64(string_arg(value, "base64url.encode")))
         end
 
-        # OPA accepts both padded and unpadded URL-safe base64, so missing padding
-        # is restored before decoding.
+        # OPA accepts padded and unpadded URL-safe base64 but rejects the standard-base64 '+'/'/' and
+        # non-canonical padding; Base64Url.strict_decode enforces that (shared with io.jwt.decode), and
+        # the `decoded` block maps its ArgumentError to undefined.
         #
         # @param value [Ruby::Rego::Value]
         # @return [Ruby::Rego::StringValue]
         def self.base64url_decode(value)
           string = string_arg(value, "base64url.decode")
-          decoded("base64url.decode") { StringValue.new(Base64.urlsafe_decode64(restore_padding(string))) }
+          decoded("base64url.decode") { StringValue.new(Base64Url.strict_decode(string)) }
         end
 
         # @param value [Ruby::Rego::Value]
@@ -285,16 +287,6 @@ module Ruby
           )
         end
         private_class_method :decoded
-
-        # Restores '=' padding so unpadded URL-safe base64 decodes (OPA is lenient).
-        #
-        # @param string [String]
-        # @return [String]
-        def self.restore_padding(string)
-          remainder = string.length % 4
-          remainder.zero? ? string : string + ("=" * (4 - remainder))
-        end
-        private_class_method :restore_padding
       end
     end
   end

@@ -44,7 +44,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency "cgi"
   spec.add_dependency "digest"
   spec.add_dependency "ipaddr"
-  spec.add_dependency "json"
+  # json is pinned to the 2.x line: the builtins' totality boundary relies on its parse behaviour
+  # (JSON::NestingError < JSON::ParserError so over-deep input maps to undefined; only ParserError is
+  # raised on binary/ASCII-8BIT bytes). That behaviour is stable across 2.x; the constraint that matters
+  # is `< 3.0` — a 3.0 major could change it and warrants re-validation.
+  spec.add_dependency "json", "~> 2.0"
   spec.add_dependency "openssl"
   # tzinfo (with bundled tzinfo-data) for the IANA-timezone forms of the time builtins
   # (time.date/clock/weekday). tzinfo-data pins the IANA database so results don't depend on the
