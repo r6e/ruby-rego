@@ -1,0 +1,7 @@
+# OpenSSL 3 raw-key constructor (Ed25519/X25519), absent from the bundled openssl RBS. Used by
+# Jwt::Jwk to build an OKP (Ed25519) public key from its raw `x` bytes.
+module OpenSSL
+  module PKey
+    def self.new_raw_public_key: (String type, String key) -> PKey
+  end
+end
