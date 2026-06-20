@@ -595,11 +595,19 @@ module Ruby
         PEM_TRAILER: Regexp
         NIST_EC_CURVES: Array[String]
         ED25519_OID: String
+        JWS_ALGORITHMS: Hash[String, Hash[Symbol, untyped]]
+        ENCODE_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        SIGNERS: Hash[Symbol, Symbol]
+        ENCODE_CONTEXT: String
+        JSON_STRING_TOKEN: Regexp
 
         def self.register!: () -> BuiltinRegistry
         def self.register_verifications!: () -> BuiltinRegistry
+        def self.register_encoders!: () -> BuiltinRegistry
         def self.decode: (Value value) -> Value
         def self.verify: (Value jwt_value, Value key_value, String context) -> BooleanValue
+        def self.encode_sign: (Value headers_value, Value payload_value, Value key_value) -> StringValue
+        def self.encode_sign_raw: (Value headers_value, Value payload_value, Value key_value) -> StringValue
 
         private
 
@@ -629,12 +637,40 @@ module Ruby
         def self.spki_public_key: (String key) -> untyped
         def self.supported_public_key?: (untyped pkey) -> bool
         def self.undefined!: (String context) -> bot
+        def self.encode: (String header_json, String payload_json, untyped jwk) -> StringValue
+        def self.header_algorithm: (String header_json) -> Hash[Symbol, untyped]
+        def self.configured_algorithm: (String header_json) -> Hash[Symbol, untyped]?
+        def self.first_alg: (String header_json) -> String?
+        def self.member_key: (StringScanner scanner) -> String?
+        def self.scan_string: (StringScanner scanner) -> String?
+        def self.skip_value: (StringScanner scanner) -> void
+        def self.skip_container: (StringScanner scanner) -> void
+        def self.sign: (Hash[Symbol, untyped] config, untyped jwk, String signing_input) -> String
+        def self.signature_bytes: (Hash[Symbol, untyped] config, untyped jwk, String signing_input) -> String?
+        def self.hmac_sign: (String digest, untyped jwk, String signing_input) -> String?
+        def self.asymmetric_sign: (Hash[Symbol, untyped] config, untyped jwk, String signing_input) -> String?
+        def self.rsa_sign: (String digest, untyped key, String signing_input) -> String
+        def self.pss_sign: (String digest, untyped key, String signing_input) -> String
+        def self.ecdsa_sign: (String digest, untyped key, String signing_input) -> String
+        def self.eddsa_sign: (String? digest, untyped key, String signing_input) -> String
+        def self.ecdsa_raw: (String der, untyped key) -> String
+        def self.half: (untyped integer, Integer width) -> String
+        def self.json_string: (Value value, String context) -> String
+        def self.parse_jwk: (Value value, String context) -> untyped
+        def self.strict_json_parse: (String string) -> untyped
+        def self.contains_json_comment?: (String string) -> bool
+        def self.b64: (String bytes) -> String
 
         # Parses a JWK or JWK Set into OpenSSL public keys for io.jwt.verify_*.
         module Jwk
           EC_CURVES: Hash[String, String]
+          RSA_MIN_MODULUS_BITS: Integer
+          RSA_MIN_EXPONENT: OpenSSL::BN
+          RSA_MAX_EXPONENT: OpenSSL::BN
 
           def self.keys: (String json_string) -> Array[untyped]?
+          def self.oct_secret: (untyped jwk) -> String?
+          def self.private_key: (untyped jwk) -> untyped
 
           private
 
@@ -646,9 +682,22 @@ module Ruby
           def self.rsa_algorithm: () -> untyped
           def self.rsa_public_bits: (Hash[String, untyped] jwk) -> untyped
           def self.ec_key: (Hash[String, untyped] jwk) -> untyped
+          def self.ec_uncompressed_point: (Hash[String, untyped] jwk) -> String
           def self.ec_algorithm: (String curve) -> untyped
           def self.okp_key: (Hash[String, untyped] jwk) -> untyped
           def self.public_key_from: (untyped spki) -> untyped
+          def self.rsa_private: (Hash[String, untyped] jwk) -> untyped
+          def self.rsa_private_der: (Hash[String, untyped] jwk) -> String
+          def self.rsa_private_fields: (Hash[String, untyped] jwk) -> Array[untyped]
+          def self.crt_params: (untyped exponent, Array[untyped] primes) -> Array[untyped]
+          def self.validate_rsa!: (Hash[String, untyped] jwk) -> void
+          def self.rsa_consistent?: (Hash[String, untyped] jwk, Array[untyped] primes) -> bool
+          def self.valid_exponent?: (OpenSSL::BN exponent) -> bool
+          def self.validate_crt!: (Hash[String, untyped] jwk) -> void
+          def self.validate_ec_scalar!: (String private_bytes, untyped group) -> void
+          def self.ec_private: (Hash[String, untyped] jwk) -> untyped
+          def self.ec_private_der: (String curve, String point, String private_bytes) -> String
+          def self.okp_private: (Hash[String, untyped] jwk) -> untyped
           def self.bn: (String component) -> untyped
           def self.segment: (String component) -> String
         end
@@ -1343,6 +1392,7 @@ module Ruby
         INDENT_SENTINEL: String
 
         def self.register!: () -> BuiltinRegistry
+        def self.canonical_json: (Value value) -> String
         def self.json_marshal: (Value value) -> StringValue
         def self.json_marshal_with_options: (Value value, Value options_value) -> StringValue
         def self.json_unmarshal: (Value value) -> Value

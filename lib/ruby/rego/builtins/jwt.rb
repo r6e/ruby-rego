@@ -124,12 +124,27 @@ module Ruby
           value.value
         end
         private_class_method :string_value
+
+        # Maps a builtin precondition failure to OPA's undefined. Shared by the verify and sign
+        # submodules (which reopen this module); lives here so neither depends on the other's load
+        # order. The registry rescues BuiltinArgumentError, so the message is internal only.
+        # @return [void]
+        def self.undefined!(context)
+          raise BuiltinArgumentError.new(
+            "Invalid #{context} input",
+            expected: "valid io.jwt builtin arguments",
+            actual: "invalid", context: context, location: nil
+          )
+        end
+        private_class_method :undefined!
       end
     end
   end
 end
 
 require_relative "jwt/verify"
+require_relative "jwt/sign"
 
 Ruby::Rego::Builtins::Jwt.register!
 Ruby::Rego::Builtins::Jwt.register_verifications!
+Ruby::Rego::Builtins::Jwt.register_encoders!

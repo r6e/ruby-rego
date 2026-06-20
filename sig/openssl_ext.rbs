@@ -3,5 +3,10 @@
 module OpenSSL
   module PKey
     def self.new_raw_public_key: (String type, String key) -> PKey
+    def self.new_raw_private_key: (String type, String key) -> PKey
+
+    class PKey
+      def raw_public_key: () -> String
+    end
   end
 end
