@@ -588,9 +588,18 @@ module Ruby
         extend RegistryHelpers
 
         JWT_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        VERIFY_ALGORITHMS: Hash[String, Hash[Symbol, untyped]]
+        VERIFY_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        VERIFIERS: Hash[Symbol, Symbol]
+        PEM_BEGIN: Regexp
+        PEM_TRAILER: Regexp
+        NIST_EC_CURVES: Array[String]
+        ED25519_OID: String
 
         def self.register!: () -> BuiltinRegistry
+        def self.register_verifications!: () -> BuiltinRegistry
         def self.decode: (Value value) -> Value
+        def self.verify: (Value jwt_value, Value key_value, String context) -> BooleanValue
 
         private
 
@@ -599,6 +608,50 @@ module Ruby
         def self.signature_hex: (String segment) -> String?
         def self.decode_segment: (String segment) -> String?
         def self.string_value: (Value value, String context) -> String
+        def self.split_signed: (String token, String context) -> [String, String]
+        def self.three_segments: (String token) -> Array[String]?
+        def self.decode_signature: (String segment, String context) -> String
+        def self.scheme_result: (Hash[Symbol, untyped] config, String key, [String, String] signed) -> bool?
+        def self.asymmetric_result: (Hash[Symbol, untyped] config, String key, [String, String] signed) -> bool?
+        def self.hmac_verified?: (String digest, String secret, [String, String] signed) -> bool
+        def self.asymmetric_verified?: (Hash[Symbol, untyped] config, untyped pkey, [String, String] signed) -> bool
+        def self.rsa_verified?: (String digest, untyped pkey, [String, String] signed) -> bool
+        def self.pss_verified?: (String digest, untyped pkey, [String, String] signed) -> bool
+        def self.ecdsa_verified?: (String digest, untyped pkey, [String, String] signed) -> bool
+        def self.eddsa_verified?: (String? digest, untyped pkey, [String, String] signed) -> bool
+        def self.ecdsa_der: (String signature, Integer width) -> String
+        def self.coordinate_bn: (String? bytes) -> untyped
+        def self.public_keys: (String key) -> Array[untyped]?
+        def self.pem_public_key: (String key) -> untyped
+        def self.single_pem_block_type: (String key) -> String?
+        def self.clean_block_type: (String key, MatchData match) -> String?
+        def self.certificate_key: (String key) -> untyped
+        def self.spki_public_key: (String key) -> untyped
+        def self.supported_public_key?: (untyped pkey) -> bool
+        def self.undefined!: (String context) -> bot
+
+        # Parses a JWK or JWK Set into OpenSSL public keys for io.jwt.verify_*.
+        module Jwk
+          EC_CURVES: Hash[String, String]
+
+          def self.keys: (String json_string) -> Array[untyped]?
+
+          private
+
+          def self.jwk_entries: (untyped parsed) -> Array[untyped]?
+          def self.jwk_set: (untyped keys) -> Array[untyped]?
+          def self.build_keys: (Array[untyped] entries) -> Array[untyped]?
+          def self.key_from: (untyped jwk) -> untyped
+          def self.rsa_key: (Hash[String, untyped] jwk) -> untyped
+          def self.rsa_algorithm: () -> untyped
+          def self.rsa_public_bits: (Hash[String, untyped] jwk) -> untyped
+          def self.ec_key: (Hash[String, untyped] jwk) -> untyped
+          def self.ec_algorithm: (String curve) -> untyped
+          def self.okp_key: (Hash[String, untyped] jwk) -> untyped
+          def self.public_key_from: (untyped spki) -> untyped
+          def self.bn: (String component) -> untyped
+          def self.segment: (String component) -> String
+        end
       end
 
       module Base64Url
