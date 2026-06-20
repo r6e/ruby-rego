@@ -119,7 +119,7 @@ RSpec.describe "encoding builtins" do
       expect(registry.call("base64url.decode", ["aGk-Pz4"]).to_ruby).to eq("hi>?>")
     end
 
-    # OPA's Go base64url decoder rejects what these inputs are; the gem must too, or it would decode a
+    # OPA's Go base64url decoder rejects each of these inputs; the gem must too, or it would decode a
     # string OPA returns undefined for (gem-more-lenient). Each verified against `opa eval` 1.17.
     it "is undefined for a standard-base64 '+' or '/' (not in the URL-safe alphabet)" do
       expect(registry.call("base64url.decode", ["Pj4+Pg"])).to be_a(Ruby::Rego::UndefinedValue)

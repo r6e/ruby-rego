@@ -7,9 +7,9 @@ module Ruby
     module Builtins
       # URL-safe base64 decoding shared by base64url.decode and io.jwt.decode's segments, matching Go's
       # base64.URLEncoding: missing '=' padding is restored, but the standard-base64 '+'/'/' alphabet and
-      # a non-canonical '=' (one that doesn't complete a 4-char block) are rejected so a string OPA
-      # returns undefined for stays un-decodable. strict_decode raises ArgumentError on rejected input;
-      # callers map that to undefined.
+      # a non-canonical '=' (one that doesn't complete a 4-char block) are rejected, so an input OPA
+      # treats as undefined stays un-decodable here too. strict_decode raises ArgumentError on rejected
+      # input; callers map that to undefined.
       #
       # Gem-more-strict divergence (safe direction, crafted input only): Base64.urlsafe_decode64 strict-
       # decodes, rejecting a final base64url character whose unused low bits are non-zero (e.g. a 2-char
