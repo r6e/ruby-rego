@@ -25,6 +25,8 @@ module Ruby
           # @return [Array[untyped], nil]
           # :reek:NilCheck -- nil distinguishes "not a usable JWK" (undefined) from "[] empty set" (false).
           def self.keys(json_string)
+            return nil unless json_string.encoding.ascii_compatible? && json_string.valid_encoding?
+
             entries = jwk_entries(JSON.parse(json_string))
             entries.nil? ? nil : build_keys(entries)
           rescue JSON::ParserError
