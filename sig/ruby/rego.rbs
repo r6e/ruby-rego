@@ -601,16 +601,41 @@ module Ruby
         ENCODE_CONTEXT: String
         JSON_STRING_TOKEN: Regexp
         DUP_KEY_SUPPORTED: bool
+        DECODE_VERIFY_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+        DECODE_VERIFY_CONTEXT: String
+        CONSTRAINT_KEYS: Array[String]
+        NS_PER_SECOND: Integer
 
         def self.register!: () -> BuiltinRegistry
         def self.register_verifications!: () -> BuiltinRegistry
         def self.register_encoders!: () -> BuiltinRegistry
+        def self.register_decode_verify!: () -> BuiltinRegistry
         def self.decode: (Value value) -> Value
         def self.verify: (Value jwt_value, Value key_value, String context) -> BooleanValue
         def self.encode_sign: (Value headers_value, Value payload_value, Value key_value) -> StringValue
         def self.encode_sign_raw: (Value headers_value, Value payload_value, Value key_value) -> StringValue
+        def self.decode_verify: (Value jwt_value, Value constraints_value) -> Value
 
         private
+
+        def self.parse_constraints: (Value constraints_value) -> Hash[Symbol, untyped]?
+        def self.optional_string: (untyped value) -> String?
+        def self.valid_constraints?: (untyped obj) -> bool
+        def self.valid_key_field?: (untyped obj) -> bool
+        def self.valid_string_fields?: (untyped obj) -> bool
+        def self.valid_time?: (untyped obj) -> bool
+        def self.parse_token: (String jwt) -> Hash[Symbol, untyped]?
+        def self.numeric_dates?: (Hash[String, untyped] payload) -> bool
+        def self.verified?: (Hash[Symbol, untyped] constraints, Hash[Symbol, untyped] token) -> bool
+        def self.signature_for: (Hash[Symbol, untyped] constraints, Hash[Symbol, untyped] token) -> String?
+        def self.signature_ok?: (Hash[Symbol, untyped] config, Hash[Symbol, untyped] constraints, [String, String] signed) -> bool
+        def self.time_ok?: (Hash[String, untyped] payload, Hash[Symbol, untyped] constraints) -> bool
+        def self.iss_ok?: (Hash[String, untyped] payload, Hash[Symbol, untyped] constraints) -> bool
+        def self.aud_ok?: (Hash[String, untyped] payload, Hash[Symbol, untyped] constraints) -> bool
+        def self.aud_matches?: (untyped token_aud, String con_aud) -> bool
+        def self.current_time_ns: () -> Integer
+        def self.verified_result: (Hash[Symbol, untyped] token) -> Value
+        def self.invalid_result: () -> Value
 
         def self.decode_parts: (Array[String] segments) -> Array[untyped]?
         def self.decode_object: (String segment) -> Hash[String, untyped]?
