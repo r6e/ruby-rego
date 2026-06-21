@@ -188,10 +188,13 @@ RSpec.describe "json.verify_schema" do
   # JSON.parse's max_nesting nor Value.from_ruby's marshaling caps it — without a depth bound the recursion
   # would SystemStackError and abort the whole policy. Past MAX_SCHEMA_DEPTH it is reported invalid instead.
   describe "totality on deep $ref chains" do
+    # The recursion guard fires just past MAX_SCHEMA_DEPTH (100), so a chain a little over the bound
+    # exercises the exact same throw path as a 3000-deep one, without the memory/time of a huge schema.
     it "does not raise (returns [false, <string>]) on a long $ref chain" do
+      chain = 150
       defs = {}
-      (0...3000).each { |i| defs["d#{i}"] = { "$ref" => "#/definitions/d#{i + 1}" } }
-      defs["d3000"] = { "type" => "integer" }
+      (0...chain).each { |i| defs["d#{i}"] = { "$ref" => "#/definitions/d#{i + 1}" } }
+      defs["d#{chain}"] = { "type" => "integer" }
       schema = { "$ref" => "#/definitions/d0", "definitions" => defs }
       expect { @r = verify(schema) }.not_to raise_error
       expect(@r[0]).to be(false)

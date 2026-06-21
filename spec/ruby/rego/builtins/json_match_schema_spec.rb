@@ -126,6 +126,18 @@ RSpec.describe "json.match_schema" do
       expect(call_match("[1, 1.0]", { "uniqueItems" => true }).to_ruby[0]).to be(false)
     end
 
+    # gojsonschema feeds numbers through Go's encoding/json (float64), so integers past 2^53 collapse in
+    # equality comparisons (enum/const/uniqueItems) — and so must the gem, via canonical's `to_f`. Switching
+    # to exact Rational here would DIVERGE from OPA. (multipleOf is a separate big.Rat path and stays exact.)
+    # Verified against opa eval 1.17: const 2^53 matches a 2^53+1 document; [2^53, 2^53+1] is non-unique.
+    it "collapses integers past 2^53 in equality, matching gojsonschema's float64 (not exact Rational)" do
+      expect(call_match("9007199254740993", { "const" => 9_007_199_254_740_992 }).to_ruby[0]).to be(true)
+      expect(call_match("9007199254740993", { "enum" => [9_007_199_254_740_992] }).to_ruby[0]).to be(true)
+      expect(call_match("[9007199254740992, 9007199254740993]", { "uniqueItems" => true }).to_ruby[0]).to be(false)
+      # +2 rounds to a distinct float, so it stays unique — matching OPA
+      expect(call_match("[9007199254740992, 9007199254740994]", { "uniqueItems" => true }).to_ruby[0]).to be(true)
+    end
+
     it "respects boolean and numeric exclusiveMinimum (draft-04 and draft-06 forms)" do
       expect(call_match("5", { "minimum" => 5, "exclusiveMinimum" => true }).to_ruby[0]).to be(false)
       expect(call_match("5", { "exclusiveMinimum" => 5 }).to_ruby[0]).to be(false)
@@ -277,10 +289,12 @@ RSpec.describe "json.match_schema" do
 
     # A schema whose validity check recurses unboundedly (a long $ref chain) is rejected as invalid by the
     # shared verify engine, so match returns undefined rather than SystemStackError-ing the whole policy.
+    # A chain a little past MAX_SCHEMA_DEPTH (100) trips the same recursion guard as a far longer one.
     it "is undefined (never raises) for a schema with a pathologically long $ref chain" do
+      chain = 150
       defs = {}
-      (0...3000).each { |i| defs["d#{i}"] = { "$ref" => "#/definitions/d#{i + 1}" } }
-      defs["d3000"] = { "type" => "integer" }
+      (0...chain).each { |i| defs["d#{i}"] = { "$ref" => "#/definitions/d#{i + 1}" } }
+      defs["d#{chain}"] = { "type" => "integer" }
       schema = { "$ref" => "#/definitions/d0", "definitions" => defs }
       expect { @r = call_match("5", schema) }.not_to raise_error
       expect(@r).to be_a(Ruby::Rego::UndefinedValue)
