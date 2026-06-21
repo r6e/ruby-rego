@@ -1424,6 +1424,7 @@ module Ruby
         def self.json_unmarshal: (Value value) -> Value
         def self.json_is_valid: (Value value) -> BooleanValue
         def self.json_verify_schema: (Value value) -> Value
+        def self.json_match_schema: (Value document_value, Value schema_value) -> Value
         def self.base64_encode: (Value value) -> StringValue
         def self.base64_decode: (Value value) -> StringValue
         def self.base64_is_valid: (Value value) -> BooleanValue
@@ -1469,20 +1470,40 @@ module Ruby
           GO_REJECTED_ESCAPE: Regexp
           JSON_STRING_TOKEN: Regexp
           NOT_FOUND: Object
+          MAX_SCHEMA_DEPTH: Integer
+          SCHEMA_TOO_DEEP: Symbol
+
+          MATCH_ERROR: Hash[String, String]
+
+          class RefGuard
+            @refs: Set[untyped]
+            @depth: Integer
+
+            def initialize: () -> void
+            def include?: (untyped ref) -> bool
+            def add: (untyped ref) -> void
+            def descend: [T] () { () -> T } -> T
+          end
 
           def self.verify: (Value value) -> [bool, String?]
+          def self.match: (Value document_value, Value schema_value) -> ([bool, Array[untyped]] | Symbol)
+          def self.re2_match?: (String pattern, String string) -> bool
+          def self.resolve_ref_target: (String ref, untyped root) -> untyped
 
           private
+
+          def self.load_document: (Value value) -> [untyped, Symbol?]
+          def self.parse_document_string: (String string) -> [untyped, Symbol?]
 
           def self.load_schema: (Value value) -> [untyped, String?]
           def self.parse_schema_string: (String string) -> [untyped, String?]
           def self.usable_json_encoding?: (String string) -> bool
           def self.contains_json_comment?: (String string) -> bool
           def self.valid_schema: (untyped schema) -> [bool, String?]
-          def self.schema_error: (Hash[String, untyped] schema, untyped root, Set[untyped] visited) -> String?
-          def self.keyword_walk: (Hash[String, untyped] schema, untyped root, Set[untyped] visited) -> String?
-          def self.fragment_error: (Hash[String, untyped] schema, untyped target, untyped root, Set[untyped] visited) -> String?
-          def self.keyword_error: (String keyword, untyped value, Hash[String, untyped] schema, untyped root, Set[untyped] visited) -> String?
+          def self.schema_error: (Hash[String, untyped] schema, untyped root, RefGuard visited) -> String?
+          def self.keyword_walk: (Hash[String, untyped] schema, untyped root, RefGuard visited) -> String?
+          def self.fragment_error: (Hash[String, untyped] schema, untyped target, untyped root, RefGuard visited) -> String?
+          def self.keyword_error: (String keyword, untyped value, Hash[String, untyped] schema, untyped root, RefGuard visited) -> String?
           def self.type_error: (untyped value) -> String?
           def self.type_array_error: (Array[untyped] value) -> String?
           def self.multiple_of_error: (untyped value) -> String?
@@ -1490,12 +1511,12 @@ module Ruby
           def self.string_array_error: (untyped value, String keyword, unique: bool) -> String?
           def self.enum_error: (untyped value) -> String?
           def self.exclusive_error: (untyped value, Hash[String, untyped] schema, String paired) -> String?
-          def self.items_error: (untyped value, untyped root, Set[untyped] visited) -> String?
-          def self.dependencies_error: (untyped value, untyped root, Set[untyped] visited) -> String?
-          def self.dependency_error: (untyped dep, untyped root, Set[untyped] visited) -> String?
-          def self.subschema_error: (untyped value, untyped root, Set[untyped] visited) -> String?
-          def self.subschema_map_error: (String keyword, untyped value, untyped root, Set[untyped] visited) -> String?
-          def self.subschema_list_error: (untyped value, String keyword, untyped root, Set[untyped] visited) -> String?
+          def self.items_error: (untyped value, untyped root, RefGuard visited) -> String?
+          def self.dependencies_error: (untyped value, untyped root, RefGuard visited) -> String?
+          def self.dependency_error: (untyped dep, untyped root, RefGuard visited) -> String?
+          def self.subschema_error: (untyped value, untyped root, RefGuard visited) -> String?
+          def self.subschema_map_error: (String keyword, untyped value, untyped root, RefGuard visited) -> String?
+          def self.subschema_list_error: (untyped value, String keyword, untyped root, RefGuard visited) -> String?
           def self.number_error: (String keyword, untyped value) -> String?
           def self.non_negative_int_error: (String keyword, untyped value) -> String?
           def self.string_error: (untyped value, String keyword) -> String?
@@ -1507,6 +1528,59 @@ module Ruby
           def self.array_index: (Array[untyped] node, String key) -> untyped
           def self.schema_node?: (untyped node) -> bool
           def self.re2_compatible?: (untyped pattern) -> bool
+
+          class Matcher
+            MAX_DEPTH: Integer
+            TOO_DEEP: Symbol
+
+            @root: untyped
+            @visited: Hash[untyped, bool]
+            @depth: Integer
+
+            def initialize: (untyped root) -> void
+            def with_depth: [T] () { () -> T } -> T
+            def matches?: (untyped document, untyped schema) -> bool
+
+            private
+
+            def ref_matches?: (untyped document, untyped schema, String ref) -> bool
+            def type_ok?: (untyped document, untyped type) -> bool
+            def json_type?: (untyped document, String name) -> bool
+            def numeric_doc?: (untyped document) -> bool
+            def integer_doc?: (untyped document) -> bool
+            def enum_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def const_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def number_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def exclusive_ok?: (untyped document, untyped bound, untyped paired, Symbol comparison) -> bool
+            def multiple_of?: (Numeric document, Numeric divisor) -> bool
+            def finite_number?: (Numeric number) -> bool
+            def decimal_rational: (Numeric number) -> Rational
+            def string_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def array_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def unique?: (Array[untyped] document) -> bool
+            def items_ok?: (Array[untyped] document, Hash[String, untyped] schema) -> bool
+            def tuple_ok?: (Array[untyped] document, Array[untyped] tuple, untyped additional) -> bool
+            def additional_schema_ok?: (untyped value, untyped additional) -> bool
+            def contains_ok?: (Array[untyped] document, Hash[String, untyped] schema) -> bool
+            def object_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def string_keyed: (Hash[untyped, untyped] object) -> Hash[untyped, untyped]
+            def required_ok?: (Hash[untyped, untyped] document, untyped required) -> bool
+            def properties_ok?: (Hash[untyped, untyped] document, Hash[String, untyped] schema) -> bool
+            def property_value_ok?: (untyped name, untyped value, Hash[untyped, untyped] properties, Hash[untyped, untyped] pattern_properties, untyped additional) -> bool
+            def additional_property_ok?: (untyped value, untyped additional, bool matched) -> bool
+            def dependencies_ok?: (Hash[untyped, untyped] document, Hash[String, untyped] schema) -> bool
+            def dependency_ok?: (untyped document, untyped dependency) -> bool
+            def property_names_ok?: (Hash[untyped, untyped] document, Hash[String, untyped] schema) -> bool
+            def logic_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def all_of_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def any_of_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def one_of_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def not_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def conditional_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def json_equal?: (untyped left, untyped right) -> bool
+            def canonical: (untyped value) -> untyped
+            def canonical_entries: (Hash[untyped, untyped] object) -> Array[untyped]
+          end
         end
       end
 

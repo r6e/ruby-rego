@@ -7,6 +7,8 @@
 detectors:
   TooManyMethods:
     exclude:
+      # Recursive-descent JSON Schema validator: one predicate per keyword family.
+      - Ruby::Rego::Builtins::Codecs::JsonSchema::Matcher
       - Ruby::Rego::Lexer
       - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Parser
@@ -96,6 +98,11 @@ detectors:
       - Ruby::Rego::ParserError#initialize
       - Ruby::Rego::TypeError#initialize
       - Ruby::Rego::UnificationError#initialize
+  DataClump:
+    exclude:
+      # The recursive validator threads (document, subschema) through every keyword predicate — the
+      # clump IS the recursion, not an extractable type.
+      - Ruby::Rego::Builtins::Codecs::JsonSchema::Matcher
   DuplicateMethodCall:
     exclude:
       # Recursive canonicalizer reuses canonicalize_each across the array/set case arms.
@@ -128,6 +135,8 @@ detectors:
       - Ruby::Rego::Builtins::Crypto::CertificateStruct
   UtilityFunction:
     exclude:
+      # match_schema's keyword predicates are pure checks over the (document, schema) it recurses on.
+      - Ruby::Rego::Builtins::Codecs::JsonSchema::Matcher
       - Ruby::Rego::Lexer
       - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator
@@ -139,6 +148,8 @@ detectors:
       - Ruby::Rego::Builtins::Regex::GoTemplate
   FeatureEnvy:
     exclude:
+      # The validator inherently operates on the document/subschema it is handed, not on instance state.
+      - Ruby::Rego::Builtins::Codecs::JsonSchema::Matcher
       - Ruby::Rego::Lexer
       - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator::RuleEvaluator

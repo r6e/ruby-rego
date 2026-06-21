@@ -184,6 +184,28 @@ RSpec.describe "json.verify_schema" do
     end
   end
 
+  # A flat `definitions` of N distinct chained $refs (d0->d1->...->dN) has no structural nesting, so neither
+  # JSON.parse's max_nesting nor Value.from_ruby's marshaling caps it — without a depth bound the recursion
+  # would SystemStackError and abort the whole policy. Past MAX_SCHEMA_DEPTH it is reported invalid instead.
+  describe "totality on deep $ref chains" do
+    it "does not raise (returns [false, <string>]) on a long $ref chain" do
+      defs = {}
+      (0...3000).each { |i| defs["d#{i}"] = { "$ref" => "#/definitions/d#{i + 1}" } }
+      defs["d3000"] = { "type" => "integer" }
+      schema = { "$ref" => "#/definitions/d0", "definitions" => defs }
+      expect { @r = verify(schema) }.not_to raise_error
+      expect(@r[0]).to be(false)
+      expect(@r[1]).to be_a(String)
+    end
+
+    it "still validates a self-referential (cyclic) schema, which does not accumulate depth" do
+      schema = { "definitions" => { "node" => { "type" => "object",
+                                                "properties" => { "next" => { "$ref" => "#/definitions/node" } } } },
+                 "$ref" => "#/definitions/node" }
+      expect(verify(schema)).to eq([true, nil])
+    end
+  end
+
   describe "registration" do
     it "registers the builtin" do
       expect(registry.registered?("json.verify_schema")).to be(true)
