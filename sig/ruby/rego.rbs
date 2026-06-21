@@ -1423,6 +1423,7 @@ module Ruby
         def self.json_marshal_with_options: (Value value, Value options_value) -> StringValue
         def self.json_unmarshal: (Value value) -> Value
         def self.json_is_valid: (Value value) -> BooleanValue
+        def self.json_verify_schema: (Value value) -> Value
         def self.base64_encode: (Value value) -> StringValue
         def self.base64_decode: (Value value) -> StringValue
         def self.base64_is_valid: (Value value) -> BooleanValue
@@ -1457,6 +1458,56 @@ module Ruby
         def self.escape_html: (String json) -> String
         def self.jsonify: (untyped ruby) -> untyped
         def self.sorted_json_array: (Set[untyped] set) -> Array[untyped]
+
+        module JsonSchema
+          SCHEMA_TYPES: Array[String]
+          SUBSCHEMA_KEYWORDS: Array[String]
+          SUBSCHEMA_MAP_KEYWORDS: Array[String]
+          SUBSCHEMA_LIST_KEYWORDS: Array[String]
+          NUMBER_KEYWORDS: Array[String]
+          NON_NEGATIVE_INT_KEYWORDS: Array[String]
+          GO_REJECTED_ESCAPE: Regexp
+          JSON_STRING_TOKEN: Regexp
+          NOT_FOUND: Object
+
+          def self.verify: (Value value) -> [bool, String?]
+
+          private
+
+          def self.load_schema: (Value value) -> [untyped, String?]
+          def self.parse_schema_string: (String string) -> [untyped, String?]
+          def self.usable_json_encoding?: (String string) -> bool
+          def self.contains_json_comment?: (String string) -> bool
+          def self.valid_schema: (untyped schema) -> [bool, String?]
+          def self.schema_error: (Hash[String, untyped] schema, untyped root, Set[untyped] visited) -> String?
+          def self.keyword_walk: (Hash[String, untyped] schema, untyped root, Set[untyped] visited) -> String?
+          def self.fragment_error: (Hash[String, untyped] schema, untyped target, untyped root, Set[untyped] visited) -> String?
+          def self.keyword_error: (String keyword, untyped value, Hash[String, untyped] schema, untyped root, Set[untyped] visited) -> String?
+          def self.type_error: (untyped value) -> String?
+          def self.type_array_error: (Array[untyped] value) -> String?
+          def self.multiple_of_error: (untyped value) -> String?
+          def self.pattern_error: (untyped value) -> String?
+          def self.string_array_error: (untyped value, String keyword, unique: bool) -> String?
+          def self.enum_error: (untyped value) -> String?
+          def self.exclusive_error: (untyped value, Hash[String, untyped] schema, String paired) -> String?
+          def self.items_error: (untyped value, untyped root, Set[untyped] visited) -> String?
+          def self.dependencies_error: (untyped value, untyped root, Set[untyped] visited) -> String?
+          def self.dependency_error: (untyped dep, untyped root, Set[untyped] visited) -> String?
+          def self.subschema_error: (untyped value, untyped root, Set[untyped] visited) -> String?
+          def self.subschema_map_error: (String keyword, untyped value, untyped root, Set[untyped] visited) -> String?
+          def self.subschema_list_error: (untyped value, String keyword, untyped root, Set[untyped] visited) -> String?
+          def self.number_error: (String keyword, untyped value) -> String?
+          def self.non_negative_int_error: (String keyword, untyped value) -> String?
+          def self.string_error: (untyped value, String keyword) -> String?
+          def self.boolean_error: (untyped value, String keyword) -> String?
+          def self.numeric?: (untyped value) -> bool
+          def self.resolve_ref: (untyped ref, untyped root) -> [Symbol, untyped]
+          def self.resolve_pointer: (String pointer, untyped root) -> untyped
+          def self.pointer_step: (untyped node, String key) -> untyped
+          def self.array_index: (Array[untyped] node, String key) -> untyped
+          def self.schema_node?: (untyped node) -> bool
+          def self.re2_compatible?: (untyped pattern) -> bool
+        end
       end
 
       module TermOrder

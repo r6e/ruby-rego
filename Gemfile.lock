@@ -8,6 +8,7 @@ PATH
       ipaddr
       json (~> 2.0)
       openssl
+      re2 (~> 2.0)
       tzinfo (~> 2.0)
       tzinfo-data
 
@@ -141,6 +142,8 @@ GEM
       logger
       prism (>= 1.6.0)
       tsort
+    re2 (2.27.0-arm64-darwin)
+    re2 (2.27.0-x86_64-linux-gnu)
     reek (6.5.0)
       dry-schema (~> 1.13)
       logger (~> 1.6)
@@ -251,7 +254,6 @@ GEM
 
 PLATFORMS
   arm64-darwin-25
-  ruby
   x86_64-linux
 
 DEPENDENCIES

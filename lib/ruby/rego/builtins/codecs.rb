@@ -9,6 +9,7 @@ require_relative "registry"
 require_relative "registry_helpers"
 require_relative "codecs/url_query"
 require_relative "codecs/json_format"
+require_relative "codecs/json_schema"
 
 # rubocop:disable Metrics/ModuleLength
 module Ruby
@@ -23,6 +24,7 @@ module Ruby
           "json.marshal_with_options" => { arity: 2, handler: :json_marshal_with_options },
           "json.unmarshal" => { arity: 1, handler: :json_unmarshal },
           "json.is_valid" => { arity: 1, handler: :json_is_valid },
+          "json.verify_schema" => { arity: 1, handler: :json_verify_schema },
           "base64.encode" => { arity: 1, handler: :base64_encode },
           "base64.decode" => { arity: 1, handler: :base64_decode },
           "base64.is_valid" => { arity: 1, handler: :base64_is_valid },
@@ -189,6 +191,16 @@ module Ruby
           BooleanValue.new(true)
         rescue JSON::ParserError
           BooleanValue.new(false)
+        end
+
+        # json.verify_schema(schema): [valid, error] — true/null when `schema` (a JSON string or object) is
+        # a well-formed JSON schema, else false and an error string. Matches OPA's gojsonschema on the
+        # boolean; the error wording is best-effort (a documented divergence). See Codecs::JsonSchema.
+        # @param value [Ruby::Rego::Value]
+        # @return [Ruby::Rego::ArrayValue]
+        def self.json_verify_schema(value)
+          valid, error = JsonSchema.verify(value)
+          Value.from_ruby([valid, error])
         end
 
         # @param value [Ruby::Rego::Value]
