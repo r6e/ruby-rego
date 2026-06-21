@@ -41,8 +41,9 @@ module Ruby
 
           # A bare `\C` escape (preceded by an even run of backslashes, so its `\` is a real escape, not
           # inside a `\\` literal). C++ RE2 accepts `\C` (match-any-byte); Go's `regexp` — what gojsonschema
-          # uses — rejects it, so it is filtered out after the RE2 compile check.
-          GO_REJECTED_ESCAPE = /(?<!\\)(?:\\\\)*\\C/
+          # uses — rejects it, so it is filtered out after the RE2 compile check. The `*+` possessive
+          # quantifier makes the backslash-run scan non-backtracking (linear, ReDoS-safe on untrusted input).
+          GO_REJECTED_ESCAPE = /(?<!\\)(?:\\\\)*+\\C/
           # One JSON string literal, for the comment scan below (quote, escapes-or-non-quote bytes, quote).
           JSON_STRING_TOKEN = /"(?:\\.|[^"\\])*"/
 

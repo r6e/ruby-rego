@@ -105,8 +105,11 @@ RSpec.describe "json.verify_schema" do
       ["\\xff", "[\\d-z]"].each { |p| expect(verify({ "pattern" => p })[0]).to be(true) }
       # RE2 rejects, Ruby accepts:
       ["\\x{110000}", "a**", "a{2}{3}"].each { |p| expect(verify({ "pattern" => p })[0]).to be(false) }
-      # \C: C++ RE2 accepts but Go's regexp (gojsonschema) rejects -> filtered
+      # \C: C++ RE2 accepts but Go's regexp (gojsonschema) rejects -> filtered. An escaped backslash before
+      # C (\\C = literal backslash + literal C) is NOT a \C escape and stays valid (pins the possessive
+      # backslash-run scan in GO_REJECTED_ESCAPE).
       expect(verify({ "pattern" => "\\Cx" })[0]).to be(false)
+      expect(verify({ "pattern" => "\\\\Cx" })[0]).to be(true)
     end
   end
 
