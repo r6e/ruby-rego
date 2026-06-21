@@ -35,19 +35,22 @@ RSpec.describe "io.jwt.decode_verify" do
     end
   end
 
+  # With no `time` constraint the builtin reads Jwt.current_time_ns (Process.clock_gettime). Stub it to a
+  # fixed instant so these exercise the default-time path deterministically — without depending on the
+  # wall clock (which could step under CI between building the claims and the gem reading the clock).
   describe "default time (no `time` constraint uses now)" do
     secret = "0123456789abcdef0123456789abcdef"
+    now_s = 1_700_000_000
+    before { allow(Ruby::Rego::Builtins::Jwt).to receive(:current_time_ns).and_return(now_s * 1_000_000_000) }
 
-    it "accepts an unexpired token and rejects an expired one against the wall clock" do
-      now = Time.now.to_i
-      expect(call_dv(hmac_token({ "exp" => now + 3600 }), { "secret" => secret })[0]).to be(true)
-      expect(call_dv(hmac_token({ "exp" => now - 3600 }), { "secret" => secret })).to eq([false, {}, {}])
+    it "accepts an unexpired token and rejects an expired one" do
+      expect(call_dv(hmac_token({ "exp" => now_s + 3600 }), { "secret" => secret })[0]).to be(true)
+      expect(call_dv(hmac_token({ "exp" => now_s - 3600 }), { "secret" => secret })).to eq([false, {}, {}])
     end
 
-    it "honours nbf against the wall clock" do
-      now = Time.now.to_i
-      expect(call_dv(hmac_token({ "nbf" => now - 3600 }), { "secret" => secret })[0]).to be(true)
-      expect(call_dv(hmac_token({ "nbf" => now + 3600 }), { "secret" => secret })).to eq([false, {}, {}])
+    it "honours nbf" do
+      expect(call_dv(hmac_token({ "nbf" => now_s - 3600 }), { "secret" => secret })[0]).to be(true)
+      expect(call_dv(hmac_token({ "nbf" => now_s + 3600 }), { "secret" => secret })).to eq([false, {}, {}])
     end
   end
 
