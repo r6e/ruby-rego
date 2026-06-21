@@ -252,7 +252,8 @@ module Ruby
           end
           private_class_method :string_array_error
 
-          # `enum` is a non-empty array of distinct values (any JSON value; distinctness is by JSON equality).
+          # `enum` is an array of distinct values (any JSON value; distinctness is by JSON equality). Standard
+          # JSON Schema requires it non-empty, but gojsonschema accepts an empty array, so the gem does too.
           def self.enum_error(value)
             return "enum must be of an array" unless value.is_a?(Array)
             return "enum items must be distinct" unless value.uniq.length == value.length

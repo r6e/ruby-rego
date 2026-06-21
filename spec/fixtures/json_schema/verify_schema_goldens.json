@@ -1077,5 +1077,40 @@
       false,
       "jsonschema: Invalid type. Expected: boolean/number, given: exclusiveMinimum"
     ]
+  },
+  "enum_empty_array": {
+    "schema": {
+      "enum": []
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "enum_distinct": {
+    "schema": {
+      "enum": [
+        1,
+        "a",
+        true,
+        null
+      ]
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "enum_dup_pinned": {
+    "schema": {
+      "enum": [
+        1,
+        1
+      ]
+    },
+    "expected": [
+      false,
+      "x"
+    ]
   }
 }
