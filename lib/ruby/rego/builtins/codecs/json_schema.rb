@@ -155,16 +155,15 @@ module Ruby
           end
           private_class_method :keyword_walk
 
-          # A fragment `$ref` node: validate the resolved target as a subschema (transitively; a re-followed
-          # ref is a cycle and treated as valid) and a direct `definitions` sibling, while suppressing the
-          # other sibling keywords (gojsonschema replaces the node with the target). `visited` is a Set of the
-          # `$ref`s already followed, accumulated globally and threaded by reference: a ref still on the active
-          # path cuts a cycle, and a ref reached again via a sibling branch short-circuits too — that second
-          # hit can only mean the first follow validated cleanly (an error would already have returned), so
-          # re-validating is redundant. Well-formedness is path-independent, making this memoisation sound and
-          # collapsing the otherwise-exponential cost of a ref DAG with shared targets to linear. When a ref
-          # forms a CYCLE (already on the path), gojsonschema can't replace the node so it validates the
-          # node's OWN keywords instead — unlike a freshly-resolved fragment, a cyclic ref does not suppress.
+          # A fragment `$ref` node. On the FIRST time a given `$ref` string is seen, gojsonschema replaces the
+          # node with the resolved target: this validates the target as a subschema (transitively) and a
+          # direct `definitions` sibling, while suppressing the node's other keywords. Any LATER occurrence of
+          # the same `$ref` — whether reached on the active path (a cycle) or via a separate branch (a plain
+          # repeat) — is not replaced; gojsonschema instead validates that node's OWN keywords (so a repeat
+          # does NOT suppress, matching opa eval). `visited` is a global Set of the `$ref`s already replaced,
+          # threaded by reference; routing every later occurrence through keyword_walk both reproduces that
+          # behaviour and keeps a ref DAG linear (a repeat re-walks only the small ref node, never re-follows
+          # the target). Verified byte-exact against opa across ordered/repeated/cyclic ref cases.
           # :reek:NilCheck :reek:LongParameterList :reek:TooManyStatements
           def self.fragment_error(schema, target, root, visited)
             ref = schema["$ref"]
