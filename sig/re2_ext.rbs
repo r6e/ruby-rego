@@ -1,0 +1,9 @@
+# Minimal RBS for the re2 gem (binding to Google's RE2 C++ library). Only the surface Codecs::JsonSchema
+# uses: compile a pattern and ask whether it is well-formed. RE2 works on bytes and never raises on a
+# malformed or invalid-encoding pattern — `ok?` returns false instead.
+module RE2
+  class Regexp
+    def initialize: (String pattern, ?log_errors: bool) -> void
+    def ok?: () -> bool
+  end
+end

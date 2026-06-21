@@ -1,0 +1,1116 @@
+{
+  "obj_empty": {
+    "schema": {},
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "obj_valid": {
+    "schema": {
+      "type": "object"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "str_obj": {
+    "schema": "{\"type\":\"object\"}",
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "str_empty_obj": {
+    "schema": "{}",
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "str_json_string": {
+    "schema": "\"42\"",
+    "expected": [
+      false,
+      "jsonschema: schema is invalid"
+    ]
+  },
+  "str_json_number": {
+    "schema": "42",
+    "expected": [
+      false,
+      "jsonschema: schema is invalid"
+    ]
+  },
+  "str_json_bool": {
+    "schema": "true",
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "str_json_array": {
+    "schema": "[]",
+    "expected": [
+      false,
+      "jsonschema: schema is invalid"
+    ]
+  },
+  "str_garbage": {
+    "schema": "garbage",
+    "expected": [
+      false,
+      "jsonschema: invalid JSON string"
+    ]
+  },
+  "str_empty": {
+    "schema": "",
+    "expected": [
+      false,
+      "jsonschema: invalid JSON string"
+    ]
+  },
+  "num_arg": {
+    "schema": 42,
+    "expected": [
+      false,
+      "jsonschema: wrong type, expected string or object"
+    ]
+  },
+  "bool_arg": {
+    "schema": true,
+    "expected": [
+      false,
+      "jsonschema: wrong type, expected string or object"
+    ]
+  },
+  "array_arg": {
+    "schema": [],
+    "expected": [
+      false,
+      "jsonschema: schema is invalid"
+    ]
+  },
+  "null_arg": {
+    "schema": null,
+    "expected": [
+      false,
+      "jsonschema: wrong type, expected string or object"
+    ]
+  },
+  "type_array": {
+    "schema": {
+      "type": [
+        "string",
+        "integer"
+      ]
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "nested_props": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "kw_mix": {
+    "schema": {
+      "type": "object",
+      "required": [
+        "a"
+      ],
+      "minProperties": 1,
+      "additionalProperties": false
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "if_then_else": {
+    "schema": {
+      "if": {
+        "type": "integer"
+      },
+      "then": {
+        "minimum": 1
+      },
+      "else": {
+        "type": "string"
+      }
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "ref_defs": {
+    "schema": {
+      "definitions": {
+        "x": {
+          "type": "string"
+        }
+      },
+      "$ref": "#/definitions/x"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "pattern_valid": {
+    "schema": {
+      "type": "string",
+      "pattern": "^[a-z]+$"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "all_of": {
+    "schema": {
+      "allOf": [
+        {
+          "type": "object"
+        },
+        {
+          "required": [
+            "a"
+          ]
+        }
+      ]
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "enum_valid": {
+    "schema": {
+      "enum": [
+        1,
+        "a",
+        true,
+        null
+      ]
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "const_valid": {
+    "schema": {
+      "const": {
+        "x": 1
+      }
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "bool_true_schema": {
+    "schema": true,
+    "expected": [
+      false,
+      "jsonschema: wrong type, expected string or object"
+    ]
+  },
+  "bool_false_schema": {
+    "schema": false,
+    "expected": [
+      false,
+      "jsonschema: wrong type, expected string or object"
+    ]
+  },
+  "patternProps_ok": {
+    "schema": {
+      "patternProperties": {
+        "^x": {
+          "type": "integer"
+        }
+      }
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "format_email": {
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "deep_nest": {
+    "schema": {
+      "properties": {
+        "a": {
+          "properties": {
+            "b": {
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "type_bogus": {
+    "schema": {
+      "type": "bogus"
+    },
+    "expected": [
+      false,
+      "jsonschema: has a primitive type that is NOT VALID -- given: /bogus/ Expected valid values are:[array boolean integer number null object string]"
+    ]
+  },
+  "type_number": {
+    "schema": {
+      "type": 5
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid type. Expected: type, given: string/Array Of Strings"
+    ]
+  },
+  "type_array_bad": {
+    "schema": {
+      "type": [
+        "string",
+        "bogus"
+      ]
+    },
+    "expected": [
+      false,
+      "jsonschema: has a primitive type that is NOT VALID -- given: /bogus/ Expected valid values are:[array boolean integer number null object string]"
+    ]
+  },
+  "re2_lookahead": {
+    "schema": {
+      "type": "string",
+      "pattern": "(?!foo)bar"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "re2_lookbehind": {
+    "schema": {
+      "type": "string",
+      "pattern": "(?<=a)b"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "re2_backref": {
+    "schema": {
+      "type": "string",
+      "pattern": "(a)\\1"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "re2_in_props": {
+    "schema": {
+      "patternProperties": {
+        "(?!x)": {
+          "type": "integer"
+        }
+      }
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid regex pattern '(?!x)'"
+    ]
+  },
+  "props_not_obj": {
+    "schema": {
+      "type": "object",
+      "properties": "x"
+    },
+    "expected": [
+      false,
+      "jsonschema: Properties must be of type object"
+    ]
+  },
+  "required_not_arr": {
+    "schema": {
+      "required": "a"
+    },
+    "expected": [
+      false,
+      "jsonschema: required must be of an array"
+    ]
+  },
+  "required_num_elem": {
+    "schema": {
+      "required": [
+        5
+      ]
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid type. Expected: string, given: required"
+    ]
+  },
+  "minimum_not_num": {
+    "schema": {
+      "minimum": "x"
+    },
+    "expected": [
+      false,
+      "jsonschema: minimum must be of a Number"
+    ]
+  },
+  "items_bad": {
+    "schema": {
+      "type": "array",
+      "items": 5
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid type. Expected: Valid Schema/Array Of Schemas, given: items"
+    ]
+  },
+  "minLength_string": {
+    "schema": {
+      "minLength": "x"
+    },
+    "expected": [
+      false,
+      "jsonschema: minLength must be of an integer"
+    ]
+  },
+  "enum_not_array": {
+    "schema": {
+      "enum": "x"
+    },
+    "expected": [
+      false,
+      "jsonschema: enum must be of an array"
+    ]
+  },
+  "maxItems_neg": {
+    "schema": {
+      "maxItems": -1
+    },
+    "expected": [
+      false,
+      "jsonschema: maxItems must be greater than or equal to 0"
+    ]
+  },
+  "nested_invalid": {
+    "schema": {
+      "properties": {
+        "a": {
+          "type": "bogus"
+        }
+      }
+    },
+    "expected": [
+      false,
+      "jsonschema: has a primitive type that is NOT VALID -- given: /bogus/ Expected valid values are:[array boolean integer number null object string]"
+    ]
+  },
+  "multipleOf_zero": {
+    "schema": {
+      "multipleOf": 0
+    },
+    "expected": [
+      false,
+      "jsonschema: multipleOf must be strictly greater than 0"
+    ]
+  },
+  "multipleOf_neg": {
+    "schema": {
+      "multipleOf": -2
+    },
+    "expected": [
+      false,
+      "jsonschema: multipleOf must be strictly greater than 0"
+    ]
+  },
+  "multipleOf_float": {
+    "schema": {
+      "multipleOf": 2.5
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "exclMin_bool": {
+    "schema": {
+      "exclusiveMinimum": true
+    },
+    "expected": [
+      false,
+      "jsonschema: exclusiveMinimum cannot be used without minimum"
+    ]
+  },
+  "exclMin_num": {
+    "schema": {
+      "exclusiveMinimum": 5
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "exclMin_string": {
+    "schema": {
+      "exclusiveMinimum": "x"
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid type. Expected: boolean/number, given: exclusiveMinimum"
+    ]
+  },
+  "type_empty_array": {
+    "schema": {
+      "type": []
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "type_dup_array": {
+    "schema": {
+      "type": [
+        "string",
+        "string"
+      ]
+    },
+    "expected": [
+      false,
+      "jsonschema: string type is duplicated"
+    ]
+  },
+  "addlProps_bool": {
+    "schema": {
+      "additionalProperties": true
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "addlProps_num": {
+    "schema": {
+      "additionalProperties": 5
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid type. Expected: boolean/Valid Schema, given: additionalProperties"
+    ]
+  },
+  "ref_non_string": {
+    "schema": {
+      "$ref": 5
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid type. Expected: string, given: $ref"
+    ]
+  },
+  "uniqueItems_bad": {
+    "schema": {
+      "uniqueItems": "x"
+    },
+    "expected": [
+      false,
+      "jsonschema: uniqueItems must be of a boolean"
+    ]
+  },
+  "not_bool": {
+    "schema": {
+      "not": true
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "deps_arr_nonstr": {
+    "schema": {
+      "dependencies": {
+        "a": [
+          5
+        ]
+      }
+    },
+    "expected": [
+      false,
+      "jsonschema: Dependency must be of type Schema Or Array Of Strings"
+    ]
+  },
+  "deps_schema": {
+    "schema": {
+      "dependencies": {
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "unknown_keyword": {
+    "schema": {
+      "fooBar": "x"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "oneOf_not_array": {
+    "schema": {
+      "oneOf": {
+        "type": "string"
+      }
+    },
+    "expected": [
+      false,
+      "jsonschema: oneOf must be of an array"
+    ]
+  },
+  "items_array_bad": {
+    "schema": {
+      "items": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "bogus"
+        }
+      ]
+    },
+    "expected": [
+      false,
+      "jsonschema: has a primitive type that is NOT VALID -- given: /bogus/ Expected valid values are:[array boolean integer number null object string]"
+    ]
+  },
+  "re2_noncapture": {
+    "schema": {
+      "pattern": "(?:ab)+"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "re2_named_ruby": {
+    "schema": {
+      "pattern": "(?<n>a)b"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "re2_named_go": {
+    "schema": {
+      "pattern": "(?P<n>a)b"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "re2_atomic": {
+    "schema": {
+      "pattern": "(?>ab)"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "re2_possessive": {
+    "schema": {
+      "pattern": "a*+"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "re2_class_paren": {
+    "schema": {
+      "pattern": "[(?=]+"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "re2_escaped_look": {
+    "schema": {
+      "pattern": "(?!"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "re2_valid_complex": {
+    "schema": {
+      "pattern": "^(foo|bar)[0-9]{2,4}$"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "re2_possessive_interval": {
+    "schema": {
+      "pattern": "a{2}+"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "metadata_keywords": {
+    "schema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "T",
+      "default": 5
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "additionalItems_num": {
+    "schema": {
+      "additionalItems": 5
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid type. Expected: boolean/Valid Schema, given: additionalItems"
+    ]
+  },
+  "format_number_invalid": {
+    "schema": {
+      "format": 5
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid type. Expected: string, given: format"
+    ]
+  },
+  "contains_bool": {
+    "schema": {
+      "contains": true
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "deep_invalid_type": {
+    "schema": {
+      "allOf": [
+        {
+          "not": {
+            "type": "bogus"
+          }
+        }
+      ]
+    },
+    "expected": [
+      false,
+      "jsonschema: has a primitive type that is NOT VALID -- given: /bogus/ Expected valid values are:[array boolean integer number null object string]"
+    ]
+  },
+  "type_null_elem": {
+    "schema": {
+      "type": [
+        null
+      ]
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid type. Expected: type, given: string/Array Of Strings"
+    ]
+  },
+  "type_string_null": {
+    "schema": {
+      "type": [
+        "string",
+        null
+      ]
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid type. Expected: type, given: string/Array Of Strings"
+    ]
+  },
+  "required_dup": {
+    "schema": {
+      "required": [
+        "a",
+        "a"
+      ]
+    },
+    "expected": [
+      false,
+      "jsonschema: required items must be unique"
+    ]
+  },
+  "enum_dup": {
+    "schema": {
+      "enum": [
+        1,
+        1
+      ]
+    },
+    "expected": [
+      false,
+      "jsonschema: enum items must be unique"
+    ]
+  },
+  "enum_obj_dup": {
+    "schema": {
+      "enum": [
+        {
+          "a": 1
+        },
+        {
+          "a": 1
+        }
+      ]
+    },
+    "expected": [
+      false,
+      "jsonschema: enum items must be unique"
+    ]
+  },
+  "deps_dup_ok": {
+    "schema": {
+      "dependencies": {
+        "a": [
+          "b",
+          "b"
+        ]
+      }
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "defs_ignored": {
+    "schema": {
+      "$defs": {
+        "a": {
+          "type": "bogus"
+        }
+      }
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "definitions_checked": {
+    "schema": {
+      "definitions": {
+        "a": {
+          "type": "bogus"
+        }
+      }
+    },
+    "expected": [
+      false,
+      "jsonschema: has a primitive type that is NOT VALID -- given: /bogus/ Expected valid values are:[array boolean integer number null object string]"
+    ]
+  },
+  "ref_present": {
+    "schema": {
+      "definitions": {
+        "a": {}
+      },
+      "$ref": "#/definitions/a"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "ref_absent": {
+    "schema": {
+      "definitions": {
+        "a": {}
+      },
+      "$ref": "#/definitions/b"
+    },
+    "expected": [
+      false,
+      "jsonschema: Object has no key 'b'"
+    ]
+  },
+  "ref_external": {
+    "schema": {
+      "$ref": "https://x.com/s"
+    },
+    "expected": [
+      false,
+      "jsonschema: invalid character '<' looking for beginning of value"
+    ]
+  },
+  "ref_root": {
+    "schema": {
+      "$ref": "#"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "ref_suppress": {
+    "schema": {
+      "definitions": {
+        "a": {}
+      },
+      "$ref": "#/definitions/a",
+      "type": "bogus"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "ref_root_nosuppress": {
+    "schema": {
+      "$ref": "#",
+      "type": "bogus"
+    },
+    "expected": [
+      false,
+      "jsonschema: has a primitive type that is NOT VALID -- given: /bogus/ Expected valid values are:[array boolean integer number null object string]"
+    ]
+  },
+  "ref_empty": {
+    "schema": {
+      "$ref": ""
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "ref_root_slash": {
+    "schema": {
+      "$ref": "#/"
+    },
+    "expected": [
+      false,
+      "jsonschema: Object has no key ''"
+    ]
+  },
+  "ref_scalar_target": {
+    "schema": {
+      "x": 5,
+      "$ref": "#/x"
+    },
+    "expected": [
+      false,
+      "jsonschema: Valid Schema must be of type object"
+    ]
+  },
+  "ref_nested_absent": {
+    "schema": {
+      "properties": {
+        "x": {
+          "$ref": "#/definitions/zzz"
+        }
+      },
+      "definitions": {
+        "a": {}
+      }
+    },
+    "expected": [
+      false,
+      "jsonschema: Object has no key 'zzz'"
+    ]
+  },
+  "flag_s": {
+    "schema": {
+      "pattern": "(?s)a"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "flag_U": {
+    "schema": {
+      "pattern": "(?U)a"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "flag_imsU": {
+    "schema": {
+      "pattern": "(?imsU)a"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "flag_x": {
+    "schema": {
+      "pattern": "(?x)a"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "flag_u": {
+    "schema": {
+      "pattern": "(?u)a"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "flag_scoped_x": {
+    "schema": {
+      "pattern": "(?x:a)"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "flag_scoped_i": {
+    "schema": {
+      "pattern": "(?i:a)"
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "re2_comment": {
+    "schema": {
+      "pattern": "(?#c)abc"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "re2_absent_op": {
+    "schema": {
+      "pattern": "(?~foo)"
+    },
+    "expected": [
+      false,
+      "jsonschema: pattern must be a valid regex"
+    ]
+  },
+  "exclmin_bool_paired": {
+    "schema": {
+      "minimum": 1,
+      "exclusiveMinimum": true
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "exclmin_num": {
+    "schema": {
+      "exclusiveMinimum": 5
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "exclmin_string": {
+    "schema": {
+      "exclusiveMinimum": "x"
+    },
+    "expected": [
+      false,
+      "jsonschema: Invalid type. Expected: boolean/number, given: exclusiveMinimum"
+    ]
+  },
+  "enum_empty_array": {
+    "schema": {
+      "enum": []
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "enum_distinct": {
+    "schema": {
+      "enum": [
+        1,
+        "a",
+        true,
+        null
+      ]
+    },
+    "expected": [
+      true,
+      null
+    ]
+  },
+  "enum_dup_pinned": {
+    "schema": {
+      "enum": [
+        1,
+        1
+      ]
+    },
+    "expected": [
+      false,
+      "x"
+    ]
+  }
+}

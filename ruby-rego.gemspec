@@ -50,6 +50,11 @@ Gem::Specification.new do |spec|
   # is `< 3.0` — a 3.0 major could change it and warrants re-validation.
   spec.add_dependency "json", "~> 2.0"
   spec.add_dependency "openssl"
+  # re2 binds Google's RE2 C++ library — the same regex engine Go's `regexp` (and thus gojsonschema)
+  # uses — so json.verify_schema / match_schema can validate a schema `pattern` exactly as OPA does,
+  # rather than approximating RE2 with Ruby's Onigmo (which diverges on escapes, flags, quantifiers and
+  # character-class ranges). Go's regexp additionally rejects `\C`, which is filtered separately.
+  spec.add_dependency "re2", "~> 2.0"
   # tzinfo (with bundled tzinfo-data) for the IANA-timezone forms of the time builtins
   # (time.date/clock/weekday). tzinfo-data pins the IANA database so results don't depend on the
   # host's system zoneinfo version — matching OPA, which compiles in its own tzdata — and avoids a
