@@ -4,6 +4,7 @@ require "date"
 require "ipaddr"
 require "re2"
 require_relative "json_schema"
+require_relative "json_schema_email" # defines MailAddress/Rfc2047, used by email?/idn-email
 require_relative "../uri/parser"
 
 module Ruby
@@ -30,9 +31,11 @@ module Ruby
         #     reject), and — for uri/iri — a non-empty scheme; uri-template additionally matches the parsed
         #     path against gojsonschema's template regex via the re2 engine (Go's). iri == uri exactly because
         #     url.Parse already accepts unicode hosts/paths, so no separate IDN logic is needed.
+        #   * email/idn-email run Go's net/mail.ParseAddress (a full RFC 5322 address parse, not a "valid
+        #     email" regex) via the MailAddress port (json_schema_email). idn-email is the SAME checker.
         #
-        # Implemented: the lexical / date-time / net / regex formats and the uri family. email/idn-email land
-        # in a follow-up PR; until then they fall through to annotation-only (true), as does any unknown format.
+        # Implemented: the lexical / date-time / net / regex formats, the uri family, and email/idn-email. The
+        # remaining names (idn-hostname, duration, unknown) fall through to annotation-only (true).
         module JsonSchema
           # The gojsonschema `format` checkers (format_checkers.go) OPA 1.17 enforces. See the file header.
           module Formats
@@ -76,7 +79,8 @@ module Ruby
               when "uri", "iri" then absolute_uri?(value)
               when "uri-reference", "iri-reference" then uri_reference?(value)
               when "uri-template" then uri_template?(value)
-              else true # idn-hostname / duration / email (later PR) / unknown -> annotation only
+              when "email", "idn-email" then email?(value)
+              else true # idn-hostname / duration / unknown -> annotation only
               end
             end
             # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
@@ -190,6 +194,14 @@ module Ruby
             def self.uri_template?(value)
               components = url_components(value)
               !components.nil? && URI_TEMPLATE_PATH.match?(components.path.to_s.scrub("\uFFFD"))
+            end
+
+            # email / idn-email: gojsonschema runs both through Go's net/mail.ParseAddress (idn-email is the
+            # same checker -- RFC 6532 UTF-8 is allowed in atoms either way). See MailAddress (json_schema_email).
+            # The scannable? guard ensures the parser only sees valid UTF-8 (matching Go, which rejects
+            # invalid-UTF-8 addresses anyway).
+            def self.email?(value)
+              scannable?(value) && MailAddress.valid?(value)
             end
           end
         end

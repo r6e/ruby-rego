@@ -1520,6 +1520,59 @@ module Ruby
             def self.absolute_uri?: (String value) -> bool
             def self.uri_reference?: (String value) -> bool
             def self.uri_template?: (String value) -> bool
+            def self.email?: (String value) -> bool
+
+            class MailAddress
+              SPECIALS: Array[String]
+              WSP: Array[String]
+              QTEXT_EXCLUDED: Array[String]
+              DTEXT_EXCLUDED: Array[String]
+
+              @chars: Array[String]
+              @pos: Integer
+              @len: Integer
+
+              def self.valid?: (String string) -> bool
+              def initialize: (String string) -> void
+              def single_address?: () -> bool
+
+              private
+
+              def empty?: () -> bool
+              def peek: () -> String?
+              def consume: (String char) -> bool
+              def skip_space: () -> void
+              def parse_address: (handle_group: bool) -> Integer?
+              def consume_addr_spec: () -> bool
+              def parse_addr_spec: () -> bool
+              def consume_local_part: () -> bool
+              def consume_group_list: () -> Integer?
+              def consume_atom: (dot: bool, permissive: bool) -> String?
+              def consume_quoted_string: () -> String?
+              def consume_domain_literal: () -> bool
+              def consume_phrase: () -> bool
+              def skip_cfws: () -> bool
+              def consume_comment: () -> bool
+              def consume_display_name_comment: () -> bool
+              def parseable_ip?: (String string) -> bool
+              def atext?: (String? char, bool dot) -> bool
+              def vchar?: (String? char) -> bool
+              def wsp?: (String? char) -> bool
+              def qtext?: (String? char) -> bool
+              def dtext?: (String? char) -> bool
+            end
+
+            module Rfc2047
+              CHARSETS: Array[String]
+
+              def self.status: (String word) -> Symbol
+              def self.payload_decodes?: (String encoding, String text) -> bool
+              def self.base64_decodes?: (String text) -> bool
+              def self.qdecodes?: (String text) -> bool
+              def self.base64_char?: (Integer? byte) -> bool
+              def self.qtext_byte?: (Integer? byte) -> bool
+              def self.hex_byte?: (Integer? byte) -> bool
+            end
           end
 
           private

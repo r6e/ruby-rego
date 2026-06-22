@@ -7,8 +7,8 @@ require "json"
 # errors array is best-effort (gojsonschema's {desc,error,field,type} objects are a documented divergence),
 # so these assert the boolean exactly and the array's PRESENCE (empty vs non-empty), not its content/count.
 # An unusable schema or document argument yields undefined, matching OPA. Goldens captured from `opa eval`
-# 1.17. The `format` keyword enforces the lexical / date-time / net / regex / uri-family assertions (see the
-# "format assertions" describe block); email/idn-email are still annotation-only pending the follow-up PR.
+# 1.17. The `format` keyword enforces the lexical / date-time / net / regex / uri-family and email/idn-email
+# assertions (see the "format assertions" describe block).
 # rubocop:disable Metrics/BlockLength
 RSpec.describe "json.match_schema" do
   let(:registry) { Ruby::Rego::Builtins::BuiltinRegistry.instance }
@@ -45,9 +45,9 @@ RSpec.describe "json.match_schema" do
   end
 
   # The `format` keyword (gojsonschema's enforced format assertions; format_checkers.go). Only the boolean is
-  # contractual. The lexical / date-time / net / regex / uri-family formats are enforced; email/idn-email land
-  # in the follow-up PR and stay annotation-only (true) until then, as do the genuinely unenforced names
-  # (idn-hostname, duration, unknown). Goldens captured from opa eval 1.17.
+  # contractual. The lexical / date-time / net / regex / uri-family and email/idn-email formats are enforced;
+  # the genuinely unenforced names (idn-hostname, duration, unknown) stay annotation-only (true). Goldens
+  # captured from opa eval 1.17.
   describe "format assertions (matches OPA)" do
     format_goldens.each do |name, fixture|
       it "agrees with OPA on #{name}" do
@@ -80,8 +80,7 @@ RSpec.describe "json.match_schema" do
     end
 
     # gojsonschema does not register idn-hostname or duration, and ignores unknown formats — all
-    # annotation-only, so any string matches. (email/idn-email are enforced by OPA but not yet by the gem;
-    # they also pass through until the follow-up PR — intentionally not pinned here.)
+    # annotation-only, so any string matches.
     it "treats unenforced/unknown formats as annotation-only (always matches)" do
       %w[duration idn-hostname totally-made-up].each do |fmt|
         schema = { "type" => "string", "format" => fmt }
@@ -117,6 +116,59 @@ RSpec.describe "json.match_schema" do
       expect(uri.call("http://example.com/}{", "uri-template")).to be(false)   # close before open
     end
 
+    # email / idn-email both run Go's net/mail.ParseAddress (a full RFC 5322 address parse, not a "valid
+    # email" check), so the boundary is idiosyncratic: a display name + angle-addr parses, a single-member
+    # group parses but a multi-member one does not, a leading comment fails while a trailing one passes, a
+    # domain-literal must be a net.ParseIP address, and RFC 6532 UTF-8 is allowed in atoms. idn-email is the
+    # SAME checker. Differentially verified vs OPA; see MailAddress.
+    it "enforces email/idn-email via Go net/mail.ParseAddress semantics" do
+      email = ->(v, fmt) { call_match(JSON.generate(v), { "type" => "string", "format" => fmt }).to_ruby[0] }
+      %w[email idn-email].each do |fmt|
+        expect(email.call("foo@bar.com", fmt)).to be(true)
+        expect(email.call("a@b", fmt)).to be(true)
+        expect(email.call("实例@例子", fmt)).to be(true) # RFC 6532 UTF-8 atoms
+        expect(email.call("a", fmt)).to be(false)               # no @
+        expect(email.call("g: a@b;", fmt)).to be(true)          # single-member group parses
+        expect(email.call("(comment) a@b", fmt)).to be(false)   # leading comment fails
+      end
+      # email-only spread of the parser's quirks (idn-email is identical, exercised above)
+      expect(email.call("Foo <a@b>", "email")).to be(true)      # display name + angle-addr
+      expect(email.call("a@b (comment)", "email")).to be(true)  # trailing comment ok
+      expect(email.call("a (c) @b", "email")).to be(false)      # comment at the local/@ boundary fails
+      expect(email.call("a@b, c@d", "email")).to be(false)      # parseSingleAddress: one address only
+      expect(email.call("a@[127.0.0.1]", "email")).to be(true)  # domain-literal = net.ParseIP
+      expect(email.call("a@[IPv6:::1]", "email")).to be(false)  # Go's net.ParseIP rejects the tag
+      expect(email.call("\"\"@c", "email")).to be(false)        # empty quoted local-part
+      expect(email.call("a..b@b", "email")).to be(false)        # double dot in dot-atom
+    end
+
+    # Go 1.26's consumePhrase (OPA 1.17.1's build) runs mime.WordDecoder.Decode on each display-name atom
+    # (RFC 2047 encoded-words). A structurally valid =?charset?enc?text?= whose payload decodes but whose
+    # charset is not utf-8/iso-8859-1/us-ascii makes Decode error (rejecting as the first word, truncating
+    # otherwise); an empty payload decodes to "" (dropped); a malformed/undecodable word is kept as raw text.
+    # Go 1.26 also buffers a RUN of consecutive encoded-words and only flushes to its `words` slice on a
+    # following raw word, so the comment-consuming CFWS skip (gated on len(words)>0) does NOT run after a lone
+    # encoded-word run — a comment there ends the phrase. Characterized exhaustively vs opa (19000+ cases).
+    it "applies Go 1.26's RFC 2047 decodeRFC2047Word + encoded-word CFWS gating in display-name phrases" do
+      email = ->(v) { call_match(JSON.generate(v), { "type" => "string", "format" => "email" }).to_ruby[0] }
+      expect(email.call("=?utf-8?q?foo?= <a@b>")).to be(true) # supported charset decodes
+      expect(email.call("=?UTF-8?B?Zm9v?= <a@b>")).to be(true) # base64, case-insensitive charset
+      expect(email.call("=?unknown?q?y?= <a@b>")).to be(false)           # unsupported charset, first word
+      expect(email.call("Foo =?unknown?q?y?= <a@b>")).to be(true)        # unsupported later -> phrase truncates
+      expect(email.call("Foo =?unknown?q?y?= bar <a@b>")).to be(false)   # ...leftover "bar" is not an angle-addr
+      expect(email.call("=?unknown?b?z?= <a@b>")).to be(true)            # bad base64 -> kept raw, not an error
+      expect(email.call("=?utf-8?z?y?= <a@b>")).to be(true)             # bad encoding letter -> kept raw
+      expect(email.call("=?utf-8?b??= <a@b>")).to be(false)             # empty payload -> dropped, no word left
+      expect(email.call("=?utf-8?b??= =?utf-8?B?Zm9v?= <a@b>")).to be(true) # empty dropped, later word remains
+      expect(email.call("=?utf-8?b??=@b")).to be(true) # only a phrase word, fine as local-part
+      # Go 1.26 encoded-word-run CFWS gating: comment after a lone encoded run ends the phrase...
+      expect(email.call("=?utf-8?B?Zm9v?= (c) <a@b>")).to be(false)
+      expect(email.call("=?utf-8?B?Zm9v?= =?utf-8?B?YmFy?= (c) <a@b>")).to be(false)
+      # ...but a raw word first flushes the run, so the comment is then consumed
+      expect(email.call("Foo =?utf-8?B?Zm9v?= (c) <a@b>")).to be(true)
+      expect(email.call("foo (c) <a@b>")).to be(true)
+    end
+
     it "ignores format on a non-string instance (vacuously matches)" do
       expect(call_match("5", { "format" => "ipv4" }).to_ruby[0]).to be(true)
       expect(call_match({ "a" => 1 }, { "format" => "hostname" }).to_ruby[0]).to be(true)
@@ -130,9 +182,10 @@ RSpec.describe "json.match_schema" do
 
     it "does not raise on a binary / invalid-UTF-8 format value" do
       bad = (+"\xFF\xFE").force_encoding("UTF-8")
-      # the uri family routes through Uri::Parser, which raises ArgumentError on invalid-UTF-8 — the
-      # scannable? guard + rescue must keep it total
-      %w[hostname uuid date regex ipv4 uri uri-reference iri iri-reference uri-template].each do |fmt|
+      # the uri family routes through Uri::Parser and email through MailAddress, both of which raise on
+      # invalid-UTF-8 — the scannable? guard + rescue must keep every format total
+      %w[hostname uuid date regex ipv4 uri uri-reference iri iri-reference uri-template email idn-email]
+        .each do |fmt|
         expect { call_match({ "v" => bad }, { "properties" => { "v" => { "format" => fmt } } }) }.not_to raise_error
       end
     end

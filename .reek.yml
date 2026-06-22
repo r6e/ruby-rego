@@ -9,6 +9,8 @@ detectors:
     exclude:
       # Recursive-descent JSON Schema validator: one predicate per keyword family.
       - Ruby::Rego::Builtins::Codecs::JsonSchema::Matcher
+      # Recursive-descent port of Go net/mail.ParseAddress: one consume_*/skip_* method per grammar production.
+      - Ruby::Rego::Builtins::Codecs::JsonSchema::Formats::MailAddress
       - Ruby::Rego::Lexer
       - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Parser
@@ -216,6 +218,8 @@ detectors:
       # Value wraps Ruby types, so it type-dispatches on `value` in several factory/canonical
       # helpers (build_simple_value, build_composite_value, canonicalize).
       - Ruby::Rego::Value
+      # net/mail port: empty?/skip_cfws recur across most grammar productions (the recursion, not a clump).
+      - Ruby::Rego::Builtins::Codecs::JsonSchema::Formats::MailAddress
       - Ruby::Rego::Lexer
       - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator
@@ -239,6 +243,8 @@ detectors:
     exclude:
       - Ruby::Rego::Builtins::Collections::ObjectOps#self.object_remove
       - Ruby::Rego::Evaluator::ExpressionDispatch#handler_for
+      # @chars/@pos/@len scan the address by char-array index; i = the quoted-string char cursor (Go-port locals).
+      - Ruby::Rego::Builtins::Codecs::JsonSchema::Formats::MailAddress
   UncommunicativeMethodName:
     exclude:
       # Hash-algorithm names (md5/sha1/sha256, and the keyed hmac_* variants) are
