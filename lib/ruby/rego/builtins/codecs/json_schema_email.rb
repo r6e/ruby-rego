@@ -102,7 +102,9 @@ module Ruby
                   return 1
                 end
 
-                consume_phrase or return nil unless !empty? && peek == "<"
+                unless !empty? && peek == "<"
+                  return nil unless consume_phrase
+                end
 
                 skip_space
                 return consume_group_list if handle_group && consume(":")
