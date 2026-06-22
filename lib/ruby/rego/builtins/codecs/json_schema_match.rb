@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "json_schema"
+require_relative "json_schema_formats"
 
 module Ruby
   module Rego
@@ -11,12 +12,13 @@ module Ruby
         # when the document validates against the schema, else false. As with verify_schema, only the
         # BOOLEAN `match` is byte-exact with OPA's gojsonschema; the errors array is best-effort (a single
         # placeholder entry whose presence — empty vs non-empty — is the contract, not its gojsonschema
-        # `{desc,error,field,type}` content/count). The `format` keyword is a no-op here (a documented
-        # interim divergence); its assertions land in a follow-up.
+        # `{desc,error,field,type}` content/count).
         #
         # Like gojsonschema, validation applies every keyword from draft-04/06/07 at once (boolean and
         # numeric exclusiveMinimum, const, if/then/else, contains, propertyNames, …). A pattern is matched
-        # with the re2 gem (Go's regex engine), not Ruby's Onigmo.
+        # with the re2 gem (Go's regex engine), not Ruby's Onigmo. The `format` keyword enforces the assertions
+        # in JsonSchema::Formats (lexical / date-time / net / regex); the uri family and email are still
+        # annotation-only there, pending follow-up PRs.
         module JsonSchema
           # The best-effort error returned when a document does not match (gojsonschema returns one richly
           # typed object per failure; only the array's non-emptiness is contractual).
@@ -91,6 +93,20 @@ module Ruby
               @root = root
               @visited = {}
               @depth = 0
+              @re2_cache = {}
+            end
+
+            # An unanchored RE2 match of `pattern` (a `pattern` keyword or `patternProperties` key) against
+            # `string`, compiling each distinct pattern at most once per match call. `patternProperties` tests
+            # every schema pattern against every document property name (N x M), so without this cache the
+            # gem would recompile N x M times — a CPU amplification on a valid schema+document. A compiled
+            # regex (or nil, for an unusable pattern) is memoised by pattern string for the call's lifetime.
+            # :reek:NilCheck
+            def re2_matches?(pattern, string)
+              return false unless string.is_a?(String) && string.valid_encoding?
+
+              regex = @re2_cache.fetch(pattern) { @re2_cache[pattern] = JsonSchema.re2_compile(pattern) }
+              regex ? regex.match?(string) : false
             end
 
             # Bound one level of recursion; throw TOO_DEEP past the whole walk when the limit is exceeded.
@@ -103,7 +119,7 @@ module Ruby
               @depth -= 1
             end
 
-            # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+            # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/AbcSize
             # Whether `document` validates against `schema` (a subschema of the root). Applies every keyword
             # gojsonschema knows; the document matches only when all applicable keywords are satisfied.
             # :reek:TooManyStatements
@@ -118,10 +134,10 @@ module Ruby
                   enum_ok?(document, schema) && const_ok?(document, schema) &&
                   number_ok?(document, schema) && string_ok?(document, schema) &&
                   array_ok?(document, schema) && object_ok?(document, schema) &&
-                  logic_ok?(document, schema)
+                  logic_ok?(document, schema) && format_ok?(document, schema)
               end
             end
-            # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+            # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/AbcSize
 
             private
 
@@ -259,11 +275,21 @@ module Ruby
               length = document.length
               return false if (min = schema["minLength"]) && length < min
               return false if (max = schema["maxLength"]) && length > max
-              return false if (pattern = schema["pattern"]) && !JsonSchema.re2_match?(pattern, document)
+              return false if (pattern = schema["pattern"]) && !re2_matches?(pattern, document)
 
               true
             end
             # rubocop:enable Metrics/CyclomaticComplexity
+
+            # `format` only constrains string instances; gojsonschema enforces a fixed set of assertions and
+            # treats the rest (and unknown names) as annotation-only. See JsonSchema::Formats.
+            # :reek:NilCheck
+            def format_ok?(document, schema)
+              format = schema["format"]
+              return true unless format.is_a?(String) && document.is_a?(String)
+
+              Formats.match?(format, document)
+            end
 
             # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
             # Array keywords (only constrain arrays).
@@ -381,7 +407,7 @@ module Ruby
                 return false unless matches?(value, properties[name])
               end
               pattern_properties.each do |pattern, subschema|
-                next unless JsonSchema.re2_match?(pattern, name)
+                next unless re2_matches?(pattern, name)
 
                 matched = true
                 return false unless matches?(value, subschema)

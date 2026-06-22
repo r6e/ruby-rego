@@ -3,7 +3,7 @@
 # malformed or invalid-encoding pattern — `ok?` returns false instead.
 module RE2
   class Regexp
-    def initialize: (String pattern, ?log_errors: bool) -> void
+    def initialize: (String pattern, ?log_errors: bool, ?max_mem: Integer) -> void
     def ok?: () -> bool
 
     # Unanchored match test (match_schema's `pattern` keyword). Total: false on a malformed or

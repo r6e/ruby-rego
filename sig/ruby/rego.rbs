@@ -1469,6 +1469,8 @@ module Ruby
           NON_NEGATIVE_INT_KEYWORDS: Array[String]
           GO_REJECTED_ESCAPE: Regexp
           JSON_STRING_TOKEN: Regexp
+          RE2_MAX_MEM: Integer
+          RE2_MAX_PATTERN_BYTES: Integer
           NOT_FOUND: Object
           MAX_SCHEMA_DEPTH: Integer
           SCHEMA_TOO_DEEP: Symbol
@@ -1487,8 +1489,33 @@ module Ruby
 
           def self.verify: (Value value) -> [bool, String?]
           def self.match: (Value document_value, Value schema_value) -> ([bool, Array[untyped]] | Symbol)
-          def self.re2_match?: (String pattern, String string) -> bool
+          def self.re2_compile: (untyped pattern) -> RE2::Regexp?
+          def self.re2_valid?: (untyped value) -> bool
           def self.resolve_ref_target: (String ref, untyped root) -> untyped
+
+          module Formats
+            HOST_LABEL: String
+            HOSTNAME: Regexp
+            UUID: Regexp
+            JSON_POINTER: Regexp
+            RELATIVE_JSON_POINTER: Regexp
+            DATE: Regexp
+            TIME: Regexp
+            RFC3339: Regexp
+
+            def self.match?: (String name, String value) -> bool
+            def self.scannable?: (String value) -> bool
+            def self.re_match?: (String value, Regexp regexp) -> bool
+            def self.hostname?: (String value) -> bool
+            def self.with_parts: (String value, Regexp regexp) { (*Integer) -> bool } -> bool
+            def self.date?: (String value) -> bool
+            def self.time?: (String value) -> bool
+            def self.rfc3339?: (String value) -> bool
+            def self.valid_date?: (Integer year, Integer month, Integer day) -> bool
+            def self.valid_clock?: (Integer hour, Integer minute, Integer second) -> bool
+            def self.valid_offset?: (Integer offset_hour, Integer offset_minute) -> bool
+            def self.ip?: (String value, String separator) -> bool
+          end
 
           private
 
@@ -1536,8 +1563,10 @@ module Ruby
             @root: untyped
             @visited: Hash[untyped, bool]
             @depth: Integer
+            @re2_cache: Hash[untyped, RE2::Regexp?]
 
             def initialize: (untyped root) -> void
+            def re2_matches?: (untyped pattern, untyped string) -> bool
             def with_depth: [T] () { () -> T } -> T
             def matches?: (untyped document, untyped schema) -> bool
 
@@ -1556,6 +1585,7 @@ module Ruby
             def finite_number?: (Numeric number) -> bool
             def decimal_rational: (Numeric number) -> Rational
             def string_ok?: (untyped document, Hash[String, untyped] schema) -> bool
+            def format_ok?: (untyped document, Hash[String, untyped] schema) -> bool
             def array_ok?: (untyped document, Hash[String, untyped] schema) -> bool
             def unique?: (Array[untyped] document) -> bool
             def items_ok?: (Array[untyped] document, Hash[String, untyped] schema) -> bool

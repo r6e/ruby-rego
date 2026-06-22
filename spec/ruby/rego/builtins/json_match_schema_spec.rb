@@ -7,12 +7,14 @@ require "json"
 # errors array is best-effort (gojsonschema's {desc,error,field,type} objects are a documented divergence),
 # so these assert the boolean exactly and the array's PRESENCE (empty vs non-empty), not its content/count.
 # An unusable schema or document argument yields undefined, matching OPA. Goldens captured from `opa eval`
-# 1.17. The `format` keyword is a no-op here (a documented interim divergence; its assertions land later).
+# 1.17. The `format` keyword enforces the lexical / date-time / net / regex assertions (see the "format
+# assertions" describe block); the uri family and email are still annotation-only pending follow-up PRs.
 # rubocop:disable Metrics/BlockLength
 RSpec.describe "json.match_schema" do
   let(:registry) { Ruby::Rego::Builtins::BuiltinRegistry.instance }
   fixtures = File.expand_path("../../../fixtures/json_schema", __dir__)
   goldens = JSON.parse(File.read(File.join(fixtures, "match_schema_goldens.json")))
+  format_goldens = JSON.parse(File.read(File.join(fixtures, "match_schema_format_goldens.json")))
 
   # Forwards the document and schema as a policy would: registry.call converts each Ruby value to its Value
   # (a String -> StringValue for the string-loader path, a Hash -> ObjectValue, a number/bool/nil/array ->
@@ -39,6 +41,107 @@ RSpec.describe "json.match_schema" do
         # errors is empty exactly when the document matches.
         expect(errors.empty?).to eq(expected)
       end
+    end
+  end
+
+  # The `format` keyword (gojsonschema's enforced format assertions; format_checkers.go). Only the boolean is
+  # contractual. PR-1 implements the lexical / date-time / net / regex formats; the uri family and email land
+  # later and stay annotation-only (true) until then, as do the genuinely unenforced names (idn-hostname,
+  # duration, unknown). Goldens captured from opa eval 1.17.
+  describe "format assertions (matches OPA)" do
+    format_goldens.each do |name, fixture|
+      it "agrees with OPA on #{name}" do
+        match, = call_match(fixture.fetch("doc"), fixture.fetch("schema")).to_ruby
+        expect(match).to eq(fixture.fetch("expected"))
+      end
+    end
+
+    # Go's ^..$ match whole text (RE2 default), so a leading/trailing/embedded newline is rejected — unlike
+    # Ruby's line-oriented ^..$. The format regexes are anchored \A..\z to reproduce this.
+    it "rejects newlines (Go anchors are whole-text, not per-line)" do
+      %w[hostname uuid date time ipv4 ipv6].each do |fmt|
+        base = { "hostname" => "example.com", "uuid" => "12345678-1234-1234-1234-123456789012",
+                 "date" => "2018-11-13", "time" => "20:20:39", "ipv4" => "1.2.3.4", "ipv6" => "::1" }[fmt]
+        schema = { "type" => "string", "format" => fmt }
+        expect(call_match(JSON.generate(base), schema).to_ruby[0]).to be(true)
+        expect(call_match(JSON.generate("#{base}\n"), schema).to_ruby[0]).to be(false)
+      end
+    end
+
+    # date-time tries five Go layouts, so it also accepts a bare date or bare time, and requires an uppercase
+    # T plus a zone for the full form.
+    it "accepts bare date or bare time for date-time, but requires T and a zone for the full form" do
+      dt = { "type" => "string", "format" => "date-time" }
+      expect(call_match(JSON.generate("2018-11-13"), dt).to_ruby[0]).to be(true)
+      expect(call_match(JSON.generate("20:20:39"), dt).to_ruby[0]).to be(true)
+      expect(call_match(JSON.generate("2018-11-13T20:20:39Z"), dt).to_ruby[0]).to be(true)
+      expect(call_match(JSON.generate("2018-11-13T20:20:39"), dt).to_ruby[0]).to be(false)
+      expect(call_match(JSON.generate("2018-11-13t20:20:39z"), dt).to_ruby[0]).to be(false)
+    end
+
+    # gojsonschema does not register idn-hostname or duration, and ignores unknown formats — all
+    # annotation-only, so any string matches. (uri/email are enforced by OPA but not yet by the gem; they
+    # also pass through until their PRs land — intentionally not pinned here.)
+    it "treats unenforced/unknown formats as annotation-only (always matches)" do
+      %w[duration idn-hostname totally-made-up].each do |fmt|
+        schema = { "type" => "string", "format" => fmt }
+        expect(call_match(JSON.generate("anything at all"), schema).to_ruby[0]).to be(true)
+        expect(call_match(JSON.generate(""), schema).to_ruby[0]).to be(true)
+      end
+    end
+
+    it "ignores format on a non-string instance (vacuously matches)" do
+      expect(call_match("5", { "format" => "ipv4" }).to_ruby[0]).to be(true)
+      expect(call_match({ "a" => 1 }, { "format" => "hostname" }).to_ruby[0]).to be(true)
+    end
+
+    it "uses proleptic Gregorian for date (not Ruby's Julian-before-1582 default)" do
+      # 1500 is a leap year in Julian but NOT in proleptic Gregorian, so Feb 29 1500 is invalid (like Go).
+      expect(call_match(JSON.generate("1500-02-29"),
+                        { "type" => "string", "format" => "date" }).to_ruby[0]).to be(false)
+    end
+
+    it "does not raise on a binary / invalid-UTF-8 format value" do
+      bad = (+"\xFF\xFE").force_encoding("UTF-8")
+      %w[hostname uuid date regex ipv4].each do |fmt|
+        expect { call_match({ "v" => bad }, { "properties" => { "v" => { "format" => fmt } } }) }.not_to raise_error
+      end
+    end
+
+    # format: "regex" reuses the RE2 compile gate, bounded against the gem's RE2 being far slower than Go's:
+    # RE2_MAX_MEM caps the compile phase (nested counted repetition is ~quadratic) and RE2_MAX_PATTERN_BYTES
+    # caps the parse phase (unicode-class expansion is linear in length, which max_mem doesn't bound). Both
+    # fast-fail an over-budget pattern to invalid. The cost is a documented divergence: such a pattern
+    # (pathological repetition, a large unicode bounded-repeat, or any pattern over the byte cap) is rejected
+    # where OPA accepts it. Security over byte-exactness here.
+    it "caps regex compilation, rejecting over-budget patterns OPA accepts (no compile/parse DoS)" do
+      regex = { "type" => "string", "format" => "regex" }
+      expect(call_match(JSON.generate("^[a-z]+$"), regex).to_ruby[0]).to be(true)
+      expect(call_match(JSON.generate("x#{"a{500,1000}" * 300}"), regex).to_ruby[0]).to be(false) # compile DoS
+      expect(call_match(JSON.generate("\\p{L}{1,64}"), regex).to_ruby[0]).to be(false) # divergence: OPA true
+      expect(call_match(JSON.generate("(\\p{L}{1,400})" * 70_000), regex).to_ruby[0]).to be(false) # ~1MB parse DoS
+    end
+  end
+
+  # patternProperties tests every schema pattern against every document property name, so the Matcher
+  # memoizes each distinct compiled regex per call (N compiles, not N×M) — a DoS guard. These pin that the
+  # cache keys on the pattern (distinct patterns enforce their own subschema, never conflated).
+  describe "patternProperties (per-call regex memoization)" do
+    it "enforces each distinct pattern's subschema independently" do
+      # unanchored patterns: "a" matches any name containing a, "b" any name containing b
+      schema = { "patternProperties" => { "a" => { "type" => "integer" }, "b" => { "type" => "string" } } }
+      expect(call_match({ "xa" => 5, "xb" => "s" }, schema).to_ruby[0]).to be(true)
+      expect(call_match({ "xa" => "s" }, schema).to_ruby[0]).to be(false) # "a" wants integer
+      expect(call_match({ "xb" => 5 }, schema).to_ruby[0]).to be(false)   # "b" wants string
+      # a name matching BOTH patterns must satisfy both subschemas (no cache cross-talk); 5 fails "b"'s string
+      expect(call_match({ "ab" => 5 }, schema).to_ruby[0]).to be(false)
+    end
+
+    it "stays fast on many distinct patterns against many properties (no N×M recompile)" do
+      patterns = (0...60).to_h { |i| ["^x#{i}", { "type" => "string" }] }
+      document = (0...60).to_h { |j| ["x#{j}field", "value"] }
+      expect { @r = call_match(document, { "patternProperties" => patterns }) }.not_to raise_error
+      expect(@r.to_ruby[0]).to be(true)
     end
   end
 
