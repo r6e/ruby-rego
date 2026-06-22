@@ -336,6 +336,7 @@ module Ruby
         def self.assert_type: (untyped value, expected: Class | Array[Class], ?context: String?) -> void
         def self.to_ruby: (untyped value) -> untyped
         def self.to_value: (untyped value) -> Value
+        def self.byte_safe_encoding?: (String string) -> bool
         def self.raise_argument_error: (String message, expected: String, actual: String | Integer, ?context: String?) -> bot
 
         private
@@ -959,6 +960,7 @@ module Ruby
           HOST_SUBDELIMS: Array[Integer]
           FRAGMENT_SUBDELIMS: Array[Integer]
           USERINFO_PUNCT: Array[Integer]
+          VALID_ENCODED_ALLOW: Array[Integer]
 
           class Components
             attr_accessor scheme: String?
@@ -979,8 +981,11 @@ module Ruby
           def self.hostname: (String host) -> String
           def self.port: (String host) -> String
           def self.string: (Components components) -> String
+          def self.escaped_path: (Components components) -> String
 
           private
+
+          def self.valid_encoded?: (String string, Symbol mode) -> bool
 
           def self.parse_url: (String raw, via_request: bool) -> Components?
           def self.get_scheme: (String raw) -> [String, String]?
@@ -1011,8 +1016,51 @@ module Ruby
           def self.finish_query_fragment: (String buf, Components components) -> String
           def self.write_authority: (String buf, Components components) -> void
           def self.userinfo_string: (String userinfo) -> String
-          def self.escaped_path: (Components components) -> String
           def self.escaped_fragment: (Components components) -> String
+        end
+      end
+
+      module Providers
+        module Aws
+          extend RegistryHelpers
+
+          AWS_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
+          CONTEXT: String
+          REQUIRED_CONFIG: Array[String]
+          ALLOWED_REQUEST_KEYS: Array[String]
+          IGNORED_HEADERS: Array[String]
+          PAYLOAD_HASH_SERVICES: Array[String]
+          ALGORITHM: String
+          AMZ_DATE_FORMAT: String
+          DATE_FORMAT: String
+          INT64_MIN: Integer
+          INT64_MAX: Integer
+
+          def self.register!: () -> BuiltinRegistry
+          def self.sign_req: (Value request_value, Value config_value, Value time_ns_value) -> Value
+
+          private
+
+          def self.object_or_undefined: (Value value) -> Hash[untyped, untyped]
+          def self.signing_time: (Value value) -> Time
+          def self.validate_request_keys!: (Hash[untyped, untyped] request) -> void
+          def self.credentials: (Hash[untyped, untyped] config) -> Hash[Symbol, untyped]
+          def self.disable_payload_signing?: (Hash[untyped, untyped] config) -> bool
+          def self.sign: (Hash[untyped, untyped] request, Hash[Symbol, untyped] creds, Time time) -> Hash[String, String]
+          def self.request_target: (Hash[untyped, untyped] request) -> [String, Uri::Parser::Components]
+          def self.encodable?: (String string) -> bool
+          def self.content_hash: (Hash[untyped, untyped] request, bool disable_payload_signing) -> String
+          def self.body_bytes: (Hash[untyped, untyped] request) -> String
+          def self.aws_headers: (String? host, String amz_date, String content_hash, Hash[Symbol, untyped] creds) -> Hash[String, String]
+          def self.header_map: (Hash[untyped, untyped] request) -> Hash[String, String]
+          def self.canonical_headers: (Hash[String, String] request_headers, Hash[String, String] aws_headers) -> Hash[String, String]
+          def self.canonical_request: (String method, Uri::Parser::Components components, Hash[String, String] canonical_headers, String signed_list, String content_hash) -> String
+          def self.signature: (String canonical_request, Hash[Symbol, untyped] creds, String amz_date, String scope_date) -> String
+          def self.signing_key: (Hash[Symbol, untyped] creds, String scope_date) -> String
+          def self.authorization: (String signature, String signed_list, Hash[Symbol, untyped] creds, String scope_date) -> String
+          def self.output_headers: (Hash[String, String] request_headers, Hash[String, String] aws_headers, String authorization) -> Hash[String, String]
+          def self.output_request: (Hash[untyped, untyped] request, Hash[String, String] signed_headers) -> Value
+          def self.undefined!: () -> bot
         end
       end
 

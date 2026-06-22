@@ -66,16 +66,28 @@ module Ruby
           end
           private_class_method :userinfo_string
 
-          # Port of EscapedPath: prefer RawPath when it decodes back to Path, else default-escape Path.
+          # Port of EscapedPath: prefer RawPath when it is a VALID encoding of Path, else default-escape
+          # Path. "Valid" means both validEncoded(RawPath) (no byte the path mode would escape, outside the
+          # allowlist) AND that it decodes back to Path — so a RawPath carrying a raw must-escape byte (a
+          # space, a rune >= 0x80, `" < > \ ^ \` { | }`) is re-escaped, not preserved.
+          # Public: the canonical-URI form reused by providers.aws.sign_req's SigV4 canonical request.
           def self.escaped_path(components)
             raw = components.raw_path.to_s
             path = components.path.to_s
-            return raw if !raw.empty? && unescape(raw, PATH) == path
+            return raw if !raw.empty? && valid_encoded?(raw, PATH) && unescape(raw, PATH) == path
             return "*" if path == "*"
 
             escape(path, PATH)
           end
-          private_class_method :escaped_path
+
+          # Port of net/url validEncoded: every byte is either in the explicit allowlist (sub-delims plus
+          # `: @ [ ] %`, matching Go's char-literal switch) or one the given mode would not escape.
+          VALID_ENCODED_ALLOW = "!$&'()*+,;=:@[]%".bytes.freeze
+
+          def self.valid_encoded?(string, mode)
+            string.each_byte.all? { |byte| VALID_ENCODED_ALLOW.include?(byte) || !should_escape?(byte, mode) }
+          end
+          private_class_method :valid_encoded?
 
           # Port of EscapedFragment: prefer RawFragment when it decodes back to Fragment.
           def self.escaped_fragment(components)

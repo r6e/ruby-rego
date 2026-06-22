@@ -67,7 +67,7 @@ module Ruby
         # through Rego — base64.decode yields ASCII-8BIT and input/literals are valid UTF-8 — so this
         # only guards the public Ruby API. The convention mirrors net.rb's parse_addr.
         def self.parseable_encoding?(string)
-          string.encoding.ascii_compatible? && string.valid_encoding?
+          Base.byte_safe_encoding?(string)
         end
         private_class_method :parseable_encoding?
 

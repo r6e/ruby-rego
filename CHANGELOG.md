@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- New built-in: `providers.aws.sign_req(request, aws_config, time_ns)`, matching OPA — signs an HTTP
+  request (http.send shape) with AWS Signature Version 4 and returns the request copied with its
+  `headers` replaced by the original headers plus the signing headers (`Authorization`, `host`,
+  `x-amz-date`, and conditionally `x-amz-content-sha256` for s3/glacier and `x-amz-security-token`).
+  The signing time is the `time_ns` argument (deterministic). It is a faithful port of OPA's signer
+  (internal/providers/aws/signing_v4.go), including the three ways OPA's SigV4 deviates from the AWS
+  spec: the canonical query string is the URL's raw query verbatim (not sorted/re-encoded), header
+  values are signed un-trimmed, and the canonical URI is Go's `url.EscapedPath()` (user percent-
+  encoding preserved, never double-encoded). The body is hashed from `raw_body` (a string, taking
+  precedence over `body`) or `json.marshal(body)`, which the arbitrary-precision number model makes
+  byte-exact with OPA — so a body number written as a Rego literal (`1.50`, `1e10`) hashes identically
+  to OPA, where it previously diverged. (A body number arriving from parsed JSON input still collapses
+  through `Float`, the deferred input-precision gap, so exact-byte callers pass `raw_body`.) Any
+  precondition failure is undefined
+  (non-object request/config; a request key outside http.send's allowed set or a missing/non-string
+  method/url; an unparseable url; an `aws_config` missing one of the four required string keys — empty
+  strings are accepted — or holding a non-string for one; a non-integer / int64-overflowing `time_ns`;
+  or a non-boolean `disable_payload_signing`). The signed output is byte-exact with OPA, verified
+  differentially against `opa eval` 1.17.
+
 - Numbers are now an OPA-faithful arbitrary-precision model instead of Ruby `Float`. A non-integer
   literal becomes a `Ruby::Rego::Number` that preserves its source text verbatim (OPA's `json.Number`
   model: `1.50` stays `1.50`, `-1.50` stays `-1.50`, `-0.0` stays `-0.0`, `1e999` stays `1e999`,
