@@ -349,7 +349,7 @@ module Ruby
             # The object with its immediate keys stringified (idempotent for the usual all-string-keyed JSON
             # object, so no allocation in the common case).
             def string_keyed(object)
-              return object if object.keys.all?(String)
+              return object if object.each_key.all?(String)
 
               object.transform_keys(&:to_s)
             end
