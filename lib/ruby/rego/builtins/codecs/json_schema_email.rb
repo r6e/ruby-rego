@@ -422,6 +422,7 @@ module Ruby
 
               # base64.StdEncoding.DecodeString success boundary: length a multiple of 4, only alphabet bytes
               # with 0-2 trailing `=` padding. Empty text decodes to empty (success).
+              # rubocop:disable Metrics/MethodLength
               # :reek:TooManyStatements
               def self.base64_decodes?(text)
                 bytes = text.b
@@ -431,8 +432,18 @@ module Ruby
 
                 pad = 0
                 pad += 1 while pad < 2 && bytes.getbyte(size - 1 - pad) == 0x3D
-                bytes[0, size - pad].to_s.bytes.all? { |byte| base64_char?(byte) }
+
+                # Scan the body bytes in place (no substring / no Array#bytes allocation) — like qdecodes?.
+                index = 0
+                body = size - pad
+                while index < body
+                  return false unless base64_char?(bytes.getbyte(index))
+
+                  index += 1
+                end
+                true
               end
+              # rubocop:enable Metrics/MethodLength
 
               # Port of mime.qDecode's per-byte acceptance: `_`, an `=XX` hex escape (needs two hex digits),
               # printable ASCII, or TAB/LF/CR. Any other byte errors. Returns whether the whole run decodes.
@@ -458,7 +469,10 @@ module Ruby
               end
               # rubocop:enable Metrics/MethodLength
 
+              # :reek:NilCheck
               def self.base64_char?(byte)
+                return false if byte.nil?
+
                 (0x41..0x5A).cover?(byte) || (0x61..0x7A).cover?(byte) || (0x30..0x39).cover?(byte) ||
                   byte == 0x2B || byte == 0x2F # '+' '/'
               end

@@ -1569,7 +1569,7 @@ module Ruby
               def self.payload_decodes?: (String encoding, String text) -> bool
               def self.base64_decodes?: (String text) -> bool
               def self.qdecodes?: (String text) -> bool
-              def self.base64_char?: (Integer byte) -> bool
+              def self.base64_char?: (Integer? byte) -> bool
               def self.qtext_byte?: (Integer? byte) -> bool
               def self.hex_byte?: (Integer? byte) -> bool
             end
