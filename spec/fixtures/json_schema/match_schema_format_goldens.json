@@ -1486,5 +1486,493 @@
       "format": "unknown-format-name"
     },
     "expected": true
+  },
+  "email__simple": {
+    "doc": "\"foo@bar.com\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__minimal": {
+    "doc": "\"a@b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__empty": {
+    "doc": "\"\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__no_domain": {
+    "doc": "\"a@\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__no_local": {
+    "doc": "\"@b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__no_at": {
+    "doc": "\"a\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__double_at": {
+    "doc": "\"a@b@c\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__plus_tag": {
+    "doc": "\"a+tag@b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__lead_dot": {
+    "doc": "\".a@b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__double_dot": {
+    "doc": "\"a..b@b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__atext_local": {
+    "doc": "\"a!#$%&'*+-/=?^_`{|}~@b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__quoted_local": {
+    "doc": "\"\\\"a b\\\"@c\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__empty_quoted": {
+    "doc": "\"\\\"\\\"@c\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__dash_domain": {
+    "doc": "\"a@-b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__ip_literal_v4": {
+    "doc": "\"a@[127.0.0.1]\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__ip_literal_v6": {
+    "doc": "\"a@[::1]\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__ip_literal_tagged": {
+    "doc": "\"a@[IPv6:::1]\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__ip_literal_bad": {
+    "doc": "\"a@[999.1.1.1]\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__display_angle": {
+    "doc": "\"Foo <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__bare_angle": {
+    "doc": "\"<a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__two_word_display": {
+    "doc": "\"Foo Bar <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__trailing_comment": {
+    "doc": "\"a@b (comment)\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__leading_comment": {
+    "doc": "\"(comment) a@b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__space_before_at": {
+    "doc": "\"a (c) @b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__trailing_space": {
+    "doc": "\"a@b \"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__leading_space": {
+    "doc": "\" a@b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__multi_addr": {
+    "doc": "\"a@b, c@d\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__group_single": {
+    "doc": "\"g: a@b;\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__group_empty": {
+    "doc": "\"g:;\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__group_multi": {
+    "doc": "\"g:a@b,c@d;\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__utf8_both": {
+    "doc": "\"实例@例子\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__utf8_domain": {
+    "doc": "\"a@例子\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__space_in_local": {
+    "doc": "\"a b@c\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__mailto": {
+    "doc": "\"mailto:a@b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__zone_literal": {
+    "doc": "\"a@[fe80::1%eth0]\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__rfc2047_utf8": {
+    "doc": "\"=?utf-8?q?foo?= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__rfc2047_b64": {
+    "doc": "\"=?UTF-8?B?Zm9v?= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__rfc2047_bad_charset": {
+    "doc": "\"=?unknown?q?y?= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__rfc2047_utf7": {
+    "doc": "\"=?utf-7?q?y?= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__rfc2047_bad_charset_b64": {
+    "doc": "\"=?unknown?b?eQ==?= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__rfc2047_bad_charset_later": {
+    "doc": "\"Foo =?unknown?q?y?= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__rfc2047_bad_charset_trail": {
+    "doc": "\"Foo =?unknown?q?y?= bar <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__rfc2047_empty_b64": {
+    "doc": "\"=?utf-8?b??= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__rfc2047_empty_q": {
+    "doc": "\"=?utf-8?q??= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__rfc2047_empty_then_word": {
+    "doc": "\"=?utf-8?b??= =?utf-8?B?Zm9v?= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__rfc2047_double_empty": {
+    "doc": "\"=?utf-8?b??= =?utf-8?b??= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__rfc2047_bad_payload": {
+    "doc": "\"=?unknown?b?z?= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__rfc2047_malformed": {
+    "doc": "\"=?utf-8?z?y?= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__rfc2047_as_local": {
+    "doc": "\"=?utf-8?b??=@b\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__rfc2047_underscore_space": {
+    "doc": "\"=?utf-8?q?_?= <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__rfc2047_enc_comment": {
+    "doc": "\"=?utf-8?B?Zm9v?= (c) <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__rfc2047_raw_enc_comment": {
+    "doc": "\"Foo =?utf-8?B?Zm9v?= (c) <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__rfc2047_raw_comment": {
+    "doc": "\"foo (c) <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "email__rfc2047_two_enc_comment": {
+    "doc": "\"=?utf-8?B?Zm9v?= =?utf-8?B?YmFy?= (c) <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": false
+  },
+  "email__rfc2047_noncanon_b64": {
+    "doc": "\"Foo =?utf-8?b?eR==?= (c) <a@b>\"",
+    "schema": {
+      "type": "string",
+      "format": "email"
+    },
+    "expected": true
+  },
+  "idn-email__simple": {
+    "doc": "\"foo@bar.com\"",
+    "schema": {
+      "type": "string",
+      "format": "idn-email"
+    },
+    "expected": true
+  },
+  "idn-email__utf8_both": {
+    "doc": "\"实例@例子\"",
+    "schema": {
+      "type": "string",
+      "format": "idn-email"
+    },
+    "expected": true
+  },
+  "idn-email__utf8_domain": {
+    "doc": "\"a@例子\"",
+    "schema": {
+      "type": "string",
+      "format": "idn-email"
+    },
+    "expected": true
+  },
+  "idn-email__no_at": {
+    "doc": "\"a\"",
+    "schema": {
+      "type": "string",
+      "format": "idn-email"
+    },
+    "expected": false
+  },
+  "idn-email__group_single": {
+    "doc": "\"g: a@b;\"",
+    "schema": {
+      "type": "string",
+      "format": "idn-email"
+    },
+    "expected": true
+  },
+  "idn-email__leading_comment": {
+    "doc": "\"(comment) a@b\"",
+    "schema": {
+      "type": "string",
+      "format": "idn-email"
+    },
+    "expected": false
   }
 }
