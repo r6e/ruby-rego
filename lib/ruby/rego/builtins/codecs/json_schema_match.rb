@@ -502,7 +502,7 @@ module Ruby
             # :reek:TooManyStatements
             def canonical(value)
               case value
-              when Integer, Float then [:number, value.to_f]
+              when Integer, Float, Number then [:number, value.to_f]
               when Array then with_depth { [:array, value.map { |element| canonical(element) }] }
               when Hash then with_depth { [:object, canonical_entries(value)] }
               else [:scalar, value]

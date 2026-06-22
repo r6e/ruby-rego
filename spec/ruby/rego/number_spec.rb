@@ -121,6 +121,36 @@ RSpec.describe Ruby::Rego::Number do
     end
   end
 
+  describe "magnitude limit (matches OPA's \"number too big\", bounds rational materialization)" do
+    it "accepts a literal at OPA's boundary and rejects beyond it" do
+      expect(described_class.magnitude_within_limit?("1e30102")).to be(true)
+      expect(described_class.magnitude_within_limit?("1e30103")).to be(false)
+      expect(described_class.magnitude_within_limit?("1e-30102")).to be(true)
+      expect(described_class.magnitude_within_limit?("0.0")).to be(true)
+    end
+
+    it "rejects an unbounded-exponent literal cheaply (no 10**exp materialization)" do
+      # The amplification DoS: 12 source bytes must not allocate a gigabyte rational.
+      expect(described_class.magnitude_within_limit?("1e999999999")).to be(false)
+      expect(described_class.magnitude_within_limit?("1e-999999999")).to be(false)
+    end
+
+    it "rejects an over-large literal at parse, like OPA, rather than evaluating it" do
+      expect do
+        Ruby::Rego.evaluate("package t\nx = 1e999999999 > 1", query: "data.t.x")
+      end.to raise_error(Ruby::Rego::LexerError)
+    end
+  end
+
+  describe ".negate_literal preserves a negative literal's text" do
+    it "toggles the sign of the text instead of recomputing the value" do
+      expect(described_class.negate_literal(described_class.literal("1.50")).to_s).to eq("-1.50")
+      expect(described_class.negate_literal(described_class.literal("0.0")).to_s).to eq("-0.0")
+      expect(described_class.negate_literal(described_class.literal("-1.50")).to_s).to eq("1.50")
+      expect(described_class.negate_literal(5)).to eq(-5)
+    end
+  end
+
   describe "Numeric conversions" do
     def num(text) = described_class.literal(text)
 

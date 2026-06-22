@@ -6,8 +6,9 @@ All notable changes to this project will be documented in this file.
 
 - Numbers are now an OPA-faithful arbitrary-precision model instead of Ruby `Float`. A non-integer
   literal becomes a `Ruby::Rego::Number` that preserves its source text verbatim (OPA's `json.Number`
-  model: `1.50` stays `1.50`, `1e999` stays `1e999`, `1e308` no longer becomes `1e+308` in
-  `json.marshal`), and arithmetic runs through Go's `math/big.Float` model — reproduced with the `flt`
+  model: `1.50` stays `1.50`, `-1.50` stays `-1.50`, `-0.0` stays `-0.0`, `1e999` stays `1e999`,
+  `1e308` no longer becomes `1e+308` in `json.marshal`), and arithmetic runs through Go's
+  `math/big.Float` model — reproduced with the `flt`
   gem at 64-bit binary precision and round-half-even — so computed results match OPA byte-for-byte
   (`1/3` → `0.33333333333333333334`, `0.1 + 0.2` → `0.3`, `0.3 - 0.1` → `0.20000000000000000002`,
   `1e308 * 1e308` → the full ~600-digit integer). Division is always big.Float (`5 / 2` → `2.5`, an
@@ -20,14 +21,22 @@ All notable changes to this project will be documented in this file.
   about the new type so behaviour is unchanged from before: `round`/`ceil`/`floor` of a beyond-Float
   magnitude return a finite integer instead of raising `FloatDomainError` (a totality fix), and an
   integer-valued literal in float form (`3.0`) is still accepted wherever an integer is required
-  (`numbers.range`, `bits.*`, `format_int`, `json.match_schema` `type: integer`, `yaml.marshal`).
-  Verified differentially against `opa eval` 1.17. (Not yet migrated — tracked for the builtin number
-  sweep: `to_number`, `units.parse` and the numeric/aggregate builtins still round-trip through
-  `Float`, `round`/`ceil`/`floor` of beyond-Float magnitudes use exact rather than big.Float rounding,
-  and `json.unmarshal` collapses number text.)
+  (`numbers.range`, `bits.*`, `format_int`, `json.match_schema` `type: integer`, `yaml.marshal`), and
+  `numbers.max` / `numbers.min` return the last of value-equal ties (so `max([1.50, 1.5])` is `1.5`),
+  matching OPA. A numeric literal whose magnitude is beyond OPA's limit (≈`1e±30102`) is now rejected
+  at parse with a "number too big" error, exactly as OPA does — this also bounds the rational the
+  number would otherwise materialize, closing an unbounded-exponent denial of service (`1e999999999`,
+  12 source bytes, previously allocated a gigabyte-scale rational). Verified differentially against
+  `opa eval` 1.17. (Not yet migrated — tracked for the builtin number sweep: `to_number`,
+  `units.parse` and the numeric/aggregate builtins still round-trip through `Float`,
+  `round`/`ceil`/`floor` of beyond-Float magnitudes use exact rather than big.Float rounding, and
+  `json.unmarshal` collapses number text.)
 - An invalid-UTF-8 / ASCII-8BIT (binary) string in an evaluation result — most easily an object key
   from `base64.decode` — now serializes like Go's `encoding/json` (each invalid byte → `U+FFFD`,
-  byte-for-byte with OPA) instead of raising `JSON::GeneratorError` and aborting the policy.
+  byte-for-byte with OPA) instead of raising `JSON::GeneratorError` and aborting the policy. A
+  non-finite `Float` (only reachable now from a number beyond `Float` range read from `input`/`data`
+  JSON, e.g. `{"n": 1e999}`) serializes as `null` rather than raising, keeping serialization total;
+  preserving such input values is tracked for the arbitrary-precision input/`json.unmarshal` sweep.
 
 - `json.match_schema` now enforces the gojsonschema `format` assertions OPA implements for the
   lexical / date-time / network / regex / URI / email formats: `hostname`, `uuid`, `json-pointer`,

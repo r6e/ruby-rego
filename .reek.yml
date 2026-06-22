@@ -152,6 +152,8 @@ detectors:
     exclude:
       # Reduces an integer-valued Rational to an Integer; a pure helper kept beside its callers.
       - Ruby::Rego::Number#normalize_exact
+      # Builds the unary-expression node (folding a negative literal); a parser helper beside its caller.
+      - Ruby::Rego::Parser#build_unary_expression
       # match_schema's keyword predicates are pure checks over the (document, schema) it recurses on.
       - Ruby::Rego::Builtins::Codecs::JsonSchema::Matcher
       - Ruby::Rego::Lexer

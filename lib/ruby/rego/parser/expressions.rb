@@ -100,6 +100,17 @@ module Ruby
           raise ParserError.new("Negating every is not supported", location: location, context: token.to_s)
         end
 
+        build_unary_expression(operator, operand, location)
+      end
+
+      # Fold a unary minus that directly precedes a numeric literal into the literal itself, as OPA's
+      # parser does, so a negative literal keeps its preserved text (`-1.50` stays `-1.50`, `-0.0` stays
+      # `-0.0`). Runtime negation of a non-literal (`-x`, `-(a + b)`) stays a UnaryOp.
+      def build_unary_expression(operator, operand, location)
+        if operator == :minus && operand.is_a?(AST::NumberLiteral)
+          return AST::NumberLiteral.new(value: Number.negate_literal(operand.value), location: location)
+        end
+
         AST::UnaryOp.new(operator: operator, operand: operand, location: location)
       end
 

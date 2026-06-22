@@ -167,11 +167,14 @@ module Ruby
 
     class Number < Numeric
       CONTEXT: untyped
+      MAX_MAGNITUDE_EXPONENT: Integer
 
       @text: String?
       @exact: (Rational | Integer)?
 
       def self.literal: (String text) -> Number
+      def self.magnitude_within_limit?: (String text) -> bool
+      def self.negate_literal: (Numeric value) -> Numeric
       def self.from_binnum: (untyped binnum) -> (Number | Integer)
       def self.from_numeric: (Numeric value) -> Number
       def self.div: (Numeric left, Numeric right) -> (Number | Integer)
@@ -2450,6 +2453,7 @@ module Ruby
       private
 
       def sanitize_json: (untyped object) -> untyped
+      def sanitize_float: (Float float) -> Float?
       def scrub_invalid_bytes: (String string) -> String
       def add_bindings: (Hash[String | Symbol, untyped] bindings) -> void
     end
@@ -3515,6 +3519,7 @@ module Ruby
       def read_escape_sequence: (position backslash_position) -> String
       def read_unicode_escape: () -> String
       def parse_number: (String buffer, position start) -> Numeric
+      def reject_oversized_number: (String buffer, position start, decimal: bool) -> void
       def template_string_start?: (String char) -> bool
       def advance: () -> String
       def advance_line_break: () -> String
@@ -3663,7 +3668,8 @@ module Ruby
       def parse_number_literal: () -> AST::NumberLiteral
       def parse_boolean_literal: () -> AST::BooleanLiteral
       def parse_null_literal: () -> AST::NullLiteral
-      def parse_unary_expression: () -> AST::UnaryOp
+      def parse_unary_expression: () -> (AST::UnaryOp | AST::NumberLiteral)
+      def build_unary_expression: (Symbol operator, AST::expression operand, Location location) -> (AST::UnaryOp | AST::NumberLiteral)
       def parse_parenthesized_expression: () -> AST::expression
       def parse_parenthesized_body: () -> AST::expression
       def parse_parenthesized_expression_list: (open_message: String, close_message: String) -> Array[AST::expression]

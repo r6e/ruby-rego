@@ -78,6 +78,16 @@ RSpec.describe Ruby::Rego::Result do
       expect(JSON.parse(result.to_json)["value"]).to contain_exactly("�", "ok")
     end
 
+    # A number beyond Float range read from input/data JSON (e.g. {"n": 1e999}) parses to a non-finite
+    # Float, which is not valid JSON. Serialization must stay total (emit null) rather than raising
+    # JSON::GeneratorError. Rego literals/arithmetic can no longer produce this; only lossy input can.
+    it "emits null for a non-finite Float instead of raising (totality)" do
+      result = described_class.new(value: { "n" => Float::INFINITY, "m" => Float::NAN, "ok" => 1.5 }, success: true)
+      payload = nil
+      expect { payload = JSON.parse(result.to_json) }.not_to raise_error
+      expect(payload["value"]).to eq({ "n" => nil, "m" => nil, "ok" => 1.5 })
+    end
+
     it "leaves valid UTF-8 and ASCII output unchanged" do
       result = described_class.new(value: { "Xé" => "普通话", "a" => "b" }, success: true)
       expect(JSON.parse(result.to_json)["value"]).to eq({ "Xé" => "普通话", "a" => "b" })

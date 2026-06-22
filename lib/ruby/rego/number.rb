@@ -32,12 +32,34 @@ module Ruby
       # range wide enough for any decimal literal OPA accepts (well beyond 1e±999).
       CONTEXT = Flt::BinNum::Context(precision: 64, rounding: :half_even, emax: 2**30, emin: -(2**30))
 
+      # The largest decimal order of magnitude OPA accepts in a numeric literal: a literal whose
+      # magnitude exceeds 10**30102 (or whose reciprocal does) is a parse error in OPA ("number too
+      # big"). It is also the guard against a denial of service — `BigDecimal(text).to_r` materializes a
+      # numerator or denominator of ~10**|magnitude| as a full Integer, so an unbounded exponent (e.g.
+      # `1e999999999`, 11 source bytes -> a gigabyte rational) would otherwise exhaust memory. OPA's
+      # bound is very slightly asymmetric (the tiny-magnitude side reaches ~10**-30150); this symmetric
+      # cap matches OPA exactly on the large side and across the entire realistic range.
+      MAX_MAGNITUDE_EXPONENT = 30_102
+
       # Build a Number from a numeric literal's source text (already validated by the lexer).
       #
       # @param text [String]
       # @return [Number]
       def self.literal(text)
         new(text: text)
+      end
+
+      # Whether `text`'s decimal order of magnitude is within OPA's literal limit. The magnitude is read
+      # from BigDecimal's exponent (which records the position of the decimal point WITHOUT materializing
+      # 10**exponent), so this is O(text length) and safe to call on attacker-controlled input — unlike
+      # the `to_r` that #exact would later perform. The lexer calls this to reject an over-large literal
+      # as a parse error, exactly as OPA does.
+      #
+      # @param text [String]
+      # @return [Boolean]
+      def self.magnitude_within_limit?(text)
+        decimal = BigDecimal(text)
+        decimal.zero? || (decimal.exponent - 1).abs <= MAX_MAGNITUDE_EXPONENT
       end
 
       # Format a computed Flt::BinNum result the way OPA's FloatToNumber does, working from the result's
@@ -61,6 +83,19 @@ module Ruby
         else
           new(text: GoNumberFormat.render(digits, point, negative))
         end
+      end
+
+      # Negate a numeric literal value while PRESERVING its text (so `-1.50` keeps `-1.50`, not `-1.5`):
+      # a Number toggles the sign of its text; a plain Integer negates normally. Used by the parser when
+      # folding a unary minus directly onto a literal.
+      #
+      # @param value [Number, Integer]
+      # @return [Number, Integer]
+      def self.negate_literal(value)
+        return -value unless value.is_a?(Number)
+
+        text = value.to_s
+        literal(text.start_with?("-") ? text.delete_prefix("-") : "-#{text}")
       end
 
       # Wrap any Ruby Numeric as a Number for use as an arithmetic operand.

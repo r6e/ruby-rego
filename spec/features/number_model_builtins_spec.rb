@@ -74,6 +74,17 @@ RSpec.describe "number model — builtin interaction" do
       expect(integer_match(Ruby::Rego::Number.literal("2.0"))).to be(true)
       expect(integer_match(Ruby::Rego::Number.literal("2.5"))).to be(false)
     end
+
+    # enum / const / uniqueItems compare via `canonical`; a fractional Number must canonicalize as a
+    # number (not a scalar) so a document value of 1.5 still matches `enum: [1.5]` / `const: 1.5`, the
+    # way a Float did pre-Number and the way OPA does. Verified against `opa eval` 1.17 ([true, []]).
+    it "treats a fractional Number as a number in enum/const comparison" do
+      enum = '{"type":"object","properties":{"x":{"enum":[1.5,2.5]}}}'
+      const = '{"type":"object","properties":{"x":{"const":1.5}}}'
+      frac = { "x" => Ruby::Rego::Number.literal("1.5") }
+      expect(registry.call("json.match_schema", [frac, enum]).to_ruby.first).to be(true)
+      expect(registry.call("json.match_schema", [frac, const]).to_ruby.first).to be(true)
+    end
   end
 
   describe "aggregates and ordering over Numbers" do
@@ -81,6 +92,28 @@ RSpec.describe "number model — builtin interaction" do
       expect(eval_rule("sum([1.5, 2.5])")).to eq(4)
       expect(eval_rule("max([1.5, 2.5])")).to eq(Ruby::Rego::Number.literal("2.5"))
       expect(eval_rule("sort([3.3, 1.1, 2.2])").map(&:to_s)).to eq(%w[1.1 2.2 3.3])
+    end
+
+    it "max / min keep the LAST element among value-equal ties, like OPA" do
+      expect(eval_rule("max([1.50, 1.5])").to_s).to eq("1.5")
+      expect(eval_rule("max([1.5, 1.50])").to_s).to eq("1.50")
+      expect(eval_rule("min([1.50, 1.5])").to_s).to eq("1.5")
+      expect(eval_rule("min([1.5, 1.50])").to_s).to eq("1.50")
+    end
+  end
+
+  describe "negative numeric literals preserve their text (folded into the literal, as OPA does)" do
+    it "keeps trailing zeros and -0.0 across value positions" do
+      expect(eval_rule("-1.50").to_s).to eq("-1.50")
+      expect(eval_rule("-100.00").to_s).to eq("-100.00")
+      expect(eval_rule("-0.0").to_s).to eq("-0.0")
+      expect(eval_rule("[1.50, -0.0]").map(&:to_s)).to eq(["1.50", "-0.0"])
+      expect(eval_rule("json.marshal(-0.0)")).to eq("-0.0")
+    end
+
+    it "still negates arithmetically (the value is correct)" do
+      expect(eval_rule("-1.50 + 2")).to eq(Ruby::Rego::Number.literal("0.5"))
+      expect(eval_rule("-1.50 == -1.5")).to be(true)
     end
   end
 end
