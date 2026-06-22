@@ -38,7 +38,16 @@ All notable changes to this project will be documented in this file.
   beyond `Float` range read from `input`/`data` JSON (e.g. `{"n": 1e999}` → `Float::INFINITY`, or YAML
   `.nan`) is now mapped to undefined at the value boundary, so arithmetic, comparison, aggregation and
   serialization over it all stay total instead of raising; preserving such input values is tracked for
-  the arbitrary-precision input/`json.unmarshal` sweep.
+  the arbitrary-precision input/`json.unmarshal` sweep. **Note** this means a comparison or equality
+  against such an input value is now undefined where it previously returned a (sometimes-correct)
+  boolean — e.g. a `input.n > threshold` guard does not fire when `input.n` is `1e999`; treat numbers
+  beyond `Float` range in untrusted input as undefined until that sweep lands.
+
+- Known deferred number divergences from OPA (tracked for the builtin number sweep, unchanged from
+  before this work): integer `+`/`-`/`*` stays exact past 2^64 whereas OPA rounds every operation
+  through a 64-bit big.Float (`2^64 + 1` is `2^64` in OPA); `yaml.marshal` of a magnitude beyond
+  float64 range is undefined whereas OPA emits the `json.Number` text; `to_number` / `units.parse` and
+  `json.unmarshal` still round-trip non-integer numbers through `Float`.
 
 - `json.match_schema` now enforces the gojsonschema `format` assertions OPA implements for the
   lexical / date-time / network / regex / URI / email formats: `hostname`, `uuid`, `json-pointer`,

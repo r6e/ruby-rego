@@ -1237,9 +1237,9 @@ module Ruby
 
         def self.register!: () -> BuiltinRegistry
         def self.count: (Value collection) -> NumberValue
-        def self.sum: (Value array) -> NumberValue
-        def self.max: (Value array) -> NumberValue
-        def self.min: (Value array) -> NumberValue
+        def self.sum: (Value array) -> Value
+        def self.max: (Value array) -> Value
+        def self.min: (Value array) -> Value
         def self.all: (Value array) -> BooleanValue
         def self.any: (Value array) -> BooleanValue
 

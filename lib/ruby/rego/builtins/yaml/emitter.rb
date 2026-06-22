@@ -57,9 +57,10 @@ module Ruby
             when false then scalar("false", PLAIN)
             when Integer then scalar(ruby.to_s, PLAIN)
             when Float then scalar(float_string(ruby), PLAIN)
-            # OPA's yaml.marshal routes a number through Go float64, so a Number renders exactly like
-            # the equivalent Float (1.50 -> 1.5, 2.0 -> 2, 1e308 -> 1e+308); a magnitude beyond float64
-            # range becomes non-finite and raises MarshalError -> undefined, as it did pre-Number.
+            # OPA's yaml.marshal routes an in-range number through Go float64, so a Number renders like the
+            # equivalent Float (1.50 -> 1.5, 2.0 -> 2, 1e308 -> 1e+308). A magnitude beyond float64 range
+            # becomes non-finite via to_f and yields undefined here; OPA instead emits the json.Number text
+            # (1e999 -> "1e999") — a deferred yaml-number-fidelity divergence (unchanged from pre-Number).
             when Number then scalar(float_string(ruby.to_f), PLAIN)
             when String then string_scalar(ruby)
             when Symbol then string_scalar(ruby.to_s)

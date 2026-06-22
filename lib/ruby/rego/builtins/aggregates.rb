@@ -51,26 +51,28 @@ module Ruby
         # @return [Ruby::Rego::NumberValue]
         def self.sum(array)
           numbers = numeric_array(array, name: "sum")
-          NumberValue.new(numbers.sum)
+          # Sum of raw input Floats can overflow to a non-finite Float (e.g. [1e308, 1e308]); Value.from_ruby
+          # maps that to undefined at the boundary instead of letting it crash serialization.
+          Value.from_ruby(numbers.sum)
         end
 
         # @param array [Ruby::Rego::Value]
-        # @return [Ruby::Rego::NumberValue]
+        # @return [Ruby::Rego::Value]
         def self.max(array)
           numbers = numeric_array(array, name: "max")
           ensure_non_empty(numbers, name: "max")
           # Among value-equal extrema OPA returns the LAST element (so max([1.50, 1.5]) -> 1.5, keeping
           # the later spelling); Ruby's Array#max keeps the first equal element, so max over the reverse.
-          NumberValue.new(numbers.reverse.max)
+          Value.from_ruby(numbers.reverse.max)
         end
 
         # @param array [Ruby::Rego::Value]
-        # @return [Ruby::Rego::NumberValue]
+        # @return [Ruby::Rego::Value]
         def self.min(array)
           numbers = numeric_array(array, name: "min")
           ensure_non_empty(numbers, name: "min")
           # OPA returns the LAST element among value-equal minima too; min over the reverse keeps it.
-          NumberValue.new(numbers.reverse.min)
+          Value.from_ruby(numbers.reverse.min)
         end
 
         # @param array [Ruby::Rego::Value]
