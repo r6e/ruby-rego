@@ -484,7 +484,11 @@ module Ruby
 
             # Object entries as [stringified key, canonical value], sorted into a deterministic order by a
             # fully string comparison (key first, then the value's serialization) so no `<=>` ever touches
-            # mutually-incomparable Rego scalars.
+            # mutually-incomparable Rego scalars. The tie-break `member.to_s` is Array#to_s (== Array#inspect):
+            # it is type-revealing — [:scalar, true] vs [:scalar, "true"], or [:scalar, nil] vs [:scalar, ""],
+            # serialize distinctly — so distinct values never tie, and the sort stays deterministic even when
+            # keys collide after stringification (e.g. a 1 and a "1" key); structurally equal objects always
+            # canonicalize identically regardless of insertion order.
             def canonical_entries(object)
               object.map { |key, member| [key.to_s, canonical(member)] }
                     .sort_by { |key, member| [key, member.to_s] }

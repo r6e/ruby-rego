@@ -14,8 +14,11 @@ RSpec.describe "json.match_schema" do
   fixtures = File.expand_path("../../../fixtures/json_schema", __dir__)
   goldens = JSON.parse(File.read(File.join(fixtures, "match_schema_goldens.json")))
 
-  # A document is passed as a JSON string (the string-loader path); a schema as a Hash/Array becomes the
-  # matching Value. Returns the raw Value so undefined results can be distinguished from a [match, errors].
+  # Forwards the document and schema as a policy would: registry.call converts each Ruby value to its Value
+  # (a String -> StringValue for the string-loader path, a Hash -> ObjectValue, a number/bool/nil/array ->
+  # the matching Value), and the builtin then dispatches — so a string/object schema may be usable while a
+  # number/bool/null/array schema is undefined. Returns the raw Value so an undefined result is
+  # distinguishable from a [match, errors] pair.
   def call_match(document, schema)
     registry.call("json.match_schema", [document, schema])
   end
