@@ -28,6 +28,30 @@ RSpec.describe "number model — builtin interaction" do
       expect(eval_rule("floor(-1.8)")).to eq(-2)
       expect(eval_rule("abs(-2.0)")).to eq(2)
     end
+
+    # round/ceil/floor see the precision-64 binary value, exactly as OPA's big.Float does, so a value
+    # within half an ulp of a half-integer rounds the way OPA rounds it.
+    it "rounds the precision-64 value like OPA (not the exact rational)" do
+      expect(eval_rule("round(0.49999999999999999999)")).to eq(1)
+      expect(eval_rule("ceil(1.00000000000000000001)")).to eq(1)
+      expect(eval_rule("floor(0.99999999999999999999)")).to eq(1)
+    end
+  end
+
+  describe "a non-finite number from input is total (never crashes the policy)" do
+    def with_inf(src)
+      Ruby::Rego.evaluate("package t\nx = #{src}", query: "data.t.x", input: { "n" => Float::INFINITY })
+    end
+
+    it "treats input beyond Float range as undefined across arithmetic, comparison, and aggregates" do
+      %w[input.n input.n*1.5 input.n<1.5 max([1.5,input.n]) sum([1.5,input.n])].each do |src|
+        result = nil
+        expect { result = with_inf(src) }.not_to raise_error
+        undefined = result.nil? || result.value.is_a?(Ruby::Rego::UndefinedValue)
+        expect(undefined).to be(true)
+        expect { result&.to_json }.not_to raise_error
+      end
+    end
   end
 
   describe "integer-valued Number literals are accepted where an integer is required" do
@@ -92,6 +116,10 @@ RSpec.describe "number model — builtin interaction" do
       expect(eval_rule("sum([1.5, 2.5])")).to eq(4)
       expect(eval_rule("max([1.5, 2.5])")).to eq(Ruby::Rego::Number.literal("2.5"))
       expect(eval_rule("sort([3.3, 1.1, 2.2])").map(&:to_s)).to eq(%w[1.1 2.2 3.3])
+    end
+
+    it "sorts a mix of Integer and Number (the coerce-on-sort path)" do
+      expect(eval_rule("sort([2, 1.5, 1, 2.5])").map(&:to_s)).to eq(%w[1 1.5 2 2.5])
     end
 
     it "max / min keep the LAST element among value-equal ties, like OPA" do

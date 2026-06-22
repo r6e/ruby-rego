@@ -67,16 +67,10 @@ module Ruby
 
       # :reek:FeatureEnvy
       def parse_number_literal
+        # The lexer already produces a Number (magnitude-checked) or Integer as the token value; there is
+        # no String-value path to re-parse.
         token = consume(TokenType::NUMBER, "Expected number literal.")
-        value = token.value
-        if value.is_a?(String)
-          value = if value.match?(/[eE.]/)
-                    Number.literal(value)
-                  else
-                    Integer(value, 10)
-                  end
-        end
-        AST::NumberLiteral.new(value: value, location: token.location)
+        AST::NumberLiteral.new(value: token.value, location: token.location)
       end
 
       def parse_boolean_literal

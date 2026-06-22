@@ -90,24 +90,16 @@ module Ruby
       # ASCII strings are returned unchanged.
       # :reek:UtilityFunction :reek:TooManyStatements
       def sanitize_json(object)
+        # An undefined sentinel left inside a collection (e.g. a non-finite input number the value layer
+        # mapped to undefined) serializes as null rather than leaking its internal object form.
+        return nil if object.equal?(UndefinedValue::UNDEFINED)
+
         case object
         when ::String then scrub_invalid_bytes(object)
-        when ::Float then sanitize_float(object)
         when ::Hash then object.to_h { |key, value| [sanitize_json(key), sanitize_json(value)] }
         when ::Array, ::Set then object.map { |element| sanitize_json(element) }
         else object
         end
-      end
-
-      # A non-finite Float (Infinity / NaN) is not valid JSON and would raise JSON::GeneratorError. Rego
-      # literals and arithmetic can no longer produce one (the arbitrary-precision Number model), but a
-      # number beyond Float range read from `input`/`data` JSON (e.g. `{"n": 1e999}` -> Ruby parses
-      # Float::INFINITY) still can. Emit null so serialization stays total instead of aborting; preserving
-      # the value needs arbitrary-precision input parsing, tracked for the json.unmarshal / input sweep.
-      # OPA, which parses input as bignums, never produces a non-finite number.
-      # :reek:UtilityFunction
-      def sanitize_float(float)
-        float.finite? ? float : nil
       end
 
       # Replace each invalid byte sequence with one U+FFFD PER BYTE, matching Go's encoding/json (which

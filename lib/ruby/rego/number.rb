@@ -222,33 +222,36 @@ module Ruby
         exact.to_r
       end
 
-      # round / ceil / floor / truncate / abs operate on the EXACT value, never `to_f`, so a
-      # magnitude beyond Float range (e.g. `round(1e400)`) yields its exact integer instead of raising
-      # FloatDomainError (Ruby's Numeric#round routes through to_f, which would overflow to Infinity and
-      # crash). Rounding is half-away-from-zero, matching OPA. (For magnitudes beyond Float precision the
-      # exact integer differs in its low-order digits from OPA's big.Float rounding — a fidelity detail
-      # deferred to the builtin number sweep; normal-magnitude values match OPA byte-for-byte.)
+      # round / ceil / floor / truncate operate on the PRECISION-64 binary value (#to_binnum), exactly as
+      # OPA's round/ceil/floor do (they convert the json.Number to a big.Float at precision 64 and round
+      # that), so a value within half an ulp of a half-integer rounds as OPA does (`round(0.4999…9)` ->
+      # 1) and `round(1e400)` yields the big.Float-rounded integer byte-for-byte. They never route
+      # through `to_f` (which would overflow to Infinity and raise FloatDomainError). Rounding is
+      # half-away-from-zero, matching OPA.
       #
       # @return [Integer]
       def round(_ndigits = 0)
-        exact.round
+        binary_value.round
       end
 
       # @return [Integer]
       def ceil(_ndigits = 0)
-        exact.ceil
+        binary_value.ceil
       end
 
       # @return [Integer]
       def floor(_ndigits = 0)
-        exact.floor
+        binary_value.floor
       end
 
       # @return [Integer]
       def truncate(_ndigits = 0)
-        exact.to_i
+        binary_value.to_i
       end
 
+      # abs preserves the EXACT value (OPA's abs keeps the json.Number: abs(-1e400) is the clean 10**400,
+      # not a big.Float-rounded value), unlike round/ceil/floor.
+      #
       # @return [Number, Integer] Integer when the magnitude is integer-valued, else a Number
       def abs
         magnitude = exact.abs
@@ -322,6 +325,12 @@ module Ruby
       # @return [Flt::BinNum]
       def to_binnum
         self.class.rational_to_binnum(exact)
+      end
+
+      # The exact Rational of the precision-64 binary value — what OPA's round/ceil/floor see.
+      # @return [Rational, Integer]
+      def binary_value
+        to_binnum.to_r
       end
 
       private

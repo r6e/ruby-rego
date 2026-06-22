@@ -211,6 +211,7 @@ module Ruby
       def eql?: (untyped other) -> bool
 
       def to_binnum: () -> untyped
+      def binary_value: () -> (Rational | Integer)
 
       private
 
@@ -245,6 +246,7 @@ module Ruby
 
       def self.build_value: (untyped) -> Value?
       def self.build_simple_value: (untyped) -> Value?
+      def self.numeric_value: (Numeric value) -> (NumberValue | UndefinedValue)
       def self.build_composite_value: (untyped) -> Value?
     end
 
@@ -2453,7 +2455,6 @@ module Ruby
       private
 
       def sanitize_json: (untyped object) -> untyped
-      def sanitize_float: (Float float) -> Float?
       def scrub_invalid_bytes: (String string) -> String
       def add_bindings: (Hash[String | Symbol, untyped] bindings) -> void
     end

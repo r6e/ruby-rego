@@ -154,17 +154,26 @@ module Ruby
 
       def self.build_simple_value(value)
         case value
-        when NilClass
-          NullValue.new
-        when TrueClass, FalseClass
-          BooleanValue.new(value)
-        when String
-          StringValue.new(value)
-        when Numeric
-          NumberValue.new(value)
+        when NilClass then NullValue.new
+        when TrueClass, FalseClass then BooleanValue.new(value)
+        when String then StringValue.new(value)
+        when Numeric then numeric_value(value)
         end
       end
       private_class_method :build_simple_value
+
+      # A non-finite Float can only arrive from a number beyond Float range read from input/data JSON
+      # (`{"n": 1e999}` -> Float::INFINITY, YAML `.nan`); it is not a representable Rego number and would
+      # crash arithmetic/comparison/serialization. Map it to undefined here, at the single boundary, so
+      # every downstream path is total. Preserving the value needs arbitrary-precision input parsing
+      # (tracked for the json.unmarshal / input sweep); OPA parses input as bignums.
+      # @return [NumberValue, UndefinedValue]
+      def self.numeric_value(value)
+        return UndefinedValue.new if value.is_a?(::Float) && !value.finite?
+
+        NumberValue.new(value)
+      end
+      private_class_method :numeric_value
 
       def self.build_composite_value(value)
         case value

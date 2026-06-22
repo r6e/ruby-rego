@@ -27,16 +27,18 @@ All notable changes to this project will be documented in this file.
   at parse with a "number too big" error, exactly as OPA does — this also bounds the rational the
   number would otherwise materialize, closing an unbounded-exponent denial of service (`1e999999999`,
   12 source bytes, previously allocated a gigabyte-scale rational). Verified differentially against
-  `opa eval` 1.17. (Not yet migrated — tracked for the builtin number sweep: `to_number`,
-  `units.parse` and the numeric/aggregate builtins still round-trip through `Float`,
-  `round`/`ceil`/`floor` of beyond-Float magnitudes use exact rather than big.Float rounding, and
+  `opa eval` 1.17. `round`/`ceil`/`floor` round the precision-64 binary value exactly as OPA's
+  big.Float does (so `round(0.4999…9)` is `1` and `round(1e400)` matches OPA's rounded integer
+  byte-for-byte). (Not yet migrated — tracked for the builtin number sweep: `to_number`,
+  `units.parse` and the numeric/aggregate builtins still round-trip through `Float`, and
   `json.unmarshal` collapses number text.)
 - An invalid-UTF-8 / ASCII-8BIT (binary) string in an evaluation result — most easily an object key
   from `base64.decode` — now serializes like Go's `encoding/json` (each invalid byte → `U+FFFD`,
-  byte-for-byte with OPA) instead of raising `JSON::GeneratorError` and aborting the policy. A
-  non-finite `Float` (only reachable now from a number beyond `Float` range read from `input`/`data`
-  JSON, e.g. `{"n": 1e999}`) serializes as `null` rather than raising, keeping serialization total;
-  preserving such input values is tracked for the arbitrary-precision input/`json.unmarshal` sweep.
+  byte-for-byte with OPA) instead of raising `JSON::GeneratorError` and aborting the policy. A number
+  beyond `Float` range read from `input`/`data` JSON (e.g. `{"n": 1e999}` → `Float::INFINITY`, or YAML
+  `.nan`) is now mapped to undefined at the value boundary, so arithmetic, comparison, aggregation and
+  serialization over it all stay total instead of raising; preserving such input values is tracked for
+  the arbitrary-precision input/`json.unmarshal` sweep.
 
 - `json.match_schema` now enforces the gojsonschema `format` assertions OPA implements for the
   lexical / date-time / network / regex / URI / email formats: `hostname`, `uuid`, `json-pointer`,
