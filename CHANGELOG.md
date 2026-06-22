@@ -5,14 +5,17 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 - `json.match_schema` now enforces the gojsonschema `format` assertions OPA implements for the
-  lexical / date-time / network / regex formats: `hostname`, `uuid`, `json-pointer`,
-  `relative-json-pointer`, `regex`, `date`, `time`, `date-time`, `ipv4`, `ipv6`. Rules mirror
-  gojsonschema's format_checkers.go exactly (whole-text `\A..\z` anchoring, Go `time.Parse`
-  semantics incl. comma-or-period fractional seconds and a loosely range-checked zone offset,
-  proleptic-Gregorian dates, `net.ParseIP`-equivalent IPs). The `uri`/`uri-reference`/`iri`/
-  `iri-reference`/`uri-template` and `email`/`idn-email` formats remain annotation-only (no-op)
-  pending follow-up PRs, as do the formats OPA does not enforce (`idn-hostname`, `duration`,
-  unknown names). The boolean result stays byte-exact with OPA for the enforced formats.
+  lexical / date-time / network / regex / URI formats: `hostname`, `uuid`, `json-pointer`,
+  `relative-json-pointer`, `regex`, `date`, `time`, `date-time`, `ipv4`, `ipv6`, `uri`,
+  `uri-reference`, `iri`, `iri-reference`, `uri-template`. Rules mirror gojsonschema's
+  format_checkers.go exactly (whole-text `\A..\z` anchoring, Go `time.Parse` semantics incl.
+  comma-or-period fractional seconds and a loosely range-checked zone offset, proleptic-Gregorian
+  dates, `net.ParseIP`-equivalent IPs, and Go `net/url.Parse` for the URI family — reusing the
+  gem's `uri.parse` port, with a non-empty-scheme requirement for `uri`/`iri`, an explicit
+  backslash reject, and the template path regex for `uri-template`; `iri*` are exact aliases of
+  `uri*`). The `email`/`idn-email` formats remain annotation-only (no-op) pending the follow-up PR,
+  as do the formats OPA does not enforce (`idn-hostname`, `duration`, unknown names). The boolean
+  result stays byte-exact with OPA for the enforced formats.
 
 - Security / behavior change: an untrusted regex (`pattern`, `patternProperties`, and the new
   `format: "regex"`) is now compiled under two bounds — a 64 KB RE2 program budget (compile phase)

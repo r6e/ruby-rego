@@ -7,8 +7,8 @@ require "json"
 # errors array is best-effort (gojsonschema's {desc,error,field,type} objects are a documented divergence),
 # so these assert the boolean exactly and the array's PRESENCE (empty vs non-empty), not its content/count.
 # An unusable schema or document argument yields undefined, matching OPA. Goldens captured from `opa eval`
-# 1.17. The `format` keyword enforces the lexical / date-time / net / regex assertions (see the "format
-# assertions" describe block); the uri family and email are still annotation-only pending follow-up PRs.
+# 1.17. The `format` keyword enforces the lexical / date-time / net / regex / uri-family assertions (see the
+# "format assertions" describe block); email/idn-email are still annotation-only pending the follow-up PR.
 # rubocop:disable Metrics/BlockLength
 RSpec.describe "json.match_schema" do
   let(:registry) { Ruby::Rego::Builtins::BuiltinRegistry.instance }
@@ -45,9 +45,9 @@ RSpec.describe "json.match_schema" do
   end
 
   # The `format` keyword (gojsonschema's enforced format assertions; format_checkers.go). Only the boolean is
-  # contractual. PR-1 implements the lexical / date-time / net / regex formats; the uri family and email land
-  # later and stay annotation-only (true) until then, as do the genuinely unenforced names (idn-hostname,
-  # duration, unknown). Goldens captured from opa eval 1.17.
+  # contractual. The lexical / date-time / net / regex / uri-family formats are enforced; email/idn-email land
+  # in the follow-up PR and stay annotation-only (true) until then, as do the genuinely unenforced names
+  # (idn-hostname, duration, unknown). Goldens captured from opa eval 1.17.
   describe "format assertions (matches OPA)" do
     format_goldens.each do |name, fixture|
       it "agrees with OPA on #{name}" do
@@ -80,14 +80,41 @@ RSpec.describe "json.match_schema" do
     end
 
     # gojsonschema does not register idn-hostname or duration, and ignores unknown formats — all
-    # annotation-only, so any string matches. (uri/email are enforced by OPA but not yet by the gem; they
-    # also pass through until their PRs land — intentionally not pinned here.)
+    # annotation-only, so any string matches. (email/idn-email are enforced by OPA but not yet by the gem;
+    # they also pass through until the follow-up PR — intentionally not pinned here.)
     it "treats unenforced/unknown formats as annotation-only (always matches)" do
       %w[duration idn-hostname totally-made-up].each do |fmt|
         schema = { "type" => "string", "format" => fmt }
         expect(call_match(JSON.generate("anything at all"), schema).to_ruby[0]).to be(true)
         expect(call_match(JSON.generate(""), schema).to_ruby[0]).to be(true)
       end
+    end
+
+    # uri/iri require a parseable Go net/url with a non-empty scheme + no backslash; uri-reference/iri-reference
+    # drop the scheme requirement; uri-template adds gojsonschema's path-template regex. iri == uri (url.Parse
+    # already accepts unicode). Reuses the gem's Uri::Parser (net/url port), differentially verified vs OPA.
+    it "enforces the uri family via Go net/url semantics" do
+      uri = ->(v, fmt) { call_match(JSON.generate(v), { "type" => "string", "format" => fmt }).to_ruby[0] }
+      # uri / iri: scheme required, identical
+      %w[uri iri].each do |fmt|
+        expect(uri.call("http://example.com", fmt)).to be(true)
+        expect(uri.call("//example.com", fmt)).to be(false) # no scheme
+        expect(uri.call("foo", fmt)).to be(false)
+        expect(uri.call("urn:isbn:0451450523", fmt)).to be(true)
+        expect(uri.call("http://例子.广告", fmt)).to be(true) # unicode host (iri==uri)
+        expect(uri.call("foo\\bar", fmt)).to be(false)       # backslash
+        expect(uri.call("http://a b", fmt)).to be(false)     # space in authority fails url.Parse
+      end
+      # uri-reference / iri-reference: scheme optional
+      %w[uri-reference iri-reference].each do |fmt|
+        expect(uri.call("/path", fmt)).to be(true)
+        expect(uri.call("foo", fmt)).to be(true)
+        expect(uri.call("a\\b", fmt)).to be(false) # backslash still rejected
+      end
+      # uri-template: path-template regex
+      expect(uri.call("http://example.com/{id}", "uri-template")).to be(true)
+      expect(uri.call("http://example.com/{id", "uri-template")).to be(false)  # unclosed brace
+      expect(uri.call("http://example.com/}{", "uri-template")).to be(false)   # close before open
     end
 
     it "ignores format on a non-string instance (vacuously matches)" do
@@ -103,7 +130,9 @@ RSpec.describe "json.match_schema" do
 
     it "does not raise on a binary / invalid-UTF-8 format value" do
       bad = (+"\xFF\xFE").force_encoding("UTF-8")
-      %w[hostname uuid date regex ipv4].each do |fmt|
+      # the uri family routes through Uri::Parser, which raises ArgumentError on invalid-UTF-8 — the
+      # scannable? guard + rescue must keep it total
+      %w[hostname uuid date regex ipv4 uri uri-reference iri iri-reference uri-template].each do |fmt|
         expect { call_match({ "v" => bad }, { "properties" => { "v" => { "format" => fmt } } }) }.not_to raise_error
       end
     end

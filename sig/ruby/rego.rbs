@@ -1502,6 +1502,7 @@ module Ruby
             DATE: Regexp
             TIME: Regexp
             RFC3339: Regexp
+            URI_TEMPLATE_PATH: RE2::Regexp
 
             def self.match?: (String name, String value) -> bool
             def self.scannable?: (String value) -> bool
@@ -1515,6 +1516,10 @@ module Ruby
             def self.valid_clock?: (Integer hour, Integer minute, Integer second) -> bool
             def self.valid_offset?: (Integer offset_hour, Integer offset_minute) -> bool
             def self.ip?: (String value, String separator) -> bool
+            def self.url_components: (String value) -> Uri::Parser::Components?
+            def self.absolute_uri?: (String value) -> bool
+            def self.uri_reference?: (String value) -> bool
+            def self.uri_template?: (String value) -> bool
           end
 
           private

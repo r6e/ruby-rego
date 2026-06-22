@@ -2,7 +2,9 @@
 
 require "date"
 require "ipaddr"
+require "re2"
 require_relative "json_schema"
+require_relative "../uri/parser"
 
 module Ruby
   module Rego
@@ -23,9 +25,14 @@ module Ruby
         #   * ipv4/ipv6 mirror Go net.ParseIP + a "."/":" check: IPAddr matches it exactly once zone (%) and
         #     CIDR (/) suffixes — which IPAddr accepts but net.ParseIP does not — are rejected.
         #   * regex reuses the RE2 compile gate (JsonSchema.re2_valid?), the same engine as the pattern keyword.
+        #   * uri/uri-reference (and their iri aliases) and uri-template reuse Uri::Parser, the gem's port of
+        #     Go net/url.Parse: a value matches when it parses, has no backslash (gojsonschema's explicit
+        #     reject), and — for uri/iri — a non-empty scheme; uri-template additionally matches the parsed
+        #     path against gojsonschema's template regex via the re2 engine (Go's). iri == uri exactly because
+        #     url.Parse already accepts unicode hosts/paths, so no separate IDN logic is needed.
         #
-        # PR-1 implements the lexical / date-time / net / regex formats. The uri family and email land in
-        # follow-up PRs; until then they fall through to annotation-only (true), as does any unknown format.
+        # Implemented: the lexical / date-time / net / regex formats and the uri family. email/idn-email land
+        # in a follow-up PR; until then they fall through to annotation-only (true), as does any unknown format.
         module JsonSchema
           # The gojsonschema `format` checkers (format_checkers.go) OPA 1.17 enforces. See the file header.
           module Formats
@@ -45,6 +52,9 @@ module Ruby
             DATE = /\A(\d{4})-(\d{2})-(\d{2})\z/
             TIME = /\A(\d{1,2}):(\d{2}):(\d{2})(?:[.,]\d+)?(?:Z|[+-](\d{2}):(\d{2}))?\z/
             RFC3339 = /\A(\d{4})-(\d{2})-(\d{2})T(\d{1,2}):(\d{2}):(\d{2})(?:[.,]\d+)?(?:Z|[+-](\d{2}):(\d{2}))\z/
+            # gojsonschema's uri-template path check, verbatim, compiled with the re2 engine (Go's regexp) so it
+            # is byte-exact and linear (Ruby's Onigmo would risk backtracking on the nested quantifier).
+            URI_TEMPLATE_PATH = RE2::Regexp.new("^([^{]*({[^}]*})?)*$", log_errors: false)
 
             # @param name [String] the format keyword value
             # @param value [String] the string instance being validated
@@ -63,7 +73,10 @@ module Ruby
               when "date-time" then date?(value) || time?(value) || rfc3339?(value)
               when "ipv4" then ip?(value, ".")
               when "ipv6" then ip?(value, ":")
-              else true # idn-hostname / duration / uri / email (later PRs) / unknown -> annotation only
+              when "uri", "iri" then absolute_uri?(value)
+              when "uri-reference", "iri-reference" then uri_reference?(value)
+              when "uri-template" then uri_template?(value)
+              else true # idn-hostname / duration / email (later PR) / unknown -> annotation only
               end
             end
             # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
@@ -142,6 +155,41 @@ module Ruby
               value.include?(separator)
             rescue StandardError
               false
+            end
+
+            # Go net/url.Parse (via Uri::Parser) of a value with no backslash. nil if it does not parse, is not
+            # scannable (Uri::Parser raises on invalid-UTF-8), or contains a backslash (gojsonschema rejects
+            # `\` explicitly, separate from url.Parse). The rescue keeps it total against any other parse error.
+            # :reek:NilCheck
+            def self.url_components(value)
+              return nil unless scannable?(value) && !value.include?("\\")
+
+              Uri::Parser.parse(value)
+            rescue StandardError
+              nil
+            end
+
+            # uri / iri: a parseable URL with a non-empty scheme.
+            # :reek:NilCheck
+            def self.absolute_uri?(value)
+              components = url_components(value)
+              !components.nil? && !components.scheme.to_s.empty?
+            end
+
+            # uri-reference / iri-reference: a parseable URL (scheme optional).
+            # :reek:NilCheck
+            def self.uri_reference?(value)
+              !url_components(value).nil?
+            end
+
+            # uri-template: a parseable URL whose path matches gojsonschema's template regex. The path is
+            # percent-DECODED by the parser, so it can hold bytes that are invalid UTF-8 (e.g. `%FF`); Go's
+            # regexp engine substitutes U+FFFD for each undecodable byte and keeps matching, whereas re2 won't
+            # match an undecodable subject — so scrub the path the same way Go's decoder would first.
+            # :reek:NilCheck
+            def self.uri_template?(value)
+              components = url_components(value)
+              !components.nil? && URI_TEMPLATE_PATH.match?(components.path.to_s.scrub("\uFFFD"))
             end
           end
         end
