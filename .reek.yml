@@ -34,6 +34,9 @@ detectors:
       # Go enum tables (EKU), name-constraint/access-method maps, the recognized-OID list, and the
       # depth / int64 DoS bounds — each an independent crypto/x509 constant.
       - Ruby::Rego::Builtins::Crypto::CertificateStruct
+      # One regex per gojsonschema format checker (hostname/uuid/json-pointer/date/time/rfc3339) — distinct
+      # ported patterns, plus the shared hostname-label fragment.
+      - Ruby::Rego::Builtins::Codecs::JsonSchema::Formats
   TooManyInstanceVariables:
     exclude:
       - Ruby::Rego::Lexer

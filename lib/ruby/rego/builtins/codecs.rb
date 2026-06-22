@@ -10,6 +10,7 @@ require_relative "registry_helpers"
 require_relative "codecs/url_query"
 require_relative "codecs/json_format"
 require_relative "codecs/json_schema"
+require_relative "codecs/json_schema_formats"
 require_relative "codecs/json_schema_match"
 
 # rubocop:disable Metrics/ModuleLength

@@ -111,6 +111,14 @@ RSpec.describe "json.verify_schema" do
       expect(verify({ "pattern" => "\\Cx" })[0]).to be(false)
       expect(verify({ "pattern" => "\\\\Cx" })[0]).to be(true)
     end
+
+    # The RE2 compile gate is capped (RE2_MAX_MEM): the re2 gem compiles nested counted repetition roughly
+    # quadratically (a ~3KB pattern would take tens of seconds — a DoS on an untrusted schema), so an
+    # over-budget pattern fast-fails to invalid instead. Documented divergence: such a pattern (pathological
+    # repetition here) is rejected where OPA's Go regexp accepts it; security over byte-exact fidelity.
+    it "caps pattern compilation so a pathological regex is rejected, not a multi-second DoS" do
+      expect(verify({ "pattern" => "x#{"a{500,1000}" * 300}" })[0]).to be(false)
+    end
   end
 
   describe "$ref resolution (matches gojsonschema)" do

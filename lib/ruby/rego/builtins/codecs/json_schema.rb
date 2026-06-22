@@ -46,6 +46,28 @@ module Ruby
           GO_REJECTED_ESCAPE = /(?<!\\)(?:\\\\)*+\\C/
           # One JSON string literal, for the comment scan below (quote, escapes-or-non-quote bytes, quote).
           JSON_STRING_TOKEN = /"(?:\\.|[^"\\])*"/
+          # Two bounds on compiling an untrusted regex (`pattern`/`patternProperties` and the `format: "regex"`
+          # assertion). The re2 gem's C++ RE2 is far slower than Go's `regexp` (which OPA uses) on adversarial
+          # patterns, a CPU denial-of-service the default 8 MB budget does not bound; Go compiles the same
+          # inputs in milliseconds. Both bounds trade byte-exact fidelity for safety on these inputs (a pattern
+          # they reject may be one OPA accepts — a documented divergence):
+          #
+          #   * RE2_MAX_MEM caps the COMPILE phase. Nested counted repetition compiles ~quadratically, and the
+          #     peak compile wall-clock scales with the program budget (256 KB still allowed a ~130 ms single
+          #     pattern, and N such patterns in one schema amplified linearly). 64 KB collapses that peak to
+          #     <1 ms while still accepting every realistic pattern (emails, dates, `a{1000}`, `(ab){500}`, …) —
+          #     measured: nothing in the realistic set or the existing golden corpus is rejected at 64 KB.
+          #   * RE2_MAX_PATTERN_BYTES caps the PARSE phase, which max_mem does NOT bound: expanding unicode
+          #     property classes (`\p{L}`) is linear in pattern length and runs to completion before the memory
+          #     check, so a ~1 MB class-dense pattern still takes seconds. 4 KB bounds that to ~tens of ms and
+          #     is 4× any realistic JSON-Schema pattern (the existing pattern golden corpus is well under it).
+          #
+          # Both bounds live in re2_compile, so every compile path — verify (re2_compatible?), the match-time
+          # `pattern`/`patternProperties` check (the Matcher's cached re2_matches?), and the format:regex gate
+          # (re2_valid?) — shares the same safety. match_schema also memoises each distinct pattern per call so
+          # patternProperties (every pattern × every property name) compiles N patterns, not N×M times.
+          RE2_MAX_MEM = 64 * 1024
+          RE2_MAX_PATTERN_BYTES = 4 * 1024
 
           # Bound on schema-recursion depth (nesting and $ref-chain length). A flat `definitions` of N chained
           # $refs has no structural depth, so neither JSON.parse's max_nesting (100) nor Value.from_ruby's
@@ -471,20 +493,32 @@ module Ruby
           # construct C++ RE2 accepts but Go's regexp rejects, `\C`, is filtered out. A non-string or
           # invalid-encoding pattern is rejected up front (RE2 returns false on it without raising, but the
           # explicit guard keeps the contract clear).
+          # :reek:NilCheck
           def self.re2_compatible?(pattern)
-            return false unless pattern.is_a?(String) && pattern.valid_encoding?
+            regex = re2_compile(pattern)
+            return false if regex.nil?
 
-            RE2::Regexp.new(pattern, log_errors: false).ok? && !pattern.match?(GO_REJECTED_ESCAPE)
+            regex.ok? && !pattern.match?(GO_REJECTED_ESCAPE)
           end
           private_class_method :re2_compatible?
 
-          # Whether the RE2 regex `pattern` matches anywhere in `string` (unanchored), via the re2 gem — the
-          # same engine gojsonschema uses for `pattern` / `patternProperties` matching. Used by match_schema;
-          # the pattern is already known RE2-valid (the schema passed verify). Public so the Matcher can use it.
-          def self.re2_match?(pattern, string)
-            return false unless string.is_a?(String) && string.valid_encoding?
+          # Whether `value` is a regex Go's `regexp` (RE2) would compile — the `format: "regex"` assertion,
+          # which gojsonschema implements with the same `regexp.Compile` as the `pattern` keyword. Public so
+          # the format checker can reuse the exact compile gate. Callers pass a scannable string.
+          def self.re2_valid?(value)
+            re2_compatible?(value)
+          end
 
-            RE2::Regexp.new(pattern, log_errors: false).match?(string)
+          # The capped RE2 compilation of `pattern`, or nil if it is unusable (non-string, invalid encoding,
+          # or over the byte cap). Both caps (compile-phase max_mem, parse-phase bytesize) apply here, so every
+          # compile path shares the same safety: `re2_compatible?` (verify), `re2_valid?` (format:regex), and
+          # the Matcher's per-call cached `re2_matches?` (the `pattern`/`patternProperties` match, which
+          # compiles each distinct pattern at most once). The compiled object is reusable across matches.
+          def self.re2_compile(pattern)
+            return nil unless pattern.is_a?(String) && pattern.valid_encoding?
+            return nil if pattern.bytesize > RE2_MAX_PATTERN_BYTES
+
+            RE2::Regexp.new(pattern, log_errors: false, max_mem: RE2_MAX_MEM)
           end
 
           # The schema node a `$ref` resolves to (for match_schema's document validation), or nil. The schema

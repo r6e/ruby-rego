@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- `json.match_schema` now enforces the gojsonschema `format` assertions OPA implements for the
+  lexical / date-time / network / regex formats: `hostname`, `uuid`, `json-pointer`,
+  `relative-json-pointer`, `regex`, `date`, `time`, `date-time`, `ipv4`, `ipv6`. Rules mirror
+  gojsonschema's format_checkers.go exactly (whole-text `\A..\z` anchoring, Go `time.Parse`
+  semantics incl. comma-or-period fractional seconds and a loosely range-checked zone offset,
+  proleptic-Gregorian dates, `net.ParseIP`-equivalent IPs). The `uri`/`uri-reference`/`iri`/
+  `iri-reference`/`uri-template` and `email`/`idn-email` formats remain annotation-only (no-op)
+  pending follow-up PRs, as do the formats OPA does not enforce (`idn-hostname`, `duration`,
+  unknown names). The boolean result stays byte-exact with OPA for the enforced formats.
+
+- Security / behavior change: an untrusted regex (`pattern`, `patternProperties`, and the new
+  `format: "regex"`) is now compiled under two bounds — a 64 KB RE2 program budget (compile phase)
+  and a 4 KB pattern-bytesize cap (parse phase) — and `match_schema` memoizes each distinct pattern
+  per call. The re2 gem's C++ RE2 compiles adversarial patterns far slower than Go's `regexp`
+  (which OPA uses): without these, a ~3 KB nested-repetition pattern took tens of seconds, a class-
+  dense pattern was linear-unbounded, and `patternProperties` recompiled N×M times — all CPU
+  denial-of-service vectors that the previous code (and the default 8 MB budget) did not bound.
+  Trade-off: a pattern whose RE2 program exceeds 64 KB or whose text exceeds 4 KB is now reported
+  invalid / non-matching where OPA accepts it — a documented divergence on adversarial inputs;
+  every realistic pattern (and the existing pattern test corpus) is unaffected.
+
 - New built-in: `time.format`, matching OPA — formats an instant (`ns`, `[ns, tz]`, or
   `[ns, tz, layout]`) using Go's reference-time layout language (the `2006-01-02 15:04:05` token
   scheme). The layout defaults to RFC3339Nano, accepts the named constants (ANSIC, UnixDate,

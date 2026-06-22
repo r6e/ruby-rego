@@ -1,0 +1,1034 @@
+{
+  "hostname__ok": {
+    "doc": "\"example.com\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": true
+  },
+  "hostname__single": {
+    "doc": "\"a\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": true
+  },
+  "hostname__lead_dash": {
+    "doc": "\"-bad.com\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": false
+  },
+  "hostname__trail_dash": {
+    "doc": "\"bad-.com\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": false
+  },
+  "hostname__double_dot": {
+    "doc": "\"a..b\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": false
+  },
+  "hostname__underscore": {
+    "doc": "\"foo_bar.com\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": false
+  },
+  "hostname__empty": {
+    "doc": "\"\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": false
+  },
+  "hostname__punycode": {
+    "doc": "\"xn--bcher-kva.com\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": true
+  },
+  "hostname__label63": {
+    "doc": "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": true
+  },
+  "hostname__label64": {
+    "doc": "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": false
+  },
+  "hostname__trailing_nl": {
+    "doc": "\"h\\n\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": false
+  },
+  "hostname__uppercase": {
+    "doc": "\"EXAMPLE.COM\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": true
+  },
+  "hostname__numeric_label": {
+    "doc": "\"9lives.com\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": true
+  },
+  "hostname__len256": {
+    "doc": "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaa\"",
+    "schema": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "expected": false
+  },
+  "uuid__ok": {
+    "doc": "\"12345678-1234-1234-1234-123456789012\"",
+    "schema": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "expected": true
+  },
+  "uuid__upper": {
+    "doc": "\"ABCDEF12-1234-1234-1234-123456789012\"",
+    "schema": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "expected": true
+  },
+  "uuid__nil": {
+    "doc": "\"00000000-0000-0000-0000-000000000000\"",
+    "schema": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "expected": true
+  },
+  "uuid__garbage": {
+    "doc": "\"not-a-uuid\"",
+    "schema": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "expected": false
+  },
+  "uuid__no_dashes": {
+    "doc": "\"12345678123412341234123456789012\"",
+    "schema": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "expected": false
+  },
+  "uuid__empty": {
+    "doc": "\"\"",
+    "schema": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "expected": false
+  },
+  "uuid__nonhex": {
+    "doc": "\"g2345678-1234-1234-1234-123456789012\"",
+    "schema": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "expected": false
+  },
+  "uuid__short": {
+    "doc": "\"12345678-1234-1234-1234-12345678901\"",
+    "schema": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "expected": false
+  },
+  "json-pointer__ok": {
+    "doc": "\"/foo/bar\"",
+    "schema": {
+      "type": "string",
+      "format": "json-pointer"
+    },
+    "expected": true
+  },
+  "json-pointer__no_slash": {
+    "doc": "\"foo/bar\"",
+    "schema": {
+      "type": "string",
+      "format": "json-pointer"
+    },
+    "expected": false
+  },
+  "json-pointer__empty": {
+    "doc": "\"\"",
+    "schema": {
+      "type": "string",
+      "format": "json-pointer"
+    },
+    "expected": true
+  },
+  "json-pointer__escapes": {
+    "doc": "\"/foo/~0/~1\"",
+    "schema": {
+      "type": "string",
+      "format": "json-pointer"
+    },
+    "expected": true
+  },
+  "json-pointer__bad_escape": {
+    "doc": "\"/foo/~2\"",
+    "schema": {
+      "type": "string",
+      "format": "json-pointer"
+    },
+    "expected": false
+  },
+  "json-pointer__trailing_slash": {
+    "doc": "\"/foo/\"",
+    "schema": {
+      "type": "string",
+      "format": "json-pointer"
+    },
+    "expected": true
+  },
+  "json-pointer__root_slash": {
+    "doc": "\"/\"",
+    "schema": {
+      "type": "string",
+      "format": "json-pointer"
+    },
+    "expected": true
+  },
+  "json-pointer__lone_tilde": {
+    "doc": "\"/~\"",
+    "schema": {
+      "type": "string",
+      "format": "json-pointer"
+    },
+    "expected": false
+  },
+  "json-pointer__embedded_nl": {
+    "doc": "\"/foo\\nbar\"",
+    "schema": {
+      "type": "string",
+      "format": "json-pointer"
+    },
+    "expected": true
+  },
+  "relative-json-pointer__zero": {
+    "doc": "\"0\"",
+    "schema": {
+      "type": "string",
+      "format": "relative-json-pointer"
+    },
+    "expected": true
+  },
+  "relative-json-pointer__with_path": {
+    "doc": "\"1/foo\"",
+    "schema": {
+      "type": "string",
+      "format": "relative-json-pointer"
+    },
+    "expected": true
+  },
+  "relative-json-pointer__absolute": {
+    "doc": "\"/foo\"",
+    "schema": {
+      "type": "string",
+      "format": "relative-json-pointer"
+    },
+    "expected": false
+  },
+  "relative-json-pointer__hash": {
+    "doc": "\"0#\"",
+    "schema": {
+      "type": "string",
+      "format": "relative-json-pointer"
+    },
+    "expected": true
+  },
+  "relative-json-pointer__neg": {
+    "doc": "\"-1\"",
+    "schema": {
+      "type": "string",
+      "format": "relative-json-pointer"
+    },
+    "expected": false
+  },
+  "relative-json-pointer__leading_zero": {
+    "doc": "\"00\"",
+    "schema": {
+      "type": "string",
+      "format": "relative-json-pointer"
+    },
+    "expected": false
+  },
+  "relative-json-pointer__multi": {
+    "doc": "\"10/a/b\"",
+    "schema": {
+      "type": "string",
+      "format": "relative-json-pointer"
+    },
+    "expected": true
+  },
+  "relative-json-pointer__empty": {
+    "doc": "\"\"",
+    "schema": {
+      "type": "string",
+      "format": "relative-json-pointer"
+    },
+    "expected": false
+  },
+  "regex__ok": {
+    "doc": "\"^[a-z]+$\"",
+    "schema": {
+      "type": "string",
+      "format": "regex"
+    },
+    "expected": true
+  },
+  "regex__lookahead": {
+    "doc": "\"(?!foo)\"",
+    "schema": {
+      "type": "string",
+      "format": "regex"
+    },
+    "expected": false
+  },
+  "regex__unclosed": {
+    "doc": "\"[\"",
+    "schema": {
+      "type": "string",
+      "format": "regex"
+    },
+    "expected": false
+  },
+  "regex__bad_star": {
+    "doc": "\"a**\"",
+    "schema": {
+      "type": "string",
+      "format": "regex"
+    },
+    "expected": false
+  },
+  "regex__empty": {
+    "doc": "\"\"",
+    "schema": {
+      "type": "string",
+      "format": "regex"
+    },
+    "expected": true
+  },
+  "regex__named": {
+    "doc": "\"(?P<n>x)\"",
+    "schema": {
+      "type": "string",
+      "format": "regex"
+    },
+    "expected": true
+  },
+  "regex__backref": {
+    "doc": "\"(a)\\\\1\"",
+    "schema": {
+      "type": "string",
+      "format": "regex"
+    },
+    "expected": false
+  },
+  "date__ok": {
+    "doc": "\"2018-11-13\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": true
+  },
+  "date__month13": {
+    "doc": "\"2018-13-01\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": false
+  },
+  "date__no_dash": {
+    "doc": "\"20181113\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": false
+  },
+  "date__garbage": {
+    "doc": "\"not\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": false
+  },
+  "date__feb29_nonleap": {
+    "doc": "\"2018-02-29\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": false
+  },
+  "date__feb29_leap": {
+    "doc": "\"2020-02-29\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": true
+  },
+  "date__no_pad": {
+    "doc": "\"2018-1-1\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": false
+  },
+  "date__year0": {
+    "doc": "\"0000-01-01\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": true
+  },
+  "date__max": {
+    "doc": "\"9999-12-31\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": true
+  },
+  "date__month0": {
+    "doc": "\"2018-00-01\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": false
+  },
+  "date__day32": {
+    "doc": "\"2018-01-32\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": false
+  },
+  "date__apr31": {
+    "doc": "\"2021-04-31\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": false
+  },
+  "date__year5": {
+    "doc": "\"12018-01-01\"",
+    "schema": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected": false
+  },
+  "time__offset": {
+    "doc": "\"20:20:39+00:00\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": true
+  },
+  "time__no_offset": {
+    "doc": "\"20:20:39\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": true
+  },
+  "time__hour25": {
+    "doc": "\"25:00:00Z\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "time__garbage": {
+    "doc": "\"x\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "time__zulu": {
+    "doc": "\"20:20:39Z\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": true
+  },
+  "time__frac": {
+    "doc": "\"20:20:39.5\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": true
+  },
+  "time__leap60": {
+    "doc": "\"20:20:60\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "time__lower_z": {
+    "doc": "\"20:20:39z\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "time__hour1digit": {
+    "doc": "\"7:20:39\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": true
+  },
+  "time__min1digit": {
+    "doc": "\"20:5:39\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "time__offset_nocolon": {
+    "doc": "\"20:20:39+0500\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "time__hour24": {
+    "doc": "\"24:00:00\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "time__neg_offset": {
+    "doc": "\"20:20:39-05:00\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": true
+  },
+  "time__trailing_dot": {
+    "doc": "\"20:20:39.\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "time__comma_frac": {
+    "doc": "\"20:20:39,5\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": true
+  },
+  "time__comma_frac_z": {
+    "doc": "\"20:20:39,123Z\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": true
+  },
+  "time__comma_no_digit": {
+    "doc": "\"20:20:39,\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "time__clock_min60": {
+    "doc": "\"20:60:39\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "time__offset_hour24": {
+    "doc": "\"20:20:39+24:00\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": true
+  },
+  "time__offset_hour25": {
+    "doc": "\"20:20:39+25:00\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "time__offset_min60": {
+    "doc": "\"20:20:39+00:60\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": true
+  },
+  "time__offset_min61": {
+    "doc": "\"20:20:39+00:61\"",
+    "schema": {
+      "type": "string",
+      "format": "time"
+    },
+    "expected": false
+  },
+  "date-time__full": {
+    "doc": "\"2018-11-13T20:20:39+00:00\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": true
+  },
+  "date-time__space": {
+    "doc": "\"2018-11-13 20:20:39\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": false
+  },
+  "date-time__garbage": {
+    "doc": "\"not\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": false
+  },
+  "date-time__month13": {
+    "doc": "\"2018-13-01T00:00:00Z\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": false
+  },
+  "date-time__zulu": {
+    "doc": "\"2018-11-13T20:20:39Z\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": true
+  },
+  "date-time__bare_date": {
+    "doc": "\"2018-11-13\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": true
+  },
+  "date-time__bare_time": {
+    "doc": "\"20:20:39\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": true
+  },
+  "date-time__bare_time_z": {
+    "doc": "\"20:20:39Z\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": true
+  },
+  "date-time__lower_tz": {
+    "doc": "\"2018-11-13t20:20:39z\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": false
+  },
+  "date-time__nanos": {
+    "doc": "\"2018-11-13T20:20:39.123456789Z\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": true
+  },
+  "date-time__no_zone": {
+    "doc": "\"2018-11-13T20:20:39\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": false
+  },
+  "date-time__hour24": {
+    "doc": "\"2018-11-13T24:20:39Z\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": false
+  },
+  "date-time__year0": {
+    "doc": "\"0000-01-01T00:00:00Z\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": true
+  },
+  "date-time__comma_frac": {
+    "doc": "\"2018-11-13T20:20:39,5Z\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": true
+  },
+  "date-time__offset_hour25": {
+    "doc": "\"2018-11-13T20:20:39+25:00\"",
+    "schema": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expected": false
+  },
+  "ipv4__ok": {
+    "doc": "\"192.168.1.1\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "expected": true
+  },
+  "ipv4__octet_over": {
+    "doc": "\"999.1.1.1\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "expected": false
+  },
+  "ipv4__three": {
+    "doc": "\"1.2.3\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "expected": false
+  },
+  "ipv4__v6": {
+    "doc": "\"::1\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "expected": false
+  },
+  "ipv4__leading_zero": {
+    "doc": "\"1.2.3.04\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "expected": false
+  },
+  "ipv4__v4_in_v6": {
+    "doc": "\"::ffff:192.168.1.1\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "expected": true
+  },
+  "ipv4__zeros": {
+    "doc": "\"0.0.0.0\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "expected": true
+  },
+  "ipv4__max": {
+    "doc": "\"255.255.255.255\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "expected": true
+  },
+  "ipv4__five": {
+    "doc": "\"1.2.3.4.5\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "expected": false
+  },
+  "ipv4__cidr": {
+    "doc": "\"1.2.3.4/24\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "expected": false
+  },
+  "ipv4__trailing_space": {
+    "doc": "\"1.2.3.4 \"",
+    "schema": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "expected": false
+  },
+  "ipv6__loopback": {
+    "doc": "\"::1\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": true
+  },
+  "ipv6__full": {
+    "doc": "\"1:2:3:4:5:6:7:8\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": true
+  },
+  "ipv6__v4": {
+    "doc": "\"192.168.1.1\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": false
+  },
+  "ipv6__bad_hex": {
+    "doc": "\"gggg::\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": false
+  },
+  "ipv6__double_colon": {
+    "doc": "\"1::2::3\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": false
+  },
+  "ipv6__v4_mapped": {
+    "doc": "\"::ffff:192.168.1.1\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": true
+  },
+  "ipv6__unspecified": {
+    "doc": "\"::\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": true
+  },
+  "ipv6__zone": {
+    "doc": "\"fe80::1%eth0\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": false
+  },
+  "ipv6__compressed": {
+    "doc": "\"2001:db8::1\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": true
+  },
+  "ipv6__upper": {
+    "doc": "\"FE80::1\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": true
+  },
+  "ipv6__cidr": {
+    "doc": "\"2001:db8::1/64\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": false
+  },
+  "ipv6__too_many": {
+    "doc": "\"1:2:3:4:5:6:7:8:9\"",
+    "schema": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "expected": false
+  },
+  "duration__valid_iso": {
+    "doc": "\"P1Y\"",
+    "schema": {
+      "type": "string",
+      "format": "duration"
+    },
+    "expected": true
+  },
+  "duration__garbage": {
+    "doc": "\"garbage\"",
+    "schema": {
+      "type": "string",
+      "format": "duration"
+    },
+    "expected": true
+  },
+  "duration__empty": {
+    "doc": "\"\"",
+    "schema": {
+      "type": "string",
+      "format": "duration"
+    },
+    "expected": true
+  },
+  "duration__english": {
+    "doc": "\"1 day\"",
+    "schema": {
+      "type": "string",
+      "format": "duration"
+    },
+    "expected": true
+  },
+  "idn-hostname__ascii": {
+    "doc": "\"example.com\"",
+    "schema": {
+      "type": "string",
+      "format": "idn-hostname"
+    },
+    "expected": true
+  },
+  "idn-hostname__lead_dash": {
+    "doc": "\"-bad\"",
+    "schema": {
+      "type": "string",
+      "format": "idn-hostname"
+    },
+    "expected": true
+  },
+  "idn-hostname__idn": {
+    "doc": "\"实例.例子\"",
+    "schema": {
+      "type": "string",
+      "format": "idn-hostname"
+    },
+    "expected": true
+  },
+  "idn-hostname__empty": {
+    "doc": "\"\"",
+    "schema": {
+      "type": "string",
+      "format": "idn-hostname"
+    },
+    "expected": true
+  },
+  "unknown-format-name__anything": {
+    "doc": "\"literally anything\"",
+    "schema": {
+      "type": "string",
+      "format": "unknown-format-name"
+    },
+    "expected": true
+  },
+  "unknown-format-name__empty": {
+    "doc": "\"\"",
+    "schema": {
+      "type": "string",
+      "format": "unknown-format-name"
+    },
+    "expected": true
+  }
+}
