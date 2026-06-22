@@ -16,10 +16,15 @@ All notable changes to this project will be documented in this file.
   Integers stay Ruby `Integer` (already arbitrary-precision); `1 == 1.0` / `1.50 == 1.5` equality and
   the first-seen-representation dedup are unchanged. This closes the serializer denial-of-service where
   `x := 1e999` or `1e308 * 1e308` produced a non-finite `Float` that crashed `Result#to_json`: numbers
-  are now always finite and serialize as their canonical text. Verified differentially against
-  `opa eval` 1.17. (Not yet migrated — tracked for the builtin number sweep: `to_number` and the
-  numeric/aggregate builtins still round-trip through `Float`, and `json.unmarshal` collapses number
-  text.)
+  are now always finite and serialize as their canonical text. Builtins that classify numbers learned
+  about the new type so behaviour is unchanged from before: `round`/`ceil`/`floor` of a beyond-Float
+  magnitude return a finite integer instead of raising `FloatDomainError` (a totality fix), and an
+  integer-valued literal in float form (`3.0`) is still accepted wherever an integer is required
+  (`numbers.range`, `bits.*`, `format_int`, `json.match_schema` `type: integer`, `yaml.marshal`).
+  Verified differentially against `opa eval` 1.17. (Not yet migrated — tracked for the builtin number
+  sweep: `to_number`, `units.parse` and the numeric/aggregate builtins still round-trip through
+  `Float`, `round`/`ceil`/`floor` of beyond-Float magnitudes use exact rather than big.Float rounding,
+  and `json.unmarshal` collapses number text.)
 - An invalid-UTF-8 / ASCII-8BIT (binary) string in an evaluation result — most easily an object key
   from `base64.decode` — now serializes like Go's `encoding/json` (each invalid byte → `U+FFFD`,
   byte-for-byte with OPA) instead of raising `JSON::GeneratorError` and aborting the policy.

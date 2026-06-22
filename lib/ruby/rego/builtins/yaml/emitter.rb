@@ -57,6 +57,10 @@ module Ruby
             when false then scalar("false", PLAIN)
             when Integer then scalar(ruby.to_s, PLAIN)
             when Float then scalar(float_string(ruby), PLAIN)
+            # OPA's yaml.marshal routes a number through Go float64, so a Number renders exactly like
+            # the equivalent Float (1.50 -> 1.5, 2.0 -> 2, 1e308 -> 1e+308); a magnitude beyond float64
+            # range becomes non-finite and raises MarshalError -> undefined, as it did pre-Number.
+            when Number then scalar(float_string(ruby.to_f), PLAIN)
             when String then string_scalar(ruby)
             when Symbol then string_scalar(ruby.to_s)
             when Array then sequence(ruby)
@@ -141,6 +145,7 @@ module Ruby
             case key
             when String then sanitize(key)
             when Float then float_string(key)
+            when Number then float_string(key.to_f)
             when true then "true"
             when false then "false"
             when nil then "null"

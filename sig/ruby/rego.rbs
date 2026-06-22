@@ -192,6 +192,11 @@ module Ruby
       def to_i: () -> Integer
       def to_int: () -> Integer
       def to_r: () -> Rational
+      def round: (?Integer ndigits) -> Integer
+      def ceil: (?Integer ndigits) -> Integer
+      def floor: (?Integer ndigits) -> Integer
+      def truncate: (?Integer ndigits) -> Integer
+      def abs: () -> (Number | Integer)
       def <=>: (untyped other) -> Integer?
       def coerce: (Numeric other) -> [Number, Number]
       def -@: () -> Number

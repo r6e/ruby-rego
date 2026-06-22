@@ -49,6 +49,8 @@ detectors:
       - Ruby::Rego::Evaluator::ReferenceResolver
   TooManyStatements:
     exclude:
+      # Type-dispatch guard chain over Integer / Float / Number numeric forms.
+      - Ruby::Rego::Builtins::NumericHelpers#self.integer_value
       # Shortest-digit parse and the FloatToNumber result formatter are linear Go-port sequences.
       - Ruby::Rego::GoNumberFormat#shortest_digits
       - Ruby::Rego::Number#self.from_binnum
@@ -115,6 +117,9 @@ detectors:
       - Ruby::Rego::Builtins::Codecs::JsonSchema::Matcher
   DuplicateMethodCall:
     exclude:
+      # Integer-valued numeric coercion: each guard arm returns its own `.to_i` (Integer/Float/Number).
+      - Ruby::Rego::Builtins::NumericHelpers#self.integer_value
+      - Ruby::Rego::Builtins::Numbers#self.normalize
       # Recursive canonicalizer reuses canonicalize_each across the array/set case arms.
       - Ruby::Rego::Value#self.canonicalize
       - Ruby::Rego::Lexer

@@ -192,6 +192,7 @@ module Ruby
             # An integer, or a float with no fractional part (gojsonschema treats 5.0 as an integer).
             def integer_doc?(document)
               return true if document.is_a?(Integer)
+              return document.integer_valued? if document.is_a?(Number)
 
               document.is_a?(Float) && document.finite? && document == document.to_i
             end

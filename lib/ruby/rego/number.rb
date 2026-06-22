@@ -187,6 +187,39 @@ module Ruby
         exact.to_r
       end
 
+      # round / ceil / floor / truncate / abs operate on the EXACT value, never `to_f`, so a
+      # magnitude beyond Float range (e.g. `round(1e400)`) yields its exact integer instead of raising
+      # FloatDomainError (Ruby's Numeric#round routes through to_f, which would overflow to Infinity and
+      # crash). Rounding is half-away-from-zero, matching OPA. (For magnitudes beyond Float precision the
+      # exact integer differs in its low-order digits from OPA's big.Float rounding — a fidelity detail
+      # deferred to the builtin number sweep; normal-magnitude values match OPA byte-for-byte.)
+      #
+      # @return [Integer]
+      def round(_ndigits = 0)
+        exact.round
+      end
+
+      # @return [Integer]
+      def ceil(_ndigits = 0)
+        exact.ceil
+      end
+
+      # @return [Integer]
+      def floor(_ndigits = 0)
+        exact.floor
+      end
+
+      # @return [Integer]
+      def truncate(_ndigits = 0)
+        exact.to_i
+      end
+
+      # @return [Number, Integer] Integer when the magnitude is integer-valued, else a Number
+      def abs
+        magnitude = exact.abs
+        magnitude.is_a?(Integer) ? magnitude : self.class.from_numeric(magnitude)
+      end
+
       # Order against any Numeric by exact value (so 1.50 <=> 1.5 is 0 and 1.0 <=> 1 is 0).
       #
       # @param other [Object]
