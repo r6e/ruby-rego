@@ -102,9 +102,9 @@ module Ruby
                   return 1
                 end
 
-                unless !empty? && peek == "<"
-                  return nil unless consume_phrase
-                end
+                # A display name is required unless we're already at the angle-addr; consume_phrase (which
+                # advances @pos) is only evaluated when not at "<", via &&-short-circuit.
+                return nil if (empty? || peek != "<") && !consume_phrase
 
                 skip_space
                 return consume_group_list if handle_group && consume(":")
