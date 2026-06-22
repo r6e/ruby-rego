@@ -4,6 +4,7 @@ require "date"
 require "ipaddr"
 require "re2"
 require_relative "json_schema"
+require_relative "json_schema_email" # defines MailAddress/Rfc2047, used by email?/idn-email
 require_relative "../uri/parser"
 
 module Ruby

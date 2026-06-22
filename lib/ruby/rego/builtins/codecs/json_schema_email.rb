@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "ipaddr"
-require_relative "json_schema_formats"
 
 module Ruby
   module Rego
