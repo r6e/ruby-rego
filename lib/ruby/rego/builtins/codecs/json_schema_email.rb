@@ -37,6 +37,11 @@ module Ruby
             # the consume_*/skip_* methods mutate @pos and return success bools (not pure predicates).
             class MailAddress
               SPECIALS = ["(", ")", "<", ">", "[", "]", ":", ";", "@", "\\", ",", "\""].freeze
+              # Frozen so the per-character predicates scan a shared array rather than allocating a literal
+              # each call (a hot-path GC concern on large inputs).
+              WSP = [" ", "\t"].freeze # space / tab (skip_space + wsp?)
+              QTEXT_EXCLUDED = ["\\", "\""].freeze # not qtext: backslash, double-quote
+              DTEXT_EXCLUDED = ["[", "]", "\\"].freeze # not dtext: brackets, backslash
 
               # @return [bool] whether `string` is exactly one Go-parseable address.
               def self.valid?(string)
@@ -78,7 +83,7 @@ module Ruby
               end
 
               def skip_space
-                @pos += 1 while @pos < @len && [" ", "\t"].include?(@chars[@pos])
+                @pos += 1 while @pos < @len && wsp?(@chars[@pos])
               end
 
               # Port of parseAddress(handleGroup): try a bare addr-spec (with an optional trailing comment),
@@ -351,16 +356,16 @@ module Ruby
               end
 
               # :reek:UtilityFunction
-              def wsp?(char) = [" ", "\t"].include?(char)
+              def wsp?(char) = WSP.include?(char)
 
               def qtext?(char)
-                return false if ["\\", "\""].include?(char)
+                return false if QTEXT_EXCLUDED.include?(char)
 
                 vchar?(char)
               end
 
               def dtext?(char)
-                return false if ["[", "]", "\\"].include?(char)
+                return false if DTEXT_EXCLUDED.include?(char)
 
                 vchar?(char)
               end
@@ -464,7 +469,7 @@ module Ruby
               def self.qtext_byte?(byte)
                 return false if byte.nil?
 
-                byte == 0x5F || (0x20..0x7E).cover?(byte) || [0x09, 0x0A, 0x0D].include?(byte)
+                byte == 0x5F || (0x20..0x7E).cover?(byte) || byte == 0x09 || byte == 0x0A || byte == 0x0D
               end
 
               # :reek:NilCheck

@@ -196,7 +196,7 @@ module Ruby
             end
 
             # email / idn-email: gojsonschema runs both through Go's net/mail.ParseAddress (idn-email is the
-            # same checker \u2014 RFC 6532 UTF-8 is allowed in atoms either way). See MailAddress (json_schema_email).
+            # same checker -- RFC 6532 UTF-8 is allowed in atoms either way). See MailAddress (json_schema_email).
             # The scannable? guard ensures the parser only sees valid UTF-8 (matching Go, which rejects
             # invalid-UTF-8 addresses anyway).
             def self.email?(value)

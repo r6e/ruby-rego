@@ -1524,6 +1524,9 @@ module Ruby
 
             class MailAddress
               SPECIALS: Array[String]
+              WSP: Array[String]
+              QTEXT_EXCLUDED: Array[String]
+              DTEXT_EXCLUDED: Array[String]
 
               @chars: Array[String]
               @pos: Integer
