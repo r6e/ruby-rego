@@ -1,0 +1,667 @@
+{
+  "type_int_ok": {
+    "doc": "5",
+    "schema": {
+      "type": "integer"
+    },
+    "expected": true
+  },
+  "type_int_fail": {
+    "doc": "\"x\"",
+    "schema": {
+      "type": "integer"
+    },
+    "expected": false
+  },
+  "type_int_rejects_float": {
+    "doc": "1.5",
+    "schema": {
+      "type": "integer"
+    },
+    "expected": false
+  },
+  "type_number_float": {
+    "doc": "1.5",
+    "schema": {
+      "type": "number"
+    },
+    "expected": true
+  },
+  "type_multi_ok": {
+    "doc": "\"x\"",
+    "schema": {
+      "type": [
+        "string",
+        "integer"
+      ]
+    },
+    "expected": true
+  },
+  "type_multi_fail": {
+    "doc": "true",
+    "schema": {
+      "type": [
+        "string",
+        "integer"
+      ]
+    },
+    "expected": false
+  },
+  "type_null_ok": {
+    "doc": "null",
+    "schema": {
+      "type": "null"
+    },
+    "expected": true
+  },
+  "type_bool_ok": {
+    "doc": "true",
+    "schema": {
+      "type": "boolean"
+    },
+    "expected": true
+  },
+  "type_array_ok": {
+    "doc": "[1]",
+    "schema": {
+      "type": "array"
+    },
+    "expected": true
+  },
+  "type_object_ok": {
+    "doc": "{\"a\":1}",
+    "schema": {
+      "type": "object"
+    },
+    "expected": true
+  },
+  "enum_ok": {
+    "doc": "\"a\"",
+    "schema": {
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "expected": true
+  },
+  "enum_fail": {
+    "doc": "\"c\"",
+    "schema": {
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "expected": false
+  },
+  "const_ok": {
+    "doc": "{\"x\":1}",
+    "schema": {
+      "const": {
+        "x": 1
+      }
+    },
+    "expected": true
+  },
+  "const_fail": {
+    "doc": "\"y\"",
+    "schema": {
+      "const": "x"
+    },
+    "expected": false
+  },
+  "minimum_ok": {
+    "doc": "5",
+    "schema": {
+      "minimum": 5
+    },
+    "expected": true
+  },
+  "minimum_fail": {
+    "doc": "4",
+    "schema": {
+      "minimum": 5
+    },
+    "expected": false
+  },
+  "maximum_fail": {
+    "doc": "100",
+    "schema": {
+      "maximum": 50
+    },
+    "expected": false
+  },
+  "exclmin_num_fail": {
+    "doc": "5",
+    "schema": {
+      "exclusiveMinimum": 5
+    },
+    "expected": false
+  },
+  "exclmin_bool_fail": {
+    "doc": "5",
+    "schema": {
+      "minimum": 5,
+      "exclusiveMinimum": true
+    },
+    "expected": false
+  },
+  "exclmin_bool_ok": {
+    "doc": "6",
+    "schema": {
+      "minimum": 5,
+      "exclusiveMinimum": true
+    },
+    "expected": true
+  },
+  "exclmax_num_fail": {
+    "doc": "5",
+    "schema": {
+      "exclusiveMaximum": 5
+    },
+    "expected": false
+  },
+  "multipleOf_ok": {
+    "doc": "6",
+    "schema": {
+      "multipleOf": 3
+    },
+    "expected": true
+  },
+  "multipleOf_fail": {
+    "doc": "7",
+    "schema": {
+      "multipleOf": 3
+    },
+    "expected": false
+  },
+  "multipleOf_float": {
+    "doc": "0.3",
+    "schema": {
+      "multipleOf": 0.1
+    },
+    "expected": true
+  },
+  "minLength_fail": {
+    "doc": "\"ab\"",
+    "schema": {
+      "minLength": 5
+    },
+    "expected": false
+  },
+  "maxLength_fail": {
+    "doc": "\"abcdef\"",
+    "schema": {
+      "maxLength": 3
+    },
+    "expected": false
+  },
+  "minLength_unicode": {
+    "doc": "\"héllo\"",
+    "schema": {
+      "minLength": 5
+    },
+    "expected": true
+  },
+  "pattern_ok": {
+    "doc": "\"abc\"",
+    "schema": {
+      "pattern": "^[a-z]+$"
+    },
+    "expected": true
+  },
+  "pattern_fail": {
+    "doc": "\"ABC\"",
+    "schema": {
+      "pattern": "^[a-z]+$"
+    },
+    "expected": false
+  },
+  "pattern_anchored": {
+    "doc": "\"xabcx\"",
+    "schema": {
+      "pattern": "abc"
+    },
+    "expected": true
+  },
+  "items_schema_ok": {
+    "doc": "[1,2]",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "expected": true
+  },
+  "items_schema_fail": {
+    "doc": "[1,\"x\"]",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "expected": false
+  },
+  "items_tuple_ok": {
+    "doc": "[1,\"a\"]",
+    "schema": {
+      "type": "array",
+      "items": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "expected": true
+  },
+  "items_tuple_fail": {
+    "doc": "[\"x\",\"a\"]",
+    "schema": {
+      "type": "array",
+      "items": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "expected": false
+  },
+  "additionalItems_fail": {
+    "doc": "[1,\"a\",true]",
+    "schema": {
+      "items": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "additionalItems": false
+    },
+    "expected": false
+  },
+  "minItems_fail": {
+    "doc": "[1]",
+    "schema": {
+      "minItems": 2
+    },
+    "expected": false
+  },
+  "maxItems_fail": {
+    "doc": "[1,2,3]",
+    "schema": {
+      "maxItems": 2
+    },
+    "expected": false
+  },
+  "uniqueItems_fail": {
+    "doc": "[1,1]",
+    "schema": {
+      "uniqueItems": true
+    },
+    "expected": false
+  },
+  "uniqueItems_ok": {
+    "doc": "[1,2]",
+    "schema": {
+      "uniqueItems": true
+    },
+    "expected": true
+  },
+  "uniqueItems_objs_fail": {
+    "doc": "[{\"a\":1},{\"a\":1}]",
+    "schema": {
+      "uniqueItems": true
+    },
+    "expected": false
+  },
+  "contains_ok": {
+    "doc": "[1,\"x\"]",
+    "schema": {
+      "contains": {
+        "type": "integer"
+      }
+    },
+    "expected": true
+  },
+  "contains_fail": {
+    "doc": "[\"x\",\"y\"]",
+    "schema": {
+      "contains": {
+        "type": "integer"
+      }
+    },
+    "expected": false
+  },
+  "props_ok": {
+    "doc": "{\"n\":5}",
+    "schema": {
+      "properties": {
+        "n": {
+          "type": "integer"
+        }
+      }
+    },
+    "expected": true
+  },
+  "props_fail": {
+    "doc": "{\"n\":\"x\"}",
+    "schema": {
+      "properties": {
+        "n": {
+          "type": "integer"
+        }
+      }
+    },
+    "expected": false
+  },
+  "required_ok": {
+    "doc": "{\"a\":1}",
+    "schema": {
+      "required": [
+        "a"
+      ]
+    },
+    "expected": true
+  },
+  "required_fail": {
+    "doc": "{}",
+    "schema": {
+      "required": [
+        "a"
+      ]
+    },
+    "expected": false
+  },
+  "addlProps_false_fail": {
+    "doc": "{\"x\":1}",
+    "schema": {
+      "additionalProperties": false
+    },
+    "expected": false
+  },
+  "addlProps_schema_fail": {
+    "doc": "{\"x\":\"s\"}",
+    "schema": {
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "expected": false
+  },
+  "patternProps_ok": {
+    "doc": "{\"x1\":5}",
+    "schema": {
+      "patternProperties": {
+        "^x": {
+          "type": "integer"
+        }
+      }
+    },
+    "expected": true
+  },
+  "patternProps_fail": {
+    "doc": "{\"x1\":\"s\"}",
+    "schema": {
+      "patternProperties": {
+        "^x": {
+          "type": "integer"
+        }
+      }
+    },
+    "expected": false
+  },
+  "minProps_fail": {
+    "doc": "{\"a\":1}",
+    "schema": {
+      "minProperties": 2
+    },
+    "expected": false
+  },
+  "maxProps_fail": {
+    "doc": "{\"a\":1,\"b\":2,\"c\":3}",
+    "schema": {
+      "maxProperties": 2
+    },
+    "expected": false
+  },
+  "propertyNames_fail": {
+    "doc": "{\"toolong\":1}",
+    "schema": {
+      "propertyNames": {
+        "maxLength": 3
+      }
+    },
+    "expected": false
+  },
+  "deps_schema_fail": {
+    "doc": "{\"a\":1}",
+    "schema": {
+      "dependencies": {
+        "a": {
+          "required": [
+            "b"
+          ]
+        }
+      }
+    },
+    "expected": false
+  },
+  "deps_array_fail": {
+    "doc": "{\"a\":1}",
+    "schema": {
+      "dependencies": {
+        "a": [
+          "b"
+        ]
+      }
+    },
+    "expected": false
+  },
+  "allOf_fail": {
+    "doc": "5",
+    "schema": {
+      "allOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "minimum": 10
+        }
+      ]
+    },
+    "expected": false
+  },
+  "anyOf_ok": {
+    "doc": "5",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "expected": true
+  },
+  "anyOf_fail": {
+    "doc": "true",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "expected": false
+  },
+  "oneOf_ok": {
+    "doc": "5",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "expected": true
+  },
+  "oneOf_fail_multi": {
+    "doc": "5",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "minimum": 1
+        }
+      ]
+    },
+    "expected": false
+  },
+  "not_ok": {
+    "doc": "5",
+    "schema": {
+      "not": {
+        "type": "string"
+      }
+    },
+    "expected": true
+  },
+  "not_fail": {
+    "doc": "\"x\"",
+    "schema": {
+      "not": {
+        "type": "string"
+      }
+    },
+    "expected": false
+  },
+  "if_then_fail": {
+    "doc": "5",
+    "schema": {
+      "if": {
+        "type": "integer"
+      },
+      "then": {
+        "minimum": 10
+      }
+    },
+    "expected": false
+  },
+  "if_else_fail": {
+    "doc": "\"x\"",
+    "schema": {
+      "if": {
+        "type": "integer"
+      },
+      "then": {},
+      "else": {
+        "minLength": 5
+      }
+    },
+    "expected": false
+  },
+  "ref_ok": {
+    "doc": "{\"n\":5}",
+    "schema": {
+      "$ref": "#/definitions/o",
+      "definitions": {
+        "o": {
+          "properties": {
+            "n": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "expected": true
+  },
+  "ref_fail": {
+    "doc": "{\"n\":\"x\"}",
+    "schema": {
+      "$ref": "#/definitions/o",
+      "definitions": {
+        "o": {
+          "properties": {
+            "n": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "expected": false
+  },
+  "nested_ok": {
+    "doc": "{\"a\":{\"b\":[1,2]}}",
+    "schema": {
+      "properties": {
+        "a": {
+          "properties": {
+            "b": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "expected": true
+  },
+  "nested_fail": {
+    "doc": "{\"a\":{\"b\":[1,\"x\"]}}",
+    "schema": {
+      "properties": {
+        "a": {
+          "properties": {
+            "b": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "expected": false
+  },
+  "empty_schema": {
+    "doc": "{\"anything\":[1,2]}",
+    "schema": {},
+    "expected": true
+  },
+  "bool_true_schema": {
+    "doc": "5",
+    "schema": true,
+    "expected": "__undef__"
+  },
+  "bool_false_schema": {
+    "doc": "5",
+    "schema": false,
+    "expected": "__undef__"
+  }
+}

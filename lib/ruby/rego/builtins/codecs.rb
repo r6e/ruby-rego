@@ -10,6 +10,7 @@ require_relative "registry_helpers"
 require_relative "codecs/url_query"
 require_relative "codecs/json_format"
 require_relative "codecs/json_schema"
+require_relative "codecs/json_schema_match"
 
 # rubocop:disable Metrics/ModuleLength
 module Ruby
@@ -25,6 +26,7 @@ module Ruby
           "json.unmarshal" => { arity: 1, handler: :json_unmarshal },
           "json.is_valid" => { arity: 1, handler: :json_is_valid },
           "json.verify_schema" => { arity: 1, handler: :json_verify_schema },
+          "json.match_schema" => { arity: 2, handler: :json_match_schema },
           "base64.encode" => { arity: 1, handler: :base64_encode },
           "base64.decode" => { arity: 1, handler: :base64_decode },
           "base64.is_valid" => { arity: 1, handler: :base64_is_valid },
@@ -201,6 +203,18 @@ module Ruby
         def self.json_verify_schema(value)
           valid, error = JsonSchema.verify(value)
           Value.from_ruby([valid, error])
+        end
+
+        # json.match_schema(document, schema): [match, errors] — whether `document` (a JSON string or
+        # object/array) validates against `schema`. Undefined when an argument is unusable or the schema is
+        # not well-formed, matching OPA's gojsonschema. The boolean `match` is byte-exact; the errors array
+        # is best-effort (presence only). See Codecs::JsonSchema.match.
+        # @param document_value [Ruby::Rego::Value]
+        # @param schema_value [Ruby::Rego::Value]
+        # @return [Ruby::Rego::Value]
+        def self.json_match_schema(document_value, schema_value)
+          result = JsonSchema.match(document_value, schema_value)
+          result == :undefined ? UndefinedValue.new : Value.from_ruby(result)
         end
 
         # @param value [Ruby::Rego::Value]

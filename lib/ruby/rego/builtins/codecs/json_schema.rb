@@ -47,6 +47,39 @@ module Ruby
           # One JSON string literal, for the comment scan below (quote, escapes-or-non-quote bytes, quote).
           JSON_STRING_TOKEN = /"(?:\\.|[^"\\])*"/
 
+          # Bound on schema-recursion depth (nesting and $ref-chain length). A flat `definitions` of N chained
+          # $refs has no structural depth, so neither JSON.parse's max_nesting (100) nor Value.from_ruby's
+          # marshaling ceiling caps it — without this guard a long chain would recurse to a SystemStackError
+          # that aborts the whole policy (only BuiltinArgumentError is rescued). 100 matches the gem's other
+          # JSON-nesting limits; a schema nested/ref-chained past it is reported invalid (gojsonschema accepts
+          # deeper before it too stack-overflows — a documented divergence, not a crash).
+          MAX_SCHEMA_DEPTH = 100
+          # Sentinel thrown past the verify recursion and caught in valid_schema.
+          SCHEMA_TOO_DEEP = :__verify_schema_too_deep__
+
+          # Threaded through the verify recursion: the set of $refs already followed (for cycle tolerance, see
+          # fragment_error) plus the current recursion depth (for the MAX_SCHEMA_DEPTH bound). Quacks like the
+          # Set it replaces for include?/add, and `descend` wraps one level of recursion.
+          class RefGuard
+            def initialize
+              @refs = Set.new
+              @depth = 0
+            end
+
+            def include?(ref) = @refs.include?(ref)
+            def add(ref) = @refs.add(ref)
+
+            def descend
+              @depth += 1
+              throw SCHEMA_TOO_DEEP, SCHEMA_TOO_DEEP if @depth > MAX_SCHEMA_DEPTH
+
+              yield
+            ensure
+              @depth -= 1
+            end
+          end
+          private_constant :RefGuard
+
           # Verify that `value` (the Rego Value for the schema argument) is a valid JSON schema.
           # @param value [Ruby::Rego::Value]
           # @return [Array(bool, String?)] [valid, error] — error is nil when valid.
@@ -118,12 +151,14 @@ module Ruby
           # A parsed schema value's well-formedness. A boolean is a valid schema (matches all / nothing); an
           # object is validated keyword by keyword; anything else is invalid.
           # @return [Array(bool, String?)]
-          # :reek:NilCheck
+          # :reek:NilCheck :reek:TooManyStatements
           def self.valid_schema(schema)
             return [true, nil] if [true, false].include?(schema)
             return [false, "jsonschema: schema is invalid"] unless schema.is_a?(Hash)
 
-            error = schema_error(schema, schema, Set.new)
+            error = catch(SCHEMA_TOO_DEEP) { schema_error(schema, schema, RefGuard.new) }
+            return [false, "jsonschema: schema is nested too deeply"] if error == SCHEMA_TOO_DEEP
+
             error.nil? ? [true, nil] : [false, "jsonschema: #{error}"]
           end
 
@@ -307,7 +342,9 @@ module Ruby
             return nil if [true, false].include?(value)
             return "must be a valid schema" unless value.is_a?(Hash)
 
-            schema_error(value, root, visited)
+            # The single descent point for every nested subschema (and, via fragment_error, every $ref-follow),
+            # so bounding depth here covers all recursion paths.
+            visited.descend { schema_error(value, root, visited) }
           end
           private_class_method :subschema_error
 
@@ -440,6 +477,26 @@ module Ruby
             RE2::Regexp.new(pattern, log_errors: false).ok? && !pattern.match?(GO_REJECTED_ESCAPE)
           end
           private_class_method :re2_compatible?
+
+          # Whether the RE2 regex `pattern` matches anywhere in `string` (unanchored), via the re2 gem — the
+          # same engine gojsonschema uses for `pattern` / `patternProperties` matching. Used by match_schema;
+          # the pattern is already known RE2-valid (the schema passed verify). Public so the Matcher can use it.
+          def self.re2_match?(pattern, string)
+            return false unless string.is_a?(String) && string.valid_encoding?
+
+            RE2::Regexp.new(pattern, log_errors: false).match?(string)
+          end
+
+          # The schema node a `$ref` resolves to (for match_schema's document validation), or nil. The schema
+          # is already known well-formed, so every ref is a resolvable `#` / `#/pointer` in-document fragment.
+          # :reek:NilCheck
+          def self.resolve_ref_target(ref, root)
+            return root if ref == "#" || ref.empty?
+            return nil unless ref.start_with?("#/")
+
+            node = resolve_pointer(ref[1..].to_s, root)
+            node.equal?(NOT_FOUND) ? nil : node
+          end
         end
         # rubocop:enable Metrics/ModuleLength
       end
