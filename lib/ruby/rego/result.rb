@@ -74,12 +74,39 @@ module Ruby
       # @return [String]
       def to_json(*args)
         options = args.first
-        return JSON.generate(to_h) unless options.is_a?(Hash)
+        sanitized = sanitize_json(to_h)
+        return JSON.generate(sanitized) unless options.is_a?(Hash)
 
-        JSON.generate(to_h, options)
+        JSON.generate(sanitized, options)
       end
 
       private
+
+      # Sanitize a to_h structure for JSON output the way Go's encoding/json does: a string with
+      # invalid-UTF-8 or ASCII-8BIT (binary) bytes — e.g. a value built from base64.decode, including as
+      # an object KEY — has each invalid byte sequence replaced by U+FFFD, matching OPA byte-for-byte,
+      # rather than raising JSON::GeneratorError (which would escape as an uncaught error). Rego values keep
+      # their original bytes internally (this only re-maps at the JSON boundary, like Go); valid UTF-8 /
+      # ASCII strings are returned unchanged.
+      # :reek:UtilityFunction :reek:TooManyStatements
+      def sanitize_json(object)
+        case object
+        when ::String then scrub_invalid_bytes(object)
+        when ::Hash then object.to_h { |key, value| [sanitize_json(key), sanitize_json(value)] }
+        when ::Array, ::Set then object.map { |element| sanitize_json(element) }
+        else object
+        end
+      end
+
+      # Replace each invalid byte sequence with one U+FFFD PER BYTE, matching Go's encoding/json (which
+      # advances by utf8.DecodeRune's reported size — one byte per ill-formed position). Ruby's bare
+      # scrub("�") would instead collapse a valid-but-truncated multibyte prefix into a single U+FFFD
+      # (e.g. "\xE0\xA0" -> 1 vs Go's 2), so the per-byte block is required for byte-exact OPA output.
+      # :reek:UtilityFunction
+      def scrub_invalid_bytes(string)
+        as_utf8 = string.encoding == ::Encoding::UTF_8 ? string : string.dup.force_encoding(::Encoding::UTF_8)
+        as_utf8.valid_encoding? ? as_utf8 : as_utf8.scrub { |bad| "\u{FFFD}" * bad.bytesize }
+      end
 
       def add_bindings(bindings)
         bindings.each do |(name, binding_value)|

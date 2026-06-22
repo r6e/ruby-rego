@@ -1,3 +1,12 @@
+# Minimal external declaration for the flt gem (arbitrary-precision binary floats; the Number type's
+# big.Float engine). Only the context constructor is named; every value flowing through it is untyped,
+# so the rest of the arithmetic surface needs no signatures. Declared inline like TZInfo below.
+module Flt
+  module BinNum
+    def self.Context: (**untyped) -> untyped
+  end
+end
+
 # Minimal external declaration for the tzinfo gem. Community RBS exists in gem_rbs_collection, but
 # this project's Steepfile uses only stdlib `library` declarations (no rbs_collection tooling), so
 # the tiny surface the time builtins use is declared inline rather than pulling in that machinery.
@@ -147,6 +156,61 @@ module Ruby
       attr_reader value: untyped
 
       def initialize: (String message, pattern: untyped, value: untyped, location: Location?) -> void
+    end
+
+    module GoNumberFormat
+      def self?.render: (String digits, Integer point, bool negative) -> String
+      def self?.shortest_digits: (String string) -> [String, Integer]
+      def self?.fixed: (String digits, Integer point) -> String
+      def self?.scientific: (String digits, Integer exponent) -> String
+    end
+
+    class Number < Numeric
+      CONTEXT: untyped
+
+      @text: String?
+      @exact: (Rational | Integer)?
+
+      def self.literal: (String text) -> Number
+      def self.from_binnum: (untyped binnum) -> (Number | Integer)
+      def self.from_numeric: (Numeric value) -> Number
+      def self.div: (Numeric left, Numeric right) -> (Number | Integer)
+      def self.modulo: (Numeric left, Numeric right) -> Integer?
+      def self.integer_value: (Numeric value) -> Integer?
+      def self.float_integer_value: (Float value) -> Integer?
+      def self.rational_to_binnum: (Rational | Integer rational) -> untyped
+
+      def initialize: (?text: String?, ?exact: (Rational | Integer)?) -> void
+      def to_s: () -> String
+      def inspect: () -> String
+      def to_json: (*untyped) -> String
+      def exact: () -> (Rational | Integer)
+      def integer_valued?: () -> bool
+      def zero?: () -> bool
+      def negative?: () -> bool
+      def to_f: () -> Float
+      def to_i: () -> Integer
+      def to_int: () -> Integer
+      def to_r: () -> Rational
+      def <=>: (untyped other) -> Integer?
+      def coerce: (Numeric other) -> [Number, Number]
+      def -@: () -> Number
+      def +: (untyped other) -> (Number | Integer)
+      def -: (untyped other) -> (Number | Integer)
+      def *: (untyped other) -> (Number | Integer)
+      def /: (untyped other) -> (Number | Integer)
+      def hash: () -> Integer
+      def eql?: (untyped other) -> bool
+
+      def to_binnum: () -> untyped
+
+      private
+
+      def arithmetic: (Symbol operation, untyped other) -> (Number | Integer)
+      def rational_of: (untyped other) -> (Rational | Integer)?
+      def normalize_exact: ((Rational | Integer) value) -> (Rational | Integer)
+                         | (nil value) -> nil
+                         | ((Rational | Integer)? value) -> (Rational | Integer)?
     end
 
     class Value
@@ -2380,6 +2444,8 @@ module Ruby
 
       private
 
+      def sanitize_json: (untyped object) -> untyped
+      def scrub_invalid_bytes: (String string) -> String
       def add_bindings: (Hash[String | Symbol, untyped] bindings) -> void
     end
 

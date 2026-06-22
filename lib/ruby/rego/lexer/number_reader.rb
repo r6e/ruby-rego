@@ -56,8 +56,11 @@ module Ruby
         digits
       end
 
+      # A number with a fraction or exponent becomes an arbitrary-precision Number that preserves its
+      # source text verbatim (OPA's json.Number model: `1.50` stays `1.50`, `1e999` stays `1e999`),
+      # rather than collapsing to an IEEE-754 Float. A plain integer stays a Ruby Integer.
       def parse_number(buffer, start)
-        return Float(buffer) if buffer.include?(".") || buffer.match?(/[eE]/)
+        return Number.literal(buffer) if buffer.include?(".") || buffer.match?(/[eE]/)
 
         Integer(buffer, 10)
       rescue ArgumentError

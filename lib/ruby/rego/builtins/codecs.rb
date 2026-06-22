@@ -65,10 +65,11 @@ module Ruby
         # serialization (sorted keys, sets as sorted arrays, Go HTML escaping of <>& and U+2028/U+2029) as
         # a raw String. Raises BuiltinArgumentError (-> undefined) on a non-marshalable value.
         #
-        # Float formatting follows Ruby's Float#to_s (json.marshal's shared number model), so a claim like
-        # 1e308 serialises as "1e+308" where Go emits "1e308" — the same gem-wide JSON-number divergence
-        # json.marshal/json.unmarshal already carry, not specific to encode_sign. Integers (any magnitude,
-        # via Bignum) are byte-exact, so practical JWT claims are unaffected.
+        # Rego numbers (Number / Integer) serialise byte-exactly with OPA: a Number emits its canonical
+        # text (`1.50` stays `1.50`, `1e308` stays `1e308`) and integers are exact via Bignum. A Float
+        # only reaches here from a not-yet-migrated builtin output, where it falls back to Ruby's
+        # Float#to_s (the residual JSON-number divergence tracked for the builtin number sweep); a
+        # non-finite Float raises JSON::JSONError and is mapped to undefined by the rescue below.
         #
         # @param value [Ruby::Rego::Value]
         # @return [String]

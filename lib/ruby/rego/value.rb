@@ -3,7 +3,9 @@
 # rubocop:disable Lint/RedundantRequireStatement
 require "set"
 # rubocop:enable Lint/RedundantRequireStatement
+require "bigdecimal"
 require_relative "errors"
+require_relative "number"
 
 module Ruby
   module Rego
@@ -105,6 +107,7 @@ module Ruby
       # @return [Object]
       def self.canonicalize(value)
         case value
+        when Number then value.exact
         when ::Float then canonicalize_float(value)
         when ::Array then canonicalize_each(value)
         when ::Set then ::Set.new(canonicalize_each(value))
@@ -118,14 +121,16 @@ module Ruby
         collection.map { |element| canonicalize(element) }
       end
 
-      # An integer-valued Float collapses to its Integer so it compares and hashes like the
-      # integer; any other (fractional, infinite, NaN) Float is left as-is.
+      # A Float canonicalizes to the same exact form a Number would: its shortest decimal as an exact
+      # Rational (an integer-valued Float collapsing to its Integer), so a Float produced by a not-yet-
+      # migrated builtin compares and hashes equal to a Number of the same value (1.0 == 1, 0.1 == 0.1).
+      # A non-finite Float has no exact value and is left as-is.
       # @return [Numeric]
       def self.canonicalize_float(value)
         return value unless value.finite?
 
-        integer = value.to_i
-        value == integer ? integer : value
+        rational = BigDecimal(value.to_s).to_r
+        rational.denominator == 1 ? rational.numerator : rational
       end
 
       # Coerce Ruby values into Rego values.

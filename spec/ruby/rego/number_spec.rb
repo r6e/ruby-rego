@@ -1,0 +1,142 @@
+# frozen_string_literal: true
+
+require "spec_helper"
+
+# rubocop:disable Metrics/BlockLength
+
+# Ruby::Rego::Number is the arbitrary-precision, OPA-faithful number type. All expected values were
+# verified byte-for-byte against `opa eval` 1.17.
+RSpec.describe Ruby::Rego::Number do
+  describe ".literal" do
+    it "preserves the source text verbatim (json.Number model)" do
+      expect(described_class.literal("1.50").to_s).to eq("1.50")
+      expect(described_class.literal("0.30").to_s).to eq("0.30")
+      expect(described_class.literal("1e999").to_s).to eq("1e999")
+      expect(described_class.literal("6.02e23").to_s).to eq("6.02e23")
+    end
+
+    it "exposes the exact value, collapsing an integer-valued literal to an Integer" do
+      expect(described_class.literal("1.50").exact).to eq(Rational(3, 2))
+      expect(described_class.literal("1.0").exact).to eq(1)
+      expect(described_class.literal("1.0").exact).to be_a(Integer)
+      expect(described_class.literal("0.1").exact).to eq(Rational(1, 10))
+    end
+
+    it "serializes to a raw JSON number token" do
+      expect(described_class.literal("1.50").to_json).to eq("1.50")
+      expect(JSON.generate([described_class.literal("1.50"), described_class.literal("1e999")]))
+        .to eq("[1.50,1e999]")
+    end
+  end
+
+  describe "arithmetic (big.Float at precision 64, round-half-even)" do
+    def num(text) = described_class.literal(text)
+
+    it "matches OPA on the classic divergent cases" do
+      expect((num("0.1") + num("0.2")).to_s).to eq("0.3")
+      expect((num("0.1") * num("0.1")).to_s).to eq("0.010000000000000000001")
+      expect(described_class.div(1, 3).to_s).to eq("0.33333333333333333334")
+      expect(described_class.div(2, 3).to_s).to eq("0.6666666666666666667")
+    end
+
+    it "collapses an integer-valued result back to a Ruby Integer" do
+      expect(num("1.0") + num("1.0")).to eq(2)
+      expect(num("1.0") + num("1.0")).to be_a(Integer)
+      expect(num("2.5") * 4).to eq(10)
+      expect(described_class.div(4, 2)).to be_a(Integer)
+    end
+
+    it "never overflows to a non-finite value (the serializer DoS is closed)" do
+      result = num("1e308") * num("1e308")
+      expect(result).to be_a(Integer)
+      expect(result.to_s).to start_with("9999999999999999999")
+      expect(result.to_s).to end_with("0000")
+      expect((num("1e-300") * num("1e-300")).to_s).to eq("9.9999999999999999994e-601")
+    end
+
+    it "coerces an Integer or Float left operand through the big.Float engine" do
+      expect((2 + num("1.5")).to_s).to eq("3.5")
+      expect((10 - num("3.5")).to_s).to eq("6.5")
+      expect((1 - num("0.25")).to_s).to eq("0.75")
+    end
+
+    it "negates" do
+      expect((-num("1.5")).to_s).to eq("-1.5")
+      expect(-num("1.0")).to eq(-1)
+    end
+
+    it "raises TypeError on a non-numeric operand, like any Numeric" do
+      # rubocop:disable Style/StringConcatenation -- exercising a non-numeric operand, not concatenating
+      expect { num("1.5") + "x" }.to raise_error(TypeError)
+      # rubocop:enable Style/StringConcatenation
+    end
+  end
+
+  describe ".div (always big.Float)" do
+    it "produces a fractional quotient where Ruby integer division would truncate" do
+      expect(described_class.div(5, 2).to_s).to eq("2.5")
+      expect(described_class.div(-5, 2).to_s).to eq("-2.5")
+      expect(described_class.div(4, 2)).to eq(2)
+    end
+  end
+
+  describe ".modulo (integer-only, Go truncated remainder)" do
+    def num(text) = described_class.literal(text)
+
+    it "is integer-valued only and otherwise nil (-> undefined)" do
+      expect(described_class.modulo(5, 2)).to eq(1)
+      expect(described_class.modulo(num("4.0"), 2)).to eq(0)
+      expect(described_class.modulo(num("5.5"), 2)).to be_nil
+      expect(described_class.modulo(5, num("2.5"))).to be_nil
+    end
+
+    it "takes the sign of the dividend (truncated, not floored)" do
+      expect(described_class.modulo(-5, 3)).to eq(-2)
+      expect(described_class.modulo(5, -3)).to eq(2)
+    end
+  end
+
+  describe "equality and ordering by exact value" do
+    def num(text) = described_class.literal(text)
+
+    it "compares numerically equal regardless of representation" do
+      expect(num("1.50") == num("1.5")).to be(true)
+      expect(num("1.0") == 1).to be(true)
+      expect(num("0.30") == Rational(3, 10)).to be(true)
+    end
+
+    it "orders against any Numeric" do
+      expect(num("1.5") < 2).to be(true)
+      expect(num("2.5") > 2).to be(true)
+      expect(3 > num("2.5")).to be(true) # rubocop:disable Style/YodaCondition -- Integer coercing a Number
+      expect([num("3.3"), num("1.1"), num("2.2")].sort.map(&:to_s)).to eq(%w[1.1 2.2 3.3])
+    end
+
+    it "hashes consistently with eql? so a Set dedups equal Numbers" do
+      expect(Set[num("1.50"), num("1.5")].size).to eq(1)
+    end
+
+    it "returns nil from <=> for a non-numeric, so comparison is undefined not a crash" do
+      expect(num("1.5") <=> "x").to be_nil
+    end
+  end
+
+  describe "Numeric conversions" do
+    def num(text) = described_class.literal(text)
+
+    it "truncates to_i toward zero and exposes an exact to_r" do
+      expect(num("1.9").to_i).to eq(1)
+      expect(num("-1.9").to_i).to eq(-1)
+      expect(num("1.50").to_r).to eq(Rational(3, 2))
+    end
+
+    it "reports integer_valued?, zero?, negative?" do
+      expect(num("1.0").integer_valued?).to be(true)
+      expect(num("1.5").integer_valued?).to be(false)
+      expect(num("0.0").zero?).to be(true)
+      expect(num("-1.5").negative?).to be(true)
+    end
+  end
+end
+
+# rubocop:enable Metrics/BlockLength

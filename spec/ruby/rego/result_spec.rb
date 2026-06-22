@@ -47,6 +47,42 @@ RSpec.describe Ruby::Rego::Result do
       expect(payload["errors"]).to eq(["none"])
     end
 
+    # An invalid-UTF-8 / ASCII-8BIT (binary) string in the output value — e.g. a base64.decode result,
+    # including as an object KEY — must serialize like Go's encoding/json (each invalid byte sequence ->
+    # U+FFFD), matching OPA, rather than raising JSON::GeneratorError (which would escape uncaught).
+    it "replaces invalid-UTF-8 / binary bytes with U+FFFD in JSON output (matching OPA), never raising" do
+      binary_key = (+"\x80").force_encoding("ASCII-8BIT") # opa: "�"
+      lone_surrogate = (+"\xED\xA0\x80").force_encoding("ASCII-8BIT") # opa: "���"
+      result = described_class.new(
+        value: { binary_key => "v", "valid-é" => lone_surrogate, "nested" => [binary_key] },
+        success: true
+      )
+
+      payload = nil
+      expect { payload = JSON.parse(result.to_json) }.not_to raise_error
+      expect(payload["value"]).to eq(
+        { "�" => "v", "valid-é" => "���", "nested" => ["�"] }
+      )
+    end
+
+    it "uses Go's per-byte U+FFFD granularity (one per invalid byte), not Ruby scrub's grouping" do
+      # "\xE0\xA0" is a truncated 3-byte lead+continuation: Go (and OPA) emit 2 U+FFFD (one per byte),
+      # whereas Ruby's bare scrub("�") would collapse it to 1. The valid 'A' after must survive.
+      result = described_class.new(value: { "k" => (+"\xE0\xA0\x41").force_encoding("ASCII-8BIT") }, success: true)
+      expect(JSON.parse(result.to_json)["value"]["k"]).to eq("\u{FFFD}\u{FFFD}A")
+    end
+
+    it "serializes a Set value (not raising), matching OPA's array form" do
+      result = described_class.new(value: Set.new([(+"\x80").force_encoding("ASCII-8BIT"), "ok"]), success: true)
+      expect { JSON.parse(result.to_json) }.not_to raise_error
+      expect(JSON.parse(result.to_json)["value"]).to contain_exactly("�", "ok")
+    end
+
+    it "leaves valid UTF-8 and ASCII output unchanged" do
+      result = described_class.new(value: { "Xé" => "普通话", "a" => "b" }, success: true)
+      expect(JSON.parse(result.to_json)["value"]).to eq({ "Xé" => "普通话", "a" => "b" })
+    end
+
     it "serializes structured errors without duplicating location" do
       location = Ruby::Rego::Location.new(line: 1, column: 2)
       error = Ruby::Rego::Error.new("boom", location: location)

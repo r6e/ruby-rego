@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Numbers are now an OPA-faithful arbitrary-precision model instead of Ruby `Float`. A non-integer
+  literal becomes a `Ruby::Rego::Number` that preserves its source text verbatim (OPA's `json.Number`
+  model: `1.50` stays `1.50`, `1e999` stays `1e999`, `1e308` no longer becomes `1e+308` in
+  `json.marshal`), and arithmetic runs through Go's `math/big.Float` model — reproduced with the `flt`
+  gem at 64-bit binary precision and round-half-even — so computed results match OPA byte-for-byte
+  (`1/3` → `0.33333333333333333334`, `0.1 + 0.2` → `0.3`, `0.3 - 0.1` → `0.20000000000000000002`,
+  `1e308 * 1e308` → the full ~600-digit integer). Division is always big.Float (`5 / 2` → `2.5`, an
+  integer-valued quotient like `4 / 2` collapsing to `2`); modulo is integer-valued-only and otherwise
+  undefined (`4.0 % 2` → `0`, `5.5 % 2` → undefined) with Go's truncated remainder (`-5 % 3` → `-2`).
+  Integers stay Ruby `Integer` (already arbitrary-precision); `1 == 1.0` / `1.50 == 1.5` equality and
+  the first-seen-representation dedup are unchanged. This closes the serializer denial-of-service where
+  `x := 1e999` or `1e308 * 1e308` produced a non-finite `Float` that crashed `Result#to_json`: numbers
+  are now always finite and serialize as their canonical text. Verified differentially against
+  `opa eval` 1.17. (Not yet migrated — tracked for the builtin number sweep: `to_number` and the
+  numeric/aggregate builtins still round-trip through `Float`, and `json.unmarshal` collapses number
+  text.)
+- An invalid-UTF-8 / ASCII-8BIT (binary) string in an evaluation result — most easily an object key
+  from `base64.decode` — now serializes like Go's `encoding/json` (each invalid byte → `U+FFFD`,
+  byte-for-byte with OPA) instead of raising `JSON::GeneratorError` and aborting the policy.
+
 - `json.match_schema` now enforces the gojsonschema `format` assertions OPA implements for the
   lexical / date-time / network / regex / URI / email formats: `hostname`, `uuid`, `json-pointer`,
   `relative-json-pointer`, `regex`, `date`, `time`, `date-time`, `ipv4`, `ipv6`, `uri`,

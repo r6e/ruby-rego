@@ -71,7 +71,7 @@ module Ruby
         value = token.value
         if value.is_a?(String)
           value = if value.match?(/[eE.]/)
-                    Float(value)
+                    Number.literal(value)
                   else
                     Integer(value, 10)
                   end

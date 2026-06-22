@@ -16,7 +16,8 @@ RSpec.describe "number normalization (1 == 1.0) at the value layer" do
     expect(eval_rule("count({1, 1.0})")).to eq(1)
     expect(eval_rule("count({1, 1.0, 1.00})")).to eq(1)
     expect(eval_rule("{1, 1.0}")).to eq(Set[1])
-    expect(eval_rule("{1.0, 1}")).to eq(Set[1.0])
+    # First-seen form kept: the `1.0` literal is an arbitrary-precision Number preserving its text.
+    expect(eval_rule("{1.0, 1}")).to eq(Set[Ruby::Rego::Number.literal("1.0")])
   end
 
   it "treats 1 and 1.0 as equal, including for sets" do
@@ -47,7 +48,7 @@ RSpec.describe "number normalization (1 == 1.0) at the value layer" do
 
   it "merges numerically-equal object keys, keeping the first key form and last value" do
     expect(eval_rule('{1: "a", 1.0: "b"}')).to eq({ 1 => "b" })
-    expect(eval_rule('{1.0: "a", 1: "b"}')).to eq({ 1.0 => "b" })
+    expect(eval_rule('{1.0: "a", 1: "b"}')).to eq({ Ruby::Rego::Number.literal("1.0") => "b" })
     expect(eval_rule('count({1: "a", 1.0: "b"})')).to eq(1)
     expect(eval_rule('object.keys({1: "a", 1.0: "b"})')).to eq(Set[1])
   end

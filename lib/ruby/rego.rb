@@ -3,6 +3,7 @@
 require_relative "rego/version"
 require_relative "rego/location"
 require_relative "rego/errors"
+require_relative "rego/number"
 require_relative "rego/error_handling"
 require_relative "rego/token"
 require_relative "rego/lexer"

@@ -7,6 +7,8 @@
 detectors:
   TooManyMethods:
     exclude:
+      # Number is a Numeric value object: the full Numeric protocol plus the OPA div/mod helpers.
+      - Ruby::Rego::Number
       # Recursive-descent JSON Schema validator: one predicate per keyword family.
       - Ruby::Rego::Builtins::Codecs::JsonSchema::Matcher
       # Recursive-descent port of Go net/mail.ParseAddress: one consume_*/skip_* method per grammar production.
@@ -47,6 +49,9 @@ detectors:
       - Ruby::Rego::Evaluator::ReferenceResolver
   TooManyStatements:
     exclude:
+      # Shortest-digit parse and the FloatToNumber result formatter are linear Go-port sequences.
+      - Ruby::Rego::GoNumberFormat#shortest_digits
+      - Ruby::Rego::Number#self.from_binnum
       # Faithful ports of Go's regexp match/split iteration (adjacency filter,
       # keep-trailing / zero-width rules).
       - Ruby::Rego::Builtins::Regex#self.each_match
@@ -140,6 +145,8 @@ detectors:
       - Ruby::Rego::Builtins::Crypto::CertificateStruct
   UtilityFunction:
     exclude:
+      # Reduces an integer-valued Rational to an Integer; a pure helper kept beside its callers.
+      - Ruby::Rego::Number#normalize_exact
       # match_schema's keyword predicates are pure checks over the (document, schema) it recurses on.
       - Ruby::Rego::Builtins::Codecs::JsonSchema::Matcher
       - Ruby::Rego::Lexer
@@ -153,6 +160,9 @@ detectors:
       - Ruby::Rego::Builtins::Regex::GoTemplate
   FeatureEnvy:
     exclude:
+      # eql?/rational_of inspect the other operand by nature (numeric coercion/equality).
+      - Ruby::Rego::Number#eql?
+      - Ruby::Rego::Number#rational_of
       # The validator inherently operates on the document/subschema it is handed, not on instance state.
       - Ruby::Rego::Builtins::Codecs::JsonSchema::Matcher
       - Ruby::Rego::Lexer
@@ -171,6 +181,8 @@ detectors:
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
   ControlParameter:
     exclude:
+      # render's sign flag is intrinsic to the Go 'g' output, not a hidden branch to split.
+      - Ruby::Rego::GoNumberFormat#render
       - Ruby::Rego::Lexer
       - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator::RuleEvaluator
@@ -188,6 +200,8 @@ detectors:
       - Ruby::Rego::Builtins::Crypto::CertificateStruct
   NilCheck:
     exclude:
+      # mod returns nil (non-integer operand) which maps to undefined.
+      - Ruby::Rego::Evaluator::OperatorEvaluator#self.arithmetic_values
       - Ruby::Rego::Lexer
       - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator::ReferenceResolver
