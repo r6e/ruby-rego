@@ -17,8 +17,8 @@ module Ruby
         # Like gojsonschema, validation applies every keyword from draft-04/06/07 at once (boolean and
         # numeric exclusiveMinimum, const, if/then/else, contains, propertyNames, …). A pattern is matched
         # with the re2 gem (Go's regex engine), not Ruby's Onigmo. The `format` keyword enforces the assertions
-        # in JsonSchema::Formats (lexical / date-time / net / regex); the uri family and email are still
-        # annotation-only there, pending follow-up PRs.
+        # in JsonSchema::Formats (lexical / date-time / net / regex / uri family); email/idn-email are still
+        # annotation-only there, pending the follow-up PR.
         module JsonSchema
           # The best-effort error returned when a document does not match (gojsonschema returns one richly
           # typed object per failure; only the array's non-emptiness is contractual).

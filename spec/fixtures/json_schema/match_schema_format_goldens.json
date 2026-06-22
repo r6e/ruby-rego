@@ -1015,6 +1015,462 @@
     },
     "expected": true
   },
+  "uri__abs": {
+    "doc": "\"http://example.com\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": true
+  },
+  "uri__full": {
+    "doc": "\"https://a.b/c?d=e#f\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": true
+  },
+  "uri__scheme_rel": {
+    "doc": "\"//example.com\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": false
+  },
+  "uri__abs_path": {
+    "doc": "\"/path\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": false
+  },
+  "uri__rel": {
+    "doc": "\"foo\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": false
+  },
+  "uri__empty": {
+    "doc": "\"\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": false
+  },
+  "uri__urn": {
+    "doc": "\"urn:isbn:0451450523\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": true
+  },
+  "uri__mailto": {
+    "doc": "\"mailto:a@b.com\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": true
+  },
+  "uri__space_auth": {
+    "doc": "\"http://a b\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": false
+  },
+  "uri__space_path": {
+    "doc": "\"http://example.com/a b\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": true
+  },
+  "uri__backslash": {
+    "doc": "\"foo\\\\bar\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": false
+  },
+  "uri__ipv6_host": {
+    "doc": "\"http://[::1]:8080/p\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": true
+  },
+  "uri__idn_host": {
+    "doc": "\"http://例子.广告\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": true
+  },
+  "uri__bad_scheme": {
+    "doc": "\"ht!tp://x\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": false
+  },
+  "uri__digit_scheme": {
+    "doc": "\"1http://x\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": false
+  },
+  "uri__bad_pct": {
+    "doc": "\"http://x/%zz\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": false
+  },
+  "uri__good_pct": {
+    "doc": "\"http://x/%2F\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": true
+  },
+  "uri__tab": {
+    "doc": "\"http://x\\ty\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": false
+  },
+  "uri__frag_only": {
+    "doc": "\"#frag\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": false
+  },
+  "uri__upper": {
+    "doc": "\"HTTP://X\"",
+    "schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expected": true
+  },
+  "uri-reference__abs": {
+    "doc": "\"http://example.com\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": true
+  },
+  "uri-reference__scheme_rel": {
+    "doc": "\"//example.com\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": true
+  },
+  "uri-reference__abs_path": {
+    "doc": "\"/path\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": true
+  },
+  "uri-reference__rel": {
+    "doc": "\"foo\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": true
+  },
+  "uri-reference__empty": {
+    "doc": "\"\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": true
+  },
+  "uri-reference__backslash": {
+    "doc": "\"foo\\\\bar\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": false
+  },
+  "uri-reference__space_auth": {
+    "doc": "\"http://a b\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": false
+  },
+  "uri-reference__frag_only": {
+    "doc": "\"#frag\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": true
+  },
+  "uri-reference__query_only": {
+    "doc": "\"?q=1\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": true
+  },
+  "uri-reference__idn_path": {
+    "doc": "\"http://x/路径\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": true
+  },
+  "uri-reference__bad_pct": {
+    "doc": "\"http://x/%zz\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": false
+  },
+  "uri-reference__newline": {
+    "doc": "\"http://x\\ny\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "expected": false
+  },
+  "iri__abs": {
+    "doc": "\"http://example.com\"",
+    "schema": {
+      "type": "string",
+      "format": "iri"
+    },
+    "expected": true
+  },
+  "iri__idn_host": {
+    "doc": "\"http://例子.广告\"",
+    "schema": {
+      "type": "string",
+      "format": "iri"
+    },
+    "expected": true
+  },
+  "iri__scheme_rel": {
+    "doc": "\"//example.com\"",
+    "schema": {
+      "type": "string",
+      "format": "iri"
+    },
+    "expected": false
+  },
+  "iri__rel": {
+    "doc": "\"foo\"",
+    "schema": {
+      "type": "string",
+      "format": "iri"
+    },
+    "expected": false
+  },
+  "iri__backslash": {
+    "doc": "\"a\\\\b\"",
+    "schema": {
+      "type": "string",
+      "format": "iri"
+    },
+    "expected": false
+  },
+  "iri-reference__abs": {
+    "doc": "\"http://example.com\"",
+    "schema": {
+      "type": "string",
+      "format": "iri-reference"
+    },
+    "expected": true
+  },
+  "iri-reference__rel": {
+    "doc": "\"foo\"",
+    "schema": {
+      "type": "string",
+      "format": "iri-reference"
+    },
+    "expected": true
+  },
+  "iri-reference__idn_host": {
+    "doc": "\"http://例子.广告\"",
+    "schema": {
+      "type": "string",
+      "format": "iri-reference"
+    },
+    "expected": true
+  },
+  "iri-reference__backslash": {
+    "doc": "\"a\\\\b\"",
+    "schema": {
+      "type": "string",
+      "format": "iri-reference"
+    },
+    "expected": false
+  },
+  "iri-reference__space_auth": {
+    "doc": "\"http://a b\"",
+    "schema": {
+      "type": "string",
+      "format": "iri-reference"
+    },
+    "expected": false
+  },
+  "uri-template__var": {
+    "doc": "\"http://example.com/{id}\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": true
+  },
+  "uri-template__unclosed": {
+    "doc": "\"http://example.com/{id\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": false
+  },
+  "uri-template__plain": {
+    "doc": "\"http://example.com/\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": true
+  },
+  "uri-template__two_vars": {
+    "doc": "\"http://example.com/{a}/{b}\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": true
+  },
+  "uri-template__close_first": {
+    "doc": "\"http://example.com/}{\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": false
+  },
+  "uri-template__empty_var": {
+    "doc": "\"http://example.com/{}\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": true
+  },
+  "uri-template__rel": {
+    "doc": "\"/{x}\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": true
+  },
+  "uri-template__backslash": {
+    "doc": "\"foo\\\\{x}\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": false
+  },
+  "uri-template__space": {
+    "doc": "\"http://a b/{x}\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": false
+  },
+  "uri-template__scheme_var": {
+    "doc": "\"{scheme}://x\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": false
+  },
+  "uri-template__stray_close": {
+    "doc": "\"http://x/}\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": true
+  },
+  "uri-template__pct_ff": {
+    "doc": "\"http://h/%FF\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": true
+  },
+  "uri-template__pct_80": {
+    "doc": "\"http://h/a%80b\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": true
+  },
+  "uri-template__pct_ff_brace": {
+    "doc": "\"http://h/%FF{\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": false
+  },
+  "uri-template__pct_surrogate": {
+    "doc": "\"http://h/%ED%A0%80\"",
+    "schema": {
+      "type": "string",
+      "format": "uri-template"
+    },
+    "expected": true
+  },
   "unknown-format-name__anything": {
     "doc": "\"literally anything\"",
     "schema": {
