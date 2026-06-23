@@ -278,6 +278,12 @@ module Ruby
         [self.class.from_numeric(other), self]
       end
 
+      # Negate, keeping the result a Number (it serializes to the same canonical text as the equivalent
+      # Integer — `-(1.0)` -> `-1` — and equality unifies them). Deliberately NOT collapsed to a Ruby
+      # Integer: a huge integer-valued magnitude must stay a Number so yaml.marshal renders it through the
+      # OPA-faithful float64 path (`-1e308` -> `-1e+308`); a Ruby Integer would render full digits, which
+      # is the pre-existing yaml-vs-OPA gap for large integers (tracked for the yaml/number sweep).
+      #
       # @return [Number]
       def -@
         self.class.from_numeric(-exact)
