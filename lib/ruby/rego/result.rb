@@ -56,7 +56,10 @@ module Ruby
         value.is_a?(UndefinedValue)
       end
 
-      # Convert the result to a serializable hash.
+      # Convert the result to a hash of the raw evaluated values (each via Value#to_ruby). This is the
+      # internal shape; it can contain values that are not directly JSON-safe — a string with invalid-UTF-8
+      # bytes, or the undefined sentinel left inside a collection (e.g. an array element that evaluated to
+      # undefined). Use #to_json for a JSON-safe serialization (it scrubs both, matching OPA).
       #
       # @return [Hash{Symbol => Object}]
       def to_h

@@ -128,6 +128,14 @@ RSpec.describe "number model — builtin interaction" do
       expect(eval_rule("min([1.50, 1.5])").to_s).to eq("1.5")
       expect(eval_rule("min([1.5, 1.50])").to_s).to eq("1.50")
     end
+
+    # object.union keeps the LEFT spelling on a value-equal key tie (OPA right-precedence only applies to
+    # differing values); object.union_n folds left-to-right and keeps the LAST. Verified vs opa eval 1.17.
+    it "object.union keeps the left tie-spelling, object.union_n the last" do
+      expect(eval_rule('object.union({"k": 1.50}, {"k": 1.5})')).to eq({ "k" => Ruby::Rego::Number.literal("1.50") })
+      expect(eval_rule('object.union({"k": 1}, {"k": 2})')).to eq({ "k" => 2 })
+      expect(eval_rule('object.union_n([{"k": 1.50}, {"k": 1.5}])')).to eq({ "k" => Ruby::Rego::Number.literal("1.5") })
+    end
   end
 
   describe "negative numeric literals preserve their text (folded into the literal, as OPA does)" do

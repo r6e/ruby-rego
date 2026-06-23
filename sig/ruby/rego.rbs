@@ -2057,8 +2057,8 @@ module Ruby
         def self.array_set_subset?: (Array[untyped] sup, Set[untyped] sub) -> bool
         def self.normalize_object_key: (untyped key) -> untyped
         def self.key_collection: (Value keys, name: String) -> Set[untyped]
-        def self.deep_union: (Hash[untyped, Value] left, Hash[untyped, Value] right) -> Hash[untyped, Value]
-        def self.merge_value: (Value? left_value, Value right_value) -> Value
+        def self.deep_union: (Hash[untyped, Value] left, Hash[untyped, Value] right, bool prefer_left_on_tie) -> Hash[untyped, Value]
+        def self.merge_value: (Value? left_value, Value right_value, bool prefer_left_on_tie) -> Value
         def self.key_values: (Value keys, name: String) -> Array[untyped]
         def self.array_key_values: (ArrayValue keys) -> Array[Value]
         def self.values_from_set: (SetValue keys) -> Array[Value]
