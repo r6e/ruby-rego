@@ -52,7 +52,7 @@ detectors:
       # Type-dispatch guard chain over Integer / Float / Number numeric forms.
       - Ruby::Rego::Builtins::NumericHelpers#self.integer_value
       # Shortest-digit parse and the FloatToNumber result formatter are linear Go-port sequences.
-      - Ruby::Rego::GoNumberFormat#shortest_digits
+      - Ruby::Rego::GoNumberFormat#self.shortest_digits
       - Ruby::Rego::Number#self.from_binnum
       # Faithful ports of Go's regexp match/split iteration (adjacency filter,
       # keep-trailing / zero-width rules).
@@ -189,7 +189,7 @@ detectors:
   ControlParameter:
     exclude:
       # render's sign flag is intrinsic to the Go 'g' output, not a hidden branch to split.
-      - Ruby::Rego::GoNumberFormat#render
+      - Ruby::Rego::GoNumberFormat#self.render
       - Ruby::Rego::Lexer
       - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator::RuleEvaluator

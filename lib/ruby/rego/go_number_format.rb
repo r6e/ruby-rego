@@ -12,15 +12,13 @@ module Ruby
     # Both the arbitrary-precision Number (flt-sourced digits) and the YAML emitter (Ruby Float#to_s
     # digits) share this single Go-faithful renderer.
     module GoNumberFormat
-      module_function
-
       # Render shortest digits + decimal-point position as Go's 'g' verb would.
       #
       # @param digits [String] shortest significant digits, no leading/trailing zeros
       # @param point [Integer] decimal-point position such that value == 0.<digits> * 10**point
       # @param negative [Boolean] whether the value is negative
       # @return [String]
-      def render(digits, point, negative)
+      def self.render(digits, point, negative)
         exponent = point - 1
         body = exponent < -4 || exponent >= 6 ? scientific(digits, exponent) : fixed(digits, point)
         negative ? "-#{body}" : body
@@ -33,7 +31,7 @@ module Ruby
       # @param string [String]
       # @return [Array(String, Integer)]
       # rubocop:disable Metrics/AbcSize
-      def shortest_digits(string)
+      def self.shortest_digits(string)
         mantissa, exponent = string.sub(/\A-/, "").split(/e/i)
         integer_part, fraction = mantissa.to_s.split(".")
         integer_part = integer_part.to_s
@@ -51,13 +49,13 @@ module Ruby
       #
       # @param string [String]
       # @return [String]
-      def strip_trailing_zeros(string)
+      def self.strip_trailing_zeros(string)
         last_significant = string.rindex(/[^0]/)
         last_significant ? string[0..last_significant].to_s : ""
       end
 
       # @return [String]
-      def fixed(digits, point)
+      def self.fixed(digits, point)
         length = digits.length
         return "0.#{"0" * -point}#{digits}" if point <= 0
         return digits + ("0" * (point - length)) if point >= length
@@ -66,7 +64,7 @@ module Ruby
       end
 
       # @return [String]
-      def scientific(digits, exponent)
+      def self.scientific(digits, exponent)
         mantissa = digits.length == 1 ? digits : "#{digits[0]}.#{digits[1..]}"
         "#{mantissa}e#{exponent.negative? ? "-" : "+"}#{format("%02d", exponent.abs)}"
       end
