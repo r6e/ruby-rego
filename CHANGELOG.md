@@ -48,6 +48,11 @@ All notable changes to this project will be documented in this file.
   through a 64-bit big.Float (`2^64 + 1` is `2^64` in OPA); `yaml.marshal` of a magnitude beyond
   float64 range is undefined whereas OPA emits the `json.Number` text; `to_number` / `units.parse` and
   `json.unmarshal` still round-trip non-integer numbers through `Float`.
+- Known limitation (tracked follow-up): comparing/ordering/deduplicating very large numbers of distinct
+  near-magnitude-limit literals (e.g. tens of thousands of `1e30102`) materializes a large exact
+  rational per literal, so a pathological policy can use substantial memory. On the previous `Float`
+  model the same input crashed serialization outright; making the equality/compare path avoid
+  materializing the full rational for extreme magnitudes is a separate change.
 
 - `json.match_schema` now enforces the gojsonschema `format` assertions OPA implements for the
   lexical / date-time / network / regex / URI / email formats: `hostname`, `uuid`, `json-pointer`,
