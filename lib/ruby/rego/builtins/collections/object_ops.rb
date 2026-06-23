@@ -153,7 +153,7 @@ module Ruby
             merged = deep_union(
               object_value(left, name: "object.union").value,
               object_value(right, name: "object.union").value,
-              true
+              prefer_left_on_tie: true
             )
             ObjectValue.new(merged)
           end
@@ -164,7 +164,7 @@ module Ruby
             Base.assert_type(array, expected: ArrayValue, context: "object.union_n")
             seed = {} # @type var seed: Hash[untyped, Value]
             merged = array.value.reduce(seed) do |acc, element|
-              deep_union(acc, object_value(element, name: "object.union_n element").value, false)
+              deep_union(acc, object_value(element, name: "object.union_n element").value, prefer_left_on_tie: false)
             end
             ObjectValue.new(merged)
           end
@@ -226,9 +226,9 @@ module Ruby
           # @param left [Hash{Object => Ruby::Rego::Value}]
           # @param right [Hash{Object => Ruby::Rego::Value}]
           # @return [Hash{Object => Ruby::Rego::Value}]
-          def self.deep_union(left, right, prefer_left_on_tie)
+          def self.deep_union(left, right, prefer_left_on_tie:)
             right.each_with_object(left.dup) do |(key, right_value), merged|
-              merged[key] = merge_value(merged[key], right_value, prefer_left_on_tie)
+              merged[key] = merge_value(merged[key], right_value, prefer_left_on_tie: prefer_left_on_tie)
             end
           end
           private_class_method :deep_union
@@ -241,9 +241,10 @@ module Ruby
           # @param right_value [Ruby::Rego::Value]
           # @param prefer_left_on_tie [bool]
           # @return [Ruby::Rego::Value]
-          def self.merge_value(left_value, right_value, prefer_left_on_tie)
+          def self.merge_value(left_value, right_value, prefer_left_on_tie:)
             if left_value.is_a?(ObjectValue) && right_value.is_a?(ObjectValue)
-              return ObjectValue.new(deep_union(left_value.value, right_value.value, prefer_left_on_tie))
+              merged = deep_union(left_value.value, right_value.value, prefer_left_on_tie: prefer_left_on_tie)
+              return ObjectValue.new(merged)
             end
             return left_value if prefer_left_on_tie && left_value && left_value == right_value
 
