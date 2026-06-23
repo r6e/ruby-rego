@@ -15,6 +15,16 @@ RSpec.describe Ruby::Rego::Value do
       expect(described_class.from_ruby(nil)).to be_a(Ruby::Rego::NullValue)
     end
 
+    # A non-finite Float (only reachable from a number beyond Float range read from input/data JSON) is
+    # not a representable Rego number; mapping it to undefined at this single boundary keeps every
+    # downstream operation (arithmetic, comparison, aggregates, serialization) total.
+    it "maps a non-finite Float (Infinity / NaN) to undefined" do
+      expect(described_class.from_ruby(Float::INFINITY)).to be_a(Ruby::Rego::UndefinedValue)
+      expect(described_class.from_ruby(-Float::INFINITY)).to be_a(Ruby::Rego::UndefinedValue)
+      expect(described_class.from_ruby(Float::NAN)).to be_a(Ruby::Rego::UndefinedValue)
+      expect(described_class.from_ruby(1.5)).to be_a(Ruby::Rego::NumberValue)
+    end
+
     it "wraps arrays, objects, and sets recursively" do
       ruby_set = Set.new(["admin", 3])
       ruby_hash = { "roles" => ruby_set, :enabled => true }

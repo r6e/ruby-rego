@@ -4,6 +4,56 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Numbers are now an OPA-faithful arbitrary-precision model instead of Ruby `Float`. A non-integer
+  literal becomes a `Ruby::Rego::Number` that preserves its source text verbatim (OPA's `json.Number`
+  model: `1.50` stays `1.50`, `-1.50` stays `-1.50`, `-0.0` stays `-0.0`, `1e999` stays `1e999`,
+  `1e308` no longer becomes `1e+308` in `json.marshal`), and arithmetic runs through Go's
+  `math/big.Float` model — reproduced with the `flt`
+  gem at 64-bit binary precision and round-half-even — so computed results match OPA byte-for-byte
+  (`1/3` → `0.33333333333333333334`, `0.1 + 0.2` → `0.3`, `0.3 - 0.1` → `0.20000000000000000002`,
+  `1e308 * 1e308` → the full ~600-digit integer). Division is always big.Float (`5 / 2` → `2.5`, an
+  integer-valued quotient like `4 / 2` collapsing to `2`); modulo is integer-valued-only and otherwise
+  undefined (`4.0 % 2` → `0`, `5.5 % 2` → undefined) with Go's truncated remainder (`-5 % 3` → `-2`).
+  Integers stay Ruby `Integer` (already arbitrary-precision); `1 == 1.0` / `1.50 == 1.5` equality and
+  the first-seen-representation dedup are unchanged. This closes the serializer denial-of-service where
+  `x := 1e999` or `1e308 * 1e308` produced a non-finite `Float` that crashed `Result#to_json`: numbers
+  are now always finite and serialize as their canonical text. Builtins that classify numbers learned
+  about the new type so behaviour is unchanged from before: `round`/`ceil`/`floor` of a beyond-Float
+  magnitude return a finite integer instead of raising `FloatDomainError` (a totality fix), and an
+  integer-valued literal in float form (`3.0`) is still accepted wherever an integer is required
+  (`numbers.range`, `bits.*`, `format_int`, `json.match_schema` `type: integer`, `yaml.marshal`), and
+  `numbers.max` / `numbers.min` return the last of value-equal ties (so `max([1.50, 1.5])` is `1.5`),
+  matching OPA. A numeric literal whose magnitude is beyond OPA's limit (≈`1e±30102`) is now rejected
+  at parse with a "number too big" error, exactly as OPA does — this also bounds the rational the
+  number would otherwise materialize, closing an unbounded-exponent denial of service (`1e999999999`,
+  12 source bytes, previously allocated a gigabyte-scale rational). Verified differentially against
+  `opa eval` 1.17. `round`/`ceil`/`floor` round the precision-64 binary value exactly as OPA's
+  big.Float does (so `round(0.4999…9)` is `1` and `round(1e400)` matches OPA's rounded integer
+  byte-for-byte). (Not yet migrated — tracked for the builtin number sweep: `to_number`,
+  `units.parse` and the numeric/aggregate builtins still round-trip through `Float`, and
+  `json.unmarshal` collapses number text.)
+- An invalid-UTF-8 / ASCII-8BIT (binary) string in an evaluation result — most easily an object key
+  from `base64.decode` — now serializes like Go's `encoding/json` (each invalid byte → `U+FFFD`,
+  byte-for-byte with OPA) instead of raising `JSON::GeneratorError` and aborting the policy. A number
+  beyond `Float` range read from `input`/`data` JSON (e.g. `{"n": 1e999}` → `Float::INFINITY`, or YAML
+  `.nan`) is now mapped to undefined at the value boundary, so arithmetic, comparison, aggregation and
+  serialization over it all stay total instead of raising; preserving such input values is tracked for
+  the arbitrary-precision input/`json.unmarshal` sweep. **Note** this means a comparison or equality
+  against such an input value is now undefined where it previously returned a (sometimes-correct)
+  boolean — e.g. a `input.n > threshold` guard does not fire when `input.n` is `1e999`; treat numbers
+  beyond `Float` range in untrusted input as undefined until that sweep lands.
+
+- Known deferred number divergences from OPA (tracked for the builtin number sweep, unchanged from
+  before this work): integer `+`/`-`/`*` stays exact past 2^64 whereas OPA rounds every operation
+  through a 64-bit big.Float (`2^64 + 1` is `2^64` in OPA); `yaml.marshal` of a magnitude beyond
+  float64 range is undefined whereas OPA emits the `json.Number` text; `to_number` / `units.parse` and
+  `json.unmarshal` still round-trip non-integer numbers through `Float`.
+- Known limitation (tracked follow-up): comparing/ordering/deduplicating very large numbers of distinct
+  near-magnitude-limit literals (e.g. tens of thousands of `1e30102`) materializes a large exact
+  rational per literal, so a pathological policy can use substantial memory. On the previous `Float`
+  model the same input crashed serialization outright; making the equality/compare path avoid
+  materializing the full rational for extreme magnitudes is a separate change.
+
 - `json.match_schema` now enforces the gojsonschema `format` assertions OPA implements for the
   lexical / date-time / network / regex / URI / email formats: `hostname`, `uuid`, `json-pointer`,
   `relative-json-pointer`, `regex`, `date`, `time`, `date-time`, `ipv4`, `ipv6`, `uri`,

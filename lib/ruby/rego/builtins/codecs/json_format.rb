@@ -19,7 +19,14 @@ module Ruby
 
         # @param ruby [Object]
         # @return [Object]
+        # rubocop:disable Metrics/CyclomaticComplexity -- a recursive type-dispatch over JSON shapes plus
+        # the undefined-propagation guard; each arm is one shape, not branching logic to decompose.
         def self.jsonify(ruby)
+          # An undefined sentinel inside a collection (e.g. a number beyond Float range read from input,
+          # which the value layer maps to undefined) makes the marshal undefined, as in OPA where
+          # undefined propagates. ArgumentError is caught by canonical_json and mapped to undefined.
+          raise ::ArgumentError, "cannot marshal undefined" if ruby.equal?(UndefinedValue::UNDEFINED)
+
           case ruby
           when ::Hash then ruby.keys.sort_by(&:to_s).to_h { |key| [key.to_s, jsonify(ruby[key])] }
           when ::Set then sorted_json_array(ruby)
@@ -27,6 +34,7 @@ module Ruby
           else ruby
           end
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
         private_class_method :jsonify
 
         # Sorts the raw set elements into OPA's term order (so a nested set ranks as a set,

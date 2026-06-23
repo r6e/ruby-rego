@@ -192,6 +192,7 @@ module Ruby
             # An integer, or a float with no fractional part (gojsonschema treats 5.0 as an integer).
             def integer_doc?(document)
               return true if document.is_a?(Integer)
+              return document.integer_valued? if document.is_a?(Number)
 
               document.is_a?(Float) && document.finite? && document == document.to_i
             end
@@ -498,10 +499,17 @@ module Ruby
             # Object keys are stringified, matching OPA, which marshals the document to JSON before
             # gojsonschema sees it (so a 1 / true / "1" key all compare as "1" / "true"); stringifying also
             # keeps the entry sort total for heterogeneous Rego keys instead of raising on `1 <=> "b"`.
+            # Numbers compare by their float64 value, matching gojsonschema (which marshals through Go
+            # float64 — so 9007199254740993 and ...992 collapse the same way OPA's do). A magnitude beyond
+            # float64 range (> ~1e308) collapses to Infinity here, so two distinct such values compare
+            # equal; OPA instead treats such a schema/document number as unrepresentable and returns the
+            # whole match undefined. That divergence is a pre-existing extreme edge (a Float beyond range
+            # behaved identically before the Number type) for an author-controlled schema literal; a
+            # number beyond range read from untrusted input is already mapped to undefined upstream.
             # :reek:TooManyStatements
             def canonical(value)
               case value
-              when Integer, Float then [:number, value.to_f]
+              when Integer, Float, Number then [:number, value.to_f]
               when Array then with_depth { [:array, value.map { |element| canonical(element) }] }
               when Hash then with_depth { [:object, canonical_entries(value)] }
               else [:scalar, value]

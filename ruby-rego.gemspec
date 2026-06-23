@@ -43,6 +43,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency "base64"
   spec.add_dependency "cgi"
   spec.add_dependency "digest"
+  # flt provides Flt::BinNum — arbitrary-precision BINARY floating point (pure Ruby). At precision 64
+  # with round-half-even it reproduces Go's math/big.Float (which OPA's number arithmetic uses) exactly,
+  # so the gem's numbers match OPA byte-for-byte (e.g. 1/3 -> 0.33333333333333333334) instead of
+  # collapsing to IEEE-754 Ruby Float (which loses precision past 2^53 and overflows to Infinity).
+  spec.add_dependency "flt", "~> 1.5"
   spec.add_dependency "ipaddr"
   # json is pinned to the 2.x line: the builtins' totality boundary relies on its parse behaviour
   # (JSON::NestingError < JSON::ParserError so over-deep input maps to undefined; only ParserError is

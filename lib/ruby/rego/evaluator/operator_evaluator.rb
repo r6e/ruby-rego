@@ -28,12 +28,19 @@ module Ruby
           gt: ->(lhs, rhs) { lhs > rhs },
           gte: ->(lhs, rhs) { lhs >= rhs }
         }.freeze
+        # div is always big.Float in OPA (5 / 2 -> 2.5), and mod is integer-only and otherwise undefined
+        # (5.5 % 2 -> undefined) with Go's truncated remainder; Number centralizes both so they match
+        # OPA regardless of operand type. plus/minus/mult use the operands' own numeric arithmetic: a
+        # Number routes through the big.Float engine, but two Ruby Integers stay EXACT. OPA instead rounds
+        # every operation (even integer+integer) through a 64-bit big.Float, so `2^64 + 1` is `2^64` in
+        # OPA but exact here — a deferred divergence for integer arithmetic past 2^64 (unchanged from
+        # before the Number model; routing all integer arithmetic through the engine is the builtin sweep).
         ARITHMETIC_OPERATORS = {
           plus: ->(lhs, rhs) { lhs + rhs },
           minus: ->(lhs, rhs) { lhs - rhs },
           mult: ->(lhs, rhs) { lhs * rhs },
-          div: ->(lhs, rhs) { lhs / rhs },
-          mod: ->(lhs, rhs) { lhs % rhs }
+          div: ->(lhs, rhs) { Number.div(lhs, rhs) },
+          mod: ->(lhs, rhs) { Number.modulo(lhs, rhs) }
         }.freeze
         MEMBERSHIP_OPERATORS = {
           in: ->(lhs, rhs) { membership_value(lhs, rhs) }
@@ -119,7 +126,10 @@ module Ruby
           return UndefinedValue.new unless left_value && right_value
           return UndefinedValue.new if division_by_zero?(operator, right_value)
 
-          Value.from_ruby(yield(left_value, right_value))
+          result = yield(left_value, right_value)
+          return UndefinedValue.new if result.nil? # e.g. mod on a non-integer operand
+
+          Value.from_ruby(result)
         end
 
         def self.division_by_zero?(operator, right_value)

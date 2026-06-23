@@ -17,6 +17,7 @@ module Ruby
           numeric = value.value
           return numeric if numeric.is_a?(Integer)
           return numeric.to_i if numeric.is_a?(Float) && numeric.finite? && numeric.modulo(1).zero?
+          return numeric.to_i if numeric.is_a?(Number) && numeric.integer_valued?
 
           raise_integer_error(numeric, context)
         end

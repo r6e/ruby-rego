@@ -1,3 +1,12 @@
+# Minimal external declaration for the flt gem (arbitrary-precision binary floats; the Number type's
+# big.Float engine). Only the context constructor is named; every value flowing through it is untyped,
+# so the rest of the arithmetic surface needs no signatures. Declared inline like TZInfo below.
+module Flt
+  module BinNum
+    def self.Context: (**untyped) -> untyped
+  end
+end
+
 # Minimal external declaration for the tzinfo gem. Community RBS exists in gem_rbs_collection, but
 # this project's Steepfile uses only stdlib `library` declarations (no rbs_collection tooling), so
 # the tiny surface the time builtins use is declared inline rather than pulling in that machinery.
@@ -149,6 +158,71 @@ module Ruby
       def initialize: (String message, pattern: untyped, value: untyped, location: Location?) -> void
     end
 
+    module GoNumberFormat
+      def self.render: (String digits, Integer point, bool negative) -> String
+      def self.shortest_digits: (String string) -> [String, Integer]
+      def self.strip_trailing_zeros: (String string) -> String
+      def self.fixed: (String digits, Integer point) -> String
+      def self.scientific: (String digits, Integer exponent) -> String
+    end
+
+    class Number < Numeric
+      CONTEXT: untyped
+      MAX_MAGNITUDE_EXPONENT: Integer
+
+      @text: String?
+      @exact: (Rational | Integer)?
+
+      def self.literal: (String text) -> Number
+      def self.magnitude_within_limit?: (String text) -> bool
+      def self.negate_literal: (Numeric value) -> Numeric
+      def self.from_binnum: (untyped binnum) -> (Number | Integer)
+      def self.from_numeric: (Numeric value) -> Number
+      def self.div: (Numeric left, Numeric right) -> (Number | Integer)
+      def self.modulo: (Numeric left, Numeric right) -> Integer?
+      def self.integer_value: (Numeric value) -> Integer?
+      def self.float_integer_value: (Float value) -> Integer?
+      def self.rational_to_binnum: (Rational | Integer rational) -> untyped
+
+      def initialize: (?text: String?, ?exact: (Rational | Integer)?) -> void
+      def to_s: () -> String
+      def inspect: () -> String
+      def to_json: (*untyped) -> String
+      def exact: () -> (Rational | Integer)
+      def integer_valued?: () -> bool
+      def zero?: () -> bool
+      def negative?: () -> bool
+      def to_f: () -> Float
+      def to_i: () -> Integer
+      def to_int: () -> Integer
+      def to_r: () -> Rational
+      def round: (?Integer ndigits) -> Integer
+      def ceil: (?Integer ndigits) -> Integer
+      def floor: (?Integer ndigits) -> Integer
+      def truncate: (?Integer ndigits) -> Integer
+      def abs: () -> (Number | Integer)
+      def <=>: (untyped other) -> Integer?
+      def coerce: (Numeric other) -> [Number, Number]
+      def -@: () -> Number
+      def +: (untyped other) -> (Number | Integer)
+      def -: (untyped other) -> (Number | Integer)
+      def *: (untyped other) -> (Number | Integer)
+      def /: (untyped other) -> (Number | Integer)
+      def hash: () -> Integer
+      def eql?: (untyped other) -> bool
+
+      def to_binnum: () -> untyped
+      def binary_value: () -> (Rational | Integer)
+
+      private
+
+      def arithmetic: (Symbol operation, untyped other) -> (Number | Integer)
+      def rational_of: (untyped other) -> (Rational | Integer)?
+      def normalize_exact: ((Rational | Integer) value) -> (Rational | Integer)
+                         | (nil value) -> nil
+                         | ((Rational | Integer)? value) -> (Rational | Integer)?
+    end
+
     class Value
       TYPE_NAME: String
 
@@ -173,6 +247,7 @@ module Ruby
 
       def self.build_value: (untyped) -> Value?
       def self.build_simple_value: (untyped) -> Value?
+      def self.numeric_value: (Numeric value) -> (NumberValue | UndefinedValue)
       def self.build_composite_value: (untyped) -> Value?
     end
 
@@ -1163,9 +1238,9 @@ module Ruby
 
         def self.register!: () -> BuiltinRegistry
         def self.count: (Value collection) -> NumberValue
-        def self.sum: (Value array) -> NumberValue
-        def self.max: (Value array) -> NumberValue
-        def self.min: (Value array) -> NumberValue
+        def self.sum: (Value array) -> Value
+        def self.max: (Value array) -> Value
+        def self.min: (Value array) -> Value
         def self.all: (Value array) -> BooleanValue
         def self.any: (Value array) -> BooleanValue
 
@@ -1983,8 +2058,8 @@ module Ruby
         def self.array_set_subset?: (Array[untyped] sup, Set[untyped] sub) -> bool
         def self.normalize_object_key: (untyped key) -> untyped
         def self.key_collection: (Value keys, name: String) -> Set[untyped]
-        def self.deep_union: (Hash[untyped, Value] left, Hash[untyped, Value] right) -> Hash[untyped, Value]
-        def self.merge_value: (Value? left_value, Value right_value) -> Value
+        def self.deep_union: (Hash[untyped, Value] left, Hash[untyped, Value] right, prefer_left_on_tie: bool) -> Hash[untyped, Value]
+        def self.merge_value: (Value? left_value, Value right_value, prefer_left_on_tie: bool) -> Value
         def self.key_values: (Value keys, name: String) -> Array[untyped]
         def self.array_key_values: (ArrayValue keys) -> Array[Value]
         def self.values_from_set: (SetValue keys) -> Array[Value]
@@ -2380,6 +2455,8 @@ module Ruby
 
       private
 
+      def sanitize_json: (untyped object) -> untyped
+      def scrub_invalid_bytes: (String string) -> String
       def add_bindings: (Hash[String | Symbol, untyped] bindings) -> void
     end
 
@@ -3444,6 +3521,7 @@ module Ruby
       def read_escape_sequence: (position backslash_position) -> String
       def read_unicode_escape: () -> String
       def parse_number: (String buffer, position start) -> Numeric
+      def reject_oversized_number: (String buffer, position start, decimal: bool) -> void
       def template_string_start?: (String char) -> bool
       def advance: () -> String
       def advance_line_break: () -> String
@@ -3592,7 +3670,8 @@ module Ruby
       def parse_number_literal: () -> AST::NumberLiteral
       def parse_boolean_literal: () -> AST::BooleanLiteral
       def parse_null_literal: () -> AST::NullLiteral
-      def parse_unary_expression: () -> AST::UnaryOp
+      def parse_unary_expression: () -> (AST::UnaryOp | AST::NumberLiteral)
+      def build_unary_expression: (Symbol operator, AST::expression operand, Location location) -> (AST::UnaryOp | AST::NumberLiteral)
       def parse_parenthesized_expression: () -> AST::expression
       def parse_parenthesized_body: () -> AST::expression
       def parse_parenthesized_expression_list: (open_message: String, close_message: String) -> Array[AST::expression]

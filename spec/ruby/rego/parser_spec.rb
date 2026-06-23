@@ -264,15 +264,28 @@ RSpec.describe Ruby::Rego::Parser do
 
     it "parses unary expressions" do
       not_expr = parse_expression("not true")
-      neg_expr = parse_expression("-1")
 
       expect(not_expr).to be_a(Ruby::Rego::AST::UnaryOp)
       expect(not_expr.operator).to eq(:not)
       expect(not_expr.operand).to be_a(Ruby::Rego::AST::BooleanLiteral)
+    end
 
-      expect(neg_expr).to be_a(Ruby::Rego::AST::UnaryOp)
-      expect(neg_expr.operator).to eq(:minus)
-      expect(neg_expr.operand).to be_a(Ruby::Rego::AST::NumberLiteral)
+    it "folds a unary minus on a numeric literal into a negative literal (as OPA does)" do
+      neg_int = parse_expression("-1")
+      neg_decimal = parse_expression("-1.50")
+
+      expect(neg_int).to be_a(Ruby::Rego::AST::NumberLiteral)
+      expect(neg_int.value).to eq(-1)
+      # The decimal keeps its preserved text through the negation.
+      expect(neg_decimal).to be_a(Ruby::Rego::AST::NumberLiteral)
+      expect(neg_decimal.value.to_s).to eq("-1.50")
+    end
+
+    it "keeps unary minus on a non-literal as a UnaryOp" do
+      neg_var = parse_expression("-x")
+
+      expect(neg_var).to be_a(Ruby::Rego::AST::UnaryOp)
+      expect(neg_var.operator).to eq(:minus)
     end
 
     it "parses every expressions" do

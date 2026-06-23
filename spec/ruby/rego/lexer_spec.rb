@@ -56,12 +56,13 @@ RSpec.describe Ruby::Rego::Lexer do
       expect(values[0]).to be_a(Integer)
       expect(values[1]).to eq(12)
       expect(values[1]).to be_a(Integer)
-      expect(values[2]).to eq(3.14)
-      expect(values[2]).to be_a(Float)
-      expect(values[3]).to be_a(Float)
-      expect(values[3]).to be_within(1.0e10).of(6.02e23)
-      expect(values[4]).to be_within(1.0e-10).of(1.0e-3)
-      expect(values[5]).to be_within(1.0e-6).of(4.0e2)
+      # Fractional / scientific literals are arbitrary-precision Numbers preserving their source text.
+      expect(values[2]).to be_a(Ruby::Rego::Number)
+      expect(values[2].to_s).to eq("3.14")
+      expect(values[3]).to be_a(Ruby::Rego::Number)
+      expect(values[3].to_s).to eq("6.02e23")
+      expect(values[4].to_s).to eq("1e-3")
+      expect(values[5].to_s).to eq("4E+2")
     end
 
     it "tokenizes double-quoted strings with escapes" do

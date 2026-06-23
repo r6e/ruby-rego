@@ -142,9 +142,9 @@ module Ruby
             ObjectValue.new(filtered)
           end
 
-          # Deep-merges two objects with the second operand winning conflicts
-          # (OPA's object.union). Nested objects merge recursively; any other
-          # conflict or type mismatch takes the second operand's value.
+          # Deep-merges two objects (OPA's object.union). Nested objects merge recursively; a differing-
+          # value or type-mismatch conflict takes the second operand's value, but a numerically-equal
+          # conflict keeps the first operand (so a tie preserves the left spelling, matching OPA).
           #
           # @param left [Ruby::Rego::Value]
           # @param right [Ruby::Rego::Value]
@@ -152,7 +152,8 @@ module Ruby
           def self.object_union(left, right)
             merged = deep_union(
               object_value(left, name: "object.union").value,
-              object_value(right, name: "object.union").value
+              object_value(right, name: "object.union").value,
+              prefer_left_on_tie: true
             )
             ObjectValue.new(merged)
           end
@@ -163,7 +164,7 @@ module Ruby
             Base.assert_type(array, expected: ArrayValue, context: "object.union_n")
             seed = {} # @type var seed: Hash[untyped, Value]
             merged = array.value.reduce(seed) do |acc, element|
-              deep_union(acc, object_value(element, name: "object.union_n element").value)
+              deep_union(acc, object_value(element, name: "object.union_n element").value, prefer_left_on_tie: false)
             end
             ObjectValue.new(merged)
           end
@@ -225,20 +226,29 @@ module Ruby
           # @param left [Hash{Object => Ruby::Rego::Value}]
           # @param right [Hash{Object => Ruby::Rego::Value}]
           # @return [Hash{Object => Ruby::Rego::Value}]
-          def self.deep_union(left, right)
+          def self.deep_union(left, right, prefer_left_on_tie:)
             right.each_with_object(left.dup) do |(key, right_value), merged|
-              merged[key] = merge_value(merged[key], right_value)
+              merged[key] = merge_value(merged[key], right_value, prefer_left_on_tie: prefer_left_on_tie)
             end
           end
           private_class_method :deep_union
 
+          # On a leaf conflict the right value wins (matching OPA's right-precedence for differing values),
+          # EXCEPT that object.union keeps the existing (left) value when the two are numerically equal, so a
+          # tie preserves the left spelling (`{k: 1.50} ∪ {k: 1.5}` -> `1.50`). object.union_n folds
+          # left-to-right keeping the last element, so it passes prefer_left_on_tie: false.
           # @param left_value [Ruby::Rego::Value, nil]
           # @param right_value [Ruby::Rego::Value]
+          # @param prefer_left_on_tie [bool]
           # @return [Ruby::Rego::Value]
-          def self.merge_value(left_value, right_value)
-            return right_value unless left_value.is_a?(ObjectValue) && right_value.is_a?(ObjectValue)
+          def self.merge_value(left_value, right_value, prefer_left_on_tie:)
+            if left_value.is_a?(ObjectValue) && right_value.is_a?(ObjectValue)
+              merged = deep_union(left_value.value, right_value.value, prefer_left_on_tie: prefer_left_on_tie)
+              return ObjectValue.new(merged)
+            end
+            return left_value if prefer_left_on_tie && left_value && left_value == right_value
 
-            ObjectValue.new(deep_union(left_value.value, right_value.value))
+            right_value
           end
           private_class_method :merge_value
 

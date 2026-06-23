@@ -5,6 +5,7 @@ target :lib do
   check "lib"
   library "json"
   library "base64"
+  library "bigdecimal"
   library "cgi"
   library "date"
   library "digest"

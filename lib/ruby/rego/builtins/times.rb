@@ -164,11 +164,7 @@ module Ruby
 
         # @return [Integer, nil] the number as an integer if it has no fractional part, else nil
         def self.integer_value(number)
-          return number if number.is_a?(Integer)
-          return nil unless number.is_a?(Float) && number.finite?
-
-          truncated = number.to_i
-          number == truncated ? truncated : nil
+          Ruby::Rego::Number.integer_value(number)
         end
         private_class_method :integer_value
 

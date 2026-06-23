@@ -127,6 +127,7 @@ module Ruby
         # @return [Numeric]
         def self.normalize(number)
           return number.to_i if number.is_a?(Float) && number.modulo(1).zero?
+          return number.to_i if number.is_a?(Number) && number.integer_valued?
 
           number
         end

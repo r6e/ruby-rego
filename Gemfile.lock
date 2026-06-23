@@ -5,6 +5,7 @@ PATH
       base64
       cgi
       digest
+      flt (~> 1.5)
       ipaddr
       json (~> 2.0)
       openssl
@@ -102,6 +103,7 @@ GEM
       path_expander (~> 2.0)
       prism (~> 1.7)
       sexp_processor (~> 4.8)
+    flt (1.5.4)
     i18n (1.14.8)
       concurrent-ruby (~> 1.0)
     ice_nine (0.11.2)
