@@ -62,8 +62,11 @@ module Ruby
           numbers = numeric_array(array, name: "max")
           ensure_non_empty(numbers, name: "max")
           # Among value-equal extrema OPA returns the LAST element (so max([1.50, 1.5]) -> 1.5, keeping
-          # the later spelling); Ruby's Array#max keeps the first equal element, so max over the reverse.
-          Value.from_ruby(numbers.reverse.max)
+          # the later spelling). A single-pass reduce keeping the later element on a tie (the explicit
+          # `>=` documents the tie-break) avoids the reversed-array copy that `reverse.max` would allocate.
+          # rubocop:disable Style/MinMaxComparison
+          Value.from_ruby(numbers.reduce { |best, number| number >= best ? number : best })
+          # rubocop:enable Style/MinMaxComparison
         end
 
         # @param array [Ruby::Rego::Value]
@@ -71,8 +74,11 @@ module Ruby
         def self.min(array)
           numbers = numeric_array(array, name: "min")
           ensure_non_empty(numbers, name: "min")
-          # OPA returns the LAST element among value-equal minima too; min over the reverse keeps it.
-          Value.from_ruby(numbers.reverse.min)
+          # OPA returns the LAST element among value-equal minima too; reduce keeping the later element
+          # on a tie (single pass, no reversed-array copy).
+          # rubocop:disable Style/MinMaxComparison
+          Value.from_ruby(numbers.reduce { |best, number| number <= best ? number : best })
+          # rubocop:enable Style/MinMaxComparison
         end
 
         # @param array [Ruby::Rego::Value]

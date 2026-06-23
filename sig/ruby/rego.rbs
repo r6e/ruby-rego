@@ -161,6 +161,7 @@ module Ruby
     module GoNumberFormat
       def self?.render: (String digits, Integer point, bool negative) -> String
       def self?.shortest_digits: (String string) -> [String, Integer]
+      def self?.strip_trailing_zeros: (String string) -> String
       def self?.fixed: (String digits, Integer point) -> String
       def self?.scientific: (String digits, Integer exponent) -> String
     end

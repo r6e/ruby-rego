@@ -40,10 +40,21 @@ module Ruby
         combined = integer_part + fraction.to_s
         without_leading = combined.sub(/\A0+/, "")
         point = integer_part.length + (exponent || "0").to_i - (combined.length - without_leading.length)
-        digits = without_leading.sub(/0+\z/, "")
+        digits = strip_trailing_zeros(without_leading)
         digits.empty? ? ["0", 1] : [digits, point]
       end
       # rubocop:enable Metrics/AbcSize
+
+      # Drop trailing '0' digits via a single reverse scan to the last significant digit. Avoids an
+      # anchored `/0+\z/` (which a regex engine can match in polynomial time on adversarial all-zero
+      # runs); the negated single-character class has no quantifier to backtrack on.
+      #
+      # @param string [String]
+      # @return [String]
+      def strip_trailing_zeros(string)
+        last_significant = string.rindex(/[^0]/)
+        last_significant ? string[0..last_significant].to_s : ""
+      end
 
       # @return [String]
       def fixed(digits, point)

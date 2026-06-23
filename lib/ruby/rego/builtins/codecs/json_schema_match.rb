@@ -499,6 +499,13 @@ module Ruby
             # Object keys are stringified, matching OPA, which marshals the document to JSON before
             # gojsonschema sees it (so a 1 / true / "1" key all compare as "1" / "true"); stringifying also
             # keeps the entry sort total for heterogeneous Rego keys instead of raising on `1 <=> "b"`.
+            # Numbers compare by their float64 value, matching gojsonschema (which marshals through Go
+            # float64 — so 9007199254740993 and ...992 collapse the same way OPA's do). A magnitude beyond
+            # float64 range (> ~1e308) collapses to Infinity here, so two distinct such values compare
+            # equal; OPA instead treats such a schema/document number as unrepresentable and returns the
+            # whole match undefined. That divergence is a pre-existing extreme edge (a Float beyond range
+            # behaved identically before the Number type) for an author-controlled schema literal; a
+            # number beyond range read from untrusted input is already mapped to undefined upstream.
             # :reek:TooManyStatements
             def canonical(value)
               case value

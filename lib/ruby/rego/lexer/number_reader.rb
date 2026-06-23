@@ -80,7 +80,7 @@ module Ruby
                  else
                    buffer.length <= Number::MAX_MAGNITUDE_EXPONENT + 1
                  end
-        raise_error("Number magnitude too large", start, length: buffer.length) unless within
+        raise_error("number too big", start, length: buffer.length) unless within
       end
     end
   end
