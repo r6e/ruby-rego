@@ -135,10 +135,18 @@ RSpec.describe Ruby::Rego::Number do
       expect(described_class.magnitude_within_limit?("1e-999999999")).to be(false)
     end
 
+    it "rejects an exponent so large BigDecimal saturates to Infinity (no spurious accept)" do
+      # ~19+ exponent digits make BigDecimal(text) return Infinity (exponent 0) WITHOUT raising; an
+      # un-guarded magnitude check would accept it and then crash with FloatDomainError on later use.
+      expect(described_class.magnitude_within_limit?("1e9999999999999999999")).to be(false)
+    end
+
     it "rejects an over-large literal at parse, like OPA, rather than evaluating it" do
-      expect do
-        Ruby::Rego.evaluate("package t\nx = 1e999999999 > 1", query: "data.t.x")
-      end.to raise_error(Ruby::Rego::LexerError)
+      %w[1e999999999 1e9999999999999999999].each do |literal|
+        expect do
+          Ruby::Rego.evaluate("package t\nx = #{literal} > 1", query: "data.t.x")
+        end.to raise_error(Ruby::Rego::LexerError)
+      end
     end
   end
 

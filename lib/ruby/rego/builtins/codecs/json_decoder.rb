@@ -40,6 +40,7 @@ module Ruby
           # US-ASCII regex (no /n) matches a UTF-8 input character-wise and a binary input byte-wise — both
           # without the "binary regexp against UTF-8" warning, and both preserving content unchanged.
           STRING_CHUNK = /[^"\\\x00-\x1f]+/
+          private_constant :NUMBER, :WHITESPACE, :STRING_CHUNK
 
           # @param string [String]
           # @return [Object] a Ruby value (Number/Integer for JSON numbers; String/true/false/nil/Array/Hash)
@@ -164,8 +165,9 @@ module Ruby
           # A binary (base64.decode'd) input whose decoded string content is in fact valid UTF-8 is
           # re-tagged UTF-8, so the same logical JSON yields the same string regardless of whether it
           # arrived UTF-8-tagged (json.unmarshal) or ASCII-8BIT (io.jwt.decode), and matches OPA's UTF-8
-          # output. Genuinely invalid bytes stay ASCII-8BIT (the documented raw-bytes divergence; the
-          # serializer scrubs them to U+FFFD on output, as OPA does).
+          # output. Genuinely invalid bytes stay ASCII-8BIT (the documented raw-bytes divergence: OPA
+          # would replace them with U+FFFD; the gem keeps the raw bytes, and re-serializing such a value
+          # via json.marshal is currently undefined — a pre-existing serializer gap, not introduced here).
           def self.normalize_string_encoding(string)
             return string unless string.encoding == Encoding::BINARY
 
@@ -184,6 +186,7 @@ module Ruby
 
           ESCAPES = { '"' => '"', "\\" => "\\", "/" => "/", "b" => "\b", "f" => "\f",
                       "n" => "\n", "r" => "\r", "t" => "\t" }.freeze
+          private_constant :ESCAPES
 
           # :reek:NilCheck -- get_byte returns nil at end-of-input (a backslash with no following byte);
           # that is the truncated-escape sentinel, mapped to ParseError.
@@ -198,17 +201,23 @@ module Ruby
           private_class_method :parse_escape
 
           # \uXXXX: a non-surrogate is its own character; a high+low pair combines into one character; any
-          # unpaired surrogate becomes U+FFFD (matching Go) rather than raising.
+          # unpaired surrogate becomes U+FFFD (matching Go) rather than raising. When a high surrogate is
+          # followed by a \uXXXX that is NOT a low surrogate, the follower is left unconsumed (the scanner
+          # is rewound) so it is re-processed from scratch — exactly as Go does, letting a second high
+          # surrogate pair with a third escape (\ud800😀 -> U+FFFD then the 😀 pair).
           def self.parse_unicode_escape(scanner)
             code = read_hex_quad(scanner)
             return code.chr(Encoding::UTF_8) unless code.between?(0xD800, 0xDFFF)
-            return "\u{FFFD}" unless code.between?(0xD800, 0xDBFF) && scanner.skip(/\\u/)
+            return "\u{FFFD}" unless code.between?(0xD800, 0xDBFF) # lone low surrogate
+
+            mark = scanner.pos
+            return "\u{FFFD}" unless scanner.skip(/\\u/) # high surrogate at end / not followed by \u
 
             low = read_hex_quad(scanner)
             return combine_surrogates(code, low) if low.between?(0xDC00, 0xDFFF)
 
-            # High surrogate followed by a \uXXXX that is not a low surrogate: U+FFFD then that character.
-            "\u{FFFD}#{surrogate_replacement(low)}"
+            scanner.pos = mark # follower is not a low surrogate: re-process it independently
+            "\u{FFFD}"
           end
           private_class_method :parse_unicode_escape
 
@@ -216,12 +225,6 @@ module Ruby
             (((high - 0xD800) << 10) + (low - 0xDC00) + 0x10000).chr(Encoding::UTF_8)
           end
           private_class_method :combine_surrogates
-
-          # The trailing \uXXXX after an unpaired high surrogate: itself a char, or U+FFFD if a surrogate.
-          def self.surrogate_replacement(code)
-            code.between?(0xD800, 0xDFFF) ? "\u{FFFD}" : code.chr(Encoding::UTF_8)
-          end
-          private_class_method :surrogate_replacement
 
           def self.read_hex_quad(scanner)
             hex = scanner.scan(/\h{4}/) or raise ParseError, "invalid \\u escape"

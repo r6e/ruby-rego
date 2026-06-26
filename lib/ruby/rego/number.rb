@@ -55,10 +55,17 @@ module Ruby
       # the `to_r` that #exact would later perform. The lexer calls this to reject an over-large literal
       # as a parse error, exactly as OPA does.
       #
+      # An exponent literal of ~19+ digits (e.g. `1e9999999999999999999`) silently saturates BigDecimal
+      # to Infinity at construction (it does NOT raise) with exponent 0, which would slip past the
+      # magnitude check and then raise an uncatchable FloatDomainError on the later #exact materialization.
+      # The finite? guard rejects it up front so such a number is a parse/argument error, never a crash.
+      #
       # @param text [String]
       # @return [Boolean]
       def self.magnitude_within_limit?(text)
         decimal = BigDecimal(text)
+        return false unless decimal.finite?
+
         decimal.zero? || (decimal.exponent - 1).abs <= MAX_MAGNITUDE_EXPONENT
       end
 

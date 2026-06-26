@@ -1587,7 +1587,6 @@ module Ruby
           def self.parse_escape: (StringScanner scanner) -> String
           def self.parse_unicode_escape: (StringScanner scanner) -> String
           def self.combine_surrogates: (Integer high, Integer low) -> String
-          def self.surrogate_replacement: (Integer code) -> String
           def self.read_hex_quad: (StringScanner scanner) -> Integer
         end
 

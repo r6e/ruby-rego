@@ -57,7 +57,7 @@ module RegoValidate
     def parse_config(content, path)
       value = parse_config_value(content, path)
       ConfigLoadResult.new(value: value, success: true)
-    rescue JSON::ParserError, Ruby::Rego::Builtins::Codecs::JsonDecoder::ParseError,
+    rescue Ruby::Rego::Builtins::Codecs::JsonDecoder::ParseError,
            Psych::BadAlias, Psych::SyntaxError => e
       reporter.error("Invalid config file: #{e.message}", parser)
       ConfigLoadResult.new(success: false)

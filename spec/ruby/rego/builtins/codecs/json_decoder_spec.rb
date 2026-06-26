@@ -7,6 +7,12 @@ RSpec.describe Ruby::Rego::Builtins::Codecs::JsonDecoder do
     described_class.parse(string)
   end
 
+  # A JSON \uXXXX escape for a code point (built so the escape survives the test source verbatim — a
+  # typed surrogate-pair escape would itself collapse to the combined character).
+  def u(code)
+    format('\u%<code>04x', code: code)
+  end
+
   describe "number text preservation (OPA json.Number fidelity)" do
     it "keeps a fractional number's verbatim text as a Number" do
       %w[1.50 0.30 100.00 3.14159265358979].each do |text|
@@ -65,6 +71,12 @@ RSpec.describe Ruby::Rego::Builtins::Codecs::JsonDecoder do
         expect { parse(over) }.to raise_error(described_class::ParseError)
       end
     end
+
+    # An exponent of ~19+ digits saturates BigDecimal to Infinity at construction (it does not raise);
+    # the cap must reject it up front, or it would slip through and raise FloatDomainError on later use.
+    it "rejects a saturating-exponent number up front (no deferred FloatDomainError)" do
+      expect { parse("1e9999999999999999999") }.to raise_error(described_class::ParseError)
+    end
   end
 
   describe "nesting cap (load-bearing: bounds the downstream recursive Value.from_ruby)" do
@@ -85,9 +97,7 @@ RSpec.describe Ruby::Rego::Builtins::Codecs::JsonDecoder do
     end
 
     it "combines a high+low \\u surrogate pair into one character (matching Go)" do
-      # Built via format so the escape survives (a typed 😀 would itself collapse to 😀).
-      pair = format('"\u%04x\u%04x"', 0xD83D, 0xDE00)
-      expect(parse(pair)).to eq("😀")
+      expect(parse(%("#{u(0xD83D)}#{u(0xDE00)}"))).to eq("😀")
     end
 
     it "rejects an invalid escape" do
@@ -99,7 +109,13 @@ RSpec.describe Ruby::Rego::Builtins::Codecs::JsonDecoder do
       expect(parse('"\udc00"')).to eq("\u{FFFD}")               # lone low
       expect(parse('"\ud800\ud800"')).to eq("\u{FFFD}\u{FFFD}") # high + high
       expect(parse('"\ud800A"')).to eq("\u{FFFD}A")             # high then a literal char (no \u follows)
-      expect(parse('"\ud800A"')).to eq("\u{FFFD}A")        # high then a \u that is not a low surrogate
+    end
+
+    # A high surrogate followed by another high surrogate must NOT consume the second: the second pairs
+    # with the third escape, so the result is U+FFFD then the combined character (Go re-processes it).
+    it "re-processes a high surrogate that follows an unpaired high surrogate (matching Go)" do
+      input = %("#{u(0xD800)}#{u(0xD83D)}#{u(0xDE00)}")
+      expect(parse(input)).to eq("\u{FFFD}😀")
     end
 
     it "re-tags a binary input whose content is valid UTF-8 back to UTF-8" do
