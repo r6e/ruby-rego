@@ -55,18 +55,32 @@ module Ruby
       # the `to_r` that #exact would later perform. The lexer calls this to reject an over-large literal
       # as a parse error, exactly as OPA does.
       #
-      # An exponent literal of ~19+ digits (e.g. `1e9999999999999999999`) silently saturates BigDecimal
-      # to Infinity at construction (it does NOT raise) with exponent 0, which would slip past the
-      # magnitude check and then raise an uncatchable FloatDomainError on the later #exact materialization.
-      # The finite? guard rejects it up front so such a number is a parse/argument error, never a crash.
+      # An exponent literal of ~19+ digits silently saturates BigDecimal at construction (it does NOT
+      # raise): a huge POSITIVE exponent (`1e9999999999999999999`) becomes Infinity, and a huge NEGATIVE
+      # one (`1e-9999999999999999999`) underflows to 0 — both with exponent 0, which would slip past the
+      # magnitude check. An accepted-but-saturated number then crashes (Infinity -> FloatDomainError on
+      # the later #exact) or silently mis-evaluates as 0. The finite? guard rejects the positive case;
+      # the zero_literal? check distinguishes a genuine zero from an underflowed tiny non-zero, rejecting
+      # the latter. Both directions thus map to a parse/argument error, consistent with the cap and safer
+      # than OPA (which stores such a number as text and then panics on comparison).
       #
       # @param text [String]
       # @return [Boolean]
       def self.magnitude_within_limit?(text)
         decimal = BigDecimal(text)
         return false unless decimal.finite?
+        return zero_literal?(text) if decimal.zero?
 
-        decimal.zero? || (decimal.exponent - 1).abs <= MAX_MAGNITUDE_EXPONENT
+        (decimal.exponent - 1).abs <= MAX_MAGNITUDE_EXPONENT
+      end
+
+      # Whether `text` denotes an exact zero (every significant digit is 0, e.g. "0", "-0", "0.0",
+      # "0e1000"), as opposed to a tiny non-zero whose huge negative exponent underflowed BigDecimal to 0.
+      #
+      # @param text [String]
+      # @return [Boolean]
+      def self.zero_literal?(text)
+        text.sub(/[eE].*/, "").delete("-+.").match?(/\A0+\z/)
       end
 
       # Format a computed Flt::BinNum result the way OPA's FloatToNumber does, working from the result's

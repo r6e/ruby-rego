@@ -72,10 +72,17 @@ RSpec.describe Ruby::Rego::Builtins::Codecs::JsonDecoder do
       end
     end
 
-    # An exponent of ~19+ digits saturates BigDecimal to Infinity at construction (it does not raise);
-    # the cap must reject it up front, or it would slip through and raise FloatDomainError on later use.
-    it "rejects a saturating-exponent number up front (no deferred FloatDomainError)" do
+    # An exponent of ~19+ digits saturates BigDecimal at construction (it does not raise): positive to
+    # Infinity, negative underflowing to 0. Both must be rejected up front (else the positive one raises
+    # FloatDomainError on later use, and the negative one is silently mis-evaluated as 0).
+    it "rejects a saturating-exponent number up front, both directions" do
       expect { parse("1e9999999999999999999") }.to raise_error(described_class::ParseError)
+      expect { parse("1e-9999999999999999999") }.to raise_error(described_class::ParseError)
+    end
+
+    it "still accepts a genuine zero carrying a huge exponent" do
+      expect(parse("0e-9999999999999999999")).to be_a(Ruby::Rego::Number)
+      expect(parse("0e-9999999999999999999")).to eq(0)
     end
   end
 
