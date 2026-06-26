@@ -29,6 +29,17 @@ module Ruby
           MAX_DEPTH = 1_000
           MAX_NODES = 5_000_000
 
+          # go-yaml resolves an integer via strconv ParseInt (int64) then ParseUint (uint64).
+          # ParseUint rejects a sign, so an explicitly +/- signed value is bounded by int64;
+          # only an unsigned value may reach uint64 max. A prefixed 0x/0o/0b literal beyond
+          # the accepted range can't be reparsed as a float, so it falls back to its string
+          # text; an out-of-range !!int (any base) is undefined. A bare integer key in the
+          # positive uint64-only band decodes to a Go uint64, which sigs.k8s.io/yaml cannot
+          # stringify as a JSON key, so that document is undefined.
+          INT64_MIN = -(2**63)
+          INT64_MAX = (2**63) - 1
+          UINT64_MAX = (2**64) - 1
+
           # Plain scalars with a fixed meaning (yaml.v2 resolveMap).
           RESOLVE_MAP = {
             "" => nil, "~" => nil, "null" => nil, "Null" => nil, "NULL" => nil,
@@ -53,7 +64,7 @@ module Ruby
           # @return [Object]
           def self.resolve(string)
             return RESOLVE_MAP[string] if RESOLVE_MAP.key?(string)
-            return string if string.empty? || !NUMBER_LEADS.include?(string[0].to_s)
+            return string unless numeric_lead?(string)
 
             numeric(string) || string
           end

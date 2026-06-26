@@ -4,6 +4,47 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- `yaml.unmarshal` now matches go-yaml's int64/uint64 integer range for prefixed, tagged, and
+  object-key integers, verified vs `opa eval` 1.17.1. go-yaml resolves an integer via
+  `strconv.ParseInt` (int64) then `ParseUint` (uint64); `ParseUint` rejects a sign, so an
+  explicitly `+`/`-` signed value is bounded by int64, while an unsigned value may reach uint64 max.
+  - A `0x`/`0o`/`0b` literal outside that range can't be reparsed as a float, so it falls back to
+    its verbatim string token instead of becoming an exact bignum:
+    `yaml.unmarshal("0x10000000000000000")` is now `"0x10000000000000000"` (was the number
+    `18446744073709551616`), `+0x8000000000000000` is `"+0x8000000000000000"` (a signed value past
+    int64 max — was a number), and likewise for `-0x…` past int64 min and `0o…`/`0b…` past uint64.
+    At the boundary it stays exact (`0xFFFFFFFFFFFFFFFF` → `18446744073709551615`).
+  - An `!!int` outside the range is undefined for **every** base (the tag has no float/string
+    fallback), so `!!int 18446744073709551616`, `!!int +9223372036854775808`, and
+    `!!int 0x10000000000000000` are undefined, matching OPA.
+  - An `!!int`/`!!float` whose token does not start with a numeric lead (sign, digit, or dot —
+    go-yaml's `resolveTable` first-byte dispatch) is undefined, so a leading-underscore token like
+    `!!int _5` or `!!float _5.0` is now undefined (was the number `5`); an interior or trailing
+    separator (`!!int 1_0`, `!!int 5_`, `!!int +_5`) is still accepted, matching OPA.
+  - An `!!float` coerces an integer-resolved value to a float, so a `0x`/`0o`/`0b` or decimal integer
+    in int64 range becomes a float (`!!float 0x5` → `5`, was undefined). But an **unsigned** uint64-band
+    value resolves as a Go `uint64`, which has no float coercion, so `!!float 9223372036854775808` is
+    now undefined (was a number); a signed or over-uint64 value resolves via `ParseFloat` and stays a
+    number. A float64-overflowing `!!float` (e.g. `!!float 1e309`) is undefined in **every** position,
+    including as an object key (it was wrongly canonicalized to a `".inf"` key), matching OPA.
+  - An **unsigned integer-resolved** object **key** in the positive uint64-only band (above int64 max, up to
+    uint64 max) decodes to a Go `uint64`, which `sigs.k8s.io/yaml` cannot stringify as a JSON key, so
+    the whole document is undefined: `yaml.unmarshal("9223372036854775808: v")` is now undefined (was a
+    defined object). A **signed** key (`ParseUint` rejects the sign), or a **float-resolved** key (plain
+    float syntax or a `!!float` tag) that rounds into that band, is a float64 key and stays defined —
+    `+9223372036854775808: v` and `9.2e18: v` are defined. An int64-range or over-uint64 key is too.
+
+  - A bare decimal or leading-zero octal that overflows float64 to `±Inf` (e.g. a 400-digit integer,
+    `2`×10³⁰⁸) is a string like any other overflow, so `yaml.unmarshal("1" + "0"*400)` is now that
+    digit string (was an exact bignum), and the same `!!int` is undefined. This also bounds the parse:
+    such a value is rejected before a multi-megabyte bignum is built.
+
+  A bare decimal or leading-zero octal *within* float64 range but past int64/uint64 still parses to an
+  exact integer rather than go-yaml's lossy float64 — a separate output-formatting divergence (values,
+  and the lossy-float text of signed/float/over-uint64 object keys) tracked for the number sweep. One
+  exotic corner is also deferred: a non-uint64 value (a signed integer, or a float that rounds into the
+  band) reached via a YAML **alias** key stays undefined here, where OPA defines it — the alias loses the
+  anchored scalar's sign/float provenance, which the resolved value alone can't recover.
 - `yaml.unmarshal` now renders a float64-overflowing plain decimal as its original string text,
   matching `opa eval` 1.17.1 / go-yaml. A scalar like `1e999` overflows float64 to `±Inf` during the
   YAML→JSON round-trip and falls back to its verbatim text. In **value/bare-scalar** position this was

@@ -46,7 +46,7 @@ module Ruby
               built = build(value_node, anchors, depth + 1)
               next merge_into(result, built) if merge_key?(key, key_node)
 
-              result[json_key(key)] = built
+              result[json_key(key, key_node)] = built
             end
             result
           end
@@ -77,14 +77,14 @@ module Ruby
           # formatted with Ruby float64 shortest, whereas OPA uses Go float32 ('g', -1, 32),
           # so very-high-precision float map keys can differ — a rare, documented edge.
           # @return [String]
-          def self.json_key(key)
+          def self.json_key(key, key_node)
             return canonical_float(key) if key.is_a?(Float) && !key.finite?
 
             case key
             when String then key
             when true then "true"
             when false then "false"
-            when Integer then key.to_s
+            when Integer then integer_key(key, key_node)
             when Float then Emitter.float_string(key)
             # A null or composite (array/object) key cannot be a JSON object key, so OPA's
             # round-trip rejects it; yield undefined to match.
@@ -92,6 +92,50 @@ module Ruby
             end
           end
           private_class_method :json_key
+
+          # Only an UNSIGNED INTEGER-resolved key in the positive uint64-only band decodes to a
+          # Go uint64, which sigs.k8s.io/yaml has no JSON-key case for, so OPA's round-trip
+          # rejects the whole document (undefined). Everything else in/around that band is a
+          # defined string key, rendered here as the key's exact parsed value (a deferred lossy-
+          # float text divergence vs OPA): a `+` SIGNED value (ParseUint rejects the sign →
+          # float64), a value beyond uint64 max, OR a FLOAT-resolved key (plain float syntax or
+          # a !!float tag) that rounds into the band — all are float64 keys that stringify fine.
+          # @return [String]
+          def self.integer_key(key, key_node)
+            raise ResolveError, "uint64 object key" if uint64_object_key?(key, key_node)
+
+            key.to_s
+          end
+          private_class_method :integer_key
+
+          # @return [bool]
+          def self.uint64_object_key?(key, key_node)
+            return false unless uint64_band?(key)
+            # A non-scalar (alias) key loses its provenance (sign, float-ness, tag); assume the
+            # common unsigned-integer anchor (undefined), accepting the documented alias-key
+            # deferral for a signed-integer OR float-rounds-into-band value reached via an alias.
+            return true unless key_node.is_a?(Psych::Nodes::Scalar)
+
+            !float_tagged?(key_node) && integer_origin?(key_node)
+          end
+          private_class_method :uint64_object_key?
+
+          # Whether a scalar carries an explicit !!float tag (a float64 value, never a uint64).
+          # @return [bool]
+          def self.float_tagged?(node)
+            node.tag == "#{TAG_PREFIX}float"
+          end
+          private_class_method :float_tagged?
+
+          # Whether a scalar resolves as an UNSIGNED integer (a Go uint64 in this band), as
+          # opposed to float syntax (e.g. 9.2e18) that rounds to an integer value. Underscores
+          # are stripped to match resolution.
+          # @return [bool]
+          def self.integer_origin?(node)
+            text = node.value.delete("_")
+            !explicitly_signed?(text) && !parse_integer(text).nil?
+          end
+          private_class_method :integer_origin?
 
           # @return [String]
           def self.canonical_float(float)
