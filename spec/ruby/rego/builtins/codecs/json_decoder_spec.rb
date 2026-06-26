@@ -142,6 +142,15 @@ RSpec.describe Ruby::Rego::Builtins::Codecs::JsonDecoder do
       expect(value["k"].bytes).to eq([0xFF])
     end
 
+    # A BINARY input is now used as-is (no defensive .b dup), so a frozen one reaches StringScanner
+    # directly. The parser only reads the scanner and builds fresh result strings, so this must not
+    # raise FrozenError — pins the no-mutation assumption against a future strscan change.
+    it "parses a frozen BINARY input without mutating it (FrozenError-free)" do
+      input = %({"k":[1,"é\\u00e9"]}).b.freeze
+      expect { parse(input) }.not_to raise_error
+      expect(parse(input)).to eq("k" => [1, "éé"])
+    end
+
     # Regression: byte_safe_encoding? admits an ascii-compatible single-byte non-UTF-8 encoding
     # (ISO-8859-1 / Windows-1252). A string body with a literal high byte AND a multibyte \uXXXX escape
     # used to append a UTF-8 char onto a Latin-1 accumulator -> uncaught Encoding::CompatibilityError,

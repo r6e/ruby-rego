@@ -51,14 +51,14 @@ module Ruby
           def self.parse(string)
             raise ParseError, "invalid string encoding" unless Base.byte_safe_encoding?(string)
 
-            # Normalize any non-UTF-8 input (US-ASCII, and especially a single-byte non-UTF-8 encoding
-            # like ISO-8859-1 / Windows-1252 that byte_safe_encoding? admits) to raw bytes, so a string
-            # body with a literal high byte plus a multibyte \uXXXX escape goes through the BINARY append
-            # path (concat_escape) rather than clashing two incompatible encodings — which would raise an
-            # uncaught Encoding::CompatibilityError and break totality (normalize_string_encoding re-tags
-            # valid bytes back to UTF-8). UTF-8 and BINARY inputs are unchanged (.b on a BINARY string is
-            # a no-op dup).
-            string = string.b unless string.encoding == Encoding::UTF_8
+            # Normalize an input in an exotic ascii-compatible encoding (US-ASCII, or a single-byte
+            # non-UTF-8 encoding like ISO-8859-1 / Windows-1252 that byte_safe_encoding? admits) to raw
+            # bytes, so a string body with a literal high byte plus a multibyte \uXXXX escape goes through
+            # the BINARY append path (concat_escape) rather than clashing two incompatible encodings — an
+            # uncaught Encoding::CompatibilityError that would break totality (normalize_string_encoding
+            # re-tags valid bytes back to UTF-8). UTF-8 and BINARY inputs already take the right path and
+            # are used as-is — no copy of the (attacker-controlled, e.g. base64-decoded JWT) bytes.
+            string = string.b unless [Encoding::UTF_8, Encoding::BINARY].include?(string.encoding)
             scanner = StringScanner.new(string)
             scanner.skip(WHITESPACE)
             value = parse_value(scanner, 0)

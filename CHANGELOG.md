@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - Arbitrary-precision JSON parsing: `json.unmarshal`, `json.is_valid`, `io.jwt.decode`, and the
   `rego-validate` CLI's JSON input/data loader now decode through a new strict, number-text-preserving
-  JSON decoder (`Codecs::JsonDecoder`) instead of Ruby's `JSON.parse`. A JSON number keeps OPA's
+  JSON decoder (`Ruby::Rego::JsonDecoder`) instead of Ruby's `JSON.parse`. A JSON number keeps OPA's
   verbatim `json.Number` text — `1.50` stays `1.50`, `100.00` stays `100.00`, `1e999` stays a usable
   number (previously it collapsed to `Float::INFINITY`), `-0` keeps its sign, and a large integer
   stays exact — so `json.marshal(json.unmarshal(x))` round-trips byte-exact with OPA. This closes a
