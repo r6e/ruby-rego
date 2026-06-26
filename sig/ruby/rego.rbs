@@ -1561,6 +1561,36 @@ module Ruby
         def self.urlquery_decode: (Value value) -> StringValue
         def self.urlquery_decode_object: (Value value) -> ObjectValue
 
+        module JsonDecoder
+          class ParseError < StandardError
+          end
+
+          MAX_DEPTH: Integer
+          NUMBER: Regexp
+          WHITESPACE: Regexp
+          STRING_CHUNK: Regexp
+          ESCAPES: Hash[String, String]
+
+          def self.parse: (String string) -> untyped
+          def self.valid?: (String string) -> bool
+
+          private
+
+          def self.parse_value: (StringScanner scanner, Integer depth) -> untyped
+          def self.parse_object: (StringScanner scanner, Integer depth) -> Hash[String, untyped]
+          def self.parse_array: (StringScanner scanner, Integer depth) -> Array[untyped]
+          def self.parse_number: (StringScanner scanner) -> (Number | Integer)
+          def self.parse_keyword: (StringScanner scanner) -> untyped
+          def self.parse_string: (StringScanner scanner) -> String
+          def self.normalize_string_encoding: (String string) -> String
+          def self.concat_escape: (String result, String text) -> void
+          def self.parse_escape: (StringScanner scanner) -> String
+          def self.parse_unicode_escape: (StringScanner scanner) -> String
+          def self.combine_surrogates: (Integer high, Integer low) -> String
+          def self.surrogate_replacement: (Integer code) -> String
+          def self.read_hex_quad: (StringScanner scanner) -> Integer
+        end
+
         private
 
         def self.raise_marshal_error: (Exception error, String context) -> bot

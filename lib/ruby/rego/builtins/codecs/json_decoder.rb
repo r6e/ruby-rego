@@ -1,0 +1,236 @@
+# frozen_string_literal: true
+
+require "strscan"
+
+module Ruby
+  module Rego
+    module Builtins
+      module Codecs
+        # A strict JSON decoder (RFC 8259 / Go encoding/json, which OPA uses) that PRESERVES number text:
+        # a JSON number becomes a Ruby::Rego::Number (non-integer) or an exact Integer, matching OPA's
+        # json.Number model, instead of collapsing to a Float (1.50 -> 1.5, 1e999 -> Infinity, large
+        # integers losing precision). Shared by json.unmarshal / json.is_valid / io.jwt.decode and the CLI
+        # input/data loader so all "parse untrusted JSON to Rego values" paths agree.
+        #
+        # Strict like Go's encoding/json (verified against `opa eval` 1.17): rejects comments, trailing
+        # commas, leading zeros, a bare `.5` / `1.`, NaN/Infinity, and trailing content; duplicate object
+        # keys take the last value. Comment / trailing-comma rejection also closes the one dangerous
+        # gem-wide leniency Ruby's JSON.parse had (it accepted // and /* */ comments OPA rejects).
+        #
+        # TOTALITY (the contract — the registry rescues only BuiltinArgumentError, callers rescue
+        # ParseError): MAX_DEPTH fires on the way DOWN, before this parser's own recursion — and the
+        # subsequent recursive Value.from_ruby — can overflow the C stack (a SystemStackError there is
+        # uncatchable). A number beyond the magnitude cap (Number::MAX_MAGNITUDE_EXPONENT, the same bound
+        # the lexer applies to literals) raises rather than materialise an astronomically large rational.
+        # The input is byte-encoding-guarded up front, and string content is scanned by bytes, so binary /
+        # invalid-UTF-8 input maps to undefined instead of raising an uncaught error.
+        # rubocop:disable Metrics/ModuleLength
+        module JsonDecoder
+          # Raised on any malformed / out-of-bounds input; callers map it to undefined.
+          class ParseError < StandardError; end
+
+          # Bounds both this parser's recursion and the downstream Value.from_ruby recursion. Matches the
+          # max_nesting Ruby's JSON.parse used (load-bearing — Value.from_ruby SystemStackErrors far below
+          # the C-stack limit). Go allows ~10000; staying at 100 is a documented gem-more-strict divergence.
+          MAX_DEPTH = 100
+
+          NUMBER = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/
+          WHITESPACE = /[ \t\n\r]+/
+          # JSON string body up to the next quote/backslash/control char (control chars are rejected). A
+          # US-ASCII regex (no /n) matches a UTF-8 input character-wise and a binary input byte-wise — both
+          # without the "binary regexp against UTF-8" warning, and both preserving content unchanged.
+          STRING_CHUNK = /[^"\\\x00-\x1f]+/
+
+          # @param string [String]
+          # @return [Object] a Ruby value (Number/Integer for JSON numbers; String/true/false/nil/Array/Hash)
+          # @raise [ParseError]
+          def self.parse(string)
+            raise ParseError, "invalid string encoding" unless Base.byte_safe_encoding?(string)
+
+            scanner = StringScanner.new(string)
+            scanner.skip(WHITESPACE)
+            value = parse_value(scanner, 0)
+            scanner.skip(WHITESPACE)
+            raise ParseError, "trailing content" unless scanner.eos?
+
+            value
+          end
+
+          # @return [bool] whether `string` is well-formed strict JSON (json.is_valid)
+          def self.valid?(string)
+            parse(string)
+            true
+          rescue ParseError
+            false
+          end
+
+          def self.parse_value(scanner, depth)
+            raise ParseError, "nesting too deep" if depth > MAX_DEPTH
+
+            case scanner.peek(1)
+            when "{" then parse_object(scanner, depth)
+            when "[" then parse_array(scanner, depth)
+            when '"' then parse_string(scanner)
+            when "t", "f", "n" then parse_keyword(scanner)
+            when "-", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" then parse_number(scanner)
+            else raise ParseError, "unexpected token"
+            end
+          end
+          private_class_method :parse_value
+
+          # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+          def self.parse_object(scanner, depth)
+            scanner.pos += 1 # consume {
+            object = {} # @type var object: Hash[String, untyped]
+            scanner.skip(WHITESPACE)
+            return object if scanner.skip(/\}/)
+
+            loop do
+              scanner.skip(WHITESPACE)
+              key = parse_string(scanner)
+              scanner.skip(WHITESPACE)
+              raise ParseError, "expected ':'" unless scanner.skip(/:/)
+
+              scanner.skip(WHITESPACE)
+              object[key] = parse_value(scanner, depth + 1) # last duplicate key wins, matching Go
+              scanner.skip(WHITESPACE)
+              break if scanner.skip(/\}/)
+              raise ParseError, "expected ',' or '}'" unless scanner.skip(/,/)
+            end
+            object
+          end
+          private_class_method :parse_object
+
+          def self.parse_array(scanner, depth)
+            scanner.pos += 1 # consume [
+            array = [] # @type var array: Array[untyped]
+            scanner.skip(WHITESPACE)
+            return array if scanner.skip(/\]/)
+
+            loop do
+              scanner.skip(WHITESPACE)
+              array << parse_value(scanner, depth + 1)
+              scanner.skip(WHITESPACE)
+              break if scanner.skip(/\]/)
+              raise ParseError, "expected ',' or ']'" unless scanner.skip(/,/)
+            end
+            array
+          end
+          private_class_method :parse_array
+          # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
+          def self.parse_number(scanner)
+            text = scanner.scan(NUMBER) or raise ParseError, "invalid number"
+            raise ParseError, "number too big" unless Number.magnitude_within_limit?(text)
+
+            # A fractional/exponent form, or "-0" (whose canonical Integer form "0" would drop OPA's
+            # verbatim sign), stays a text-preserving Number; a plain integer becomes an exact Integer.
+            text.match?(/[.eE]/) || text == "-0" ? Number.literal(text) : Integer(text, 10)
+          end
+          private_class_method :parse_number
+
+          def self.parse_keyword(scanner)
+            return true if scanner.skip(/true/)
+            return false if scanner.skip(/false/)
+            return nil if scanner.skip(/null/)
+
+            raise ParseError, "invalid literal"
+          end
+          private_class_method :parse_keyword
+
+          # rubocop:disable Metrics/MethodLength
+          def self.parse_string(scanner)
+            raise ParseError, "expected string" unless scanner.skip(/"/)
+
+            # Accumulate in the input's encoding so a binary (base64.decode'd) input keeps its raw bytes
+            # and a UTF-8 input stays UTF-8; concat_escape coerces the cross-encoding \uXXXX case.
+            result = String.new(encoding: scanner.string.encoding)
+            loop do
+              chunk = scanner.scan(STRING_CHUNK)
+              result << chunk if chunk
+              case scanner.peek(1)
+              when '"' then scanner.pos += 1
+                            break
+              when "\\" then scanner.pos += 1
+                             concat_escape(result, parse_escape(scanner))
+              else raise ParseError, "unterminated or control char in string"
+              end
+            end
+            normalize_string_encoding(result)
+          end
+          private_class_method :parse_string
+          # rubocop:enable Metrics/MethodLength
+
+          # A binary (base64.decode'd) input whose decoded string content is in fact valid UTF-8 is
+          # re-tagged UTF-8, so the same logical JSON yields the same string regardless of whether it
+          # arrived UTF-8-tagged (json.unmarshal) or ASCII-8BIT (io.jwt.decode), and matches OPA's UTF-8
+          # output. Genuinely invalid bytes stay ASCII-8BIT (the documented raw-bytes divergence; the
+          # serializer scrubs them to U+FFFD on output, as OPA does).
+          def self.normalize_string_encoding(string)
+            return string unless string.encoding == Encoding::BINARY
+
+            reinterpreted = string.dup.force_encoding(Encoding::UTF_8)
+            reinterpreted.valid_encoding? ? reinterpreted : string
+          end
+          private_class_method :normalize_string_encoding
+
+          # Appends an escape's text (ASCII control char, or a UTF-8 \uXXXX character) to the accumulator.
+          # A multibyte \uXXXX character appended to a binary accumulator is forced to bytes so it does not
+          # raise Encoding::CompatibilityError (binary input with unicode escapes stays a byte string).
+          def self.concat_escape(result, text)
+            result << (result.encoding == Encoding::BINARY ? text.b : text)
+          end
+          private_class_method :concat_escape
+
+          ESCAPES = { '"' => '"', "\\" => "\\", "/" => "/", "b" => "\b", "f" => "\f",
+                      "n" => "\n", "r" => "\r", "t" => "\t" }.freeze
+
+          # :reek:NilCheck -- get_byte returns nil at end-of-input (a backslash with no following byte);
+          # that is the truncated-escape sentinel, mapped to ParseError.
+          def self.parse_escape(scanner)
+            char = scanner.get_byte
+            raise ParseError, "truncated escape" if char.nil?
+            return ESCAPES.fetch(char) if ESCAPES.key?(char)
+            return parse_unicode_escape(scanner) if char == "u"
+
+            raise ParseError, "invalid escape"
+          end
+          private_class_method :parse_escape
+
+          # \uXXXX: a non-surrogate is its own character; a high+low pair combines into one character; any
+          # unpaired surrogate becomes U+FFFD (matching Go) rather than raising.
+          def self.parse_unicode_escape(scanner)
+            code = read_hex_quad(scanner)
+            return code.chr(Encoding::UTF_8) unless code.between?(0xD800, 0xDFFF)
+            return "\u{FFFD}" unless code.between?(0xD800, 0xDBFF) && scanner.skip(/\\u/)
+
+            low = read_hex_quad(scanner)
+            return combine_surrogates(code, low) if low.between?(0xDC00, 0xDFFF)
+
+            # High surrogate followed by a \uXXXX that is not a low surrogate: U+FFFD then that character.
+            "\u{FFFD}#{surrogate_replacement(low)}"
+          end
+          private_class_method :parse_unicode_escape
+
+          def self.combine_surrogates(high, low)
+            (((high - 0xD800) << 10) + (low - 0xDC00) + 0x10000).chr(Encoding::UTF_8)
+          end
+          private_class_method :combine_surrogates
+
+          # The trailing \uXXXX after an unpaired high surrogate: itself a char, or U+FFFD if a surrogate.
+          def self.surrogate_replacement(code)
+            code.between?(0xD800, 0xDFFF) ? "\u{FFFD}" : code.chr(Encoding::UTF_8)
+          end
+          private_class_method :surrogate_replacement
+
+          def self.read_hex_quad(scanner)
+            hex = scanner.scan(/\h{4}/) or raise ParseError, "invalid \\u escape"
+            hex.to_i(16)
+          end
+          private_class_method :read_hex_quad
+        end
+        # rubocop:enable Metrics/ModuleLength
+      end
+    end
+  end
+end

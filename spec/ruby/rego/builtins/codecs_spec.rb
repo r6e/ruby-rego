@@ -78,12 +78,40 @@ RSpec.describe "encoding builtins" do
     it "is undefined for invalid JSON" do
       expect(registry.call("json.unmarshal", ["{bad}"])).to be_a(Ruby::Rego::UndefinedValue)
     end
+
+    # json.marshal(json.unmarshal(x)) round-trips a number's verbatim text exactly as OPA does (the
+    # number flows through the arbitrary-precision json.Number model, not a lossy Float).
+    {
+      "1.50" => "1.50", "100.00" => "100.00", "1e999" => "1e999", "-0" => "-0",
+      "0.30" => "0.30", "1000000000000000000000" => "1000000000000000000000",
+      '{"a":1.50,"b":[1e3,2.0]}' => '{"a":1.50,"b":[1e3,2.0]}'
+    }.each do |input, marshalled|
+      it "preserves the number text of #{input.inspect} through unmarshal/marshal (matching OPA)" do
+        value = registry.call("json.unmarshal", [input])
+        expect(registry.call("json.marshal", [value]).to_ruby).to eq(marshalled)
+      end
+    end
+
+    it "rejects comments and trailing commas that Go encoding/json (and OPA) reject" do
+      ['{"a":1} // c', "[1,2,]", "01"].each do |bad|
+        expect(registry.call("json.unmarshal", [bad])).to be_a(Ruby::Rego::UndefinedValue)
+      end
+    end
+
+    it "is undefined for a number beyond the magnitude cap rather than materialising it" do
+      expect(registry.call("json.unmarshal", ["1e99999"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
   end
 
   describe "json.is_valid" do
     it "reports validity" do
       expect(registry.call("json.is_valid", ['{"x":1}']).to_ruby).to be(true)
       expect(registry.call("json.is_valid", ["{bad}"]).to_ruby).to be(false)
+    end
+
+    it "is strict like Go encoding/json: comments and trailing commas are invalid" do
+      expect(registry.call("json.is_valid", ['{"a":1} // c']).to_ruby).to be(false)
+      expect(registry.call("json.is_valid", ["[1,2,]"]).to_ruby).to be(false)
     end
   end
 

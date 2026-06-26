@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Arbitrary-precision JSON parsing: `json.unmarshal`, `json.is_valid`, `io.jwt.decode`, and the
+  `rego-validate` CLI's JSON input/data loader now decode through a new strict, number-text-preserving
+  JSON decoder (`Codecs::JsonDecoder`) instead of Ruby's `JSON.parse`. A JSON number keeps OPA's
+  verbatim `json.Number` text — `1.50` stays `1.50`, `100.00` stays `100.00`, `1e999` stays a usable
+  number (previously it collapsed to `Float::INFINITY`), `-0` keeps its sign, and a large integer
+  stays exact — so `json.marshal(json.unmarshal(x))` round-trips byte-exact with OPA. This closes a
+  **fail-open**: a large number from untrusted input (e.g. `input.count`) used to overflow to `Float`
+  infinity and leave a comparison like `input.count > limit` undefined, silently passing a deny guard;
+  it now compares correctly. The decoder is also strict like Go's `encoding/json` (which OPA uses):
+  it rejects `//`/`/* */` comments (closing a gem-wide leniency Ruby's `JSON.parse` had), trailing
+  commas, leading zeros, a bare `.5`/`1.`, `NaN`/`Infinity`, and trailing content; duplicate object
+  keys take the last value; and an unpaired `\uXXXX` surrogate becomes U+FFFD — all matching OPA.
+  `io.jwt.decode` gains the same fidelity, and a divergence is fixed: a JWT header/payload with a lone
+  surrogate now decodes to U+FFFD (matching OPA) rather than undefined. Totality is preserved — the
+  decoder maps every malformed, truncated, deeply nested (capped at depth 100, as before, to bound the
+  recursive value builder), binary, or over-large-magnitude input to undefined rather than raising or
+  overflowing the stack. Two narrow gem-stricter divergences remain (both at the prior `JSON.parse`
+  boundary or absurd scale): nesting deeper than 100, and a single number whose magnitude exceeds
+  ~`1e30102` (the same cap the lexer applies to literals) makes the whole document undefined, where OPA
+  stores it. (YAML input/data still collapses numbers to `Float`; a follow-up will route it through the
+  yaml scalar resolver.)
 - New built-in: `providers.aws.sign_req(request, aws_config, time_ns)`, matching OPA — signs an HTTP
   request (http.send shape) with AWS Signature Version 4 and returns the request copied with its
   `headers` replaced by the original headers plus the signing headers (`Authorization`, `host`,

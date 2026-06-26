@@ -3,6 +3,7 @@
 require "json"
 require_relative "base"
 require_relative "base64url"
+require_relative "codecs/json_decoder"
 require_relative "registry"
 require_relative "registry_helpers"
 
@@ -23,24 +24,18 @@ module Ruby
       # registry's totality boundary, which rescues only BuiltinArgumentError. base64url-decoded bytes
       # arrive as ASCII-8BIT, which is ascii_compatible?, so a token built from base64.decode is fine.
       #
-      # Header/payload parsing goes through the same JSON.parse as json.unmarshal, so io.jwt.decode
-      # inherits — and stays consistent with — the gem's JSON behaviour. The gem-wide divergences from
-      # OPA (Go encoding/json) that follow are shared with json.unmarshal and are not closed here (the
-      # fix belongs in a gem-wide JSON layer; a JWT-only reimplementation would diverge from
-      # json.unmarshal). The first two are in the safe, gem-stricter direction:
-      #   * Nesting: a header/payload nested deeper than JSON.parse's default (max_nesting: 100) is
-      #     undefined, whereas Go decodes to depth 10000. The default is deliberately kept — raising it to
-      #     Go's limit makes the recursive Value.from_ruby overflow with an uncatchable SystemStackError
-      #     around depth ~5000, which would abort policy evaluation.
-      #   * Invalid UTF-8 in a JSON string value: raw invalid bytes keep their bytes (Go replaces with
-      #     U+FFFD) and a \uXXXX lone surrogate is undefined (Go yields U+FFFD).
-      # The remaining two predate this builtin (json.unmarshal already behaves identically) and are not
-      # in the stricter direction:
-      #   * Comments: Ruby's json accepts // and /* */ comments unconditionally (no disable flag); Go
-      #     rejects them, so a commented header/payload decodes here but is undefined in OPA.
-      #   * Number precision: JSON numbers become Ruby Integer/Float, so high-precision decimals and
-      #     exponent forms (1e2 -> 100.0) lose OPA's arbitrary-precision json.Number fidelity. Integers
-      #     are exact (Ruby Bignum).
+      # Header/payload parsing goes through the same Codecs::JsonDecoder as json.unmarshal, so io.jwt.decode
+      # inherits — and stays consistent with — the gem's strict JSON behaviour (RFC 8259 / Go
+      # encoding/json): comments and trailing commas are rejected, number text is preserved as OPA's
+      # arbitrary-precision json.Number (1.50 stays 1.50, 1e2 stays a number, large integers are exact),
+      # and a \uXXXX lone surrogate yields U+FFFD — all matching OPA. A few narrow divergences remain:
+      #   * Nesting: a header/payload nested deeper than depth 100 is undefined, whereas Go decodes to
+      #     depth 10000. The cap is deliberate — it bounds the recursive Value.from_ruby, which otherwise
+      #     overflows with an uncatchable SystemStackError around depth ~5000. Gem-stricter.
+      #   * Magnitude: a number whose order of magnitude exceeds ~1e30102 is undefined (the same cap the
+      #     lexer applies to literals), whereas OPA stores it as text. Gem-stricter, only at absurd scale.
+      #   * Invalid UTF-8: raw invalid bytes mid-string keep their bytes rather than Go's U+FFFD
+      #     replacement (the bytes round-trip; OPA's output scrubs them). Shared with json.unmarshal.
       module Jwt
         extend RegistryHelpers
 
@@ -95,9 +90,9 @@ module Ruby
         # :reek:NilCheck -- nil flows from decode_segment / a non-object parse as the failure sentinel.
         def self.decode_object(segment)
           bytes = decode_segment(segment)
-          parsed = bytes && JSON.parse(bytes)
+          parsed = bytes && Codecs::JsonDecoder.parse(bytes)
           parsed.is_a?(Hash) ? parsed : nil
-        rescue JSON::ParserError
+        rescue Codecs::JsonDecoder::ParseError
           nil
         end
         private_class_method :decode_object
