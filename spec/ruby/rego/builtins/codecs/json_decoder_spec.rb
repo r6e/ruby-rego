@@ -131,6 +131,10 @@ RSpec.describe Ruby::Rego::Builtins::Codecs::JsonDecoder do
       expect(value["k"]).to eq("é")
     end
 
+    it "decodes escapes and \\uXXXX inside a binary (base64-decoded) input" do
+      expect(parse(%({"k":"a\\nb\\t\\"\\u00e9"}).b)).to eq("k" => "a\nb\t\"é")
+    end
+
     it "keeps genuinely invalid bytes as raw ASCII-8BIT" do
       value = parse(%({"k":"\xFF"}).b)
       expect(value["k"].bytes).to eq([0xFF])

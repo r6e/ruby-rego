@@ -53,9 +53,9 @@ module Ruby
             # like ISO-8859-1 / Windows-1252 that byte_safe_encoding? admits) to raw bytes, so a string
             # body with a literal high byte plus a multibyte \uXXXX escape goes through the BINARY append
             # path (concat_escape) rather than clashing two incompatible encodings — which would raise an
-            # uncaught Encoding::CompatibilityError and break totality. normalize_string_encoding re-tags
-            # the bytes back to UTF-8 when valid, matching OPA's UTF-8 string model. UTF-8 and BINARY
-            # inputs are unchanged (.b on a BINARY string is a no-op dup).
+            # uncaught Encoding::CompatibilityError and break totality (normalize_string_encoding re-tags
+            # valid bytes back to UTF-8). UTF-8 and BINARY inputs are unchanged (.b on a BINARY string is
+            # a no-op dup).
             string = string.b unless string.encoding == Encoding::UTF_8
             scanner = StringScanner.new(string)
             scanner.skip(WHITESPACE)
