@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Arbitrary-precision JSON parsing: `json.unmarshal`, `json.is_valid`, `io.jwt.decode`, and the
+  `rego-validate` CLI's JSON input/data loader now decode through a new strict, number-text-preserving
+  JSON decoder (`Ruby::Rego::JsonDecoder`) instead of Ruby's `JSON.parse`. A JSON number keeps OPA's
+  verbatim `json.Number` text — `1.50` stays `1.50`, `100.00` stays `100.00`, `1e999` stays a usable
+  number (previously it collapsed to `Float::INFINITY`), `-0` keeps its sign, and a large integer
+  stays exact — so `json.marshal(json.unmarshal(x))` round-trips byte-exact with OPA. This closes a
+  **fail-open**: a large number from untrusted input (e.g. `input.count`) used to overflow to `Float`
+  infinity and leave a comparison like `input.count > limit` undefined, silently passing a deny guard;
+  it now compares correctly. The decoder is also strict like Go's `encoding/json` (which OPA uses):
+  it rejects `//`/`/* */` comments (closing a gem-wide leniency Ruby's `JSON.parse` had), trailing
+  commas, leading zeros, a bare `.5`/`1.`, `NaN`/`Infinity`, and trailing content; duplicate object
+  keys take the last value; and an unpaired `\uXXXX` surrogate becomes U+FFFD — all matching OPA.
+  `io.jwt.decode` gains the same fidelity, and a divergence is fixed: a JWT header/payload with a lone
+  surrogate now decodes to U+FFFD (matching OPA) rather than undefined. Totality is preserved — the
+  decoder maps every malformed, truncated, deeply nested (capped at depth 100, as before, to bound the
+  recursive value builder), binary, or over-large-magnitude input to undefined rather than raising or
+  overflowing the stack — including a string in an ascii-compatible single-byte non-UTF-8 encoding
+  (ISO-8859-1 / Windows-1252) carrying a high byte plus a `\uXXXX` escape, which is normalized to bytes
+  up front rather than raising an uncaught `Encoding::CompatibilityError`. Two residual divergences
+  remain, neither blocking: (1) nesting deeper than 100
+  is undefined where OPA decodes to ~10000 — gem-stricter, a deliberate stack-overflow guard. (2) A
+  number whose magnitude exceeds ~`1e30102` (the same cap the lexer applies to literals) makes the
+  document undefined, where OPA evaluates it (OPA itself only panics at a ~19-digit exponent). The cap
+  bounds rational materialization — without it, comparing `1e1000000` would allocate a million-digit
+  rational (a memory DoS) — so this trades a DoS for a **narrowed-but-not-closed fail-open**: in a deny
+  guard, a number above the cap goes undefined (deny does not fire) where OPA would compare it and deny.
+  The realistic range, including `1e999` and far beyond, is closed; the residual window above `1e30102`
+  is closed properly by the deferred no-materialize comparison work (tracked follow-up). **The fail-open
+  closure is JSON-input only**: YAML input/data still parses through `YAML.safe_load`, which collapses
+  `1.50`→`Float` and reads `1e999` as a bare `String`, so the comparison fail-open persists for YAML
+  policy input; routing YAML through the gem's scalar resolver is a tracked follow-up.
 - New built-in: `providers.aws.sign_req(request, aws_config, time_ns)`, matching OPA — signs an HTTP
   request (http.send shape) with AWS Signature Version 4 and returns the request copied with its
   `headers` replaced by the original headers plus the signing headers (`Authorization`, `host`,

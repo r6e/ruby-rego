@@ -70,6 +70,8 @@ detectors:
       - Ruby::Rego::Builtins::Regex::GlobIntersection::Intersector
       # Recursive JSON normalization: type-dispatch case fold.
       - Ruby::Rego::Builtins::Codecs#self.jsonify
+      # Recursive-descent strict JSON decoder: each production is a linear scan-and-branch sequence.
+      - Ruby::Rego::Builtins::Codecs::JsonDecoder
       # Faithful port of OPA's arraySetSubset unmatched-counter (==-based for numeric equality).
       - Ruby::Rego::Builtins::Collections::ObjectOps#self.array_set_subset?
       # cidr_contains_matches: parse both operands then cross-product; entries: 4-way
@@ -141,6 +143,8 @@ detectors:
       - Ruby::Rego::WithModifiers::WithModifierBuiltinOverride
       # Character-scanning glob->regex compiler; repeated index arithmetic is inherent.
       - Ruby::Rego::Builtins::Glob::GlobCompiler
+      # Recursive-descent JSON decoder: repeated scanner.skip(whitespace)/pos access while scanning.
+      - Ruby::Rego::Builtins::Codecs::JsonDecoder
       # Char-scanning port of Go's regexp.Expand replacement-template parser.
       - Ruby::Rego::Builtins::Regex::GoTemplate
       # gintersect port: repeated rune/token index access while scanning.

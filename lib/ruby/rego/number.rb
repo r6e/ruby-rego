@@ -36,9 +36,17 @@ module Ruby
       # magnitude exceeds 10**30102 (or whose reciprocal does) is a parse error in OPA ("number too
       # big"). It is also the guard against a denial of service — `BigDecimal(text).to_r` materializes a
       # numerator or denominator of ~10**|magnitude| as a full Integer, so an unbounded exponent (e.g.
-      # `1e999999999`, 11 source bytes -> a gigabyte rational) would otherwise exhaust memory. OPA's
-      # bound is very slightly asymmetric (the tiny-magnitude side reaches ~10**-30150); this symmetric
-      # cap matches OPA exactly on the large side and across the entire realistic range.
+      # `1e999999999`, 11 source bytes -> a gigabyte rational) would otherwise exhaust memory.
+      #
+      # The cap matches OPA across the entire realistic range. Two known edges, both bounded and far
+      # beyond any real policy value (documented, not a DoS): (1) OPA's bound is very slightly asymmetric
+      # (the tiny-magnitude side reaches ~10**-30150); this symmetric cap is marginally stricter there.
+      # (2) At the extreme large edge the gem and OPA can differ by one order of magnitude: this gate uses
+      # BigDecimal's EXACT magnitude, whereas OPA rounds the literal to a big.Float at its precision first,
+      # so a value just below 10**30103 (e.g. a 30103-digit all-nines integer) rounds UP across OPA's
+      # boundary and is rejected by OPA but accepted here. Verified vs opa eval 1.17. Matching OPA's
+      # rounding-at-the-boundary behaviour would require porting its big.Float parser — a tracked follow-up
+      # in the number-model fidelity sweep, not this scope. Pre-existing; unaffected by the gate refactor.
       MAX_MAGNITUDE_EXPONENT = 30_102
 
       # Build a Number from a numeric literal's source text (already validated by the lexer).
@@ -49,17 +57,62 @@ module Ruby
         new(text: text)
       end
 
-      # Whether `text`'s decimal order of magnitude is within OPA's literal limit. The magnitude is read
+      # Whether `text`'s decimal order of magnitude is within OPA's literal limit. The single magnitude
+      # gate both callers (lexer and JSON decoder) share. A fractional/exponent form reads its magnitude
       # from BigDecimal's exponent (which records the position of the decimal point WITHOUT materializing
-      # 10**exponent), so this is O(text length) and safe to call on attacker-controlled input — unlike
-      # the `to_r` that #exact would later perform. The lexer calls this to reject an over-large literal
-      # as a parse error, exactly as OPA does.
+      # 10**exponent), so this is O(text length) and safe on attacker-controlled input — unlike the `to_r`
+      # that #exact would later perform; a plain integer is checked by digit count alone. The lexer calls
+      # this to reject an over-large literal as a parse error, very nearly as OPA does (the bound is exact
+      # across the entire realistic range; at the extreme edge it can differ by one order of magnitude —
+      # see MAX_MAGNITUDE_EXPONENT).
+      #
+      # An exponent literal of ~19+ digits silently saturates BigDecimal at construction (it does NOT
+      # raise): a huge POSITIVE exponent (`1e9999999999999999999`) becomes Infinity, and a huge NEGATIVE
+      # one (`1e-9999999999999999999`) underflows to 0 — both with exponent 0, which would slip past the
+      # magnitude check. An accepted-but-saturated number then crashes (Infinity -> FloatDomainError on
+      # the later #exact) or silently mis-evaluates as 0. The finite? guard rejects the positive case;
+      # the zero_literal? check distinguishes a genuine zero from an underflowed tiny non-zero, rejecting
+      # the latter. Both directions thus map to a parse/argument error, consistent with the cap and safer
+      # than OPA (which stores such a number as text and then panics on comparison).
+      #
+      # @param text [String]
+      # @param fractional [bool] whether `text` is a fractional/exponent form (has `.`/`e`/`E`). Both
+      #   callers already compute this for their literal-vs-Integer dispatch, so they pass it to avoid a
+      #   second full-string scan on an attacker-controlled megabyte token; the default re-derives it.
+      # @return [Boolean]
+      # :reek:ControlParameter -- `fractional` is a precomputed dispatch flag the callers pass to skip a
+      # second O(n) scan of a huge token; it legitimately selects the integer vs decimal magnitude path.
+      def self.magnitude_within_limit?(text, fractional: text.match?(/[.eE]/))
+        return integer_magnitude_within_limit?(text) unless fractional
+
+        decimal = BigDecimal(text)
+        return false unless decimal.finite?
+        return zero_literal?(text) if decimal.zero?
+
+        (decimal.exponent - 1).abs <= MAX_MAGNITUDE_EXPONENT
+      end
+
+      # A plain integer's magnitude is its significant-digit count minus one. The NUMBER grammar (both
+      # the lexer and the JSON decoder) forbids leading zeros, so the digit count is exact — an O(1) check
+      # (the sign is subtracted from the length, NOT stripped into a copy, so a megabyte integer token
+      # costs O(1) here). Verified equivalent to the BigDecimal exponent path across sign and zero forms.
       #
       # @param text [String]
       # @return [Boolean]
-      def self.magnitude_within_limit?(text)
-        decimal = BigDecimal(text)
-        decimal.zero? || (decimal.exponent - 1).abs <= MAX_MAGNITUDE_EXPONENT
+      def self.integer_magnitude_within_limit?(text)
+        digits = text.length
+        digits -= 1 if text.start_with?("-")
+        digits <= MAX_MAGNITUDE_EXPONENT + 1
+      end
+      private_class_method :integer_magnitude_within_limit?
+
+      # Whether `text` denotes an exact zero (every significant digit is 0, e.g. "0", "-0", "0.0",
+      # "0e1000"), as opposed to a tiny non-zero whose huge negative exponent underflowed BigDecimal to 0.
+      #
+      # @param text [String]
+      # @return [Boolean]
+      def self.zero_literal?(text)
+        text.sub(/[eE].*/, "").delete("-+.").match?(/\A0+\z/)
       end
 
       # Format a computed Flt::BinNum result the way OPA's FloatToNumber does, working from the result's

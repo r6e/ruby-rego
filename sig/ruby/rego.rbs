@@ -51,6 +51,9 @@ module Ruby
   module Rego
     VERSION: String
 
+    # Public, layer-neutral alias for the strict number-preserving JSON decoder (see json_decoder.rb).
+    module JsonDecoder = Builtins::Codecs::JsonDecoder
+
     def self.parse: (String source) -> AST::Module
     def self.compile: (String source) -> CompiledModule
     def self.evaluate: (String source, ?input: untyped, ?data: untyped, ?query: untyped) -> (Result | nil)
@@ -174,14 +177,16 @@ module Ruby
       @exact: (Rational | Integer)?
 
       def self.literal: (String text) -> Number
-      def self.magnitude_within_limit?: (String text) -> bool
+      def self.magnitude_within_limit?: (String text, ?fractional: bool) -> bool
+      private def self.integer_magnitude_within_limit?: (String text) -> bool
+      def self.zero_literal?: (String text) -> bool
       def self.negate_literal: (Numeric value) -> Numeric
       def self.from_binnum: (untyped binnum) -> (Number | Integer)
       def self.from_numeric: (Numeric value) -> Number
       def self.div: (Numeric left, Numeric right) -> (Number | Integer)
       def self.modulo: (Numeric left, Numeric right) -> Integer?
       def self.integer_value: (Numeric value) -> Integer?
-      def self.float_integer_value: (Float value) -> Integer?
+      private def self.float_integer_value: (Float value) -> Integer?
       def self.rational_to_binnum: (Rational | Integer rational) -> untyped
 
       def initialize: (?text: String?, ?exact: (Rational | Integer)?) -> void
@@ -1560,6 +1565,37 @@ module Ruby
         def self.urlquery_encode_object: (Value value) -> StringValue
         def self.urlquery_decode: (Value value) -> StringValue
         def self.urlquery_decode_object: (Value value) -> ObjectValue
+
+        module JsonDecoder
+          class ParseError < StandardError
+          end
+
+          MAX_DEPTH: Integer
+          # private_constant at runtime; declared here only because steep needs the types to check the
+          # method bodies that reference them. Not part of the public API.
+          NUMBER: Regexp
+          WHITESPACE: Regexp
+          STRING_CHUNK: Regexp
+          ESCAPES: Hash[String, String]
+
+          def self.parse: (String string) -> untyped
+          def self.valid?: (String string) -> bool
+
+          private
+
+          def self.parse_value: (StringScanner scanner, Integer depth) -> untyped
+          def self.parse_object: (StringScanner scanner, Integer depth) -> Hash[String, untyped]
+          def self.parse_array: (StringScanner scanner, Integer depth) -> Array[untyped]
+          def self.parse_number: (StringScanner scanner) -> (Number | Integer)
+          def self.parse_keyword: (StringScanner scanner) -> untyped
+          def self.parse_string: (StringScanner scanner) -> String
+          def self.normalize_string_encoding: (String string) -> String
+          def self.concat_escape: (String result, String text) -> void
+          def self.parse_escape: (StringScanner scanner) -> String
+          def self.parse_unicode_escape: (StringScanner scanner) -> String
+          def self.combine_surrogates: (Integer high, Integer low) -> String
+          def self.read_hex_quad: (StringScanner scanner) -> Integer
+        end
 
         private
 
@@ -3569,7 +3605,7 @@ module Ruby
       def read_escape_sequence: (position backslash_position) -> String
       def read_unicode_escape: () -> String
       def parse_number: (String buffer, position start) -> Numeric
-      def reject_oversized_number: (String buffer, position start, decimal: bool) -> void
+      def reject_oversized_number: (String buffer, position start, bool fractional) -> void
       def template_string_start?: (String char) -> bool
       def advance: () -> String
       def advance_line_break: () -> String

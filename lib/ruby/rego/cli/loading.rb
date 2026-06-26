@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "json"
 require "yaml"
+require_relative "../json_decoder"
 
 # Policy and configuration source loading for rego-validate.
 module RegoValidate
@@ -56,13 +56,24 @@ module RegoValidate
     def parse_config(content, path)
       value = parse_config_value(content, path)
       ConfigLoadResult.new(value: value, success: true)
-    rescue JSON::ParserError, Psych::BadAlias, Psych::SyntaxError => e
+    rescue Ruby::Rego::JsonDecoder::ParseError,
+           Psych::BadAlias, Psych::SyntaxError => e
       reporter.error("Invalid config file: #{e.message}", parser)
       ConfigLoadResult.new(success: false)
     end
 
+    # JSON input/data parses through the gem's strict JsonDecoder so a number keeps OPA's
+    # arbitrary-precision json.Number text (1.50 stays 1.50; a large 1e999 stays a usable number rather
+    # than collapsing to Float and an unrepresentable comparison). The comparison-fail-open closure is
+    # JSON-input only: YAML input still uses YAML.safe_load, which collapses 1.50 to Float and reads
+    # 1e999 as a bare String (so `input.n > limit` is undefined — the fail-open persists for YAML). A
+    # follow-up will route YAML through the gem's scalar resolver for the same json.Number fidelity.
     def parse_config_value(content, path)
-      json_config?(path) ? JSON.parse(content) : YAML.safe_load(content, aliases: yaml_aliases)
+      if json_config?(path)
+        Ruby::Rego::JsonDecoder.parse(content)
+      else
+        YAML.safe_load(content, aliases: yaml_aliases)
+      end
     end
 
     def report_file_error(label, reason, path)

@@ -78,12 +78,60 @@ RSpec.describe "encoding builtins" do
     it "is undefined for invalid JSON" do
       expect(registry.call("json.unmarshal", ["{bad}"])).to be_a(Ruby::Rego::UndefinedValue)
     end
+
+    # json.marshal(json.unmarshal(x)) round-trips a number's verbatim text exactly as OPA does (the
+    # number flows through the arbitrary-precision json.Number model, not a lossy Float).
+    {
+      "1.50" => "1.50", "100.00" => "100.00", "1e999" => "1e999", "-0" => "-0",
+      "0.30" => "0.30", "1000000000000000000000" => "1000000000000000000000",
+      '{"a":1.50,"b":[1e3,2.0]}' => '{"a":1.50,"b":[1e3,2.0]}'
+    }.each do |input, marshalled|
+      it "preserves the number text of #{input.inspect} through unmarshal/marshal (matching OPA)" do
+        value = registry.call("json.unmarshal", [input])
+        expect(registry.call("json.marshal", [value]).to_ruby).to eq(marshalled)
+      end
+    end
+
+    it "rejects comments and trailing commas that Go encoding/json (and OPA) reject" do
+      ['{"a":1} // c', "[1,2,]", "01"].each do |bad|
+        expect(registry.call("json.unmarshal", [bad])).to be_a(Ruby::Rego::UndefinedValue)
+      end
+    end
+
+    it "is undefined for a number beyond the magnitude cap rather than materialising it" do
+      expect(registry.call("json.unmarshal", ["1e99999"])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    # Documents the residual fail-open the magnitude cap leaves: OPA evaluates `json.unmarshal("1e30103")
+    # > 1000` to true (its unmarshal path is not magnitude-gated; it only panics at a ~19-digit exponent),
+    # so a deny guard `n := json.unmarshal(input.raw); n > limit` FIRES in OPA but is undefined here (deny
+    # does not fire). The cap trades that narrow above-1e30102 fail-open for DoS safety (materialising the
+    # exact rational of a million-digit number is a memory bomb). Closed properly by the deferred
+    # no-materialize comparison work; pinned here so the divergence is a tested decision, not an accident.
+    it "leaves a residual deny-context fail-open above the cap (OPA evaluates; gem is undefined)" do
+      result = Ruby::Rego.evaluate("package t\nx := json.unmarshal(\"1e30103\") > 1000", query: "data.t.x")
+      expect(result).to be_nil # undefined; OPA returns true
+    end
   end
 
   describe "json.is_valid" do
     it "reports validity" do
       expect(registry.call("json.is_valid", ['{"x":1}']).to_ruby).to be(true)
       expect(registry.call("json.is_valid", ["{bad}"]).to_ruby).to be(false)
+    end
+
+    # Regression: json.is_valid does NOT flow through Codecs.decoded, so a Latin-1 high byte plus a
+    # multibyte \uXXXX escape (which used to raise Encoding::CompatibilityError inside the decoder) must
+    # not escape as an uncaught error and abort the policy — it returns a boolean.
+    it "returns a boolean (never raises) on a Latin-1 high byte plus a \\uXXXX escape" do
+      attack = "\"\xE9\\u00e9\"".dup.force_encoding(Encoding::ISO_8859_1)
+      expect { @result = registry.call("json.is_valid", [attack]) }.not_to raise_error
+      expect(@result.to_ruby).to be(true).or be(false)
+    end
+
+    it "is strict like Go encoding/json: comments and trailing commas are invalid" do
+      expect(registry.call("json.is_valid", ['{"a":1} // c']).to_ruby).to be(false)
+      expect(registry.call("json.is_valid", ["[1,2,]"]).to_ruby).to be(false)
     end
   end
 

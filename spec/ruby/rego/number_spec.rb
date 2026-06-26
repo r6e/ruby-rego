@@ -135,10 +135,47 @@ RSpec.describe Ruby::Rego::Number do
       expect(described_class.magnitude_within_limit?("1e-999999999")).to be(false)
     end
 
+    it "routes on the caller-supplied fractional flag (callers must compute it correctly)" do
+      # The flag is a precomputed dispatch hint, not validated input: passing fractional:false for a
+      # genuinely fractional token routes it down the integer digit-count path and bypasses the BigDecimal
+      # magnitude check. Both real callers derive the flag exactly as the default does, so this misuse is
+      # unreachable in production; pinned here to document the caller contract the optimization relies on.
+      expect(described_class.magnitude_within_limit?("1e99999", fractional: false)).to be(true)  # bypass
+      expect(described_class.magnitude_within_limit?("1e99999", fractional: true)).to be(false)  # checked
+      expect(described_class.magnitude_within_limit?("1e99999")).to be(false) # default derives it correctly
+    end
+
+    it "checks a plain integer's magnitude by digit count, without building a BigDecimal" do
+      # The single gate both the lexer and the JSON decoder share. A plain integer (no leading zeros per
+      # the NUMBER grammar) has magnitude = significant-digit-count - 1, so the boundary is 30103 digits;
+      # a leading sign does not count. Equivalent to the BigDecimal exponent path (verified), but cheaper.
+      expect(described_class.magnitude_within_limit?("9" * 30_103)).to be(true)   # 1e30102 magnitude
+      expect(described_class.magnitude_within_limit?("9" * 30_104)).to be(false)  # 1e30103 magnitude
+      expect(described_class.magnitude_within_limit?("-#{"9" * 30_103}")).to be(true) # sign not counted
+      expect(described_class.magnitude_within_limit?("-#{"9" * 30_104}")).to be(false)
+      expect(described_class.magnitude_within_limit?("0")).to be(true)
+      expect(described_class.magnitude_within_limit?("-0")).to be(true)
+    end
+
+    it "rejects an exponent so large BigDecimal saturates (no spurious accept), both directions" do
+      # ~19+ exponent digits make BigDecimal(text) saturate WITHOUT raising: a huge positive exponent
+      # to Infinity, a huge negative one underflowing to 0 (both exponent 0). An un-guarded check would
+      # accept them and then crash (FloatDomainError) or silently mis-evaluate the tiny value as 0.
+      expect(described_class.magnitude_within_limit?("1e9999999999999999999")).to be(false)
+      expect(described_class.magnitude_within_limit?("1e-9999999999999999999")).to be(false)
+    end
+
+    it "still accepts a genuine zero carrying a huge exponent" do
+      expect(described_class.magnitude_within_limit?("0e-9999999999999999999")).to be(true)
+      expect(described_class.magnitude_within_limit?("0.0e1000000000")).to be(true)
+    end
+
     it "rejects an over-large literal at parse, like OPA, rather than evaluating it" do
-      expect do
-        Ruby::Rego.evaluate("package t\nx = 1e999999999 > 1", query: "data.t.x")
-      end.to raise_error(Ruby::Rego::LexerError)
+      %w[1e999999999 1e9999999999999999999 1e-9999999999999999999].each do |literal|
+        expect do
+          Ruby::Rego.evaluate("package t\nx = #{literal} > 1", query: "data.t.x")
+        end.to raise_error(Ruby::Rego::LexerError)
+      end
     end
   end
 

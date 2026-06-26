@@ -56,6 +56,48 @@ RSpec.describe "RegoValidate::CLI success" do
   end
 end
 
+# End-to-end closure of the motivating fail-open through the WHOLE CLI chain (JSON input file ->
+# JsonDecoder -> Number-valued Hash -> input injection -> Value.from_ruby -> evaluation -> comparison),
+# not just at the decoder. Before the number-preserving decoder, a large JSON-input number collapsed to
+# a non-finite Float -> undefined, so `input.count > limit` was undefined and a guard depending on it
+# silently failed to fire (a deny guard would not deny). It now compares correctly.
+RSpec.describe "RegoValidate::CLI number-preserving JSON input" do # rubocop:disable Metrics/BlockLength
+  include_context "rego cli helpers"
+
+  it "preserves a large JSON-input number end-to-end so a numeric guard fires (closes the fail-open)" do
+    Dir.mktmpdir do |dir|
+      policy = <<~REGO
+        package example
+        default allow := false
+        allow { input.count > 1000 }
+      REGO
+      policy_path = write_temp_file(dir, "policy.rego", policy)
+      config_path = write_temp_file(dir, "config.json", '{"count": 1e999}')
+
+      result = run_cli(["--policy", policy_path, "--config", config_path])
+
+      expect(result[:status]).to eq(0)
+      expect(result[:stdout]).to include("Validation passed")
+    end
+  end
+
+  it "preserves JSON-input number text (1.50) and >2^53 integers end-to-end" do
+    Dir.mktmpdir do |dir|
+      policy = <<~REGO
+        package example
+        default allow := false
+        allow { input.p == 1.5; input.big == 9007199254740993 }
+      REGO
+      policy_path = write_temp_file(dir, "policy.rego", policy)
+      config_path = write_temp_file(dir, "config.json", '{"p": 1.50, "big": 9007199254740993}')
+
+      result = run_cli(["--policy", policy_path, "--config", config_path])
+
+      expect(result[:status]).to eq(0)
+    end
+  end
+end
+
 RSpec.describe "RegoValidate::CLI profiling" do
   include_context "rego cli helpers"
 

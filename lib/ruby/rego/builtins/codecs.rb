@@ -13,6 +13,7 @@ require_relative "codecs/json_schema"
 require_relative "codecs/json_schema_formats"
 require_relative "codecs/json_schema_email"
 require_relative "codecs/json_schema_match"
+require_relative "codecs/json_decoder"
 
 # rubocop:disable Metrics/ModuleLength
 module Ruby
@@ -186,16 +187,13 @@ module Ruby
         # @return [Ruby::Rego::Value]
         def self.json_unmarshal(value)
           string = string_arg(value, "json.unmarshal")
-          decoded("json.unmarshal") { Value.from_ruby(JSON.parse(string)) }
+          decoded("json.unmarshal") { Value.from_ruby(JsonDecoder.parse(string)) }
         end
 
         # @param value [Ruby::Rego::Value]
         # @return [Ruby::Rego::BooleanValue]
         def self.json_is_valid(value)
-          JSON.parse(string_arg(value, "json.is_valid"))
-          BooleanValue.new(true)
-        rescue JSON::ParserError
-          BooleanValue.new(false)
+          BooleanValue.new(JsonDecoder.valid?(string_arg(value, "json.is_valid")))
         end
 
         # json.verify_schema(schema): [valid, error] — true/null when `schema` (a JSON string or object) is
@@ -318,7 +316,7 @@ module Ruby
         # @return [Ruby::Rego::Value]
         def self.decoded(context)
           yield
-        rescue ArgumentError, JSON::ParserError, EncodingError => e
+        rescue ArgumentError, JsonDecoder::ParseError, EncodingError => e
           # EncodingError covers a non-ASCII-compatible string (e.g. UTF-16 supplied via the
           # Ruby API, never via JSON/Rego input) reaching a String/regex op — yield undefined
           # rather than letting it escape as a hard error.

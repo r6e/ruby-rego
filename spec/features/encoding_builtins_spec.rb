@@ -9,6 +9,8 @@ ENCODING_BUILTINS_POLICY = <<~REGO
 
   decoded := json.unmarshal(input.json)
 
+  over_threshold := json.unmarshal(input.json) > 1000
+
   token := base64.encode(input.secret)
 
   hexed := hex.encode(input.secret)
@@ -40,6 +42,13 @@ RSpec.describe "encoding builtins (integration)" do
 
   it "leaves the unmarshal rule undefined for invalid JSON" do
     expect(evaluate("decoded", { "json" => "not json" })).to be_nil
+  end
+
+  # A large unmarshaled number compares correctly instead of collapsing to Float::INFINITY and
+  # leaving the comparison undefined — a deny guard like `count > limit` no longer fails open.
+  it "compares a huge unmarshaled number without failing open (matching OPA)" do
+    expect(evaluate("over_threshold", { "json" => "1e999" }).value.to_ruby).to be(true)
+    expect(evaluate("over_threshold", { "json" => "1.50" }).value.to_ruby).to be(false)
   end
 
   it "base64- and hex-encodes input" do

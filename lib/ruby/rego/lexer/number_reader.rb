@@ -62,25 +62,22 @@ module Ruby
       # magnitude is beyond OPA's limit is rejected at parse ("number too big"), matching OPA and bounding
       # the rational that the number would otherwise materialize (an unbounded-exponent DoS guard).
       def parse_number(buffer, start)
-        decimal = buffer.include?(".") || buffer.match?(/[eE]/)
-        reject_oversized_number(buffer, start, decimal: decimal)
-        return Number.literal(buffer) if decimal
+        fractional = buffer.include?(".") || buffer.match?(/[eE]/)
+        reject_oversized_number(buffer, start, fractional)
+        return Number.literal(buffer) if fractional
 
         Integer(buffer, 10)
       rescue ArgumentError
         raise_error("Invalid number literal", start, length: buffer.length)
       end
 
-      # Reject a literal whose magnitude is beyond OPA's limit ("number too big"): for a decimal/exponent
-      # literal via the magnitude OPA accepts, for a plain integer via its digit count. This both matches
-      # OPA and bounds the rational the number would otherwise materialize (an unbounded-exponent DoS).
-      def reject_oversized_number(buffer, start, decimal:)
-        within = if decimal
-                   Number.magnitude_within_limit?(buffer)
-                 else
-                   buffer.length <= Number::MAX_MAGNITUDE_EXPONENT + 1
-                 end
-        raise_error("number too big", start, length: buffer.length) unless within
+      # Reject a literal whose magnitude is beyond OPA's limit ("number too big"), via the single gate
+      # Number.magnitude_within_limit? (O(1) digit count for an integer, BigDecimal for a fractional /
+      # exponent form). Matches OPA and bounds the rational the number would otherwise materialize.
+      def reject_oversized_number(buffer, start, fractional)
+        return if Number.magnitude_within_limit?(buffer, fractional: fractional)
+
+        raise_error("number too big", start, length: buffer.length)
       end
     end
   end
