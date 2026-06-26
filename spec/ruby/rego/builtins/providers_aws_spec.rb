@@ -66,6 +66,10 @@ RSpec.describe "providers.aws.sign_req" do
       empty = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       raw = sign({ "method" => "POST", "url" => "#{base}/p", "raw_body" => "", "body" => { "a" => 1 } }, config.call, 0)
       expect(raw["headers"]["x-amz-content-sha256"]).to eq(empty) # raw_body "" wins over body
+      # a non-string raw_body is treated as "" (matching getReqBodyBytes), still winning over body
+      nonstring = sign({ "method" => "POST", "url" => "#{base}/p", "raw_body" => 123, "body" => { "a" => 1 } },
+                       config.call, 0)
+      expect(nonstring["headers"]["x-amz-content-sha256"]).to eq(empty)
     end
 
     # With the arbitrary-precision number model, json.marshal of a body number written as a Rego literal

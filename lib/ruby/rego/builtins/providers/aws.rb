@@ -21,8 +21,11 @@ module Ruby
         # canonical query is RawQuery VERBATIM (not sorted/re-encoded); header values are signed verbatim
         # (not trimmed); and the canonical URI is url.EscapedPath() (user %-encoding preserved, never
         # double-encoded). The body is hashed as raw_body (string, wins over body) or json.Marshal(body)
-        # (reusing Codecs.canonical_json — sorted keys + Go HTML escaping), so the body number model is the
-        # gem-wide json.marshal one (Float#to_s); real callers pass raw_body, sidestepping it.
+        # (reusing Codecs.canonical_json — sorted keys + Go HTML escaping). With the arbitrary-precision
+        # number model that canonical JSON is byte-exact with OPA, so a body number written as a Rego
+        # literal (1.50, 1e10) hashes identically to OPA; only a number reaching the body from parsed JSON
+        # input still collapses through Float (the deferred input-precision gap), which exact-byte callers
+        # avoid by passing raw_body.
         #
         # Two documented divergences, both on inputs real callers don't hit: (1) two request headers whose
         # names differ ONLY in case (e.g. "X-Foo" and "x-foo") — OPA's signature is nondeterministic there
