@@ -37,7 +37,9 @@ module Ruby
           # the C-stack limit). Go allows ~10000; staying at 100 is a documented gem-more-strict divergence.
           MAX_DEPTH = 100
 
-          NUMBER = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/
+          # The scannable (unanchored) JSON-number grammar, derived from the one authoritative source on
+          # Number so the decoder, `to_number`'s `DECIMAL_STRING`, and this can never silently drift apart.
+          NUMBER = /#{Number::NUMBER_CORE.source}/
           WHITESPACE = /[ \t\n\r]+/
           # JSON string body up to the next quote/backslash/control char (control chars are rejected). A
           # US-ASCII regex (no /n) matches a UTF-8 input character-wise and a binary input byte-wise — both
@@ -146,12 +148,10 @@ module Ruby
           # the deferred no-materialize comparison work, not by widening the cap (which re-opens the DoS).
           def self.parse_number(scanner)
             text = scanner.scan(NUMBER) or raise ParseError, "invalid number"
-            fractional = text.match?(/[.eE]/) # computed once: drives both the magnitude check and dispatch
+            fractional = text.match?(Number::FRACTIONAL) # computed once: drives the magnitude check + dispatch
             raise ParseError, "number too big" unless Number.magnitude_within_limit?(text, fractional: fractional)
 
-            # A fractional/exponent form, or "-0" (whose canonical Integer form "0" would drop OPA's
-            # verbatim sign), stays a text-preserving Number; a plain integer becomes an exact Integer.
-            fractional || text == "-0" ? Number.literal(text) : Integer(text, 10)
+            Number.build_number(text, fractional: fractional)
           end
           private_class_method :parse_number
 

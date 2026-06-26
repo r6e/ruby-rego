@@ -172,11 +172,15 @@ module Ruby
     class Number < Numeric
       CONTEXT: untyped
       MAX_MAGNITUDE_EXPONENT: Integer
+      NUMBER_CORE: Regexp
+      DECIMAL_STRING: Regexp
+      FRACTIONAL: Regexp
 
       @text: String?
       @exact: (Rational | Integer)?
 
       def self.literal: (String text) -> Number
+      def self.build_number: (String text, ?fractional: bool) -> (Number | Integer)
       def self.magnitude_within_limit?: (String text, ?fractional: bool) -> bool
       private def self.integer_magnitude_within_limit?: (String text) -> bool
       def self.zero_literal?: (String text) -> bool
@@ -2209,7 +2213,9 @@ module Ruby
 
         private
 
-        def self.number_from_string: (String text) -> Numeric
+        def self.number_from_string: (String text) -> (Number | Integer)
+        def self.number_text_in_range?: (String text) -> bool
+        def self.float64_overflow?: (String text) -> bool
         def self.raise_number_error: (String text) -> bot
         def self.boolean_from_string: (String text) -> BooleanValue
         def self.boolean_from_number: (Numeric number) -> BooleanValue

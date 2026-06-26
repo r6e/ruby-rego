@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- `to_number(string)` now preserves OPA's verbatim `json.Number` text and is byte-exact with `opa eval`
+  1.17. A numeric string keeps its exact form — `to_number("1.50")` is `1.50` (was `1.5`), `100.00`
+  stays `100.00`, `1E5` stays `1E5`, `-0` keeps its sign, and a large integer stays exact — instead of
+  collapsing to `Float`. It accepts exactly the strict JSON-number grammar within float64 range:
+  `to_number("1e308")` is fine, `to_number("1e309")` (and any string overflowing float64 to infinity,
+  integers included) is undefined, matching OPA. Totality is preserved against untrusted input — an
+  invalid-encoding string, a malformed grammar (`1.2.3`), and an over-large/over-tiny magnitude
+  (`1e-1000000000`) all map to undefined rather than raising or materializing a giant rational (a memory
+  DoS the magnitude cap bounds before the value is built). One **deliberate, documented** divergence:
+  OPA additionally accepts `strconv.ParseFloat`-finite-but-non-JSON forms (`007`, `.5`, `+5`, `0x1p4`)
+  in comparison/arithmetic while crashing on marshal; the gem routes those to undefined, because storing
+  their verbatim text would reinstate the unmarshalable-`json.Number` serializer DoS. This is
+  more-strict, not "safe" — it shifts those inputs to undefined, which flips allow vs deny by rule
+  polarity. Internally, `to_number` and the JSON decoder now share one number-build path and one
+  authoritative grammar source on `Ruby::Rego::Number` (no silent regex drift between the two sites).
 - Arbitrary-precision JSON parsing: `json.unmarshal`, `json.is_valid`, `io.jwt.decode`, and the
   `rego-validate` CLI's JSON input/data loader now decode through a new strict, number-text-preserving
   JSON decoder (`Ruby::Rego::JsonDecoder`) instead of Ruby's `JSON.parse`. A JSON number keeps OPA's

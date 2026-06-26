@@ -2,6 +2,7 @@
 
 require_relative "../base"
 require_relative "../../errors"
+require_relative "../../number"
 require_relative "../../value"
 
 module Ruby
@@ -73,15 +74,45 @@ module Ruby
             object
           end
 
+          # Parse to_number's string argument (verified vs opa eval 1.17): the strict JSON-number grammar
+          # with verbatim text preserved (1.50 -> 1.50, 1E5 -> 1E5, -0 -> -0), within float64 range. An
+          # in-range value keeps its exact json.Number; anything else is undefined.
+          #
+          # OPA actually gates defined-ness on Go strconv.ParseFloat (lenient) while storing the original
+          # text, so it ACCEPTS leading-zero / leading-+ / bare-dot / hex-float forms (007, .5, +5, 0x1p4)
+          # in comparison/arithmetic yet crashes when marshaling them ("json: invalid number literal").
+          # Preserving that verbatim text would reinstate the unmarshalable-Number serializer DoS #128
+          # closed, so the gem deliberately accepts only the strict JSON grammar and routes those forms to
+          # undefined. This is more-strict, not "safe" — see the spec for the locked contract.
           def self.number_from_string(text)
-            Integer(text, 10)
-          rescue ArgumentError
-            float = Float(text, exception: false)
-            return float if float&.finite?
+            return Number.build_number(text) if number_text_in_range?(text)
 
             raise_number_error(text)
           end
           private_class_method :number_from_string
+
+          # Whether `text` is a `to_number`-acceptable number. The gates run in a DoS-safe order on
+          # attacker-controlled input: (1) byte_safe_encoding? keeps the regex from RAISING on an
+          # invalid-byte string (an uncaught error aborts the policy, not undefined); (2) the strict
+          # grammar; (3) magnitude_within_limit? bounds rational materialization for an over-large or
+          # over-tiny exponent BEFORE build_number realizes the value (the #128 serializer-DoS class —
+          # float64_overflow? alone misses an underflow like 1e-1000000000, which is finite yet would
+          # allocate a ~10**1e9 denominator); (4) float64_overflow? matches OPA's strconv.ParseFloat
+          # ceiling so 1e309 / a >308-magnitude integer go undefined as in OPA.
+          def self.number_text_in_range?(text)
+            Base.byte_safe_encoding?(text) &&
+              text.match?(Number::DECIMAL_STRING) &&
+              Number.magnitude_within_limit?(text) &&
+              !float64_overflow?(text)
+          end
+          private_class_method :number_text_in_range?
+
+          # Whether `text` (already a valid JSON number) is too large for float64, i.e. parses to ±Infinity.
+          # An underflow to 0 (e.g. 1e-400) is finite and accepted, matching OPA.
+          def self.float64_overflow?(text)
+            Float(text, exception: false)&.infinite? ? true : false
+          end
+          private_class_method :float64_overflow?
 
           def self.raise_number_error(text)
             raise Ruby::Rego::BuiltinArgumentError.new(

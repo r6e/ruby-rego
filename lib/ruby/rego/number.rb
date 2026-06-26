@@ -57,8 +57,41 @@ module Ruby
         new(text: text)
       end
 
+      # OPA's strict JSON-number grammar, UNanchored: an optional leading `-`, no leading zeros (`0` or
+      # `[1-9]\d*`), an optional `.` fraction, an optional `e`/`E` exponent. The single authoritative
+      # source; the JSON decoder derives its scannable `JsonDecoder::NUMBER` from this and `DECIMAL_STRING`
+      # anchors it, so the grammar can never silently drift between the three sites.
+      NUMBER_CORE = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/
+
+      # `NUMBER_CORE` anchored to a whole string. Used by `to_number` to validate a full string the way the
+      # lexer/decoder validate a token (rejects `007`, `1.`, `.5`, `+5`, surrounding whitespace, hex,
+      # `NaN`/`Infinity`).
+      DECIMAL_STRING = /\A#{NUMBER_CORE.source}\z/
+
+      # A number token is a fractional/exponent form iff it carries `.`/`e`/`E`. The single predicate the
+      # decoder, `build_number`, and `magnitude_within_limit?` share for their literal-vs-Integer dispatch.
+      FRACTIONAL = /[.eE]/
+
+      # Build a parsed value from already-grammar-validated number text: a fractional/exponent form — or
+      # `-0`, whose canonical Integer form `0` would drop OPA's verbatim sign — becomes a text-preserving
+      # Number; a plain integer becomes an exact Integer. `fractional` is a dispatch hint: the JSON decoder
+      # threads its precomputed flag through; `to_number` passes nothing and lets the default re-derive it
+      # (it has already scanned the bounded-magnitude text, so the extra O(n) scan is immaterial there). It
+      # carries NO validation — the caller MUST have already gated the text's grammar, encoding, and
+      # magnitude, because this materializes the value.
+      #
+      # @param text [String]
+      # @param fractional [bool] whether `text` has `.`/`e`/`E`
+      # @return [Number, Integer]
+      # :reek:ControlParameter -- `fractional` is a precomputed dispatch flag selecting the literal vs
+      # Integer branch, passed to skip a second O(n) scan of a large token; the default re-derives it.
+      def self.build_number(text, fractional: text.match?(FRACTIONAL))
+        fractional || text == "-0" ? literal(text) : Integer(text, 10)
+      end
+
       # Whether `text`'s decimal order of magnitude is within OPA's literal limit. The single magnitude
-      # gate both callers (lexer and JSON decoder) share. A fractional/exponent form reads its magnitude
+      # gate all three callers (the lexer, the JSON decoder, and `to_number`) share. A fractional/exponent
+      # form reads its magnitude
       # from BigDecimal's exponent (which records the position of the decimal point WITHOUT materializing
       # 10**exponent), so this is O(text length) and safe on attacker-controlled input — unlike the `to_r`
       # that #exact would later perform; a plain integer is checked by digit count alone. The lexer calls
@@ -76,13 +109,14 @@ module Ruby
       # than OPA (which stores such a number as text and then panics on comparison).
       #
       # @param text [String]
-      # @param fractional [bool] whether `text` is a fractional/exponent form (has `.`/`e`/`E`). Both
-      #   callers already compute this for their literal-vs-Integer dispatch, so they pass it to avoid a
-      #   second full-string scan on an attacker-controlled megabyte token; the default re-derives it.
+      # @param fractional [bool] whether `text` is a fractional/exponent form (has `.`/`e`/`E`). The JSON
+      #   decoder and the lexer each precompute this for their literal-vs-Integer dispatch and thread it
+      #   here to avoid a second full-string scan on an attacker-controlled megabyte token; only `to_number`
+      #   passes nothing and the default re-derives it.
       # @return [Boolean]
       # :reek:ControlParameter -- `fractional` is a precomputed dispatch flag the callers pass to skip a
       # second O(n) scan of a huge token; it legitimately selects the integer vs decimal magnitude path.
-      def self.magnitude_within_limit?(text, fractional: text.match?(/[.eE]/))
+      def self.magnitude_within_limit?(text, fractional: text.match?(FRACTIONAL))
         return integer_magnitude_within_limit?(text) unless fractional
 
         decimal = BigDecimal(text)
