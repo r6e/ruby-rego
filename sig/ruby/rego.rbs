@@ -177,7 +177,8 @@ module Ruby
       @exact: (Rational | Integer)?
 
       def self.literal: (String text) -> Number
-      def self.magnitude_within_limit?: (String text) -> bool
+      def self.magnitude_within_limit?: (String text, ?fractional: bool) -> bool
+      def self.integer_magnitude_within_limit?: (String text) -> bool
       def self.zero_literal?: (String text) -> bool
       def self.negate_literal: (Numeric value) -> Numeric
       def self.from_binnum: (untyped binnum) -> (Number | Integer)
@@ -3604,7 +3605,7 @@ module Ruby
       def read_escape_sequence: (position backslash_position) -> String
       def read_unicode_escape: () -> String
       def parse_number: (String buffer, position start) -> Numeric
-      def reject_oversized_number: (String buffer, position start, decimal: bool) -> void
+      def reject_oversized_number: (String buffer, position start, bool fractional) -> void
       def template_string_start?: (String char) -> bool
       def advance: () -> String
       def advance_line_break: () -> String

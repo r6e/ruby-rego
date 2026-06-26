@@ -144,11 +144,12 @@ module Ruby
           # the deferred no-materialize comparison work, not by widening the cap (which re-opens the DoS).
           def self.parse_number(scanner)
             text = scanner.scan(NUMBER) or raise ParseError, "invalid number"
-            raise ParseError, "number too big" unless Number.magnitude_within_limit?(text)
+            fractional = text.match?(/[.eE]/) # computed once: drives both the magnitude check and dispatch
+            raise ParseError, "number too big" unless Number.magnitude_within_limit?(text, fractional: fractional)
 
             # A fractional/exponent form, or "-0" (whose canonical Integer form "0" would drop OPA's
             # verbatim sign), stays a text-preserving Number; a plain integer becomes an exact Integer.
-            text.match?(/[.eE]/) || text == "-0" ? Number.literal(text) : Integer(text, 10)
+            fractional || text == "-0" ? Number.literal(text) : Integer(text, 10)
           end
           private_class_method :parse_number
 

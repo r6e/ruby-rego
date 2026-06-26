@@ -66,13 +66,40 @@ module Ruby
       #
       # @param text [String]
       # @return [Boolean]
-      def self.magnitude_within_limit?(text)
+      # This is the single magnitude gate both callers (lexer and JSON decoder) share. Only a
+      # fractional/exponent form needs BigDecimal, whose exponent records the magnitude WITHOUT
+      # materializing 10**exponent; a plain integer is checked by digit count alone.
+      #
+      # @param text [String]
+      # @param fractional [bool] whether `text` is a fractional/exponent form (has `.`/`e`/`E`). Both
+      #   callers already compute this for their literal-vs-Integer dispatch, so they pass it to avoid a
+      #   second full-string scan on an attacker-controlled megabyte token; the default re-derives it.
+      # @return [Boolean]
+      # :reek:ControlParameter -- `fractional` is a precomputed dispatch flag the callers pass to skip a
+      # second O(n) scan of a huge token; it legitimately selects the integer vs decimal magnitude path.
+      def self.magnitude_within_limit?(text, fractional: text.match?(/[.eE]/))
+        return integer_magnitude_within_limit?(text) unless fractional
+
         decimal = BigDecimal(text)
         return false unless decimal.finite?
         return zero_literal?(text) if decimal.zero?
 
         (decimal.exponent - 1).abs <= MAX_MAGNITUDE_EXPONENT
       end
+
+      # A plain integer's magnitude is its significant-digit count minus one. The NUMBER grammar (both
+      # the lexer and the JSON decoder) forbids leading zeros, so the digit count is exact — an O(1) check
+      # (the sign is subtracted from the length, NOT stripped into a copy, so a megabyte integer token
+      # costs O(1) here). Verified equivalent to the BigDecimal exponent path across sign and zero forms.
+      #
+      # @param text [String]
+      # @return [Boolean]
+      def self.integer_magnitude_within_limit?(text)
+        digits = text.length
+        digits -= 1 if text.start_with?("-")
+        digits <= MAX_MAGNITUDE_EXPONENT + 1
+      end
+      private_class_method :integer_magnitude_within_limit?
 
       # Whether `text` denotes an exact zero (every significant digit is 0, e.g. "0", "-0", "0.0",
       # "0e1000"), as opposed to a tiny non-zero whose huge negative exponent underflowed BigDecimal to 0.

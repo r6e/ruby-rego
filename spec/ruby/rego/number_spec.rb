@@ -135,6 +135,18 @@ RSpec.describe Ruby::Rego::Number do
       expect(described_class.magnitude_within_limit?("1e-999999999")).to be(false)
     end
 
+    it "checks a plain integer's magnitude by digit count, without building a BigDecimal" do
+      # The single gate both the lexer and the JSON decoder share. A plain integer (no leading zeros per
+      # the NUMBER grammar) has magnitude = significant-digit-count - 1, so the boundary is 30103 digits;
+      # a leading sign does not count. Equivalent to the BigDecimal exponent path (verified), but cheaper.
+      expect(described_class.magnitude_within_limit?("9" * 30_103)).to be(true)   # 1e30102 magnitude
+      expect(described_class.magnitude_within_limit?("9" * 30_104)).to be(false)  # 1e30103 magnitude
+      expect(described_class.magnitude_within_limit?("-#{"9" * 30_103}")).to be(true) # sign not counted
+      expect(described_class.magnitude_within_limit?("-#{"9" * 30_104}")).to be(false)
+      expect(described_class.magnitude_within_limit?("0")).to be(true)
+      expect(described_class.magnitude_within_limit?("-0")).to be(true)
+    end
+
     it "rejects an exponent so large BigDecimal saturates (no spurious accept), both directions" do
       # ~19+ exponent digits make BigDecimal(text) saturate WITHOUT raising: a huge positive exponent
       # to Infinity, a huge negative one underflowing to 0 (both exponent 0). An un-guarded check would
