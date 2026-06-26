@@ -164,6 +164,24 @@ RSpec.describe "yaml builtins" do
       expect(unmarshal_result(".inf")).to be_nil
     end
 
+    # A plain decimal that overflows float64 (1e999) is NOT a number in go-yaml/OPA — it
+    # round-trips through float64, overflows to ±Inf, and falls back to its original STRING
+    # text. Verified vs opa eval 1.17.1: {"v":"1e999"} as value, "1e999" bare, "1e999" key.
+    # An underflow (1e-999, 1e-400) stays a finite 0.0 and resolves to the number 0. An
+    # explicit `!!float 1e999` tag, by contrast, demands a float and so is undefined.
+    it "falls a float64-overflowing plain decimal back to its string text (not undefined)" do
+      expect(unmarshal("v: 1e999")).to eq({ "v" => "1e999" })
+      expect(unmarshal("v: -1e999")).to eq({ "v" => "-1e999" })
+      expect(unmarshal("1e999")).to eq("1e999")
+      expect(unmarshal("1e999: x")).to eq({ "1e999" => "x" })
+    end
+
+    it "resolves a float64-underflowing decimal to 0, and undefines an !!float overflow" do
+      expect(unmarshal("v: 1e-999")).to eq({ "v" => 0 })
+      expect(unmarshal("v: 1e-400")).to eq({ "v" => 0 })
+      expect(unmarshal_result("v: !!float 1e999")).to be_nil
+    end
+
     it "returns a defined null value (distinct from undefined) for null" do
       result = unmarshal_result("null")
       expect(result).not_to be_nil

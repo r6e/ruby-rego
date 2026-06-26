@@ -17,7 +17,13 @@ module Ruby
             return nil unless FLOAT_RE.match?(plain)
 
             float = float_value(plain)
-            float && json_number(float)
+            # An overflow to ±Inf is not a number in go-yaml — it falls back to its string
+            # text (1e999 -> "1e999"). An underflow is a finite 0.0 and stays the number 0.
+            # (The !!float tag path in tags.rb calls json_number directly, so it still
+            # undefines an overflow, as OPA does.)
+            return nil unless float&.finite?
+
+            json_number(float)
           end
           private_class_method :numeric
 
@@ -37,6 +43,10 @@ module Ruby
           # integer. Mirror that so e.g. "1.0"/"1e10" unmarshal to integers, not floats.
           # @return [Integer, Float]
           def self.json_number(float)
+            # A non-finite float passes through unchanged so reject_non_finite (run from
+            # load) raises ResolveError -> undefined. Only `numeric` (the plain-scalar path)
+            # maps non-finite to nil for a string fallback; the !!float tag path (tags.rb)
+            # routes here and MUST keep this passthrough so `!!float 1e999` stays undefined.
             return float unless float.finite?
             return 0 if float.zero?
             return float.to_i if float == float.to_i && float.abs >= 1e-6 && float.abs < 1e21

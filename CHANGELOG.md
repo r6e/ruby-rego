@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- `yaml.unmarshal` now renders a float64-overflowing plain decimal as its original string text
+  instead of going undefined, matching `opa eval` 1.17.1 / go-yaml. A scalar like `1e999` overflows
+  float64 to `±Inf` during the YAML→JSON round-trip and falls back to its verbatim text, so
+  `yaml.unmarshal("v: 1e999")` is `{"v": "1e999"}` (was undefined for the whole document), a bare
+  `1e999` is `"1e999"`, and `1e999` as an object key is `{"1e999": ...}`. An underflowing decimal
+  (`1e-999`, `1e-400`) is a finite `0.0` and still resolves to the number `0`. An explicit `!!float`
+  tag still demands a real float, so `yaml.unmarshal("v: !!float 1e999")` remains undefined, as in
+  OPA. A genuinely non-finite value (`.inf`/`.nan`) is still undefined.
 - `to_number(string)` now preserves OPA's verbatim `json.Number` text and is byte-exact with `opa eval`
   1.17. A numeric string keeps its exact form — `to_number("1.50")` is `1.50` (was `1.5`), `100.00`
   stays `100.00`, `1E5` stays `1E5`, `-0` keeps its sign, and a large integer stays exact — instead of
