@@ -20,11 +20,18 @@ All notable changes to this project will be documented in this file.
   surrogate now decodes to U+FFFD (matching OPA) rather than undefined. Totality is preserved — the
   decoder maps every malformed, truncated, deeply nested (capped at depth 100, as before, to bound the
   recursive value builder), binary, or over-large-magnitude input to undefined rather than raising or
-  overflowing the stack. Two narrow gem-stricter divergences remain (both at the prior `JSON.parse`
-  boundary or absurd scale): nesting deeper than 100, and a single number whose magnitude exceeds
-  ~`1e30102` (the same cap the lexer applies to literals) makes the whole document undefined, where OPA
-  stores it. (YAML input/data still collapses numbers to `Float`; a follow-up will route it through the
-  yaml scalar resolver.)
+  overflowing the stack. Two residual divergences remain, neither blocking: (1) nesting deeper than 100
+  is undefined where OPA decodes to ~10000 — gem-stricter, a deliberate stack-overflow guard. (2) A
+  number whose magnitude exceeds ~`1e30102` (the same cap the lexer applies to literals) makes the
+  document undefined, where OPA evaluates it (OPA itself only panics at a ~19-digit exponent). The cap
+  bounds rational materialization — without it, comparing `1e1000000` would allocate a million-digit
+  rational (a memory DoS) — so this trades a DoS for a **narrowed-but-not-closed fail-open**: in a deny
+  guard, a number above the cap goes undefined (deny does not fire) where OPA would compare it and deny.
+  The realistic range, including `1e999` and far beyond, is closed; the residual window above `1e30102`
+  is closed properly by the deferred no-materialize comparison work (tracked follow-up). **The fail-open
+  closure is JSON-input only**: YAML input/data still parses through `YAML.safe_load`, which collapses
+  `1.50`→`Float` and reads `1e999` as a bare `String`, so the comparison fail-open persists for YAML
+  policy input; routing YAML through the gem's scalar resolver is a tracked follow-up.
 - New built-in: `providers.aws.sign_req(request, aws_config, time_ns)`, matching OPA — signs an HTTP
   request (http.send shape) with AWS Signature Version 4 and returns the request copied with its
   `headers` replaced by the original headers plus the signing headers (`Authorization`, `host`,

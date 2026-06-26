@@ -101,6 +101,17 @@ RSpec.describe "encoding builtins" do
     it "is undefined for a number beyond the magnitude cap rather than materialising it" do
       expect(registry.call("json.unmarshal", ["1e99999"])).to be_a(Ruby::Rego::UndefinedValue)
     end
+
+    # Documents the residual fail-open the magnitude cap leaves: OPA evaluates `json.unmarshal("1e30103")
+    # > 1000` to true (its unmarshal path is not magnitude-gated; it only panics at a ~19-digit exponent),
+    # so a deny guard `n := json.unmarshal(input.raw); n > limit` FIRES in OPA but is undefined here (deny
+    # does not fire). The cap trades that narrow above-1e30102 fail-open for DoS safety (materialising the
+    # exact rational of a million-digit number is a memory bomb). Closed properly by the deferred
+    # no-materialize comparison work; pinned here so the divergence is a tested decision, not an accident.
+    it "leaves a residual deny-context fail-open above the cap (OPA evaluates; gem is undefined)" do
+      result = Ruby::Rego.evaluate("package t\nx := json.unmarshal(\"1e30103\") > 1000", query: "data.t.x")
+      expect(result).to be_nil # undefined; OPA returns true
+    end
   end
 
   describe "json.is_valid" do

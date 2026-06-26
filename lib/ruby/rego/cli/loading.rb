@@ -65,8 +65,10 @@ module RegoValidate
 
     # JSON input/data parses through the gem's strict JsonDecoder so a number keeps OPA's
     # arbitrary-precision json.Number text (1.50 stays 1.50; a large 1e999 stays a usable number rather
-    # than collapsing to Float and an unrepresentable comparison). YAML input still uses YAML.safe_load,
-    # which collapses numbers to Float — a follow-up will route it through the yaml ScalarResolver.
+    # than collapsing to Float and an unrepresentable comparison). The comparison-fail-open closure is
+    # JSON-input only: YAML input still uses YAML.safe_load, which collapses 1.50 to Float and reads
+    # 1e999 as a bare String (so `input.n > limit` is undefined — the fail-open persists for YAML). A
+    # follow-up will route YAML through the gem's scalar resolver for the same json.Number fidelity.
     def parse_config_value(content, path)
       if json_config?(path)
         Ruby::Rego::Builtins::Codecs::JsonDecoder.parse(content)

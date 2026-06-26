@@ -21,7 +21,8 @@ module Ruby
         # ParseError): MAX_DEPTH fires on the way DOWN, before this parser's own recursion — and the
         # subsequent recursive Value.from_ruby — can overflow the C stack (a SystemStackError there is
         # uncatchable). A number beyond the magnitude cap (Number::MAX_MAGNITUDE_EXPONENT, the same bound
-        # the lexer applies to literals) raises rather than materialise an astronomically large rational.
+        # the lexer applies to literals) raises rather than materialise an astronomically large rational;
+        # see parse_number for why this is a DoS-vs-fail-open tradeoff, not a safe gem-stricter divergence.
         # The input is byte-encoding-guarded up front, and string content is scanned by bytes, so binary /
         # invalid-UTF-8 input maps to undefined instead of raising an uncaught error.
         # rubocop:disable Metrics/ModuleLength
@@ -120,6 +121,14 @@ module Ruby
           private_class_method :parse_array
           # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
+          # The magnitude cap (Number::MAX_MAGNITUDE_EXPONENT, ~1e30102) bounds rational materialization:
+          # without it, comparing a parsed 1e1000000 would allocate a million-digit rational (a memory
+          # DoS). OPA does NOT gate its unmarshal path this way (the cap is OPA's *lexer* limit for source
+          # literals) — it evaluates such a number and only panics at a ~19-digit exponent. So this is not
+          # a safe "gem-stricter": for a deny guard, a number above the cap goes undefined (deny does not
+          # fire) where OPA would compare it and deny — a narrowed-but-not-closed fail-open. The realistic
+          # range (1e999 and far beyond) is closed; the residual window above the cap is closed properly by
+          # the deferred no-materialize comparison work, not by widening the cap (which re-opens the DoS).
           def self.parse_number(scanner)
             text = scanner.scan(NUMBER) or raise ParseError, "invalid number"
             raise ParseError, "number too big" unless Number.magnitude_within_limit?(text)

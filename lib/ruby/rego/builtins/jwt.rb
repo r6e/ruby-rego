@@ -33,7 +33,9 @@ module Ruby
       #     depth 10000. The cap is deliberate — it bounds the recursive Value.from_ruby, which otherwise
       #     overflows with an uncatchable SystemStackError around depth ~5000. Gem-stricter.
       #   * Magnitude: a number whose order of magnitude exceeds ~1e30102 is undefined (the same cap the
-      #     lexer applies to literals), whereas OPA stores it as text. Gem-stricter, only at absurd scale.
+      #     lexer applies to literals), whereas OPA evaluates it. NOT a safe gem-stricter divergence — it
+      #     bounds rational materialization (a DoS guard) at the cost of a narrowed residual fail-open
+      #     above the cap, closed properly by the deferred no-materialize comparison work. Absurd scale.
       #   * Invalid UTF-8: raw invalid bytes mid-string keep their bytes rather than Go's U+FFFD
       #     replacement (the bytes round-trip; OPA's output scrubs them). Shared with json.unmarshal.
       module Jwt
