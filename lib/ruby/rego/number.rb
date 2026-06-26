@@ -36,9 +36,17 @@ module Ruby
       # magnitude exceeds 10**30102 (or whose reciprocal does) is a parse error in OPA ("number too
       # big"). It is also the guard against a denial of service — `BigDecimal(text).to_r` materializes a
       # numerator or denominator of ~10**|magnitude| as a full Integer, so an unbounded exponent (e.g.
-      # `1e999999999`, 11 source bytes -> a gigabyte rational) would otherwise exhaust memory. OPA's
-      # bound is very slightly asymmetric (the tiny-magnitude side reaches ~10**-30150); this symmetric
-      # cap matches OPA exactly on the large side and across the entire realistic range.
+      # `1e999999999`, 11 source bytes -> a gigabyte rational) would otherwise exhaust memory.
+      #
+      # The cap matches OPA across the entire realistic range. Two known edges, both bounded and far
+      # beyond any real policy value (documented, not a DoS): (1) OPA's bound is very slightly asymmetric
+      # (the tiny-magnitude side reaches ~10**-30150); this symmetric cap is marginally stricter there.
+      # (2) At the extreme large edge the gem and OPA can differ by one order of magnitude: this gate uses
+      # BigDecimal's EXACT magnitude, whereas OPA rounds the literal to a big.Float at its precision first,
+      # so a value just below 10**30103 (e.g. a 30103-digit all-nines integer) rounds UP across OPA's
+      # boundary and is rejected by OPA but accepted here. Verified vs opa eval 1.17. Matching OPA's
+      # rounding-at-the-boundary behaviour would require porting its big.Float parser — a tracked follow-up
+      # in the number-model fidelity sweep, not this scope. Pre-existing; unaffected by the gate refactor.
       MAX_MAGNITUDE_EXPONENT = 30_102
 
       # Build a Number from a numeric literal's source text (already validated by the lexer).
@@ -49,11 +57,14 @@ module Ruby
         new(text: text)
       end
 
-      # Whether `text`'s decimal order of magnitude is within OPA's literal limit. The magnitude is read
+      # Whether `text`'s decimal order of magnitude is within OPA's literal limit. The single magnitude
+      # gate both callers (lexer and JSON decoder) share. A fractional/exponent form reads its magnitude
       # from BigDecimal's exponent (which records the position of the decimal point WITHOUT materializing
-      # 10**exponent), so this is O(text length) and safe to call on attacker-controlled input — unlike
-      # the `to_r` that #exact would later perform. The lexer calls this to reject an over-large literal
-      # as a parse error, exactly as OPA does.
+      # 10**exponent), so this is O(text length) and safe on attacker-controlled input — unlike the `to_r`
+      # that #exact would later perform; a plain integer is checked by digit count alone. The lexer calls
+      # this to reject an over-large literal as a parse error, very nearly as OPA does (the bound is exact
+      # across the entire realistic range; at the extreme edge it can differ by one order of magnitude —
+      # see MAX_MAGNITUDE_EXPONENT).
       #
       # An exponent literal of ~19+ digits silently saturates BigDecimal at construction (it does NOT
       # raise): a huge POSITIVE exponent (`1e9999999999999999999`) becomes Infinity, and a huge NEGATIVE
@@ -63,12 +74,6 @@ module Ruby
       # the zero_literal? check distinguishes a genuine zero from an underflowed tiny non-zero, rejecting
       # the latter. Both directions thus map to a parse/argument error, consistent with the cap and safer
       # than OPA (which stores such a number as text and then panics on comparison).
-      #
-      # @param text [String]
-      # @return [Boolean]
-      # This is the single magnitude gate both callers (lexer and JSON decoder) share. Only a
-      # fractional/exponent form needs BigDecimal, whose exponent records the magnitude WITHOUT
-      # materializing 10**exponent; a plain integer is checked by digit count alone.
       #
       # @param text [String]
       # @param fractional [bool] whether `text` is a fractional/exponent form (has `.`/`e`/`E`). Both

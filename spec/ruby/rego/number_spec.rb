@@ -135,6 +135,16 @@ RSpec.describe Ruby::Rego::Number do
       expect(described_class.magnitude_within_limit?("1e-999999999")).to be(false)
     end
 
+    it "routes on the caller-supplied fractional flag (callers must compute it correctly)" do
+      # The flag is a precomputed dispatch hint, not validated input: passing fractional:false for a
+      # genuinely fractional token routes it down the integer digit-count path and bypasses the BigDecimal
+      # magnitude check. Both real callers derive the flag exactly as the default does, so this misuse is
+      # unreachable in production; pinned here to document the caller contract the optimization relies on.
+      expect(described_class.magnitude_within_limit?("1e99999", fractional: false)).to be(true)  # bypass
+      expect(described_class.magnitude_within_limit?("1e99999", fractional: true)).to be(false)  # checked
+      expect(described_class.magnitude_within_limit?("1e99999")).to be(false) # default derives it correctly
+    end
+
     it "checks a plain integer's magnitude by digit count, without building a BigDecimal" do
       # The single gate both the lexer and the JSON decoder share. A plain integer (no leading zeros per
       # the NUMBER grammar) has magnitude = significant-digit-count - 1, so the boundary is 30103 digits;
