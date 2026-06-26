@@ -136,6 +136,19 @@ RSpec.describe Ruby::Rego::Builtins::Codecs::JsonDecoder do
       expect(value["k"].bytes).to eq([0xFF])
     end
 
+    # Regression: byte_safe_encoding? admits an ascii-compatible single-byte non-UTF-8 encoding
+    # (ISO-8859-1 / Windows-1252). A string body with a literal high byte AND a multibyte \uXXXX escape
+    # used to append a UTF-8 char onto a Latin-1 accumulator -> uncaught Encoding::CompatibilityError,
+    # breaking totality (and a host-API-reachable DoS via json.is_valid, which does not flow through
+    # Codecs.decoded). parse now normalizes non-UTF-8 input to bytes up front, so it returns raw bytes.
+    it "does not raise Encoding::CompatibilityError on a Latin-1 high byte plus a \\uXXXX escape" do
+      latin1 = "\"\xE9\\u00e9\"".dup.force_encoding(Encoding::ISO_8859_1)
+      windows = "\"\\u00e9\xE9\"".dup.force_encoding("Windows-1252")
+      expect { parse(latin1) }.not_to raise_error
+      expect { parse(windows) }.not_to raise_error
+      expect(parse(latin1).encoding).to eq(Encoding::BINARY)
+    end
+
     it "rejects a control character inside a string" do
       expect { parse(%({"k":"a\tb"})) }.to raise_error(described_class::ParseError)
     end

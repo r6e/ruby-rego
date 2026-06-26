@@ -120,6 +120,15 @@ RSpec.describe "encoding builtins" do
       expect(registry.call("json.is_valid", ["{bad}"]).to_ruby).to be(false)
     end
 
+    # Regression: json.is_valid does NOT flow through Codecs.decoded, so a Latin-1 high byte plus a
+    # multibyte \uXXXX escape (which used to raise Encoding::CompatibilityError inside the decoder) must
+    # not escape as an uncaught error and abort the policy — it returns a boolean.
+    it "returns a boolean (never raises) on a Latin-1 high byte plus a \\uXXXX escape" do
+      attack = "\"\xE9\\u00e9\"".dup.force_encoding(Encoding::ISO_8859_1)
+      expect { @result = registry.call("json.is_valid", [attack]) }.not_to raise_error
+      expect(@result.to_ruby).to be(true).or be(false)
+    end
+
     it "is strict like Go encoding/json: comments and trailing commas are invalid" do
       expect(registry.call("json.is_valid", ['{"a":1} // c']).to_ruby).to be(false)
       expect(registry.call("json.is_valid", ["[1,2,]"]).to_ruby).to be(false)

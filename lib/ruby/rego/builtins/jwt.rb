@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "json"
 require_relative "base"
 require_relative "base64url"
 require_relative "codecs/json_decoder"

@@ -20,7 +20,10 @@ All notable changes to this project will be documented in this file.
   surrogate now decodes to U+FFFD (matching OPA) rather than undefined. Totality is preserved — the
   decoder maps every malformed, truncated, deeply nested (capped at depth 100, as before, to bound the
   recursive value builder), binary, or over-large-magnitude input to undefined rather than raising or
-  overflowing the stack. Two residual divergences remain, neither blocking: (1) nesting deeper than 100
+  overflowing the stack — including a string in an ascii-compatible single-byte non-UTF-8 encoding
+  (ISO-8859-1 / Windows-1252) carrying a high byte plus a `\uXXXX` escape, which is normalized to bytes
+  up front rather than raising an uncaught `Encoding::CompatibilityError`. Two residual divergences
+  remain, neither blocking: (1) nesting deeper than 100
   is undefined where OPA decodes to ~10000 — gem-stricter, a deliberate stack-overflow guard. (2) A
   number whose magnitude exceeds ~`1e30102` (the same cap the lexer applies to literals) makes the
   document undefined, where OPA evaluates it (OPA itself only panics at a ~19-digit exponent). The cap

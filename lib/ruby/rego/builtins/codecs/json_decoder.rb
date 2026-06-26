@@ -49,6 +49,14 @@ module Ruby
           def self.parse(string)
             raise ParseError, "invalid string encoding" unless Base.byte_safe_encoding?(string)
 
+            # Normalize any non-UTF-8 input (US-ASCII, and especially a single-byte non-UTF-8 encoding
+            # like ISO-8859-1 / Windows-1252 that byte_safe_encoding? admits) to raw bytes, so a string
+            # body with a literal high byte plus a multibyte \uXXXX escape goes through the BINARY append
+            # path (concat_escape) rather than clashing two incompatible encodings — which would raise an
+            # uncaught Encoding::CompatibilityError and break totality. normalize_string_encoding re-tags
+            # the bytes back to UTF-8 when valid, matching OPA's UTF-8 string model. UTF-8 and BINARY
+            # inputs are unchanged (.b on a BINARY string is a no-op dup).
+            string = string.b unless string.encoding == Encoding::UTF_8
             scanner = StringScanner.new(string)
             scanner.skip(WHITESPACE)
             value = parse_value(scanner, 0)
@@ -59,10 +67,15 @@ module Ruby
           end
 
           # @return [bool] whether `string` is well-formed strict JSON (json.is_valid)
+          #
+          # Unlike json.unmarshal, json.is_valid does not flow through Codecs.decoded (which rescues
+          # EncodingError), so it rescues EncodingError here too: json.is_valid must return false on any
+          # un-parseable input, never let an encoding error escape and abort the policy. parse normalizes
+          # non-UTF-8 input to bytes so this is defense-in-depth, but it keeps the totality guarantee local.
           def self.valid?(string)
             parse(string)
             true
-          rescue ParseError
+          rescue ParseError, EncodingError
             false
           end
 
@@ -74,7 +87,7 @@ module Ruby
             when "[" then parse_array(scanner, depth)
             when '"' then parse_string(scanner)
             when "t", "f", "n" then parse_keyword(scanner)
-            when "-", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" then parse_number(scanner)
+            when "-", "0".."9" then parse_number(scanner)
             else raise ParseError, "unexpected token"
             end
           end
@@ -159,11 +172,14 @@ module Ruby
               chunk = scanner.scan(STRING_CHUNK)
               result << chunk if chunk
               case scanner.peek(1)
-              when '"' then scanner.pos += 1
-                            break
-              when "\\" then scanner.pos += 1
-                             concat_escape(result, parse_escape(scanner))
-              else raise ParseError, "unterminated or control char in string"
+              when '"'
+                scanner.pos += 1
+                break
+              when "\\"
+                scanner.pos += 1
+                concat_escape(result, parse_escape(scanner))
+              else
+                raise ParseError, "unterminated or control char in string"
               end
             end
             normalize_string_encoding(result)
@@ -202,7 +218,9 @@ module Ruby
           def self.parse_escape(scanner)
             char = scanner.get_byte
             raise ParseError, "truncated escape" if char.nil?
-            return ESCAPES.fetch(char) if ESCAPES.key?(char)
+
+            escaped = ESCAPES[char] # every value is truthy, so a hit is non-nil — one lookup, not two
+            return escaped if escaped
             return parse_unicode_escape(scanner) if char == "u"
 
             raise ParseError, "invalid escape"

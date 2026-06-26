@@ -51,6 +51,9 @@ module Ruby
   module Rego
     VERSION: String
 
+    # Public, layer-neutral alias for the strict number-preserving JSON decoder (see json_decoder.rb).
+    module JsonDecoder = Builtins::Codecs::JsonDecoder
+
     def self.parse: (String source) -> AST::Module
     def self.compile: (String source) -> CompiledModule
     def self.evaluate: (String source, ?input: untyped, ?data: untyped, ?query: untyped) -> (Result | nil)

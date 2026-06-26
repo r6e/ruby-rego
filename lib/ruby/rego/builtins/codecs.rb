@@ -316,7 +316,7 @@ module Ruby
         # @return [Ruby::Rego::Value]
         def self.decoded(context)
           yield
-        rescue ArgumentError, JSON::ParserError, JsonDecoder::ParseError, EncodingError => e
+        rescue ArgumentError, JsonDecoder::ParseError, EncodingError => e
           # EncodingError covers a non-ASCII-compatible string (e.g. UTF-16 supplied via the
           # Ruby API, never via JSON/Rego input) reaching a String/regex op — yield undefined
           # rather than letting it escape as a hard error.

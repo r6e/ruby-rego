@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-require "json"
 require "yaml"
-require_relative "../builtins/codecs/json_decoder"
+require_relative "../json_decoder"
 
 # Policy and configuration source loading for rego-validate.
 module RegoValidate
@@ -57,7 +56,7 @@ module RegoValidate
     def parse_config(content, path)
       value = parse_config_value(content, path)
       ConfigLoadResult.new(value: value, success: true)
-    rescue Ruby::Rego::Builtins::Codecs::JsonDecoder::ParseError,
+    rescue Ruby::Rego::JsonDecoder::ParseError,
            Psych::BadAlias, Psych::SyntaxError => e
       reporter.error("Invalid config file: #{e.message}", parser)
       ConfigLoadResult.new(success: false)
@@ -71,10 +70,9 @@ module RegoValidate
     # follow-up will route YAML through the gem's scalar resolver for the same json.Number fidelity.
     def parse_config_value(content, path)
       if json_config?(path)
-        Ruby::Rego::Builtins::Codecs::JsonDecoder.parse(content)
+        Ruby::Rego::JsonDecoder.parse(content)
       else
-        YAML.safe_load(content,
-                       aliases: yaml_aliases)
+        YAML.safe_load(content, aliases: yaml_aliases)
       end
     end
 
