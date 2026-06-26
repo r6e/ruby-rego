@@ -178,7 +178,7 @@ module Ruby
 
       def self.literal: (String text) -> Number
       def self.magnitude_within_limit?: (String text, ?fractional: bool) -> bool
-      def self.integer_magnitude_within_limit?: (String text) -> bool
+      private def self.integer_magnitude_within_limit?: (String text) -> bool
       def self.zero_literal?: (String text) -> bool
       def self.negate_literal: (Numeric value) -> Numeric
       def self.from_binnum: (untyped binnum) -> (Number | Integer)
@@ -186,7 +186,7 @@ module Ruby
       def self.div: (Numeric left, Numeric right) -> (Number | Integer)
       def self.modulo: (Numeric left, Numeric right) -> Integer?
       def self.integer_value: (Numeric value) -> Integer?
-      def self.float_integer_value: (Float value) -> Integer?
+      private def self.float_integer_value: (Float value) -> Integer?
       def self.rational_to_binnum: (Rational | Integer rational) -> untyped
 
       def initialize: (?text: String?, ?exact: (Rational | Integer)?) -> void

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "open3"
+
 # rubocop:disable Metrics/BlockLength
 
 RSpec.describe Ruby::Rego::Builtins::Codecs::JsonDecoder do
@@ -186,6 +188,21 @@ RSpec.describe Ruby::Rego::Builtins::Codecs::JsonDecoder do
       expect(described_class.valid?('{"a":[1,2.5]}')).to be(true)
       expect(described_class.valid?('{"a":1} // c')).to be(false)
       expect(described_class.valid?("{bad}")).to be(false)
+    end
+  end
+
+  # The decoder uses Base.byte_safe_encoding? and Number, so it must require them itself — otherwise
+  # loading the public Ruby::Rego::JsonDecoder alias (or this file) on its own crashes with an
+  # uninitialized-constant NameError instead of decoding, breaking both self-containment and totality.
+  describe "self-containment (loadable standalone)" do
+    it "decodes after requiring only the public alias in a fresh process" do
+      lib = File.expand_path("../../../../../lib", __dir__)
+      script = 'require "ruby/rego/json_decoder"; ' \
+               'Ruby::Rego::JsonDecoder.parse("[1, 1.50]"); print "ok"'
+      stdout, stderr, status = Open3.capture3(RbConfig.ruby, "-I", lib, "-e", script)
+
+      expect(status).to be_success, "stderr: #{stderr}"
+      expect(stdout).to eq("ok")
     end
   end
 end

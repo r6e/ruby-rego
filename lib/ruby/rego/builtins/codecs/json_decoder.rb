@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "strscan"
+require_relative "../base"
+require_relative "../../number"
 
 module Ruby
   module Rego
