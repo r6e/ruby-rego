@@ -26,6 +26,9 @@ detectors:
       - Ruby::Rego::Lexer
       - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator::OperatorEvaluator
+      # SigV4 signer: the algorithm constant, date formats, int64 bounds, and the recognized
+      # request/config/ignored-header/service key lists — each a distinct part of the AWS spec.
+      - Ruby::Rego::Builtins::Providers::Aws
       # Regex carries several independent anti-DoS bound constants (timeout, source
       # length, output/work caps) plus character classes — each a distinct guard.
       - Ruby::Rego::Builtins::Regex
@@ -82,6 +85,13 @@ detectors:
       # Faithful ports of the yaml.v2 emitter and scalar resolver.
       - Ruby::Rego::Builtins::Yaml::Emitter
       - Ruby::Rego::Builtins::Yaml::ScalarResolver
+      # SigV4 signer: each step (operand validation, the canonical-request assembly) is a faithful
+      # sequence of the AWS spec's stages.
+      - Ruby::Rego::Builtins::Providers::Aws#self.sign_req
+      - Ruby::Rego::Builtins::Providers::Aws#self.sign
+      - Ruby::Rego::Builtins::Providers::Aws#self.request_target
+      - Ruby::Rego::Builtins::Providers::Aws#self.header_map
+      - Ruby::Rego::Builtins::Providers::Aws#self.canonical_headers
       # Re-derivation of Go crypto/x509's parseCertificate extension parsers + net.IP.String, each a
       # statement-heavy faithful port (ASN.1 walks, the SAN/nameConstraints/policy field builders).
       - Ruby::Rego::Builtins::Crypto::CertificateStruct
@@ -230,6 +240,12 @@ detectors:
       - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.dispatch_extension
       # The Raw* slices take the cert, tbs, and the three pre-located issuer/subject/spki elements.
       - Ruby::Rego::Builtins::Crypto::CertificateStruct#self.raw_fields
+      # SigV4 steps thread the parsed url / creds / scoped dates / canonical pieces, mirroring the
+      # AWS signing-key and canonical-request stages.
+      - Ruby::Rego::Builtins::Providers::Aws#self.aws_headers
+      - Ruby::Rego::Builtins::Providers::Aws#self.canonical_request
+      - Ruby::Rego::Builtins::Providers::Aws#self.signature
+      - Ruby::Rego::Builtins::Providers::Aws#self.authorization
   Attribute:
     exclude:
       # Token#flag is set by the tokenizer and rewritten by Simplify (mirrors Go SetFlag).

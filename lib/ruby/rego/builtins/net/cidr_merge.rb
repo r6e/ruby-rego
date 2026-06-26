@@ -51,7 +51,7 @@ module Ruby
           # Guard the encoding before `include?` so a non-ASCII-compatible string (e.g. UTF-16LE)
           # yields undefined rather than raising Encoding::CompatibilityError, matching the other
           # net builtins (whose parse_addr checks encoding first).
-          raise_invalid_addr(context) unless string.encoding.ascii_compatible? && string.valid_encoding?
+          raise_invalid_addr(context) unless Base.byte_safe_encoding?(string)
 
           string.include?("/") ? cidr_entry(string, context) : address_entry(string, context)
         end

@@ -159,7 +159,7 @@ module Ruby
         # @param string [String]
         # @return [IPAddr, nil]
         def self.parse_addr(string)
-          return nil unless string.encoding.ascii_compatible? && string.valid_encoding?
+          return nil unless Base.byte_safe_encoding?(string)
           return nil if string.match?(/[%\[\]]/)
 
           source = canonical_source(string)

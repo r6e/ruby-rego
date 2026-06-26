@@ -46,6 +46,17 @@ module Ruby
           Ruby::Rego::Value.from_ruby(value)
         end
 
+        # The shared encoding guard for BYTE-oriented builtins (uri/net parsing, AWS SigV4 byte
+        # assembly): the string must be ASCII-compatible and validly encoded so its bytes can be
+        # scanned/concatenated. A binary (ASCII-8BIT) string from base64.decode passes; an invalid-UTF-8
+        # or non-ASCII-compatible (UTF-16) string is rejected, letting the caller map it to undefined.
+        # (CHAR-oriented builtins use a stricter guard; this is deliberately the byte-oriented one.)
+        # @param string [String]
+        # @return [Boolean]
+        def self.byte_safe_encoding?(string)
+          string.encoding.ascii_compatible? && string.valid_encoding?
+        end
+
         def self.normalize_expected(expected)
           expected.is_a?(Array) ? expected : [expected]
         end
