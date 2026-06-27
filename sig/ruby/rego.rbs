@@ -1867,6 +1867,10 @@ module Ruby
           MAX_YAML_SOURCE: Integer
           MAX_DEPTH: Integer
           MAX_NODES: Integer
+          INT64_MIN: Integer
+          INT64_MAX: Integer
+          UINT64_MAX: Integer
+          FLOAT64_FINITE_MAX_DIGITS: Integer
 
           class ResolveError < StandardError
           end
@@ -1881,13 +1885,19 @@ module Ruby
           def self.float_value: (String plain) -> Float?
           def self.json_number: (Float float) -> (Integer | Float)
           def self.parse_integer: (String string) -> Integer?
+          def self.decimal_overflows_float64?: (String text) -> bool
+          def self.numeric_lead?: (String value) -> bool
+          def self.explicitly_signed?: (String text) -> bool
+          def self.go_int_range?: (Integer value, signed: bool) -> bool
+          def self.uint64_band?: (Integer value) -> bool
           def self.split_sign: (String string) -> [Integer, String]
-          def self.integer_base: (String digits) -> [Integer, String]
+          def self.integer_base: (String digits) -> [Integer, String, bool]
           def self.build: (untyped node, Hash[String, untyped] anchors, Integer depth) -> untyped
           def self.scalar_value: (untyped node) -> untyped
           def self.tag_coerce: (String type, String value) -> untyped
           def self.tag_int: (String value) -> Integer
           def self.tag_float: (String value) -> (Integer | Float)
+          def self.float_from_int: (Integer integer, String plain) -> (Integer | Float)
           def self.tag_bool: (String value) -> bool
           def self.tag_null: (String value) -> nil
           def self.tag_binary: (String value) -> untyped
@@ -1895,7 +1905,11 @@ module Ruby
           def self.build_mapping: (untyped node, Hash[String, untyped] anchors, Integer depth) -> Hash[String, untyped]
           def self.merge_key?: (untyped key, untyped key_node) -> bool
           def self.merge_into: (Hash[String, untyped] result, untyped source) -> void
-          def self.json_key: (untyped key) -> String
+          def self.json_key: (untyped key, untyped key_node) -> String
+          def self.integer_key: (Integer key, untyped key_node) -> String
+          def self.uint64_object_key?: (Integer key, untyped key_node) -> bool
+          def self.float_tagged?: (untyped node) -> bool
+          def self.integer_origin?: (untyped node) -> bool
           def self.canonical_float: (Float float) -> String
           def self.reject_non_finite: (untyped value, Array[Integer] budget, Integer depth) -> void
         end

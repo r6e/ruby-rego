@@ -23,9 +23,22 @@ module Ruby
           end
           private_class_method :tag_coerce
 
+          # An !!int has no float/string fallback, so a value outside go-yaml's accepted
+          # range is undefined (any base) — unlike a plain decimal, which becomes a lossy
+          # float. The range is sign-aware: an explicitly +/- signed value must fit int64.
+          # go_int_range? gates a bare-decimal / leading-octal value WITHIN float64 range that
+          # exceeds uint64 max (parse_integer returns its exact bignum, which this rejects).
+          # A float64-overflowing or prefixed-out-of-range value already short-circuits on
+          # `integer` being nil (parse_integer caps those).
           # @return [Integer]
           def self.tag_int(value)
-            parse_integer(value.delete("_")) || raise(ResolveError, "invalid !!int")
+            raise ResolveError, "invalid !!int" unless numeric_lead?(value)
+
+            stripped = value.delete("_")
+            integer = parse_integer(stripped)
+            return integer if integer && go_int_range?(integer, signed: explicitly_signed?(stripped))
+
+            raise ResolveError, "invalid !!int"
           end
           private_class_method :tag_int
 
@@ -33,13 +46,39 @@ module Ruby
           def self.tag_float(value)
             mapped = RESOLVE_MAP[value]
             return mapped if mapped.is_a?(Float) # .inf / .nan
+            raise ResolveError, "invalid !!float" unless numeric_lead?(value)
 
             plain = value.delete("_")
+            # go-yaml resolves an integer FIRST (ParseInt→ParseUint→ParseFloat) then float-coerces
+            # it, so a 0x/0o/0b or decimal integer reaches !!float through the integer path, not
+            # FLOAT_RE (which matches no prefixed base). A non-integer scalar falls through.
+            integer = parse_integer(plain)
+            return float_from_int(integer, plain) unless integer.nil?
+
             raise ResolveError, "invalid !!float" unless FLOAT_RE.match?(plain)
 
-            json_number(float_value(plain) || raise(ResolveError, "invalid !!float"))
+            float = float_value(plain) || raise(ResolveError, "invalid !!float")
+            # A float64-overflowing !!float is undefined in EVERY position. Undefine it here
+            # rather than emitting ±Inf for a downstream catch: the object-key path canonicalizes
+            # a non-finite key to ".inf"/".nan" BEFORE reject_non_finite runs, which would leave an
+            # overflow key wrongly defined (and mistaken for a genuine .inf literal).
+            raise ResolveError, "invalid !!float" unless float.finite?
+
+            json_number(float)
           end
           private_class_method :tag_float
+
+          # Float-coerces an integer-resolved !!float value the way go-yaml does. An UNSIGNED
+          # integer in the uint64-only band resolves as a Go uint64, for which !!float has no
+          # coercion → undefined; every other integer (int64-range any base, or signed/over-uint64
+          # that ParseFloat handles) becomes a float64 (lossy — a deferred output divergence).
+          # @return [Float, Integer]
+          def self.float_from_int(integer, plain)
+            raise ResolveError, "invalid !!float" if uint64_band?(integer) && !explicitly_signed?(plain)
+
+            json_number(Float(integer))
+          end
+          private_class_method :float_from_int
 
           # base64 (yaml.v2 emits it wrapped, so whitespace is stripped). A pathologically
           # malformed payload yields undefined; OPA's leniency for some non-base64 bytes is

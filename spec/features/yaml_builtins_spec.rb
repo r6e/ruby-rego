@@ -71,6 +71,14 @@ RSpec.describe "yaml builtins" do
       expect(marshal({ "a" => "x: y" })).to eq("a: 'x: y'\n")
     end
 
+    # A prefixed-overflow token (0x… past uint64) resolves back to a string, not a number,
+    # so it round-trips unquoted — go-yaml's emitter does not quote it. Verified vs opa eval
+    # 1.17.1 (yaml.marshal("0x10000000000000000") == "0x10000000000000000\n").
+    it "emits a prefixed-overflow string unquoted (it no longer resolves to a number)" do
+      expect(marshal("0x10000000000000000")).to eq("0x10000000000000000\n")
+      expect(marshal("-0x8000000000000001")).to eq("-0x8000000000000001\n")
+    end
+
     it "uses a block literal for multi-line strings" do
       expect(marshal({ "k" => "line1\nline2" })).to eq("k: |-\n  line1\n  line2\n")
     end
@@ -146,6 +154,96 @@ RSpec.describe "yaml builtins" do
       expect(unmarshal("1.0")).to eq(1)
       expect(unmarshal("1e10")).to eq(10_000_000_000)
       expect(unmarshal("1.5")).to eq(1.5)
+    end
+
+    # A 0x/0o/0b literal whose value overflows uint64 (or int64 when negative) cannot be
+    # reparsed as a float by go-yaml/OPA, so it falls back to its verbatim string token
+    # (sign and prefix preserved). In range it stays an exact integer. Verified vs opa
+    # eval 1.17.1. (A bare decimal / leading-zero octal overflow CAN reparse as a lossy
+    # float and is handled separately — not in this change.)
+    it "strings a prefixed (0x/0o/0b) integer that overflows uint64, keeping in-range exact" do
+      expect(unmarshal("0x10000000000000000")).to eq("0x10000000000000000")
+      expect(unmarshal("-0x10000000000000000")).to eq("-0x10000000000000000")
+      expect(unmarshal("+0x10000000000000000")).to eq("+0x10000000000000000")
+      expect(unmarshal("0o2000000000000000000000")).to eq("0o2000000000000000000000")
+      expect(unmarshal("0b1#{"0" * 64}")).to eq("0b1#{"0" * 64}")
+      expect(unmarshal("1: 0x10000000000000000")).to eq({ "1" => "0x10000000000000000" })
+    end
+
+    it "keeps a prefixed integer at the uint64/int64 boundary exact (number, not string)" do
+      expect(unmarshal("0xFFFFFFFFFFFFFFFF")).to eq(18_446_744_073_709_551_615) # uint64 max
+      expect(unmarshal("-0x8000000000000000")).to eq(-9_223_372_036_854_775_808) # int64 min
+      expect(unmarshal("-0x8000000000000001")).to eq("-0x8000000000000001") # int64 min - 1 -> string
+      expect(unmarshal("0o1777777777777777777777")).to eq(18_446_744_073_709_551_615)
+    end
+
+    # go-yaml's ParseUint rejects a sign, so an explicitly +/- signed prefixed value above
+    # int64 max can't be parsed as an integer (and a +signed one can't be a float either),
+    # falling back to its string token — whereas the same magnitude UNSIGNED is a valid
+    # uint64. Verified vs opa eval 1.17.1.
+    it "strings a +signed prefixed integer above int64 max (ParseUint rejects the sign)" do
+      expect(unmarshal("+0x8000000000000000")).to eq("+0x8000000000000000") # int64 max + 1, signed
+      expect(unmarshal("+0o1000000000000000000000")).to eq("+0o1000000000000000000000")
+      expect(unmarshal("0x8000000000000000")).to eq(9_223_372_036_854_775_808) # unsigned -> uint64
+      expect(unmarshal("+0x7FFFFFFFFFFFFFFF")).to eq(9_223_372_036_854_775_807) # signed, in int64 -> ok
+    end
+
+    # An integer object key in the positive uint64-only band (int64 max < k <= uint64 max)
+    # decodes to a Go uint64, which sigs.k8s.io/yaml cannot stringify as a JSON key, so the
+    # whole document is undefined. An int64-range key (or one beyond uint64 max, which
+    # becomes a lossy-float string key) stays defined. Verified vs opa eval 1.17.1.
+    it "undefines a document with an integer key in the positive uint64-only band" do
+      expect(unmarshal_result("9223372036854775808: v")).to be_nil # int64 max + 1
+      expect(unmarshal_result("18446744073709551615: v")).to be_nil # uint64 max
+      expect(unmarshal_result("0xFFFFFFFFFFFFFFFF: v")).to be_nil # same, hex
+      expect(valid?("9223372036854775808: v")).to be(false) # is_valid agrees (total predicate)
+      expect(unmarshal("9223372036854775807: v")).to eq({ "9223372036854775807" => "v" }) # int64 max
+      expect(unmarshal("-9223372036854775808: v")).to eq({ "-9223372036854775808" => "v" }) # int64 min
+    end
+
+    # A +/- SIGNED integer key in the same positive uint64-only band decodes to a Go float64,
+    # NOT a uint64: go-yaml's ParseInt overflows int64, ParseUint rejects the sign, and
+    # ParseFloat succeeds, so the key is a (lossy-float) string and the document stays defined
+    # — unlike the unsigned case above, which undefines. The lossy-float key TEXT (and, for a
+    # leading-octal token, ParseFloat's decimal reinterpretation of the digits) is a deferred
+    # output-formatting divergence: the gem renders its exact parsed value here. OPA defines
+    # `+9223372036854775808: v` as `{"9.223372e+18":"v"}`. Verified vs opa eval 1.17.1.
+    it "defines a document with a +signed integer key in the uint64 band (ParseUint rejects the sign)" do
+      expect(unmarshal("+9223372036854775808: v")).to eq({ "9223372036854775808" => "v" }) # int64 max + 1
+      expect(unmarshal("+18446744073709551615: v")).to eq({ "18446744073709551615" => "v" }) # uint64 max
+      expect(valid?("+9223372036854775808: v")).to be(true) # is_valid agrees (total predicate)
+      # Leading-octal signed key: OPA reinterprets the digits as decimal (1e21), gem keeps the
+      # exact octal value 2^63 — defined either way (deferred value divergence).
+      expect(unmarshal("+01000000000000000000000: v")).to eq({ "9223372036854775808" => "v" })
+    end
+
+    # The uint64-band key guard reads the key scalar's text/tag to tell a true Go uint64 from a
+    # float64 key (signed, or float syntax). An ALIAS key lacks that provenance — the anchor map
+    # stores resolved VALUES, not source nodes — so any non-uint64 value (a +signed integer, or
+    # a float that rounds into the band) reached via an alias key is conservatively treated as a
+    # uint64 and undefined here, while OPA defines it with a lossy-float key. A documented,
+    # gem-more-strict deferral for an exotic input (threading anchor provenance is structural).
+    # The unsigned-integer alias case is correct (both undefine); negative / in-range are defined.
+    # Verified vs opa eval 1.17.1.
+    it "pins the deferred divergence for a non-uint64 value in the uint64 band reached via an alias key" do
+      expect(unmarshal_result("k: &x +9223372036854775808\n? *x\n: val")).to be_nil # +signed: deferred (OPA defines)
+      expect(unmarshal_result("k: &x 9.223372036854776e18\n? *x\n: val")).to be_nil # float syntax: deferred
+      expect(unmarshal_result("k: &x 9223372036854775808\n? *x\n: val")).to be_nil # unsigned uint64 -> undef (correct)
+      expect(unmarshal("k: &x -9223372036854775808\n? *x\n: val"))
+        .to eq({ "k" => -9_223_372_036_854_775_808, "-9223372036854775808" => "val" }) # int64 min -> defined
+    end
+
+    # A bare decimal / leading-octal integer above float64 max overflows go-yaml's ParseFloat
+    # to ±Inf and falls back to a string (plain) or undefined (!!int) — the same string
+    # fallback as 1e999, reached here through the integer path. Below the ceiling it stays a
+    # number. Verified vs opa eval 1.17.1.
+    it "strings a bare decimal / leading-octal integer above float64 max" do
+      expect(unmarshal("1#{"0" * 400}")).to eq("1#{"0" * 400}") # 1e400, way over
+      expect(unmarshal("-1#{"0" * 400}")).to eq("-1#{"0" * 400}")
+      expect(unmarshal("2#{"0" * 308}")).to eq("2#{"0" * 308}") # 2e308 > float64 max
+      expect(unmarshal("0#{"7" * 400}")).to eq("0#{"7" * 400}") # leading-octal, decimal-overflow
+      expect(unmarshal_result("!!int 1#{"0" * 400}")).to be_nil # tag over float64 -> undefined
+      expect(unmarshal("17976931348623157#{"0" * 292}")).to be_a(Integer) # ~float64 max -> still a number
     end
 
     it "keeps timestamps as strings and stringifies object keys" do
@@ -260,6 +358,110 @@ RSpec.describe "yaml builtins" do
       expect(unmarshal_result('!!int "abc"')).to be_nil
       expect(unmarshal_result("!!null x")).to be_nil
       expect(unmarshal_result("!!binary xyz")).to be_nil
+    end
+
+    # An !!int has no float/string fallback: a value outside the Go int64/uint64 range is
+    # undefined (go-yaml ParseInt/ParseUint both fail and the tag forbids any other type),
+    # regardless of base. In range it stays exact. Verified vs opa eval 1.17.1.
+    it "undefines an !!int outside the int64/uint64 range, any base" do
+      expect(unmarshal_result("!!int 18446744073709551616")).to be_nil # uint64 max + 1
+      expect(unmarshal_result("!!int -9223372036854775809")).to be_nil # int64 min - 1
+      expect(unmarshal_result("!!int 0x10000000000000000")).to be_nil  # hex over uint64
+      expect(unmarshal_result("!!int 0o2000000000000000000000")).to be_nil # octal over uint64
+      expect(unmarshal_result("!!int 0b1#{"0" * 64}")).to be_nil # binary over uint64
+      expect(unmarshal_result("!!int +9223372036854775808")).to be_nil # +signed past int64 max
+      expect(valid?("!!int 18446744073709551616")).to be(false) # is_valid agrees
+      expect(unmarshal("!!int 18446744073709551615")).to eq(18_446_744_073_709_551_615)
+      expect(unmarshal("!!int -9223372036854775808")).to eq(-9_223_372_036_854_775_808)
+      expect(unmarshal("!!int 9223372036854775808")).to eq(9_223_372_036_854_775_808) # unsigned uint64
+      expect(unmarshal("!!int 0xFF")).to eq(255)
+    end
+
+    # go-yaml dispatches numeric coercion on a scalar's FIRST byte (yaml.v2 resolveTable):
+    # only a sign, digit, or dot opens the number path. A leading underscore is NOT a numeric
+    # lead, so go-yaml leaves the scalar a string and the !!int/!!float tag mismatch undefines
+    # it — even though an interior or trailing underscore is a valid digit separator. The tag
+    # paths must apply this gate before stripping underscores. Verified vs opa eval 1.17.1.
+    it "undefines an !!int / !!float whose token does not start with a numeric lead" do
+      expect(unmarshal_result("!!int _5")).to be_nil # leading underscore
+      expect(unmarshal_result("!!int __7")).to be_nil
+      expect(unmarshal_result("!!int _0x5")).to be_nil
+      expect(unmarshal_result("!!float _5.0")).to be_nil
+      expect(valid?("!!int _5")).to be(false) # is_valid agrees
+      # Sign/digit/dot leads stay valid; interior and trailing separators are fine.
+      expect(unmarshal("!!int 1_0")).to eq(10)
+      expect(unmarshal("!!int 5_")).to eq(5)
+      expect(unmarshal("!!int +_5")).to eq(5) # sign lead, then separator
+      expect(unmarshal("!!float +_5.0")).to eq(5)
+    end
+
+    # `!!float` coerces an integer-resolved value to float64: go-yaml resolves the token as an
+    # integer first (ParseInt→ParseUint→ParseFloat), then float-coerces it. An int64-range
+    # integer of ANY base (incl. 0x/0o/0b) coerces to a float; but an UNSIGNED uint64-band value
+    # resolves as a Go uint64, which has no float coercion → undefined. A signed or out-of-uint64
+    # value resolves via ParseFloat and is a float already. The coerced value's TEXT is lossy
+    # (int64 max → OPA 9223372036854776000) — a deferred divergence, so assert polarity not text.
+    # Verified vs opa eval 1.17.1.
+    it "coerces an integer-resolved !!float per go-yaml's int64/uint64 boundary" do
+      expect(unmarshal("!!float 0x5")).to eq(5) # hex int → float
+      expect(unmarshal("!!float 0o7")).to eq(7) # octal int → float
+      expect(unmarshal("!!float 0b101")).to eq(5) # binary int → float
+      expect(unmarshal_result("!!float 9223372036854775808")).to be_nil # unsigned uint64 band → undef
+      expect(unmarshal_result("!!float 18446744073709551615")).to be_nil # uint64 max → undef
+      expect(unmarshal_result("!!float 0xFFFFFFFFFFFFFFFF")).to be_nil # uint64 hex → undef (a uint64)
+      expect(unmarshal_result("!!float +0x8000000000000000")).to be_nil # signed hex → ParseFloat rejects
+      expect(valid?("!!float 9223372036854775808")).to be(false) # is_valid agrees
+      # Defined-number cases (lossy text deferred): int64 max, int64 min, signed/over-uint64 → float.
+      [
+        "!!float 9223372036854775807", "!!float -9223372036854775808",
+        "!!float +9223372036854775808", "!!float 18446744073709551616"
+      ].each { |doc| expect(unmarshal(doc)).to be_a(Numeric), "#{doc} should be a defined number" }
+    end
+
+    # A float64-overflowing !!float is undefined in EVERY position. In value position
+    # `reject_non_finite` already caught the ±Inf; in KEY position the non-finite float was
+    # being canonicalized to a ".inf" string key before that check ran, leaving the document
+    # wrongly defined. The tag path now undefines the overflow directly. (A genuine `.inf`
+    # literal key stays defined as `{".inf":...}`.) Verified vs opa eval 1.17.1.
+    it "undefines a float64-overflowing !!float in key position, not just value position" do
+      expect(unmarshal_result("!!float 1e309: v")).to be_nil # over float64 max, key
+      expect(unmarshal_result("!!float 1#{"0" * 400}: v")).to be_nil # integer-form overflow, key
+      expect(unmarshal_result("!!float 1e309")).to be_nil # value position too
+      expect(valid?("!!float 1e309: v")).to be(false) # is_valid agrees
+      # A genuine infinity/NaN (literal or !!float-tagged) is a valid float64: undefined as a
+      # value (JSON can't represent it), but a defined ".inf"/".nan" string in key position.
+      expect(unmarshal(".inf: v")).to eq({ ".inf" => "v" })
+      expect(unmarshal("!!float .inf: v")).to eq({ ".inf" => "v" })
+      expect(unmarshal("!!float .nan: v")).to eq({ ".nan" => "v" })
+      expect(unmarshal_result("!!float .inf")).to be_nil # value position
+    end
+
+    # A float-resolved object key (a !!float tag, or plain float syntax) that rounds into the
+    # positive uint64-only band is a Go float64 key, which stringifies fine -> defined. Only an
+    # UNSIGNED INTEGER-resolved key in that band is an unstringifiable Go uint64 -> undefined.
+    # The key guard must not misclassify a rounded float as a uint64. Key TEXT is lossy (OPA:
+    # "9.223372e+18"), a deferred divergence, so assert polarity. Verified vs opa eval 1.17.1.
+    it "defines a float-resolved object key that rounds into the uint64 band" do
+      expect(unmarshal_result("!!float 9223372036854775807: v")).not_to be_nil # !!float tag, rounds to 2^63
+      expect(unmarshal_result("9.223372036854776e18: v")).not_to be_nil # plain float syntax, same value
+      expect(unmarshal_result("1.0e19: v")).not_to be_nil
+      # Integer-resolved unsigned uint64-band keys stay undefined (regression guard).
+      expect(unmarshal_result("9223372036854775808: v")).to be_nil # plain integer -> uint64
+      expect(unmarshal_result("!!int 9223372036854775808: v")).to be_nil # !!int -> uint64
+    end
+
+    # A bare decimal / leading-zero octal beyond the int64/uint64 range parses to its exact
+    # bignum here, where go-yaml reparses it as a lossy float64 (e.g. 18446744073709552000).
+    # That output-formatting divergence is deferred to the number sweep; pin the current
+    # behavior so the deferred fix is explicit, not accidental.
+    it "returns an exact bignum for a bare decimal / leading-octal overflow (deferred float-path)" do
+      expect(unmarshal("18446744073709551616")).to eq(18_446_744_073_709_551_616) # decimal, over uint64
+      expect(unmarshal("99999999999999999999")).to eq(99_999_999_999_999_999_999)
+      expect(unmarshal("02000000000000000000000")).to be_a(Integer) # leading-zero octal overflow
+      # An over-uint64 (but <= float64 max) integer KEY stays defined with the exact bignum
+      # text here; go-yaml renders the lossy float (e.g. "1.8446744e+19"). Deferred with the
+      # value-path formatting; pinned so the deferred fix is explicit.
+      expect(unmarshal("18446744073709551616: v")).to eq({ "18446744073709551616" => "v" })
     end
 
     # Ruby < 3.4's Float() rejects a bare leading/trailing dot, so these are normalized
