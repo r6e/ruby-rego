@@ -104,10 +104,15 @@ module Ruby
 
           # Whether `text` parses as a decimal that overflows float64 to ±Inf — go-yaml's
           # ParseFloat ceiling, above which a plain / leading-octal scalar is a string (or an
-          # !!int is undefined), not a number. A non-decimal body (e.g. 0x… hex) yields nil
-          # from Float() and is treated as non-overflowing (its range is checked separately).
+          # !!int is undefined), not a number. Only the !prefixed (decimal / leading-octal) path
+          # calls this, and Float() reads both as decimal. A token short enough to be guaranteed
+          # finite short-circuits to false via the length gate (the common small-integer case);
+          # a longer token reaches Float() and is an overflow only when the result is ±Inf.
           # @return [bool]
           def self.decimal_overflows_float64?(text)
+            # Fast path: a token this short can't overflow float64 (see FLOAT64_FINITE_MAX_DIGITS).
+            return false if text.length <= FLOAT64_FINITE_MAX_DIGITS
+
             value = Float(text, exception: false)
             !value.nil? && !value.finite?
           end

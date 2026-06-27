@@ -40,6 +40,11 @@ module Ruby
           INT64_MAX = (2**63) - 1
           UINT64_MAX = (2**64) - 1
 
+          # A decimal token of at most this many characters is below 10**308 (< float64 max,
+          # ~1.8e308), so it cannot overflow float64 — decimal_overflows_float64? uses this to
+          # skip the Float() overflow probe for the common (small-integer) case.
+          FLOAT64_FINITE_MAX_DIGITS = 308
+
           # Plain scalars with a fixed meaning (yaml.v2 resolveMap).
           RESOLVE_MAP = {
             "" => nil, "~" => nil, "null" => nil, "Null" => nil, "NULL" => nil,

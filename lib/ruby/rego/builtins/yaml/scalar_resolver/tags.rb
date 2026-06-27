@@ -74,7 +74,7 @@ module Ruby
           # that ParseFloat handles) becomes a float64 (lossy — a deferred output divergence).
           # @return [Float, Integer]
           def self.float_from_int(integer, plain)
-            raise ResolveError, "uint64 !!float" if uint64_band?(integer) && !explicitly_signed?(plain)
+            raise ResolveError, "invalid !!float" if uint64_band?(integer) && !explicitly_signed?(plain)
 
             json_number(Float(integer))
           end

@@ -1870,6 +1870,7 @@ module Ruby
           INT64_MIN: Integer
           INT64_MAX: Integer
           UINT64_MAX: Integer
+          FLOAT64_FINITE_MAX_DIGITS: Integer
 
           class ResolveError < StandardError
           end

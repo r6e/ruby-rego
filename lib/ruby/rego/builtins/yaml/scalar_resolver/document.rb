@@ -75,7 +75,10 @@ module Ruby
           # 1.0 => "1", true => "true"). A non-finite float key normalizes to OPA's
           # canonical form. NOTE: a finite non-integer float key (e.g. 1.123456789) is
           # formatted with Ruby float64 shortest, whereas OPA uses Go float32 ('g', -1, 32),
-          # so very-high-precision float map keys can differ — a rare, documented edge.
+          # so very-high-precision float map keys can differ — a rare, documented edge. The
+          # same float32 cast also overflows a finite float64 key above ~3.4e38 (e.g. 1e308) to
+          # ±Inf, which OPA renders as a ".inf"/"-.inf" key where the gem keeps the float64 text;
+          # both stay defined (same divergence family, deferred to the number sweep).
           # @return [String]
           def self.json_key(key, key_node)
             return canonical_float(key) if key.is_a?(Float) && !key.finite?
@@ -102,7 +105,7 @@ module Ruby
           # a !!float tag) that rounds into the band — all are float64 keys that stringify fine.
           # @return [String]
           def self.integer_key(key, key_node)
-            raise ResolveError, "uint64 object key" if uint64_object_key?(key, key_node)
+            raise ResolveError, "invalid object key (uint64 band)" if uint64_object_key?(key, key_node)
 
             key.to_s
           end
