@@ -14,7 +14,7 @@ RSpec.describe "units builtins" do
   end
 
   describe "units.parse" do
-    it "parses plain numbers, returning integers and floats" do
+    it "parses plain numbers, returning integers and precision-preserving numbers" do
       expect(parse("10").to_ruby).to eq(10)
       expect(parse("10.5").to_ruby).to eq(10.5)
       expect(parse("-5").to_ruby).to eq(-5)
@@ -31,9 +31,11 @@ RSpec.describe "units builtins" do
     it "treats lowercase m as milli and uppercase M as mega" do
       expect(parse("10m").to_ruby).to eq(0.01)
       expect(parse("10M").to_ruby).to eq(10_000_000)
-      # OPA's milli uses float64(0.001), so an exact multiple of 1000 yields a float, not an int.
+      # OPA's milli uses float64(0.001), so an exact multiple of 1000 is still a non-integer result,
+      # rendered to 10 decimals ("1.0000000000"), not collapsed to the integer 1.
       expect(parse("1000m").to_ruby).to eq(1.0)
-      expect(parse("1000m").to_ruby).to be_a(Float)
+      expect(parse("1000m").to_ruby.to_s).to eq("1.0000000000")
+      expect(parse("1000m").to_ruby).to be_a(Ruby::Rego::Number)
     end
 
     it "removes embedded double-quotes from the value, matching OPA" do
@@ -50,6 +52,33 @@ RSpec.describe "units builtins" do
 
     it "rounds a non-integer result to 10 decimals (matching OPA's big.Rat output)" do
       expect(parse("10.123456789012m").to_ruby).to eq(0.0101234568)
+      expect(parse("10.123456789012m").to_ruby.to_s).to eq("0.0101234568")
+    end
+
+    it "formats a non-integer result as fixed 10-decimal text, like OPA's big.Rat.FloatString(10)" do
+      # A non-integer result keeps exactly 10 decimal places (trailing zeros included), rounded
+      # half-away-from-zero, as a precision-preserving Number rather than a lossy Ruby Float.
+      expect(parse("0.0015K").to_ruby.to_s).to eq("1.5000000000")
+      expect(parse("10.5").to_ruby.to_s).to eq("10.5000000000")
+      expect(parse("-0.0015K").to_ruby.to_s).to eq("-1.5000000000")
+      # Rounds half away from zero at the 10th decimal.
+      expect(parse("0.00000000005").to_ruby.to_s).to eq("0.0000000001")
+      # A result that rounds to zero is still rendered with 10 decimals (its unrounded value is
+      # non-integer), NOT collapsed to the integer 0 — and a negative one keeps its sign, like
+      # Go's big.Rat.FloatString (the sign comes from the numerator, not the rounded mantissa).
+      expect(parse("0.00000000001").to_ruby.to_s).to eq("0.0000000000")
+      expect(parse("-0.00000000001").to_ruby.to_s).to eq("-0.0000000000")
+      # Rounding carries across the decimal point.
+      expect(parse("0.99999999999").to_ruby.to_s).to eq("1.0000000000")
+      expect(parse("0.0015K").to_ruby).to be_a(Ruby::Rego::Number)
+    end
+
+    it "returns an exact integer when the unrounded result is integer-valued" do
+      expect(parse("10.5K").to_ruby).to eq(10_500)
+      expect(parse("10.5K").to_ruby).to be_a(Integer)
+      # "0.0" is an exact integer zero (denominator 1), so it stays the integer 0, not "0.0000000000".
+      expect(parse("0.0").to_ruby).to eq(0)
+      expect(parse("0.0").to_ruby).to be_a(Integer)
     end
 
     it "accepts scientific notation (both e/E, with optional exponent sign) and the exa suffix" do
@@ -58,6 +87,52 @@ RSpec.describe "units builtins" do
       expect(parse("1e+3K").to_ruby).to eq(1_000_000)
       expect(parse("1.5e-3K").to_ruby).to eq(1.5)
       expect(parse("10e").to_ruby).to eq(10_000_000_000_000_000_000)
+    end
+
+    it "rejects a bare-dot amount with no mantissa digit, matching OPA's big.Rat" do
+      # Ruby's Rational(".") is 0, but Go's big.Rat.SetString(".") fails, so OPA is undefined.
+      # The gem previously returned 0 (fail-open); it now rejects these to undefined.
+      expect(parse(".")).to be_a(Ruby::Rego::UndefinedValue)
+      expect(parse("+.")).to be_a(Ruby::Rego::UndefinedValue)
+      expect(parse("-.")).to be_a(Ruby::Rego::UndefinedValue)
+      expect(parse(".K")).to be_a(Ruby::Rego::UndefinedValue)
+      expect(parse(".e3")).to be_a(Ruby::Rego::UndefinedValue) # exponent digit, but no mantissa digit
+    end
+
+    it "accepts a trailing-dot amount followed by an exponent (D. eNN), matching OPA's big.Rat" do
+      # Ruby's Rational("5.e3") raises, but Go's big.Rat.SetString accepts it as 5e3. The gem
+      # previously returned undefined (too strict); it now matches OPA.
+      expect(parse("5.e3").to_ruby).to eq(5000)
+      expect(parse("-5.e3").to_ruby).to eq(-5000)
+      expect(parse("+5.e3").to_ruby).to eq(5000)
+      expect(parse("12.E3").to_ruby).to eq(12_000)
+      expect(parse("5.e-3").to_ruby.to_s).to eq("0.0050000000")
+      expect(parse("5.e3K").to_ruby).to eq(5_000_000)
+      # A leading dot with a fractional digit, or a trailing dot without an exponent, already
+      # matched OPA and still does.
+      expect(parse(".5e3").to_ruby).to eq(500)
+      expect(parse("5.").to_ruby).to eq(5)
+    end
+
+    it "rejects a dangling exponent (e/E with a sign but no digits), matching OPA's big.Rat" do
+      # Ruby's Rational("1e+") is 1, but Go's big.Rat requires an exponent digit, so OPA is
+      # undefined. The gem previously returned the mantissa value (fail-open); it now rejects these.
+      expect(parse("1e+")).to be_a(Ruby::Rego::UndefinedValue)
+      expect(parse("1e-")).to be_a(Ruby::Rego::UndefinedValue)
+      expect(parse("1E+")).to be_a(Ruby::Rego::UndefinedValue)
+      expect(parse("-1e+")).to be_a(Ruby::Rego::UndefinedValue)
+      expect(parse(".1e+")).to be_a(Ruby::Rego::UndefinedValue)
+      expect(parse("1e+K")).to be_a(Ruby::Rego::UndefinedValue)
+      # A bare "e" with no following digit/sign is still the exa unit, not an exponent, matching OPA.
+      expect(parse("1e").to_ruby).to eq(1_000_000_000_000_000_000)
+    end
+
+    it "is undefined for a non-ASCII or invalid-encoding operand (matching OPA, no crash)" do
+      # A valid quantity is pure ASCII; OPA returns undefined for any non-ASCII operand. The gem
+      # must not raise (an invalid-UTF-8 ArgumentError would escape the builtin as a DoS).
+      expect(parse("10K€")).to be_a(Ruby::Rego::UndefinedValue)
+      expect(parse("10K\xFF".dup.force_encoding("UTF-8"))).to be_a(Ruby::Rego::UndefinedValue)
+      expect(parse_bytes("10kb\xFF".dup.force_encoding("UTF-8"))).to be_a(Ruby::Rego::UndefinedValue)
     end
 
     it "is undefined for an operand longer than the DoS cap (OPA relies on Go's runtime)" do

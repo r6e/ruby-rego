@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- `units.parse` now returns a non-integer result as a precision-preserving arbitrary-precision
+  number rendered to exactly 10 decimal places (OPA's `big.Rat.FloatString(10)`), instead of a lossy
+  Ruby `Float`. Trailing zeros are kept and rounding is half-away-from-zero, matching OPA's
+  `json.Number` text byte-for-byte: `units.parse("0.0015K")` is now `1.5000000000` (was `1.5`),
+  `units.parse("1000m")` is `1.0000000000` (was `1.0`), and `units.parse("10.5")` is `10.5000000000`.
+  A value that rounds to zero keeps its sign and 10 decimals (`units.parse("-0.00000000001")` →
+  `-0.0000000000`) because its unrounded value is non-integer; an integer-valued result stays an exact
+  integer (`units.parse("10.5K")` → `10500`, `units.parse("0.0")` → `0`). Verified vs `opa eval`
+  1.17.1 across a 544-input cross-product. `units.parse_bytes` is unaffected (it already returns an
+  exact integer). Known limitation (pre-existing, shared by every number-returning builtin): because a
+  number's canonical identity is its numeric value, an integer-valued result like `1.0000000000` dedups
+  against the integer `1` inside a set or as an object key, and the representation kept in output is the
+  first one seen — matching how OPA's own `1 == 1.0` numeric identity behaves.
+
+- `units.parse` now parses the numeric amount exactly the way OPA's `big.Rat.SetString` does, fixing
+  three grammar divergences between Ruby's `Rational` and Go's `big.Rat` (verified vs `opa eval` 1.17.1
+  across a 1079-amount grammar cross-product). A bare-dot amount with no mantissa digit (`.`, `+.`,
+  `-.`, `.K`) and a dangling exponent (`e`/`E` with a sign but no digits: `1e+`, `1e-`, `.1e+`,
+  `1e+K`) are now undefined (were `0`/the mantissa value — Ruby accepts both, Go rejects them; this
+  closes a fail-open). A trailing dot immediately before an exponent (`5.e3`, `12.E3`, `5.e-3K`) is now
+  accepted (was undefined — Ruby's `Rational` rejects `5.e3`, Go reads it as `5e3`). Forms that already
+  matched (`5.`, `.5`, `.5e3`, `1e` as the exa unit, leading zeros, signs) are unchanged.
+
+- `units.parse`/`units.parse_bytes` are now undefined for a non-ASCII or invalid-UTF-8 operand, matching
+  OPA (a valid quantity is pure ASCII, so any non-ASCII byte fails the number/unit parse). Previously an
+  invalid-UTF-8 operand raised an uncaught `ArgumentError` from Ruby's `String#delete`/`downcase` that
+  escaped the builtin and aborted the whole policy (a denial of service); it now yields undefined.
+
 - `yaml.unmarshal` now matches go-yaml's int64/uint64 integer range for prefixed, tagged, and
   object-key integers, verified vs `opa eval` 1.17.1. go-yaml resolves an integer via
   `strconv.ParseInt` (int64) then `ParseUint` (uint64); `ParseUint` rejects a sign, so an
