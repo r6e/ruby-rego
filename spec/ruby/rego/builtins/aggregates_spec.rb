@@ -41,6 +41,18 @@ RSpec.describe "aggregate builtins" do
     expect(registry.call("min", [Set.new([2, 5, 3])]).to_ruby).to eq(2)
   end
 
+  it "sorts a mixed Integer/Number set without a Comparable crash (the coerce-on-sort path)" do
+    half = Ruby::Rego::Number.literal("1.5")
+    expect(registry.call("sum", [Set.new([1, half])]).to_ruby.to_s).to eq("2.5")
+    expect(registry.call("max", [Set.new([1, half])]).to_ruby.to_s).to eq("1.5")
+    expect(registry.call("product", [Set.new([2, half])]).to_ruby.to_s).to eq("3")
+  end
+
+  it "is undefined for max/min over an empty set (matching the empty-array behaviour)" do
+    expect(registry.call("max", [Set.new([])])).to be_a(Ruby::Rego::UndefinedValue)
+    expect(registry.call("min", [Set.new([])])).to be_a(Ruby::Rego::UndefinedValue)
+  end
+
   it "is undefined for sum/max/min over a set with a non-number element" do
     expect(registry.call("sum", [Set.new([1, "x"])])).to be_a(Ruby::Rego::UndefinedValue)
     expect(registry.call("max", [Set.new([1, "x"])])).to be_a(Ruby::Rego::UndefinedValue)
@@ -163,7 +175,8 @@ RSpec.describe "aggregate builtins" do
       expect(registry.call("sum", [[over_emax]])).to be_a(Ruby::Rego::UndefinedValue)
     end
 
-    # Sum inherits the number model's flt-vs-Go shortest-form tie-break gap (shared with div/*/product):
+    # Sum inherits the number model's flt-vs-Go shortest-form tie-break gap (shared with the big.Float
+    # paths div/product/fractional-*; integer * stays exact native bignum and is unaffected):
     # 2**64 + 2**64 = 2**65, which the gem renders as the exact 36893488147419103232 while OPA's shortest
     # round-tripping decimal at prec-64 is 36893488147419103230. Magnitude-correct, both round-trip to the
     # same prec-64 float. Pinned to track the gap (a number-sweep item that will move all of these together).
@@ -210,6 +223,17 @@ RSpec.describe "aggregate builtins" do
       # max/min return the winning element as-is (no fold), so a set with a Rational must at least sort
       # and select without raising; the larger element (3/2) is returned.
       expect(registry.call("max", [Set.new([Rational(3, 2), 1])]).to_ruby).to eq(Rational(3, 2))
+    end
+
+    it "is undefined (no materialization) for an over-magnitude Number element, array and set" do
+      # A host-built Number past the literal cap is a compact-exponent amplifier like BigDecimal: its
+      # #exact would expand to a ~billion-digit Rational in the fold. The finite_real? gate rejects it on
+      # an O(text) magnitude check before that materializes — so this returns fast, never OOMs/hangs.
+      # (Not reachable via parsing: the lexer and JSON decoder cap a literal at this magnitude.)
+      huge = Ruby::Rego::Number.literal("1e1000000000")
+      expect { registry.call("sum", [[huge, 1]]) }.not_to raise_error
+      expect(registry.call("sum", [[huge, 1]])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("product", [Set.new([huge, 2])])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 

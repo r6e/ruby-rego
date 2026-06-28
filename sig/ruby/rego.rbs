@@ -206,7 +206,7 @@ module Ruby
       def self.rational_to_binnum: (Rational | Integer rational) -> untyped
       def self.prec64_multiply_truncate: (Rational rational, Integer integer) -> Integer
       def self.product: (Array[Numeric] numbers) -> (Number | Integer)
-      private def self.fold: (Array[Numeric] numbers, Symbol operation, untyped seed) -> untyped
+      private def self.fold: (Array[Numeric] numbers, (:multiply | :add) operation, untyped seed) -> untyped
       private def self.magnitude_exceeds_cap?: (untyped binnum) -> bool
       def self.sum: (Array[Numeric] numbers) -> (Number | Integer)
       private def self.integer_fast_path?: (Array[Numeric] numbers) -> bool
@@ -1330,7 +1330,7 @@ module Ruby
         private def self.bounded_fold: ((:sum | :product) name, Array[Numeric] numbers) -> (Number | Integer)
         private def self.numeric_array: (Value collection, name: String) -> Array[Numeric]
         private def self.numeric_values: (Enumerable[Value] elements, name: String) -> Array[Numeric]
-        private def self.numeric_value: (Value element, context: String) -> Numeric
+        private def self.extract_finite_real: (Value element, context: String) -> Numeric
         private def self.ensure_non_empty: (Array[Numeric] numbers, name: String) -> void
       end
 

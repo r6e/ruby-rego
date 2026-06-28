@@ -347,11 +347,19 @@ RSpec.describe Ruby::Rego::Number do
   end
 
   describe ".finite_real?" do
-    it "accepts exactly rational_of's domain: Integer, Rational, Number, and finite Float" do
+    it "accepts exactly rational_of's domain: Integer, Rational, in-magnitude Number, and finite Float" do
       expect(described_class.finite_real?(5)).to be(true)
       expect(described_class.finite_real?(described_class.literal("1.5"))).to be(true)
+      expect(described_class.finite_real?(described_class.literal("1e30000"))).to be(true)
       expect(described_class.finite_real?(Rational(1, 2))).to be(true)
       expect(described_class.finite_real?(1.5)).to be(true)
+    end
+
+    it "rejects an over-magnitude Number (a compact-exponent amplifier, like BigDecimal)" do
+      # A hand-built Number whose text is past the literal cap would expand to a ~billion-digit Rational
+      # via #exact in the fold; reject it on the O(text) magnitude check before that materializes. Not
+      # reachable via parsing (the lexer/decoder cap literals), only via a host-built Number.
+      expect(described_class.finite_real?(described_class.literal("1e1000000000"))).to be(false)
     end
 
     it "rejects Complex (not real, not order-comparable, not big.Float-convertible)" do

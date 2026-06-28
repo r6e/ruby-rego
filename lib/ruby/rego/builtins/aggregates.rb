@@ -149,31 +149,35 @@ module Ruby
         private_class_method :numeric_array
 
         # Validate every element of `elements` is a foldable number and return their raw numeric values,
-        # in the given order. {numeric_value} applies both gates ahead of the set sort {numeric_array}
-        # performs, so a bad element maps to undefined rather than crashing the sort or the fold.
+        # in the given order. {extract_finite_real} applies both gates ahead of the set sort
+        # {numeric_array} performs, so a bad element maps to undefined rather than crashing the sort or
+        # the fold.
         #
         # @param elements [Enumerable<Ruby::Rego::Value>]
         # @param name [String]
         # @return [Array<Numeric>]
         def self.numeric_values(elements, name:)
           elements.to_a.map.with_index do |element, index|
-            numeric_value(element, context: "#{name} element #{index}")
+            extract_finite_real(element, context: "#{name} element #{index}")
           end
         end
         private_class_method :numeric_values
 
-        # Validate one element is a NumberValue wrapping a foldable finite-real number, returning its raw
-        # numeric value. Two gates: the type check maps a non-number element (`{1, "a"}`) to undefined,
-        # and {Number.finite_real?} maps a NumberValue wrapping a non-real / non-finite Ruby Numeric to
-        # undefined. The latter is reachable because {Value.from_ruby} admits any Ruby Numeric (a Complex,
-        # a non-finite Float/BigDecimal passed via the library `input:` API) into a NumberValue; without
-        # this gate the set sort crashes on Complex's missing ordering, or the fold crashes converting it
-        # — aborting the policy instead of returning undefined.
+        # Validate one element is a NumberValue wrapping a foldable finite-real number and return its raw
+        # numeric value, else raise BuiltinArgumentError (which the registry maps to undefined). Named to
+        # signal the validate-and-RAISE contract — unlike {Value.numeric_value} (wraps a Numeric) and
+        # {Evaluator::OperatorEvaluator.numeric_value} (unwraps to a Numeric or nil). Two gates: the type
+        # check maps a non-number element (`{1, "a"}`) to undefined, and {Number.finite_real?} maps a
+        # NumberValue wrapping a non-real / non-finite / over-magnitude Ruby Numeric to undefined. The
+        # latter is reachable because {Value.from_ruby} admits any Ruby Numeric (a Complex, a non-finite
+        # or huge Float/BigDecimal passed via the library `input:` API) into a NumberValue; without this
+        # gate the set sort crashes on Complex's missing ordering, or the fold crashes/amplifies
+        # converting it — aborting the policy instead of returning undefined.
         #
         # @param element [Ruby::Rego::Value]
         # @param context [String]
         # @return [Numeric]
-        def self.numeric_value(element, context:)
+        def self.extract_finite_real(element, context:)
           Base.assert_type(element, expected: NumberValue, context: context)
           raw = element.value
           return raw if Number.finite_real?(raw)
@@ -185,7 +189,7 @@ module Ruby
             context: context
           )
         end
-        private_class_method :numeric_value
+        private_class_method :extract_finite_real
 
         # @param numbers [Array<Numeric>]
         # @param name [String]
@@ -194,8 +198,8 @@ module Ruby
           return unless numbers.empty?
 
           Base.raise_argument_error(
-            "Expected a non-empty array",
-            expected: "non-empty array",
+            "Expected a non-empty collection",
+            expected: "non-empty collection",
             actual: numbers.size,
             context: name
           )

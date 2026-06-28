@@ -222,33 +222,38 @@ module Ruby
         new(exact: BigDecimal(value.to_s).to_r) # Float: via its shortest decimal, matching #exact
       end
 
-      # Whether `value` is a finite real number this engine can both ORDER and FOLD without amplifying:
-      # a Ruby Integer or Rational, a {Number}, or a FINITE Float. This is exactly {#rational_of}'s
-      # domain — the types `<=>` and the arithmetic operators can already convert — and no more.
+      # Whether `value` is a finite real number this engine can ORDER and FOLD without amplifying: an
+      # in-magnitude {Number}, a Ruby Integer or Rational, or a FINITE Float. {Value.from_ruby} admits
+      # ANY Ruby Numeric into a NumberValue (its non-finite guard is `::Float`-only), so a host can pass
+      # exotic numerics through the library `input:` API; the numeric aggregates gate on this before
+      # sorting or folding so a rejected element maps to undefined instead of aborting the policy.
       #
-      # The gate matters because {Value.from_ruby} admits ANY Ruby Numeric into a NumberValue (its
-      # non-finite guard is `::Float`-only), so a host can pass exotic numerics through the library
-      # `input:` API. Three classes are rejected, each of which would otherwise crash or blow up a
-      # consumer (the numeric aggregates gate on this before sorting or folding, mapping a rejected
-      # element to undefined instead of aborting the policy):
+      # The accepted set is {#rational_of}'s domain — the types `<=>` and the arithmetic operators can
+      # convert — with one extra guard. A {Number} is a COMPACT-exponent value (`Number("1e10000000")`
+      # is ~12 bytes), and {#exact} expands it via `BigDecimal(to_s).to_r` to a Rational with that many
+      # digits — a memory-amplification DoS if folded. Untrusted data can never birth an over-cap Number
+      # (the lexer and JSON decoder reject a literal past {MAX_MAGNITUDE_EXPONENT} at parse), but a host
+      # could hand-build one, so the Number branch is magnitude-bounded by {magnitude_within_limit?} (an
+      # O(text) exponent check, no materialization) — which also matches OPA, since OPA rejects such a
+      # literal at parse and so never sums/products one.
+      #
+      # Rejected, each of which would otherwise crash or blow up a consumer:
       #   * Complex — no ordering (`<=>` returns nil, so a sort raises) and no big.Float conversion.
       #   * a non-finite Float — its `to_r` raises FloatDomainError; hence the `finite?` check.
-      #   * a BigDecimal — `Number#rational_of` has no BigDecimal branch (so `Number <=> BigDecimal`
-      #     returns nil and a mixed sort/compare raises), AND it is a compact-exponent type: a finite
-      #     `BigDecimal("1e10000000")` is ~12 bytes but `BigDecimal(v.to_s).to_r` would expand it to a
-      #     ten-million-digit Rational (a memory-amplification DoS) before any magnitude cap fires.
-      #     Integer/Rational carry no such amplification (a huge one was already materialized by the
-      #     host, and the fold's engine trap bounds it), and a Float's magnitude tops out near 1e308.
-      #     Properly admitting BigDecimal needs a magnitude bound at the {#rational_of}/{from_numeric}
-      #     level (which also governs arithmetic, where the same gap is a pre-existing crash) — a
-      #     gem-wide change out of scope here, so BigDecimal is rejected uniformly.
-      # Anything else (a non-Numeric) is rejected.
+      #   * a BigDecimal — like a Number it is a compact-exponent amplifier, AND {#rational_of} has no
+      #     BigDecimal branch, so `Number <=> BigDecimal` returns nil and a mixed sort/compare raises.
+      #     Admitting it would need a magnitude bound at the {#rational_of}/{from_numeric} level (which
+      #     also governs arithmetic, where the same gap is a pre-existing crash) — a gem-wide change out
+      #     of scope here — so BigDecimal is rejected uniformly.
+      # Integer/Rational carry no amplification (a huge one was already materialized by the host, and the
+      # fold's engine trap bounds it); a Float's magnitude tops out near 1e308. Any non-Numeric is rejected.
       #
       # @param value [Object]
       # @return [Boolean]
       def self.finite_real?(value)
         case value
-        when Number, Integer, Rational then true
+        when Number then magnitude_within_limit?(value.to_s)
+        when Integer, Rational then true
         when Float then value.finite?
         else false
         end
@@ -507,8 +512,9 @@ module Ruby
       # Float via its shortest decimal, like the literal OPA parsed), then rounded to the prec-64
       # float OPA's NumberToFloat yields. An empty `numbers` returns the seed, formatting to Integer 1.
       #
-      # Integer-valued products inherit the number model's shortest-form limitation shared with
-      # `div`/`*`/`sum`: flt's and Go strconv's shortest round-tripping decimals can tie-break differently
+      # Integer-valued products inherit the number model's shortest-form limitation shared with the other
+      # big.Float paths (`div`, `sum`, and a `*` with a fractional operand — integer `*` stays exact native
+      # bignum and is unaffected): flt's and Go strconv's shortest round-tripping decimals can tie-break differently
       # on a value past prec-64 (`[2**32]*3` -> ...594 here vs OPA's ...590). This is tie-driven, not
       # magnitude-gated — it can appear at moderate magnitudes (e.g. 2**65 ~ 3.7e19, 20 digits), not only
       # "at the extreme". Magnitude-correct and round-tripping to the same prec-64 float; pre-existing,
@@ -628,7 +634,8 @@ module Ruby
       # {GoNumberFormat}, unchanged here): flt's and Go strconv's shortest round-tripping decimals can
       # tie-break differently, so e.g. `sum([2**64, 2**64])` renders 36893488147419103232 here vs OPA's
       # 36893488147419103230. Magnitude-correct and round-tripping to the same prec-64 float; a tracked
-      # number-sweep item shared with `div`/`*`/`product`.
+      # number-sweep item shared with the other big.Float paths (`div`, `product`, fractional `*`; integer
+      # `*` stays exact native bignum and is unaffected).
       #
       # @param numbers [Array<Numeric>]
       # @return [Number, Integer]
