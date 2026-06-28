@@ -59,6 +59,17 @@ module Ruby
       # materializing the value. Used only by {magnitude_exceeds_cap?} (the `product` DoS gate).
       LOG10_2 = Math.log10(2)
 
+      # The signed 64-bit integer range. OPA's `sum` takes its exact-integer fast-path for an element only
+      # when Go's `json.Number.Int64()` (= `strconv.ParseInt(text, 10, 64)`) succeeds — i.e. the element is
+      # plain-integer text within this range. {sum} mirrors that with "Ruby Integer within [INT64_MIN,
+      # INT64_MAX]", an exact correspondence regardless of how the element was produced: both the
+      # lexer/decoder AND {from_binnum} apply the same split (integer-valued -> Ruby Integer,
+      # fractional/exponent -> Number), and OPA's FloatToNumber renders an integer-valued result as
+      # plain-integer text, so a Ruby Integer (parsed literal or computed result) within int64 is exactly
+      # the value OPA's Int64() accepts — and one outside int64 is exactly the value it rejects.
+      INT64_MIN = -(2**63)
+      INT64_MAX = (2**63) - 1
+
       # Build a Number from a numeric literal's source text (already validated by the lexer).
       #
       # @param text [String]
@@ -464,9 +475,12 @@ module Ruby
       # Float via its shortest decimal, like the literal OPA parsed), then rounded to the prec-64
       # float OPA's NumberToFloat yields. An empty `numbers` returns the seed, formatting to Integer 1.
       #
-      # Large-magnitude integer-valued products inherit the number model's shortest-form limitation
-      # shared with `div`: flt's shortest decimal can differ from Go strconv's by one digit at the
-      # extreme (`[2**32]*3` -> ...594 here vs OPA's ...590). Pre-existing, tracked in the number sweep.
+      # Integer-valued products inherit the number model's shortest-form limitation shared with
+      # `div`/`*`/`sum`: flt's and Go strconv's shortest round-tripping decimals can tie-break differently
+      # on a value past prec-64 (`[2**32]*3` -> ...594 here vs OPA's ...590). This is tie-driven, not
+      # magnitude-gated — it can appear at moderate magnitudes (e.g. 2**65 ~ 3.7e19, 20 digits), not only
+      # "at the extreme". Magnitude-correct and round-tripping to the same prec-64 float; pre-existing,
+      # tracked in the number sweep.
       #
       # DoS: `product` is the one numeric builtin with an UNBOUNDED fold (N comprehension-controlled
       # elements, each near the literal cap), so it is the only one whose result magnitude can grow
@@ -504,12 +518,23 @@ module Ruby
       # @return [Flt::BinNum]
       def self.multiply_all(numbers)
         numbers.reduce(CONTEXT.Num(1)) do |accumulator, value|
-          CONTEXT.multiply(accumulator, rational_to_binnum(from_numeric(value).exact))
+          CONTEXT.multiply(accumulator, operand_binnum(value))
         end
       rescue Flt::Num::Exception => e
         raise RangeError, "product overflows the supported magnitude range (#{e.message})"
       end
       private_class_method :multiply_all
+
+      # Round a numeric fold operand to the prec-64 big.Float OPA's NumberToFloat yields: take its exact
+      # value (a raw Float via its shortest decimal, like the literal OPA parsed) and round it to prec 64.
+      # The single per-element conversion shared by both folds ({multiply_all}, {add_all}).
+      #
+      # @param value [Numeric]
+      # @return [Flt::BinNum]
+      def self.operand_binnum(value)
+        rational_to_binnum(from_numeric(value).exact)
+      end
+      private_class_method :operand_binnum
 
       # Whether a finite BinNum's base-10 order of magnitude exceeds MAX_MAGNITUDE_EXPONENT, computed
       # from its binary exponent and 64-bit coefficient alone — O(1), and crucially WITHOUT building the
@@ -532,6 +557,75 @@ module Ruby
         (binnum.coefficient.bit_length + binnum.exponent) * LOG10_2 > MAX_MAGNITUDE_EXPONENT
       end
       private_class_method :magnitude_exceeds_cap?
+
+      # Sum a collection of numbers reproducing OPA's `sum` aggregate. OPA has two paths (v1/topdown
+      # /aggregates.go): an integer fast-path that accumulates every element through Go's
+      # `json.Number.Int64()` when ALL elements are plain-integer text within int64, returning the int64
+      # total; otherwise a prec-64 big.Float fold (seed 0, Add) formatted with FloatToNumber. The
+      # discriminator is per-element and ALL-or-nothing — a single non-int64 element (an exponent/decimal
+      # Number, or a plain integer beyond int64) sends the WHOLE fold through the big.Float, where the
+      # result is the prec-64-ROUNDED value (`sum([1e20, 7])` -> 100000000000000000010, not the exact
+      # ...007). Empty -> 0. Sets are deduplicated and folded in ascending order by the builtin layer.
+      #
+      # ONE deliberate divergence from OPA, applying the project's "implement correctly, document the
+      # divergence" precedent for upstream bugs: OPA's int64 fast-path SILENTLY WRAPS on overflow
+      # (`sum([9e18, 9e18])` -> -446744073709551616). This fast-path keeps the accumulator in
+      # arbitrary-precision Ruby Integer and returns the true sum (18000000000000000000) — replicating a
+      # silent integer-overflow wrap would turn a sum of positive quotas into a negative value, an
+      # authorization hazard. Below int64 overflow the two paths are identical.
+      #
+      # Unlike {product}, `sum` carries NO magnitude cap: it grows only additively (result magnitude ~=
+      # max-element magnitude + log10(N)), so a sum whose magnitude exceeds the literal cap is still
+      # returned to match OPA (`sum([1e60000, 1e60000])` -> 2e60000). It does still need the engine's
+      # overflow trap as a totality backstop, though: a single element past ENGINE_EMAX — reachable via
+      # the library `input:` API (which, unlike the JSON decoder, does not magnitude-cap a Ruby Integer)
+      # or via uncapped integer `*` — would otherwise let {add_all} raise an uncaught Flt::Num::Exception
+      # and abort the policy. {add_all} maps that to a RangeError the builtin layer turns into undefined,
+      # mirroring product's intermediate trap (the gem's ENGINE_EMAX is stricter than Go's big.Float
+      # range, the same documented stance product takes; no realistic sum reaches 10**~3e8).
+      #
+      # Large integer-valued results inherit the number model's shortest-form gap (see {from_binnum} /
+      # {GoNumberFormat}, unchanged here): flt's and Go strconv's shortest round-tripping decimals can
+      # tie-break differently, so e.g. `sum([2**64, 2**64])` renders 36893488147419103232 here vs OPA's
+      # 36893488147419103230. Magnitude-correct and round-tripping to the same prec-64 float; a tracked
+      # number-sweep item shared with `div`/`*`/`product`.
+      #
+      # @param numbers [Array<Numeric>]
+      # @return [Number, Integer]
+      # @raise [RangeError] when an element overflows ENGINE_EMAX; the builtin layer maps it to undefined.
+      def self.sum(numbers)
+        return numbers.sum if integer_fast_path?(numbers)
+
+        from_binnum(add_all(numbers))
+      end
+
+      # Whether every element is a Ruby Integer within int64 — OPA's exact-integer fast-path condition
+      # (see {INT64_MIN}/{INT64_MAX}). An empty collection qualifies, so `sum([])` is the exact 0.
+      #
+      # @param numbers [Array<Numeric>]
+      # @return [Boolean]
+      def self.integer_fast_path?(numbers)
+        numbers.all? { |value| value.is_a?(Integer) && value.between?(INT64_MIN, INT64_MAX) }
+      end
+      private_class_method :integer_fast_path?
+
+      # Fold `numbers` through the prec-64 big.Float Add, seeding at 0 — the additive twin of
+      # {multiply_all}. The fold order (array order, or a set's ascending order) is the caller's, matching
+      # OPA's iteration. The Overflow trap is the only place Flt::Num::Exception arises (Add traps a sum
+      # past ENGINE_EMAX; underflow is not trapped), so the rescue here maps an over-ENGINE_EMAX element
+      # to a RangeError rather than letting it abort the policy. NOTE: this is the engine-overflow backstop
+      # only — `sum` deliberately has NO product-style magnitude cap, so valid large sums are returned.
+      #
+      # @param numbers [Array<Numeric>]
+      # @return [Flt::BinNum]
+      def self.add_all(numbers)
+        numbers.reduce(CONTEXT.Num(0)) do |accumulator, value|
+          CONTEXT.add(accumulator, operand_binnum(value))
+        end
+      rescue Flt::Num::Exception => e
+        raise RangeError, "sum overflows the supported magnitude range (#{e.message})"
+      end
+      private_class_method :add_all
 
       protected
 

@@ -85,7 +85,8 @@ RSpec.describe "aggregate builtins" do
       # without bound. A result past MAX_MAGNITUDE_EXPONENT maps to undefined BEFORE it materializes as a
       # multi-megabyte Integer string. Two in-cap literals whose product (1e40000) clears the cap, so the
       # gate fires with no intermediate overflow. Stricter than OPA (which returns 1e40000) — documented
-      # DoS hardening that holds the whole number model to a single magnitude invariant.
+      # DoS hardening for the one UNBOUNDED fold; single ops (`*`/`/`) stay uncapped to match OPA, so this
+      # is not a global magnitude invariant.
       huge = Ruby::Rego::Number.literal("1e20000")
       expect(registry.call("product", [[huge, huge]])).to be_a(Ruby::Rego::UndefinedValue)
     end
@@ -113,6 +114,65 @@ RSpec.describe "aggregate builtins" do
 
       expect(product).to eq(via_number_model)
       expect(product).to eq("79228162514264337594000000000") # OPA: ...590000000000 (tracked)
+    end
+  end
+
+  describe "sum (OPA integer fast-path + prec-64 big.Float fold)" do
+    def num(text) = Ruby::Rego::Number.literal(text)
+
+    it "returns 0 for an empty collection (additive identity, matching OPA)" do
+      expect(registry.call("sum", [[]]).to_ruby).to eql(0)
+    end
+
+    it "folds a non-int64 operand through the big.Float, matching OPA (fixes the exact-integer drift)" do
+      # The defining fix: 1e20 is a Number, so the WHOLE fold rounds at prec-64 -> ...010, where the old
+      # Ruby Array#sum resumed exact integer addition and produced ...007.
+      expect(registry.call("sum", [[num("1e20"), 7]]).to_ruby.to_s).to eq("100000000000000000010")
+      expect(registry.call("sum", [[10**20, 7]]).to_ruby.to_s).to eq("100000000000000000010")
+    end
+
+    it "matches OPA's catastrophic-cancellation result" do
+      expect(registry.call("sum", [[num("1e308"), 1, num("-1e308"), 2]]).to_ruby).to eql(2)
+    end
+
+    it "matches OPA's prec-64 fractional sum byte-for-byte" do
+      expect(registry.call("sum", [[num("0.1"), num("0.2"), num("0.3")]]).to_ruby.to_s).to eq("0.6")
+    end
+
+    it "deduplicates a set before folding (OPA set semantics)" do
+      expect(registry.call("sum", [Set.new([num("5e18"), num("5e18")])]).to_ruby.to_s)
+        .to eq("5000000000000000000")
+    end
+
+    # The deliberate, documented divergence: OPA's int64 fast-path silently wraps on overflow
+    # (sum([9e18, 9e18]) -> -446744073709551616). The gem keeps arbitrary precision and returns the true
+    # sum — a sum of positive quotas must never come back negative. See Number.sum.
+    it "returns the correct sum on int64 overflow rather than OPA's silent wrap" do
+      expect(registry.call("sum", [[9_000_000_000_000_000_000, 9_000_000_000_000_000_000]]).to_ruby)
+        .to eql(18_000_000_000_000_000_000)
+    end
+
+    it "is undefined when an element overflows the engine exponent range (totality, no crash)" do
+      # Unlike product, sum has no magnitude cap (additive growth), but it still needs the engine-overflow
+      # backstop: a single element past ENGINE_EMAX (reachable via the Ruby `input:` API, which does not
+      # magnitude-cap an Integer the way the JSON decoder does) trips the big.Float Add trap. It must map
+      # to undefined, NOT abort the policy with an uncaught Flt::Num::Exception. Built via bit-shift so the
+      # ~128 MiB element allocates without a slow base-10 power.
+      over_emax = 1 << (Ruby::Rego::Number::ENGINE_EMAX + 1)
+      expect { registry.call("sum", [[over_emax]]) }.not_to raise_error
+      expect(registry.call("sum", [[over_emax]])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    # Sum inherits the number model's flt-vs-Go shortest-form tie-break gap (shared with div/*/product):
+    # 2**64 + 2**64 = 2**65, which the gem renders as the exact 36893488147419103232 while OPA's shortest
+    # round-tripping decimal at prec-64 is 36893488147419103230. Magnitude-correct, both round-trip to the
+    # same prec-64 float. Pinned to track the gap (a number-sweep item that will move all of these together).
+    it "inherits the number model's shortest-form gap (consistent with product, not OPA)" do
+      sum = registry.call("sum", [[2**64, 2**64]]).to_ruby.to_s
+      via_number_model = Ruby::Rego::Number.from_binnum(Ruby::Rego::Number.rational_to_binnum(2**65)).to_s
+
+      expect(sum).to eq(via_number_model)
+      expect(sum).to eq("36893488147419103232") # OPA: 36893488147419103230 (tracked)
     end
   end
 

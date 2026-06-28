@@ -181,6 +181,8 @@ module Ruby
       CONTEXT: untyped
       MAX_MAGNITUDE_EXPONENT: Integer
       LOG10_2: Float
+      INT64_MIN: Integer
+      INT64_MAX: Integer
       NUMBER_CORE: Regexp
       DECIMAL_STRING: Regexp
       FRACTIONAL: Regexp
@@ -205,6 +207,10 @@ module Ruby
       def self.product: (Array[Numeric] numbers) -> (Number | Integer)
       private def self.multiply_all: (Array[Numeric] numbers) -> untyped
       private def self.magnitude_exceeds_cap?: (untyped binnum) -> bool
+      def self.sum: (Array[Numeric] numbers) -> (Number | Integer)
+      private def self.integer_fast_path?: (Array[Numeric] numbers) -> bool
+      private def self.add_all: (Array[Numeric] numbers) -> untyped
+      private def self.operand_binnum: (Numeric value) -> untyped
 
       def initialize: (?text: String?, ?exact: (Rational | Integer)?) -> void
       def to_s: () -> String
@@ -1323,7 +1329,7 @@ module Ruby
         private
 
         def self.register_function: (BuiltinRegistry registry, String name, Symbol handler) -> void
-        private def self.bounded_product: (Array[Numeric] numbers) -> (Number | Integer)
+        private def self.bounded_fold: (Symbol name, Array[Numeric] numbers) -> (Number | Integer)
         private def self.numeric_array: (Value collection, name: String) -> Array[Numeric]
         private def self.numeric_values: (Enumerable[Value] elements, name: String) -> Array[Numeric]
         def self.ensure_non_empty: (Array[Numeric] numbers, name: String) -> void

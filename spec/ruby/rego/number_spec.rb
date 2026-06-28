@@ -166,6 +166,77 @@ RSpec.describe Ruby::Rego::Number do
     end
   end
 
+  describe ".sum (OPA integer fast-path + prec-64 big.Float fold)" do
+    def num(text) = described_class.literal(text)
+
+    it "returns the additive identity 0 for an empty fold" do
+      expect(described_class.sum([])).to eql(0)
+    end
+
+    it "sums plain integers within int64 exactly (the integer fast-path)" do
+      expect(described_class.sum([100, 1])).to eql(101)
+      expect(described_class.sum([1, 2, 3])).to eql(6)
+      expect(described_class.sum([5])).to eql(5)
+    end
+
+    it "folds an exponent-form (Number) operand through the prec-64 big.Float, not exact integers" do
+      # sum([1e20, 7]): 1e20 is a Number (not a plain int64), so OPA rounds the whole fold to prec-64
+      # -> 100000000000000000010, NOT the exact 100000000000000000007 a naive Integer sum would give.
+      expect(described_class.sum([num("1e20"), 7]).to_s).to eq("100000000000000000010")
+    end
+
+    it "folds a >int64 plain integer through the big.Float too (OPA's ParseInt rejects it)" do
+      expect(described_class.sum([10**20, 7]).to_s).to eq("100000000000000000010")
+    end
+
+    it "matches OPA's catastrophic-cancellation result (the whole fold stays in big.Float)" do
+      # 1e308 + 1 rounds back to 1e308, so the small terms vanish: OPA gives 2, not 3.
+      expect(described_class.sum([num("1e308"), 1, num("-1e308"), 2])).to eql(2)
+    end
+
+    it "matches OPA's prec-64 fractional sum byte-for-byte" do
+      expect(described_class.sum([num("0.1"), num("0.2"), num("0.3")]).to_s).to eq("0.6")
+      expect(described_class.sum([num("2.5"), 1]).to_s).to eq("3.5")
+    end
+
+    it "collapses an integer-valued big.Float result back to a Ruby Integer" do
+      expect(described_class.sum([num("0.5"), num("-0.5")])).to eql(0)
+      expect(described_class.sum([num("1.5"), num("1.5")])).to eql(3)
+    end
+
+    it "renders a huge integer-valued big.Float sum shortest, like OPA's FloatToNumber" do
+      expect(described_class.sum([num("1e308"), num("1e308")])).to eql(2 * (10**308))
+    end
+
+    # The one deliberate divergence from OPA: OPA's integer fast-path accumulates in a Go int64 and
+    # SILENTLY WRAPS on overflow (sum([9e18, 9e18]) -> -446744073709551616). Replicating a silent
+    # integer-overflow wrap in Ruby would turn a sum of positive quotas into a negative number — an
+    # authorization hazard. Per the project's "implement correctly, document the divergence" precedent
+    # for upstream bugs, the fast-path uses arbitrary-precision Ruby Integer and returns the true sum.
+    it "returns the mathematically correct sum on int64 overflow (NOT OPA's silent wrap)" do
+      expect(described_class.sum([9_000_000_000_000_000_000, 9_000_000_000_000_000_000]))
+        .to eql(18_000_000_000_000_000_000)
+      expect(described_class.sum([9_223_372_036_854_775_807, 1])).to eql(9_223_372_036_854_775_808)
+      expect(described_class.sum([-9_223_372_036_854_775_808, -1])).to eql(-9_223_372_036_854_775_809)
+    end
+
+    it "raises RangeError when an element overflows the engine exponent range (totality, no crash)" do
+      # A single element past ENGINE_EMAX (reachable via the library `input:` API or uncapped integer `*`)
+      # trips the big.Float Add overflow trap. Like product's intermediate trap, it must surface as a
+      # RangeError the builtin layer maps to undefined — NOT an uncaught Flt::Num::Exception that aborts
+      # the policy. Built with a bit-shift so the ~128 MiB element allocates without a slow base-10 power.
+      over_emax = 1 << (described_class::ENGINE_EMAX + 1)
+      expect { described_class.sum([over_emax]) }.to raise_error(RangeError, /overflow/)
+    end
+
+    it "returns valid large sums far above the literal cap (sum has NO magnitude cap, unlike product)" do
+      # Additive growth keeps sum well below ENGINE_EMAX, so a sum whose magnitude exceeds the literal cap
+      # (1e30102) is returned, matching OPA — the engine-overflow rescue must NOT become a product-style cap.
+      big = described_class.literal("1e60000")
+      expect(described_class.sum([big, big]).to_s).to eq("2#{"0" * 60_000}")
+    end
+  end
+
   describe "equality and ordering by exact value" do
     def num(text) = described_class.literal(text)
 

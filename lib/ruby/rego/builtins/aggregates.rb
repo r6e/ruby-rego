@@ -49,47 +49,48 @@ module Ruby
           NumberValue.new(collection.value.size)
         end
 
+        # Sum an array or set of numbers. The OPA-faithful arithmetic (integer fast-path vs prec-64
+        # big.Float fold, and the int64-overflow handling) lives in {Number.sum}; here an empty collection
+        # sums to 0 and a set is deduplicated and folded in ascending order by {numeric_array}.
+        #
         # @param collection [Ruby::Rego::Value] an array or set of numbers
         # @return [Ruby::Rego::NumberValue]
         def self.sum(collection)
           numbers = numeric_array(collection, name: "sum")
-          # Sum of raw input Floats can overflow to a non-finite Float (e.g. [1e308, 1e308]); Value.from_ruby
-          # maps that to undefined at the boundary instead of letting it crash serialization.
-          Value.from_ruby(numbers.sum)
+          Value.from_ruby(bounded_fold(:sum, numbers))
         end
 
-        # OPA's `product` folds every element through a big.Float at precision 64 (no integer
-        # fast-path), so even an all-integer product is the prec-64-rounded value and an empty
-        # collection is the multiplicative identity 1. Delegated to {Number.product}, which keeps the
-        # accumulator in big.Float space across the whole fold to match OPA byte-for-byte.
+        # Multiply an array or set of numbers. The OPA-faithful arithmetic (prec-64 big.Float fold with no
+        # integer fast-path) and the DoS magnitude cap live in {Number.product}; here an empty collection
+        # is the multiplicative identity 1 and a set is folded in ascending order by {numeric_array}.
         #
-        # @param collection [Ruby::Rego::Value]
-        # @return [Ruby::Rego::Value]
+        # @param collection [Ruby::Rego::Value] an array or set of numbers
+        # @return [Ruby::Rego::NumberValue]
         def self.product(collection)
           numbers = numeric_array(collection, name: "product")
-          Value.from_ruby(bounded_product(numbers))
+          Value.from_ruby(bounded_fold(:product, numbers))
         end
 
-        # Fold `numbers` via {Number.product}, mapping its magnitude-overflow RangeError to undefined.
-        # The rescue wraps ONLY the Number.product call — Number.product raises RangeError when an
-        # intermediate trips the engine's ENGINE_EMAX overflow trap or the final result would materialize
-        # past MAX_MAGNITUDE_EXPONENT, both reachable only by multiplying enormous magnitudes far beyond
-        # any real policy value. numeric_array (already validated) and Value.from_ruby are deliberately
-        # OUTSIDE it, so an unexpected error from them fails fast rather than being mislabeled "overflow".
+        # Fold `numbers` via the named {Number} aggregate (`:sum` or `:product`), mapping its
+        # magnitude-overflow RangeError to undefined. The rescue wraps ONLY the Number call so an
+        # unexpected error from numeric_array/Value.from_ruby fails fast rather than being mislabeled
+        # "overflow". Number.product raises RangeError to cap its unbounded fold; Number.sum raises only as
+        # an engine-overflow totality backstop (it has no magnitude cap) — see those methods.
         #
+        # @param name [Symbol] :sum or :product
         # @param numbers [Array<Numeric>]
         # @return [Numeric]
-        def self.bounded_product(numbers)
-          Number.product(numbers)
+        def self.bounded_fold(name, numbers)
+          Number.public_send(name, numbers)
         rescue RangeError => e
           Base.raise_argument_error(
             e.message,
-            expected: "product within the supported magnitude range",
+            expected: "#{name} within the supported magnitude range",
             actual: "magnitude overflow",
-            context: "product"
+            context: name.to_s
           )
         end
-        private_class_method :bounded_product
+        private_class_method :bounded_fold
 
         # @param collection [Ruby::Rego::Value] an array or set of numbers
         # @return [Ruby::Rego::Value]
