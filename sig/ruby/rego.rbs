@@ -882,17 +882,22 @@ module Ruby
         extend RegistryHelpers
 
         MAX_EXPONENT_DIGITS: Integer
+        ROUND_DECIMALS: Integer
+        DECIMAL_SCALE: Integer
         MAX_SOURCE: Integer
         NUMERIC: String
         DIGIT: Regexp
         SIGN: Array[String]
+        AMOUNT_RE: Regexp
         PARSE_UNITS: Hash[String, (Integer | Rational)]
         PARSE_BYTES_UNITS: Hash[String, Integer]
         UNITS_FUNCTIONS: Hash[String, Hash[Symbol, untyped]]
 
         def self.register!: () -> BuiltinRegistry
-        def self.parse: (Value value) -> (Integer | Float)
+        def self.parse: (Value value) -> (Integer | Number)
         def self.parse_bytes: (Value value) -> Integer
+        def self.float_string: (Rational rational) -> String
+        def self.rounded_scaled: (Rational magnitude) -> Integer
 
         private
 
