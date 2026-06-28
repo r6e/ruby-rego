@@ -210,7 +210,9 @@ RSpec.describe "units builtins" do
       units = Ruby::Rego::Builtins::Units
       worst_decimal_exp = units::MAX_SOURCE + (10**units::MAX_EXPONENT_DIGITS) # mantissa digits + 10**exp
       worst_binary_exp = (worst_decimal_exp * Math.log2(10)) + 60 # +60 binary orders for the 2**60 max unit
-      expect(worst_binary_exp).to be < Ruby::Rego::Number::CONTEXT.emax
+      # Compared against the engine's exponent ceiling via its named constant (the same value CONTEXT is
+      # built with), so the proof has a single source of truth and stays independent of CONTEXT's visibility.
+      expect(worst_binary_exp).to be < Ruby::Rego::Number::ENGINE_EMAX
     end
 
     it "still computes binary-exact amounts identically (big.Float == rational there)" do

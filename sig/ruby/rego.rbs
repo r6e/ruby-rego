@@ -170,6 +170,7 @@ module Ruby
     end
 
     class Number < Numeric
+      ENGINE_EMAX: Integer
       CONTEXT: untyped
       MAX_MAGNITUDE_EXPONENT: Integer
       NUMBER_CORE: Regexp

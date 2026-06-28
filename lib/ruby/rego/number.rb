@@ -28,9 +28,15 @@ module Ruby
     # (conversions, ordering, coercion, the four operators) plus the OPA div/mod helpers and the flt
     # arithmetic backend belong together; splitting them would only scatter the contract.
     class Number < Numeric
-      # Go's math/big.Float number context: 64-bit binary precision, round-half-even, and an exponent
-      # range wide enough for any decimal literal OPA accepts (well beyond 1e±999).
-      CONTEXT = Flt::BinNum::Context(precision: 64, rounding: :half_even, emax: 2**30, emin: -(2**30))
+      # The big.Float engine's binary-exponent ceiling (and, negated, its floor): wide enough for any
+      # decimal literal OPA accepts (well beyond 1e±999). Exposed as a named constant — rather than
+      # buried in CONTEXT — so the units DoS-safety invariant test can assert against it without reaching
+      # into the CONTEXT object, keeping a single source of truth if the range is ever retuned.
+      ENGINE_EMAX = 2**30
+
+      # Go's math/big.Float number context: 64-bit binary precision, round-half-even, and the ENGINE_EMAX
+      # exponent range.
+      CONTEXT = Flt::BinNum::Context(precision: 64, rounding: :half_even, emax: ENGINE_EMAX, emin: -ENGINE_EMAX)
 
       # The largest decimal order of magnitude OPA accepts in a numeric literal: a literal whose
       # magnitude exceeds 10**30102 (or whose reciprocal does) is a parse error in OPA ("number too
@@ -426,6 +432,11 @@ module Ruby
       # @param integer [Integer]
       # @return [Integer]
       def self.prec64_multiply_truncate(rational, integer)
+        # Fail fast on an out-of-contract multiplier rather than let CONTEXT.Num silently round it to a
+        # different value (a wrong result). OPA's unit multipliers are all <= 2**60, so this never fires
+        # in practice; it protects a future or incorrect caller.
+        raise ArgumentError, "multiplier #{integer} is not exact at precision 64" if integer.bit_length > 64
+
         CONTEXT.multiply(rational_to_binnum(rational), CONTEXT.Num(integer)).to_i
       end
 

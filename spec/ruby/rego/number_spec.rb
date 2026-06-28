@@ -116,6 +116,15 @@ RSpec.describe Ruby::Rego::Number do
     it "truncates a negative product toward zero (big.Float.Int), not floored" do
       expect(described_class.prec64_multiply_truncate(Rational(-1, 1000), 10**6)).to eq(-999)
     end
+
+    it "fails fast when the integer multiplier is not exact at precision 64" do
+      # A multiplier wider than 64 bits would be silently rounded by CONTEXT.Num, producing a wrong
+      # result; the contract requires bit_length <= 64, so it raises instead (all OPA unit multipliers
+      # are <= 2**60, so this never fires in practice — it guards a future/incorrect caller).
+      expect { described_class.prec64_multiply_truncate(Rational(1, 2), (2**64) + 1) }
+        .to raise_error(ArgumentError, /precision 64/)
+      expect(described_class.prec64_multiply_truncate(Rational(1, 2), 2**60)).to be_a(Integer)
+    end
   end
 
   describe "equality and ordering by exact value" do
