@@ -79,7 +79,7 @@ module Ruby
         #
         # @param name [Symbol] :sum or :product
         # @param numbers [Array<Numeric>]
-        # @return [Numeric]
+        # @return [Ruby::Rego::Number, Integer]
         def self.bounded_fold(name, numbers)
           Number.public_send(name, numbers)
         rescue RangeError => e

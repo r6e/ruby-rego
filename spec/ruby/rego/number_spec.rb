@@ -347,21 +347,25 @@ RSpec.describe Ruby::Rego::Number do
   end
 
   describe ".finite_real?" do
-    it "accepts the number carriers the fold can convert and order" do
+    it "accepts exactly rational_of's domain: Integer, Rational, Number, and finite Float" do
       expect(described_class.finite_real?(5)).to be(true)
       expect(described_class.finite_real?(described_class.literal("1.5"))).to be(true)
       expect(described_class.finite_real?(Rational(1, 2))).to be(true)
       expect(described_class.finite_real?(1.5)).to be(true)
-      expect(described_class.finite_real?(BigDecimal("1.5"))).to be(true)
     end
 
     it "rejects Complex (not real, not order-comparable, not big.Float-convertible)" do
       expect(described_class.finite_real?(Complex(1, 2))).to be(false)
     end
 
-    it "rejects non-finite Float and BigDecimal" do
+    it "rejects a non-finite Float" do
       expect(described_class.finite_real?(Float::INFINITY)).to be(false)
       expect(described_class.finite_real?(Float::NAN)).to be(false)
+    end
+
+    it "rejects BigDecimal even when finite (unorderable vs Number + compact-exponent amplifier)" do
+      expect(described_class.finite_real?(BigDecimal("1.5"))).to be(false)
+      expect(described_class.finite_real?(BigDecimal("1e10000000"))).to be(false)
       expect(described_class.finite_real?(BigDecimal("Infinity"))).to be(false)
       expect(described_class.finite_real?(BigDecimal("NaN"))).to be(false)
     end

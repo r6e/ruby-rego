@@ -222,23 +222,34 @@ module Ruby
         new(exact: BigDecimal(value.to_s).to_r) # Float: via its shortest decimal, matching #exact
       end
 
-      # Whether `value` is a finite real number this engine can fold and order: a Ruby Integer or
-      # Rational, a {Number}, or a FINITE Float/BigDecimal. {Value.from_ruby} admits ANY Ruby Numeric
-      # into a NumberValue (its non-finite guard is `::Float`-only), so a host can pass a Complex or a
-      # non-finite Float/BigDecimal through the library `input:` API. Either would crash a consumer:
-      # a Complex has no ordering (`<=>` returns nil, so a sort raises) and no big.Float conversion
-      # (`BigDecimal(Complex.to_s)` raises), and a non-finite value's {#exact}/`to_r` raises
-      # FloatDomainError. A totality-sensitive caller — the numeric aggregates — gates on this before
-      # sorting or folding so such input maps to undefined rather than aborting the policy. Integer,
-      # Rational, and Number are always finite real; only Float/BigDecimal can be NaN/Infinity, hence
-      # the `finite?` check; anything else (a non-Numeric) is rejected.
+      # Whether `value` is a finite real number this engine can both ORDER and FOLD without amplifying:
+      # a Ruby Integer or Rational, a {Number}, or a FINITE Float. This is exactly {#rational_of}'s
+      # domain — the types `<=>` and the arithmetic operators can already convert — and no more.
+      #
+      # The gate matters because {Value.from_ruby} admits ANY Ruby Numeric into a NumberValue (its
+      # non-finite guard is `::Float`-only), so a host can pass exotic numerics through the library
+      # `input:` API. Three classes are rejected, each of which would otherwise crash or blow up a
+      # consumer (the numeric aggregates gate on this before sorting or folding, mapping a rejected
+      # element to undefined instead of aborting the policy):
+      #   * Complex — no ordering (`<=>` returns nil, so a sort raises) and no big.Float conversion.
+      #   * a non-finite Float — its `to_r` raises FloatDomainError; hence the `finite?` check.
+      #   * a BigDecimal — `Number#rational_of` has no BigDecimal branch (so `Number <=> BigDecimal`
+      #     returns nil and a mixed sort/compare raises), AND it is a compact-exponent type: a finite
+      #     `BigDecimal("1e10000000")` is ~12 bytes but `BigDecimal(v.to_s).to_r` would expand it to a
+      #     ten-million-digit Rational (a memory-amplification DoS) before any magnitude cap fires.
+      #     Integer/Rational carry no such amplification (a huge one was already materialized by the
+      #     host, and the fold's engine trap bounds it), and a Float's magnitude tops out near 1e308.
+      #     Properly admitting BigDecimal needs a magnitude bound at the {#rational_of}/{from_numeric}
+      #     level (which also governs arithmetic, where the same gap is a pre-existing crash) — a
+      #     gem-wide change out of scope here, so BigDecimal is rejected uniformly.
+      # Anything else (a non-Numeric) is rejected.
       #
       # @param value [Object]
       # @return [Boolean]
       def self.finite_real?(value)
         case value
         when Number, Integer, Rational then true
-        when Float, BigDecimal then value.finite?
+        when Float then value.finite?
         else false
         end
       end
