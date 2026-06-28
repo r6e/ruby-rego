@@ -605,8 +605,8 @@ module Ruby
       # SYMMETRIC: a tiny over-cap result (e.g. product(1e-30000, 1e-30000) = 1e-60000) is as much an
       # amplifier as a huge one — its #exact expands to a ~60000-digit-denominator Rational — so it must
       # trip the cap too. This mirrors the literal cap {magnitude_within_limit?}, which is symmetric on
-      # `(exponent - 1).abs`. bit_length over-estimates log2 by < 1 bit, leaving at most a 1-order-of-
-      # magnitude slop at the boundary (immaterial: the cap is itself a DoS threshold, not an exact value).
+      # `(exponent - 1).abs`. bit_length over-estimates log2 by < 1 bit — i.e. < log10(2) (~0.3) decimal
+      # orders of slop at the boundary (immaterial: a ~30102 DoS threshold, not an exact value).
       #
       # @param binnum [Flt::BinNum]
       # @return [Boolean]
