@@ -206,11 +206,10 @@ module Ruby
       def self.rational_to_binnum: (Rational | Integer rational) -> untyped
       def self.prec64_multiply_truncate: (Rational rational, Integer integer) -> Integer
       def self.product: (Array[Numeric] numbers) -> (Number | Integer)
-      private def self.multiply_all: (Array[Numeric] numbers) -> untyped
+      private def self.fold: (Array[Numeric] numbers, Symbol operation, untyped seed) -> untyped
       private def self.magnitude_exceeds_cap?: (untyped binnum) -> bool
       def self.sum: (Array[Numeric] numbers) -> (Number | Integer)
       private def self.integer_fast_path?: (Array[Numeric] numbers) -> bool
-      private def self.add_all: (Array[Numeric] numbers) -> untyped
       private def self.operand_binnum: (Numeric value) -> untyped
 
       def initialize: (?text: String?, ?exact: (Rational | Integer)?) -> void

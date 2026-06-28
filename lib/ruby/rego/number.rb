@@ -533,35 +533,41 @@ module Ruby
       # @raise [RangeError] when an intermediate overflows ENGINE_EMAX or the final magnitude exceeds
       #   MAX_MAGNITUDE_EXPONENT; the builtin layer maps it to undefined.
       def self.product(numbers)
-        binnum = multiply_all(numbers)
+        binnum = fold(numbers, :multiply, CONTEXT.Num(1))
         raise RangeError, "product result exceeds the supported magnitude range" if magnitude_exceeds_cap?(binnum)
 
         from_binnum(binnum)
       end
 
-      # Fold `numbers` through the prec-64 big.Float multiply, mapping an intermediate overflow to a
-      # RangeError. The rescue is scoped to the fold — the ONLY place Flt::Num::Exception arises: the
-      # engine traps Overflow, so a running product beyond ENGINE_EMAX raises here rather than
-      # materializing a ~10**9-digit integer. (Underflow is not trapped: a product below the engine's
-      # emin saturates to 0, as OPA's far-below values do.) Keeping the rescue off {magnitude_exceeds_cap?}
-      # and {from_binnum} means an unexpected exception from those fails fast instead of masking as 0.
+      # Fold `numbers` through the prec-64 big.Float `operation` (:multiply seeded at 1 for {product},
+      # :add seeded at 0 for {sum}), in the caller's order — a set's ascending order or an array's given
+      # order, matching OPA's iteration. The Overflow trap is the ONLY place Flt::Num::Exception arises:
+      # the engine traps a running result beyond ENGINE_EMAX, so the rescue maps it to a RangeError the
+      # builtin layer turns into undefined — rather than materializing a ~10**9-digit integer (product) or
+      # aborting the policy on an over-ENGINE_EMAX element (sum). Underflow is NOT trapped: a result below
+      # the engine's emin saturates to 0, as OPA's far-below values do. The rescue is scoped to the reduce
+      # so an unexpected error from {operand_binnum}/{from_binnum}/{magnitude_exceeds_cap?} fails fast
+      # instead of masking as 0.
       #
       # @param numbers [Array<Numeric>]
+      # @param operation [Symbol] :multiply or :add
+      # @param seed [Flt::BinNum] the fold identity (1 for product, 0 for sum)
       # @return [Flt::BinNum]
-      def self.multiply_all(numbers)
-        numbers.reduce(CONTEXT.Num(1)) do |accumulator, value|
-          CONTEXT.multiply(accumulator, operand_binnum(value))
+      def self.fold(numbers, operation, seed)
+        numbers.reduce(seed) do |accumulator, value|
+          CONTEXT.send(operation, accumulator, operand_binnum(value))
         end
       rescue Flt::Num::Exception => e
-        raise RangeError, "product overflows the supported magnitude range (#{e.message})"
+        # The builtin layer re-labels this with the sum/product context; the internal message stays generic.
+        raise RangeError, "aggregate fold overflows the supported magnitude range (#{e.message})"
       end
-      private_class_method :multiply_all
+      private_class_method :fold
 
       # Round a numeric fold operand to the prec-64 big.Float OPA's NumberToFloat yields. Takes the
       # operand's EXACT value via {from_numeric}/{#exact} — an Integer or Rational as itself, a {Number}
       # as its exact Rational, a raw Float via its shortest decimal (the value OPA's parser would have
-      # stored) — and rounds that to prec 64. The single per-element conversion shared by both folds
-      # ({multiply_all}, {add_all}).
+      # stored) — and rounds that to prec 64. The single per-element conversion {fold} applies for both
+      # product and sum.
       #
       # @param value [Numeric]
       # @return [Flt::BinNum]
@@ -613,8 +619,8 @@ module Ruby
       # returned to match OPA (`sum([1e60000, 1e60000])` -> 2e60000). It does still need the engine's
       # overflow trap as a totality backstop, though: a single element past ENGINE_EMAX — reachable via
       # the library `input:` API (which, unlike the JSON decoder, does not magnitude-cap a Ruby Integer)
-      # or via uncapped integer `*` — would otherwise let {add_all} raise an uncaught Flt::Num::Exception
-      # and abort the policy. {add_all} maps that to a RangeError the builtin layer turns into undefined,
+      # or via uncapped integer `*` — would otherwise let {fold} raise an uncaught Flt::Num::Exception
+      # and abort the policy. {fold} maps that to a RangeError the builtin layer turns into undefined,
       # mirroring product's intermediate trap (the gem's ENGINE_EMAX is stricter than Go's big.Float
       # range, the same documented stance product takes; no realistic sum reaches 10**~3e8).
       #
@@ -630,7 +636,7 @@ module Ruby
       def self.sum(numbers)
         return numbers.sum if integer_fast_path?(numbers)
 
-        from_binnum(add_all(numbers))
+        from_binnum(fold(numbers, :add, CONTEXT.Num(0)))
       end
 
       # Whether every element is a Ruby Integer within int64 — OPA's exact-integer fast-path condition
@@ -642,24 +648,6 @@ module Ruby
         numbers.all? { |value| value.is_a?(Integer) && value.between?(INT64_MIN, INT64_MAX) }
       end
       private_class_method :integer_fast_path?
-
-      # Fold `numbers` through the prec-64 big.Float Add, seeding at 0 — the additive twin of
-      # {multiply_all}. The fold order (array order, or a set's ascending order) is the caller's, matching
-      # OPA's iteration. The Overflow trap is the only place Flt::Num::Exception arises (Add traps a sum
-      # past ENGINE_EMAX; underflow is not trapped), so the rescue here maps an over-ENGINE_EMAX element
-      # to a RangeError rather than letting it abort the policy. NOTE: this is the engine-overflow backstop
-      # only — `sum` deliberately has NO product-style magnitude cap, so valid large sums are returned.
-      #
-      # @param numbers [Array<Numeric>]
-      # @return [Flt::BinNum]
-      def self.add_all(numbers)
-        numbers.reduce(CONTEXT.Num(0)) do |accumulator, value|
-          CONTEXT.add(accumulator, operand_binnum(value))
-        end
-      rescue Flt::Num::Exception => e
-        raise RangeError, "sum overflows the supported magnitude range (#{e.message})"
-      end
-      private_class_method :add_all
 
       protected
 
