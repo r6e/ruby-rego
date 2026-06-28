@@ -347,19 +347,17 @@ RSpec.describe Ruby::Rego::Number do
   end
 
   describe ".finite_real?" do
-    it "accepts exactly rational_of's domain: Integer, Rational, in-magnitude Number, and finite Float" do
+    it "accepts every orderable, foldable Numeric: Integer, Rational, ANY Number, and finite Float" do
       expect(described_class.finite_real?(5)).to be(true)
       expect(described_class.finite_real?(described_class.literal("1.5"))).to be(true)
-      expect(described_class.finite_real?(described_class.literal("1e30000"))).to be(true)
       expect(described_class.finite_real?(Rational(1, 2))).to be(true)
       expect(described_class.finite_real?(1.5)).to be(true)
-    end
-
-    it "rejects an over-magnitude Number (a compact-exponent amplifier, like BigDecimal)" do
-      # A hand-built Number whose text is past the literal cap would expand to a ~billion-digit Rational
-      # via #exact in the fold; reject it on the O(text) magnitude check before that materializes. Not
-      # reachable via parsing (the lexer/decoder cap literals), only via a host-built Number.
-      expect(described_class.finite_real?(described_class.literal("1e1000000000"))).to be(false)
+      # Magnitude is NOT this gate's concern — it answers only "can this be ordered and folded without
+      # crashing". An over-cap Number is accepted here; its compact-exponent #exact amplification is a
+      # gem-wide Value/Number boundary gap (host-only-reachable — untrusted decoders cap before a Number
+      # is built), deferred to its own PR rather than half-closed at this gate. The check is O(1): no
+      # materialization, so this assertion stays fast even on a billion-digit-magnitude Number.
+      expect(described_class.finite_real?(described_class.literal("1e1000000000"))).to be(true)
     end
 
     it "rejects Complex (not real, not order-comparable, not big.Float-convertible)" do
@@ -371,7 +369,7 @@ RSpec.describe Ruby::Rego::Number do
       expect(described_class.finite_real?(Float::NAN)).to be(false)
     end
 
-    it "rejects BigDecimal even when finite (unorderable vs Number + compact-exponent amplifier)" do
+    it "rejects BigDecimal even when finite (rational_of has no BigDecimal branch: unorderable vs Number)" do
       expect(described_class.finite_real?(BigDecimal("1.5"))).to be(false)
       expect(described_class.finite_real?(BigDecimal("1e10000000"))).to be(false)
       expect(described_class.finite_real?(BigDecimal("Infinity"))).to be(false)

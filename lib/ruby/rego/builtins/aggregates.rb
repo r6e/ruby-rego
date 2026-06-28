@@ -132,10 +132,10 @@ module Ruby
         end
 
         # Extract the numeric values of an array OR set — the two collection types OPA's numeric
-        # aggregates (sum/product/max/min) accept. A set is returned in OPA's iteration order
-        # (ascending by value), but only AFTER every element is validated as a number, so a mixed-type
-        # set such as `{1, "a"}` raises the same element-type error (mapped to undefined) OPA does
-        # rather than a Comparable crash mid-sort. An array keeps its given order.
+        # aggregates (sum/product/max/min) accept. Every element is validated as a foldable number by
+        # {extract_finite_real} BEFORE the set sort, so a mixed-type set such as `{1, "a"}` raises the
+        # same element-type error (mapped to undefined) OPA does rather than a Comparable crash mid-sort.
+        # A set is then returned in OPA's iteration order (ascending by value); an array keeps its order.
         #
         # @param collection [Ruby::Rego::Value]
         # @param name [String]
@@ -143,36 +143,23 @@ module Ruby
         def self.numeric_array(collection, name:)
           Base.assert_type(collection, expected: [ArrayValue, SetValue], context: name)
 
-          numbers = numeric_values(collection.value, name: name)
+          numbers = collection.value.to_a.map.with_index do |element, index|
+            extract_finite_real(element, context: "#{name} element #{index}")
+          end
           collection.is_a?(SetValue) ? numbers.sort : numbers
         end
         private_class_method :numeric_array
-
-        # Validate every element of `elements` is a foldable number and return their raw numeric values,
-        # in the given order. {extract_finite_real} applies both gates ahead of the set sort
-        # {numeric_array} performs, so a bad element maps to undefined rather than crashing the sort or
-        # the fold.
-        #
-        # @param elements [Enumerable<Ruby::Rego::Value>]
-        # @param name [String]
-        # @return [Array<Numeric>]
-        def self.numeric_values(elements, name:)
-          elements.to_a.map.with_index do |element, index|
-            extract_finite_real(element, context: "#{name} element #{index}")
-          end
-        end
-        private_class_method :numeric_values
 
         # Validate one element is a NumberValue wrapping a foldable finite-real number and return its raw
         # numeric value, else raise BuiltinArgumentError (which the registry maps to undefined). Named to
         # signal the validate-and-RAISE contract — unlike {Value.numeric_value} (wraps a Numeric) and
         # {Evaluator::OperatorEvaluator.numeric_value} (unwraps to a Numeric or nil). Two gates: the type
         # check maps a non-number element (`{1, "a"}`) to undefined, and {Number.finite_real?} maps a
-        # NumberValue wrapping a non-real / non-finite / over-magnitude Ruby Numeric to undefined. The
-        # latter is reachable because {Value.from_ruby} admits any Ruby Numeric (a Complex, a non-finite
-        # or huge Float/BigDecimal passed via the library `input:` API) into a NumberValue; without this
-        # gate the set sort crashes on Complex's missing ordering, or the fold crashes/amplifies
-        # converting it — aborting the policy instead of returning undefined.
+        # NumberValue wrapping a non-real or non-finite Ruby Numeric (a Complex, a non-finite Float, a
+        # BigDecimal) to undefined. The latter is reachable because {Value.from_ruby} admits any Ruby
+        # Numeric (passed via the library `input:` API) into a NumberValue; without this gate the set sort
+        # crashes on Complex's missing ordering, or the fold crashes converting it — aborting the policy
+        # instead of returning undefined.
         #
         # @param element [Ruby::Rego::Value]
         # @param context [String]

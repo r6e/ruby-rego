@@ -197,12 +197,19 @@ RSpec.describe "aggregate builtins" do
     # pre-fold `sort` for ALL four numeric aggregates (Complex/BigDecimal have no usable ordering against
     # a Number). They must map to undefined, never raise. The fix is a finite-real gate (Number.finite_real?
     # — exactly the Integer/Rational/Number/finite-Float domain Number#rational_of can order and fold) in
-    # the shared numeric_values chokepoint, which runs before both the sort and the fold.
+    # the shared numeric_array chokepoint, which runs before both the sort and the fold.
+    #
+    # NOT covered here (deferred, host-only): a hand-built over-cap Number is a compact-exponent amplifier
+    # (its #exact expands to a giant Rational) that blows up at Set CANONICALIZATION — before any aggregate
+    # gate runs — so it can't be closed at this layer, and the gate accepts it (magnitude is not a crash).
+    # Untrusted input can never build one (to_number rejects, the json/yaml decoders cap or fall back to a
+    # string), so it is a gem-wide Value/Number boundary concern for its own PR — see PR notes. No test
+    # asserts it: exercising the amplification would have to materialize it (slow/heavy), and asserting it
+    # returns undefined would encode the unwanted blow-up as expected behavior.
     #
     # BigDecimal is rejected even when finite: rational_of can't order it against a Number (would crash a
-    # mixed sort/compare), and it is a compact-exponent amplifier (BigDecimal("1e10000000") is ~12 bytes
-    # but its exact Rational is ten million digits). Properly admitting it needs a magnitude bound at the
-    # core arithmetic layer (a pre-existing gem-wide gap — see PR notes), out of scope here.
+    # mixed sort/compare). Admitting it needs a BigDecimal branch at the core arithmetic layer (a
+    # pre-existing gem-wide gap — see PR notes), out of scope here.
     %w[sum product max min].each do |fn|
       [Complex(1, 2), BigDecimal("2.5"), BigDecimal("NaN"), Float::INFINITY].each do |bad|
         it "is undefined for a #{bad.class}(#{bad}) element in an array (#{fn})" do
@@ -223,17 +230,6 @@ RSpec.describe "aggregate builtins" do
       # max/min return the winning element as-is (no fold), so a set with a Rational must at least sort
       # and select without raising; the larger element (3/2) is returned.
       expect(registry.call("max", [Set.new([Rational(3, 2), 1])]).to_ruby).to eq(Rational(3, 2))
-    end
-
-    it "is undefined (no materialization) for an over-magnitude Number element, array and set" do
-      # A host-built Number past the literal cap is a compact-exponent amplifier like BigDecimal: its
-      # #exact would expand to a ~billion-digit Rational in the fold. The finite_real? gate rejects it on
-      # an O(text) magnitude check before that materializes — so this returns fast, never OOMs/hangs.
-      # (Not reachable via parsing: the lexer and JSON decoder cap a literal at this magnitude.)
-      huge = Ruby::Rego::Number.literal("1e1000000000")
-      expect { registry.call("sum", [[huge, 1]]) }.not_to raise_error
-      expect(registry.call("sum", [[huge, 1]])).to be_a(Ruby::Rego::UndefinedValue)
-      expect(registry.call("product", [Set.new([huge, 2])])).to be_a(Ruby::Rego::UndefinedValue)
     end
   end
 
