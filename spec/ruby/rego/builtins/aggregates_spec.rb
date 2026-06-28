@@ -122,6 +122,14 @@ RSpec.describe "aggregate builtins" do
       expect(registry.call("product", [overflowing])).to be_a(Ruby::Rego::UndefinedValue)
     end
 
+    it "does not swallow a non-magnitude RangeError (the rescue is narrowed to fail fast)" do
+      # bounded_fold maps ONLY Number's MagnitudeError (a RangeError subclass) to undefined. An unexpected
+      # plain RangeError — e.g. from a future Number internal — must propagate and abort the policy, not be
+      # mislabeled "magnitude overflow -> undefined" and mask a bug. (Library code fails fast.)
+      allow(Ruby::Rego::Number).to receive(:product).and_raise(RangeError, "unexpected from internals")
+      expect { registry.call("product", [[1, 2]]) }.to raise_error(RangeError, "unexpected from internals")
+    end
+
     # A large-magnitude integer-valued product exercises the number model's pre-existing shortest-form
     # limitation: flt's shortest decimal can differ from Go strconv's by one digit at the extreme, so
     # the gem renders `[2**32]*3` (= the big.Float of 2**96) as ...594 where OPA emits ...590. This is

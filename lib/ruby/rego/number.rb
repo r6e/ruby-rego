@@ -28,6 +28,14 @@ module Ruby
     # (conversions, ordering, coercion, the four operators) plus the OPA div/mod helpers and the flt
     # arithmetic backend belong together; splitting them would only scatter the contract.
     class Number < Numeric
+      # Raised when an aggregate result exceeds the supported magnitude range — either a `product` whose
+      # final magnitude clears {MAX_MAGNITUDE_EXPONENT} ({magnitude_exceeds_cap?}) or any fold that trips
+      # the big.Float engine's ENGINE_EMAX overflow trap ({fold}). A dedicated subclass of RangeError so
+      # the aggregate builtin layer can rescue EXACTLY this (mapping it to undefined) while an unexpected
+      # RangeError from elsewhere still fails fast; `< RangeError` keeps any broader `rescue RangeError`
+      # working unchanged.
+      class MagnitudeError < RangeError; end
+
       # The big.Float engine's binary-exponent ceiling (and, negated, its floor): wide enough for any
       # decimal literal OPA accepts (well beyond 1e±999). Exposed as a named constant — rather than
       # buried in CONTEXT — so the units DoS-safety invariant test can assert against it without reaching
@@ -544,11 +552,11 @@ module Ruby
       #
       # @param numbers [Array<Numeric>]
       # @return [Number, Integer]
-      # @raise [RangeError] when an intermediate overflows ENGINE_EMAX or the final magnitude exceeds
+      # @raise [MagnitudeError] when an intermediate overflows ENGINE_EMAX or the final magnitude exceeds
       #   MAX_MAGNITUDE_EXPONENT; the builtin layer maps it to undefined.
       def self.product(numbers)
         binnum = fold(numbers, :multiply, CONTEXT.Num(1))
-        raise RangeError, "product result exceeds the supported magnitude range" if magnitude_exceeds_cap?(binnum)
+        raise MagnitudeError, "product result exceeds the supported magnitude range" if magnitude_exceeds_cap?(binnum)
 
         from_binnum(binnum)
       end
@@ -573,7 +581,7 @@ module Ruby
         end
       rescue Flt::Num::Exception => e
         # The builtin layer re-labels this with the sum/product context; the internal message stays generic.
-        raise RangeError, "aggregate fold overflows the supported magnitude range (#{e.message})"
+        raise MagnitudeError, "aggregate fold overflows the supported magnitude range (#{e.message})"
       end
       private_class_method :fold
 
@@ -654,7 +662,7 @@ module Ruby
       #
       # @param numbers [Array<Numeric>]
       # @return [Number, Integer]
-      # @raise [RangeError] when an element overflows ENGINE_EMAX; the builtin layer maps it to undefined.
+      # @raise [MagnitudeError] when an element overflows ENGINE_EMAX; the builtin layer maps it to undefined.
       def self.sum(numbers)
         return numbers.sum if integer_fast_path?(numbers)
 

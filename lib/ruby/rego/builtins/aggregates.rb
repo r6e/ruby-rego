@@ -72,17 +72,19 @@ module Ruby
         end
 
         # Fold `numbers` via the named {Number} aggregate (`:sum` or `:product`), mapping its
-        # magnitude-overflow RangeError to undefined. The rescue wraps ONLY the Number call so an
-        # unexpected error from extract_numeric_elements/Value.from_ruby fails fast rather than being mislabeled
-        # "overflow". Number.product raises RangeError to cap its unbounded fold; Number.sum raises only as
-        # an engine-overflow totality backstop (it has no magnitude cap) — see those methods.
+        # magnitude-overflow {Number::MagnitudeError} to undefined. The rescue is narrowed to that one
+        # subclass (not bare RangeError) AND wraps ONLY the Number call, so an unexpected error — a plain
+        # RangeError from a future Number internal, or anything from extract_numeric_elements/Value.from_ruby
+        # — fails fast rather than being silently mislabeled "overflow". Number.product raises it to cap its
+        # unbounded fold; Number.sum raises it only as an engine-overflow totality backstop (no magnitude
+        # cap) — see those methods.
         #
         # @param name [Symbol] :sum or :product
         # @param numbers [Array<Numeric>]
         # @return [Ruby::Rego::Number, Integer]
         def self.bounded_fold(name, numbers)
           Number.public_send(name, numbers)
-        rescue RangeError => e
+        rescue Number::MagnitudeError => e
           Base.raise_argument_error(
             e.message,
             expected: "#{name} within the supported magnitude range",
@@ -92,6 +94,12 @@ module Ruby
         end
         private_class_method :bounded_fold
 
+        # Return the largest element of an array or set. DIVERGENCE (pre-existing, tracked): OPA's max/min
+        # are polymorphic over its total value order — `max(["a","b"]) -> "b"`, `max([true,false]) -> true`,
+        # even mixed types `max([1,"a"]) -> "a"` — whereas this gem restricts max/min to numbers (a
+        # non-number element maps to undefined via {extract_finite_real}). Generalizing to OPA's value order
+        # is its own number-model/ordering sweep item, not this (numeric-aggregates) scope.
+        #
         # @param collection [Ruby::Rego::Value] an array or set of numbers
         # @return [Ruby::Rego::Value]
         def self.max(collection)
@@ -105,6 +113,9 @@ module Ruby
           # rubocop:enable Style/MinMaxComparison
         end
 
+        # Return the smallest element of an array or set. Number-only, like {max} — see it for the
+        # pre-existing divergence from OPA's polymorphic min.
+        #
         # @param collection [Ruby::Rego::Value] an array or set of numbers
         # @return [Ruby::Rego::Value]
         def self.min(collection)

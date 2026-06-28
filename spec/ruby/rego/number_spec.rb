@@ -155,22 +155,23 @@ RSpec.describe Ruby::Rego::Number do
       expect(described_class.product([1.5, 2.0])).to eql(3)
     end
 
-    it "raises RangeError when the final result magnitude exceeds the cap (DoS gate)" do
+    it "raises MagnitudeError when the final result magnitude exceeds the cap (DoS gate)" do
       huge = described_class.literal("1e20000")
-      expect { described_class.product([huge, huge]) }.to raise_error(RangeError, /magnitude/)
+      expect { described_class.product([huge, huge]) }.to raise_error(described_class::MagnitudeError, /magnitude/)
     end
 
-    it "raises RangeError for a tiny over-cap result too (the cap is on |log10|, both directions)" do
+    it "raises MagnitudeError for a tiny over-cap result too (the cap is on |log10|, both directions)" do
       # Two in-cap tiny factors multiply to 1e-60000, whose #exact would expand to a ~60000-digit
       # denominator Rational. The cap must be symmetric (mirroring the literal cap's .abs), else this
       # over-cap Number escapes the gate and amplifies on first comparison/sort/set-insert.
       tiny = described_class.literal("1e-30000")
-      expect { described_class.product([tiny, tiny]) }.to raise_error(RangeError, /magnitude/)
+      expect { described_class.product([tiny, tiny]) }.to raise_error(described_class::MagnitudeError, /magnitude/)
     end
 
-    it "raises RangeError when an intermediate overflows the engine exponent range (DoS gate)" do
+    it "raises MagnitudeError when an intermediate overflows the engine exponent range (DoS gate)" do
       huge = described_class.literal("1e1000000")
-      expect { described_class.product(Array.new(400) { huge }) }.to raise_error(RangeError, /overflow/)
+      expect { described_class.product(Array.new(400) { huge }) }
+        .to raise_error(described_class::MagnitudeError, /overflow/)
     end
   end
 
@@ -228,13 +229,13 @@ RSpec.describe Ruby::Rego::Number do
       expect(described_class.sum([-9_223_372_036_854_775_808, -1])).to eql(-9_223_372_036_854_775_809)
     end
 
-    it "raises RangeError when an element overflows the engine exponent range (totality, no crash)" do
+    it "raises MagnitudeError when an element overflows the engine exponent range (totality, no crash)" do
       # A single element past ENGINE_EMAX (reachable via the library `input:` API or uncapped integer `*`)
       # trips the big.Float Add overflow trap. Like product's intermediate trap, it must surface as a
       # RangeError the builtin layer maps to undefined — NOT an uncaught Flt::Num::Exception that aborts
       # the policy. Built with a bit-shift so the ~128 MiB element allocates without a slow base-10 power.
       over_emax = 1 << (described_class::ENGINE_EMAX + 1)
-      expect { described_class.sum([over_emax]) }.to raise_error(RangeError, /overflow/)
+      expect { described_class.sum([over_emax]) }.to raise_error(described_class::MagnitudeError, /overflow/)
     end
 
     it "returns valid large sums far above the literal cap (sum has NO magnitude cap, unlike product)" do

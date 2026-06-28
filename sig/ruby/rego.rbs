@@ -7,7 +7,7 @@ module Flt
   end
 
   # Base of the flt arithmetic-exception hierarchy (Overflow/InvalidOperation/DivisionByZero); the
-  # Number engine traps Overflow on an out-of-range product and rescues this base to re-raise a RangeError.
+  # Number engine traps Overflow on an out-of-range fold and rescues this base to re-raise a Number::MagnitudeError.
   module Num
     class Exception < StandardError
     end
@@ -177,6 +177,9 @@ module Ruby
     end
 
     class Number < Numeric
+      class MagnitudeError < RangeError
+      end
+
       ENGINE_EMAX: Integer
       CONTEXT: untyped
       MAX_MAGNITUDE_EXPONENT: Integer
