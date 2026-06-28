@@ -135,6 +135,37 @@ RSpec.describe Ruby::Rego::Number do
     end
   end
 
+  describe ".product (OPA prec-64 big.Float fold)" do
+    it "returns the multiplicative identity 1 for an empty fold" do
+      expect(described_class.product([])).to eql(1)
+    end
+
+    it "folds integers through the prec-64 big.Float (no exact integer fast-path, unlike sum)" do
+      expect(described_class.product([2, 3, 4])).to eq(24)
+      # 2**96 exceeds prec-64, so the all-integer product is the big.Float-rounded value rendered
+      # shortest — NOT the exact 79228162514264337593543950336. This is the defining product property.
+      expect(described_class.product([2**32, 2**32, 2**32]).to_s).to eq("79228162514264337594000000000")
+    end
+
+    it "matches OPA's prec-64 fractional product byte-for-byte" do
+      expect(described_class.product([0.1, 0.2, 0.3]).to_s).to eq("0.006000000000000000001")
+    end
+
+    it "collapses an integer-valued result back to a Ruby Integer" do
+      expect(described_class.product([1.5, 2.0])).to eql(3)
+    end
+
+    it "raises RangeError when the final result magnitude exceeds the cap (DoS gate)" do
+      huge = described_class.literal("1e20000")
+      expect { described_class.product([huge, huge]) }.to raise_error(RangeError, /magnitude/)
+    end
+
+    it "raises RangeError when an intermediate overflows the engine exponent range (DoS gate)" do
+      huge = described_class.literal("1e1000000")
+      expect { described_class.product(Array.new(400) { huge }) }.to raise_error(RangeError, /overflow/)
+    end
+  end
+
   describe "equality and ordering by exact value" do
     def num(text) = described_class.literal(text)
 

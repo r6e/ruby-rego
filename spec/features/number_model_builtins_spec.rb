@@ -118,6 +118,17 @@ RSpec.describe "number model — builtin interaction" do
       expect(eval_rule("sort([3.3, 1.1, 2.2])").map(&:to_s)).to eq(%w[1.1 2.2 3.3])
     end
 
+    # product folds every element through big.Float at precision 64 (no integer fast-path), so an empty
+    # product is 1, an all-integer product is the prec-64 value, and an integer-valued result collapses
+    # to an Integer. Accepts arrays and sets alike. Verified vs opa eval 1.17.
+    it "product folds through big.Float, accepts sets, empty -> 1" do
+      expect(eval_rule("product([])")).to eql(1)
+      expect(eval_rule("product([2, 3, 4])")).to eq(24)
+      expect(eval_rule("product([1.5, 2.0])")).to eql(3)
+      expect(eval_rule("product([0.1, 0.2, 0.3])").to_s).to eq("0.006000000000000000001")
+      expect(eval_rule("product({2, 3, 4})")).to eq(24)
+    end
+
     it "sorts a mix of Integer and Number (the coerce-on-sort path)" do
       expect(eval_rule("sort([2, 1.5, 1, 2.5])").map(&:to_s)).to eq(%w[1 1.5 2 2.5])
     end

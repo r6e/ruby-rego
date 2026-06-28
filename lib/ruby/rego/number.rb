@@ -55,6 +55,10 @@ module Ruby
       # in the number-model fidelity sweep, not this scope. Pre-existing; unaffected by the gate refactor.
       MAX_MAGNITUDE_EXPONENT = 30_102
 
+      # log10(2), for estimating a BinNum's base-10 order of magnitude from its binary exponent without
+      # materializing the value. Used only by {magnitude_exceeds_cap?} (the `product` DoS gate).
+      LOG10_2 = Math.log10(2)
+
       # Build a Number from a numeric literal's source text (already validated by the lexer).
       #
       # @param text [String]
@@ -160,6 +164,11 @@ module Ruby
       # Go's 'f' verb — full decimal, no exponent — and collapses to a Ruby Integer (so `1.0 + 1.0` is
       # `2` and `1e308 * 1e308` is `9999999999999999999` followed by zeros, matching OPA, not the exact
       # binary `...9114207...`); a fractional result becomes a Number carrying its Go 'g'-formatted text.
+      #
+      # OPA's big.Float keeps IEEE signed zero (so `product([0, -2])` and `0 / -1` format as "-0"), but
+      # this exact-Rational model collapses every zero to the unsigned Integer 0 (and `BigDecimal("-0.0").to_r`
+      # is already 0). Signed zero — across literals, operands, and computed results alike — is one
+      # tracked number-model gap, deferred to the dedicated number sweep rather than half-fixed here.
       #
       # @param binnum [Flt::BinNum]
       # @return [Number, Integer]
@@ -443,6 +452,86 @@ module Ruby
 
         CONTEXT.multiply(rational_to_binnum(rational), CONTEXT.Num(integer)).to_i
       end
+
+      # Multiply every element of `numbers` in the precision-64 big.Float context, reproducing OPA's
+      # `product` aggregate byte-for-byte. OPA seeds a big.Float at 1 and folds each element through
+      # Mul at precision 64; it has NO integer fast-path (unlike `sum`), so an all-integer product is
+      # the prec-64-ROUNDED value, not the exact integer (`[2**32, 2**32, 2**32]` -> the big.Float
+      # rounding of 2**96, which FloatToNumber renders shortest, NOT 79228162514264337593543950336).
+      # The accumulator therefore stays a BinNum across the whole fold: collapsing an integer-valued
+      # intermediate back to Integer (as the `*` operator does) would resume EXACT native integer
+      # multiplication and diverge from OPA. Each element is taken as its exact value first (a raw
+      # Float via its shortest decimal, like the literal OPA parsed), then rounded to the prec-64
+      # float OPA's NumberToFloat yields. An empty `numbers` returns the seed, formatting to Integer 1.
+      #
+      # Large-magnitude integer-valued products inherit the number model's shortest-form limitation
+      # shared with `div`: flt's shortest decimal can differ from Go strconv's by one digit at the
+      # extreme (`[2**32]*3` -> ...594 here vs OPA's ...590). Pre-existing, tracked in the number sweep.
+      #
+      # DoS: `product` is the one numeric builtin with an UNBOUNDED fold (N comprehension-controlled
+      # elements, each near the literal cap), so it is the only one whose result magnitude can grow
+      # without bound from small input — N near-cap factors give an N x cap result. A single op like
+      # `*` or `/` is bounded by ~2x the cap, so those are deliberately left uncapped to MATCH OPA
+      # (`1e308 * 1e308` -> the full ~600-digit integer, as the number model intends); this cap does NOT
+      # claim a global magnitude invariant. Two gates keep `product` total: the engine's Overflow trap
+      # stops an intermediate beyond ENGINE_EMAX (a ~10**9-digit integer) mid-fold, and
+      # {magnitude_exceeds_cap?} rejects a FINAL result past MAX_MAGNITUDE_EXPONENT before {from_binnum}
+      # would materialize it as a multi-megabyte Integer string. Both map to undefined at the builtin
+      # layer. The result cap is stricter than OPA — OPA would return e.g. product([1e20000, 1e20000]) =
+      # 1e40000 — but bounding an unbounded fold is the established DoS posture (the literal magnitude
+      # cap, the re2 caps), and OPA is itself unusable at the genuinely large, non-power-of-ten end of
+      # this range (>120s).
+      #
+      # @param numbers [Array<Numeric>]
+      # @return [Number, Integer]
+      # @raise [RangeError] when an intermediate overflows ENGINE_EMAX or the final magnitude exceeds
+      #   MAX_MAGNITUDE_EXPONENT; the builtin layer maps it to undefined.
+      def self.product(numbers)
+        binnum = multiply_all(numbers)
+        raise RangeError, "product result exceeds the supported magnitude range" if magnitude_exceeds_cap?(binnum)
+
+        from_binnum(binnum)
+      end
+
+      # Fold `numbers` through the prec-64 big.Float multiply, mapping an intermediate overflow to a
+      # RangeError. The rescue is scoped to the fold — the ONLY place Flt::Num::Exception arises: the
+      # engine traps Overflow, so a running product beyond ENGINE_EMAX raises here rather than
+      # materializing a ~10**9-digit integer. (Underflow is not trapped: a product below the engine's
+      # emin saturates to 0, as OPA's far-below values do.) Keeping the rescue off {magnitude_exceeds_cap?}
+      # and {from_binnum} means an unexpected exception from those fails fast instead of masking as 0.
+      #
+      # @param numbers [Array<Numeric>]
+      # @return [Flt::BinNum]
+      def self.multiply_all(numbers)
+        numbers.reduce(CONTEXT.Num(1)) do |accumulator, value|
+          CONTEXT.multiply(accumulator, rational_to_binnum(from_numeric(value).exact))
+        end
+      rescue Flt::Num::Exception => e
+        raise RangeError, "product overflows the supported magnitude range (#{e.message})"
+      end
+      private_class_method :multiply_all
+
+      # Whether a finite BinNum's base-10 order of magnitude exceeds MAX_MAGNITUDE_EXPONENT, computed
+      # from its binary exponent and 64-bit coefficient alone — O(1), and crucially WITHOUT building the
+      # full decimal expansion the check exists to prevent. `coefficient.bit_length + exponent` is
+      # log2(value); scaling by log10(2) gives log10(value). bit_length over-estimates log2 by < 1 bit,
+      # so the bound is marginally conservative (rejects a hair early), which is the safe direction. A
+      # zero or tiny/fractional result (non-positive magnitude) never trips it.
+      #
+      # @param binnum [Flt::BinNum]
+      # @return [Boolean]
+      def self.magnitude_exceeds_cap?(binnum)
+        # Defense in depth: a special value (infinity/NaN) has no integer coefficient/exponent, so the
+        # arithmetic below would raise a TypeError that escapes both rescues. This is unreachable today
+        # (CONTEXT traps Overflow/InvalidOperation, so the fold raises before producing one), but the
+        # guard keeps this method self-contained rather than silently depending on that trap config —
+        # an infinity is treated as over-cap, mapping to undefined like any other overflow.
+        return true if binnum.special?
+        return false if binnum.zero?
+
+        (binnum.coefficient.bit_length + binnum.exponent) * LOG10_2 > MAX_MAGNITUDE_EXPONENT
+      end
+      private_class_method :magnitude_exceeds_cap?
 
       protected
 
