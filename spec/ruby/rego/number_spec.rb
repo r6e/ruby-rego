@@ -362,9 +362,10 @@ RSpec.describe Ruby::Rego::Number do
       expect(described_class.finite_real?(1.5)).to be(true)
       # Magnitude is NOT this gate's concern — it answers only "can this be ordered and folded without
       # crashing". An over-cap Number is accepted here; its compact-exponent #exact amplification is a
-      # gem-wide Value/Number boundary gap (host-only-reachable — untrusted decoders cap before a Number
-      # is built), deferred to its own PR rather than half-closed at this gate. The check is O(1): no
-      # materialization, so this assertion stays fast even on a billion-digit-magnitude Number.
+      # gem-wide Value/Number boundary gap (untrusted-reachable via the uncapped `*`/`/` operators, NOT the
+      # decoders — a pre-existing, emin-bounded number-model gap), deferred to its own PR rather than
+      # half-closed at this gate. The check is O(1): no materialization, so this assertion stays fast even
+      # on a billion-digit-magnitude Number.
       expect(described_class.finite_real?(described_class.literal("1e1000000000"))).to be(true)
     end
 

@@ -230,14 +230,19 @@ module Ruby
       #
       # The accepted set is exactly {#rational_of}'s domain — the types `<=>` and the arithmetic operators
       # can convert. This gate answers ONLY "will ordering/folding crash"; it deliberately does NOT bound
-      # magnitude. A hand-built over-cap {Number} is accepted: its compact-exponent {#exact} amplification
-      # (`Number("1e10000000")` is ~12 bytes but its exact Rational is ten million digits) is a gem-wide
-      # Value/Number boundary concern, NOT an aggregate-gate one — it also amplifies at SET canonicalization
-      # ({Value.canonicalize} -> {#exact}, {#hash} -> {#exact}), which runs BEFORE any aggregate, so a
-      # magnitude bound here would be asymmetric (covering arrays, not sets) and could never close the case.
-      # It is host-only-reachable — untrusted input never births an over-cap Number (the lexer and JSON
-      # decoder reject a literal past {MAX_MAGNITUDE_EXPONENT}, `to_number` rejects it, yaml falls back to a
-      # string) — so it is deferred to its own gem-wide PR rather than half-papered-over at this gate.
+      # magnitude. A compact over-cap {Number} is accepted here: its {#exact} amplifies (`Number("1e10000000")`
+      # is ~12 bytes but its exact Rational is ten million digits), but that is a gem-wide Value/Number
+      # boundary concern, NOT an aggregate-gate one — it also amplifies at canonicalization
+      # ({Value.canonicalize} -> {#exact}, {#hash} -> {#exact}) the moment such a Number is put in a
+      # set/object, which runs BEFORE any aggregate, so a bound here would be asymmetric (arrays only) and
+      # could never close the case. Such a Number IS untrusted-reachable — not via the decoders (the lexer
+      # and JSON decoder reject a literal past {MAX_MAGNITUDE_EXPONENT}, `to_number` rejects it, yaml falls
+      # back to a string) but via the uncapped `*` / `/` operators, which match OPA's value-returning
+      # big.Float by design (`1e-30000 * 1e-30000` -> `1e-60000`). It is a pre-existing number-model gap
+      # (the lazy {#exact} on a compact result), bounded by the engine `emin` (~hundreds of MB worst case),
+      # and NOT widened by this change — `product` is now the one path that can no longer manufacture such a
+      # result (see {magnitude_exceeds_cap?}). The fix belongs at the {#exact}/canonicalization boundary
+      # gem-wide (its own PR), not half-papered-over at this aggregate gate.
       #
       # Rejected, each of which would otherwise crash a consumer:
       #   * Complex — no ordering (`<=>` returns nil, so a sort raises) and no big.Float conversion.
@@ -522,9 +527,13 @@ module Ruby
       # DoS: `product` is the one numeric builtin with an UNBOUNDED fold (N comprehension-controlled
       # elements, each near the literal cap), so it is the only one whose result magnitude can grow
       # without bound from small input — N near-cap factors give an N x cap result. A single op like
-      # `*` or `/` is bounded by ~2x the cap, so those are deliberately left uncapped to MATCH OPA
+      # `*` or `/` only ~doubles the magnitude, so those are deliberately left uncapped to MATCH OPA
       # (`1e308 * 1e308` -> the full ~600-digit integer, as the number model intends); this cap does NOT
-      # claim a global magnitude invariant. Two gates keep `product` total: the engine's Overflow trap
+      # claim a global magnitude invariant. (Caveat: that uncapped `*`/`/` is itself the untrusted-reachable
+      # manufacturing site of a compact over-cap Number — `1e-30000 * 1e-30000` -> `1e-60000`, doubling per
+      # step in a squaring chain — whose lazy {#exact} amplifies on canonicalization/compare. That is a
+      # pre-existing number-model gap, emin-bounded, deferred to the number-model PR — see {finite_real?}.)
+      # Two gates keep `product` total: the engine's Overflow trap
       # stops an intermediate beyond ENGINE_EMAX (a ~10**9-digit integer) mid-fold, and
       # {magnitude_exceeds_cap?} rejects a FINAL result past MAX_MAGNITUDE_EXPONENT before {from_binnum}
       # would materialize it as a multi-megabyte Integer string. Both map to undefined at the builtin

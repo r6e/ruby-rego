@@ -208,13 +208,17 @@ RSpec.describe "aggregate builtins" do
     # — exactly the Integer/Rational/Number/finite-Float domain Number#rational_of can order and fold) in
     # the shared numeric_array chokepoint, which runs before both the sort and the fold.
     #
-    # NOT covered here (deferred, host-only): a hand-built over-cap Number is a compact-exponent amplifier
-    # (its #exact expands to a giant Rational) that blows up at Set CANONICALIZATION — before any aggregate
+    # NOT covered here (deferred): a compact over-cap Number is an amplifier (its #exact expands to a giant
+    # Rational) that blows up at canonicalization — when it is put in a set/object, BEFORE any aggregate
     # gate runs — so it can't be closed at this layer, and the gate accepts it (magnitude is not a crash).
-    # Untrusted input can never build one (to_number rejects, the json/yaml decoders cap or fall back to a
-    # string), so it is a gem-wide Value/Number boundary concern for its own PR — see PR notes. No test
-    # asserts it: exercising the amplification would have to materialize it (slow/heavy), and asserting it
-    # returns undefined would encode the unwanted blow-up as expected behavior.
+    # It is untrusted-reachable, but NOT via the decoders (to_number rejects, the json/yaml decoders cap or
+    # fall back to a string) — via the uncapped `*`/`/` operators, which match OPA's value-returning
+    # big.Float by design (`1e-30000 * 1e-30000` -> `1e-60000`, doubling per step in a squaring chain). It
+    # is a pre-existing number-model gap (lazy #exact on a compact result), emin-bounded, NOT widened by
+    # this change — product is now the one path that can no longer manufacture it — so it is a gem-wide
+    # Value/Number boundary concern for its own PR (see PR notes). No test asserts it: exercising the
+    # amplification would have to materialize it (slow/heavy), and asserting it returns undefined would
+    # encode the unwanted blow-up as expected behavior.
     #
     # BigDecimal is rejected even when finite: rational_of can't order it against a Number (would crash a
     # mixed sort/compare). Admitting it needs a BigDecimal branch at the core arithmetic layer (a
