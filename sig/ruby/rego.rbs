@@ -192,6 +192,7 @@ module Ruby
       def self.integer_value: (Numeric value) -> Integer?
       private def self.float_integer_value: (Float value) -> Integer?
       def self.rational_to_binnum: (Rational | Integer rational) -> untyped
+      def self.prec64_multiply_truncate: (Rational rational, Integer integer) -> Integer
 
       def initialize: (?text: String?, ?exact: (Rational | Integer)?) -> void
       def to_s: () -> String

@@ -413,6 +413,22 @@ module Ruby
         CONTEXT.divide(CONTEXT.Num(rational.numerator), CONTEXT.Num(rational.denominator))
       end
 
+      # Multiply an exact `rational` by an exact `integer` in the precision-64 big.Float context and
+      # truncate the product toward zero — reproducing OPA's units.parse_bytes arithmetic byte-for-byte
+      # (Go math/big: big.Float.SetString → Mul → Int). `rational_to_binnum` rounds the rational to the
+      # float big.Float.SetString would yield, `CONTEXT.multiply` rounds the product again at 64 bits
+      # like Mul, and `to_i` truncates toward zero like Int (so a negative is NOT floored). The integer
+      # multiplier must be exact at precision 64 — integer.bit_length <= 64 (OPA's unit multipliers are
+      # all <= 2**60, like its m.SetUint64). Encapsulates the Flt engine so callers never touch CONTEXT
+      # directly. The caller must bound the operands so the product stays finite (see the units guards).
+      #
+      # @param rational [Rational]
+      # @param integer [Integer]
+      # @return [Integer]
+      def self.prec64_multiply_truncate(rational, integer)
+        CONTEXT.multiply(rational_to_binnum(rational), CONTEXT.Num(integer)).to_i
+      end
+
       protected
 
       # @return [Flt::BinNum]

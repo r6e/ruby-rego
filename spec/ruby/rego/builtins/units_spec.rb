@@ -181,10 +181,44 @@ RSpec.describe "units builtins" do
       expect(parse_bytes(42)).to be_a(Ruby::Rego::UndefinedValue)
     end
 
-    it "uses exact arithmetic, unlike OPA's big.Float (documented divergence)" do
-      # OPA's parse_bytes uses big.Float and truncates 0.001mb to 999; we compute exactly
-      # (1000), matching what OPA's own big.Rat-based units.parse("0.001M") returns.
-      expect(parse_bytes("0.001mb").to_ruby).to eq(1000)
+    it "matches OPA's 64-bit big.Float arithmetic byte-for-byte" do
+      # OPA's parse_bytes parses the amount to a prec-64 big.Float (SetString), multiplies by the
+      # unit at that precision, then truncates the product toward zero (big.Float.Int). A fractional
+      # amount whose binary approximation lands just under an integer therefore truncates down — it
+      # is NOT exact-rational arithmetic. Verified vs `opa eval` 1.17.1.
+      expect(parse_bytes("0.001mb").to_ruby).to eq(999) # was 1000 under exact rational
+      expect(parse_bytes("0.001k").to_ruby).to eq(0)
+      expect(parse_bytes("0.001gb").to_ruby).to eq(999_999)
+      # big.Float.Int truncates toward zero, so a negative is NOT floored.
+      expect(parse_bytes("-0.001mb").to_ruby).to eq(-999)
+      expect(parse_bytes("0kb").to_ruby).to eq(0)
+      # A >19-significant-digit amount (numerator past 2**64) still matches: flt keeps the integer
+      # coefficients exact, so the divide single-rounds like big.Float.SetString (no double-rounding).
+      expect(parse_bytes("9999999999.99999999995").to_ruby).to eq(10_000_000_000)
+      expect(parse_bytes("999999999999999999.5kb").to_ruby).to eq(999_999_999_999_999_999_488)
+      # A large-exponent amount differs from the exact integer in nearly every digit.
+      huge = "9999999999999999999669353532207342619498699019828496079271" \
+             "391541752018669482644324418977840117055488"
+      expect(parse_bytes("1e100").to_ruby).to eq(huge.to_i)
+    end
+
+    it "keeps the worst-case product's binary exponent below the engine's emax (DoS-safety invariant)" do
+      # parse_bytes routes through a big.Float whose to_i raises (a non-BuiltinArgumentError that would
+      # escape as a DoS) only on an infinity. The MAX_SOURCE / MAX_EXPONENT_DIGITS caps keep the largest
+      # producible product far below CONTEXT.emax, so to_i is always finite. This pins that proof: if a
+      # future cap change broke the margin, this fails loudly. (Verified ~162x margin vs `opa eval`.)
+      units = Ruby::Rego::Builtins::Units
+      worst_decimal_exp = units::MAX_SOURCE + (10**units::MAX_EXPONENT_DIGITS) # mantissa digits + 10**exp
+      worst_binary_exp = (worst_decimal_exp * Math.log2(10)) + 60 # +60 binary orders for the 2**60 max unit
+      expect(worst_binary_exp).to be < Ruby::Rego::Number::CONTEXT.emax
+    end
+
+    it "still computes binary-exact amounts identically (big.Float == rational there)" do
+      # An amount and product representable exactly in binary are unaffected by the big.Float route.
+      expect(parse_bytes("1.5kib").to_ruby).to eq(1536)
+      expect(parse_bytes("10.7").to_ruby).to eq(10)
+      expect(parse_bytes("-5kb").to_ruby).to eq(-5000)
+      expect(parse_bytes("1TiB").to_ruby).to eq(1024**4)
     end
   end
 end

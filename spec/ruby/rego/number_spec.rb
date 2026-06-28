@@ -96,6 +96,28 @@ RSpec.describe Ruby::Rego::Number do
     end
   end
 
+  describe ".prec64_multiply_truncate (OPA units.parse_bytes big.Float path)" do
+    it "multiplies in a prec-64 big.Float and truncates toward zero" do
+      # Binary-exact operands are unaffected: 3/2 * 1000 = 1500 exactly.
+      expect(described_class.prec64_multiply_truncate(Rational(3, 2), 1000)).to eq(1500)
+      expect(described_class.prec64_multiply_truncate(Rational(0), 1000)).to eq(0)
+      # An identity multiply (integer 1) still rounds the amount to the prec-64 float and truncates.
+      expect(described_class.prec64_multiply_truncate(Rational(107, 10), 1)).to eq(10) # 10.7 -> 10
+    end
+
+    it "rounds via the prec-64 binary float, not exact rational (matching OPA byte-for-byte)" do
+      # 0.001 has no exact binary form; rounded to prec 64 and * 10**6 it lands just under 1000,
+      # so it truncates to 999 — NOT the exact-rational 1000. This is the defining divergence.
+      expect(described_class.prec64_multiply_truncate(Rational(1, 1000), 10**6)).to eq(999)
+      # A >19-significant-digit amount (numerator past 2**64) single-rounds (no double-rounding).
+      expect(described_class.prec64_multiply_truncate(Rational("9999999999.99999999995"), 1)).to eq(10_000_000_000)
+    end
+
+    it "truncates a negative product toward zero (big.Float.Int), not floored" do
+      expect(described_class.prec64_multiply_truncate(Rational(-1, 1000), 10**6)).to eq(-999)
+    end
+  end
+
   describe "equality and ordering by exact value" do
     def num(text) = described_class.literal(text)
 
