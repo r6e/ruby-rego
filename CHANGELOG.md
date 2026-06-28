@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- `units.parse_bytes` now computes in a 64-bit `big.Float` exactly as OPA does, instead of exact
+  rational arithmetic. OPA parses the amount to a precision-64 binary float (`big.Float.SetString`),
+  multiplies by the unit at that precision, then truncates the product toward zero (`big.Float.Int`),
+  so a fractional amount whose binary approximation lands just under an integer truncates down:
+  `units.parse_bytes("0.001mb")` is now `999` (was `1000`), `units.parse_bytes("9999999999.99999999995")`
+  is `10000000000`, and a large-exponent amount differs from the exact integer in nearly every digit.
+  Binary-exact amounts (`1.5kib` → `1536`, `10.7` → `10`) are unchanged. Verified byte-for-byte vs
+  `opa eval` 1.17.1 across a fractional-amount golden set, a high-significant-digit double-rounding fuzz,
+  and a grammar cross-product, with zero mismatches.
+
 - `units.parse` now returns a non-integer result as a precision-preserving arbitrary-precision
   number rendered to exactly 10 decimal places (OPA's `big.Rat.FloatString(10)`), instead of a lossy
   Ruby `Float`. Trailing zeros are kept and rounding is half-away-from-zero, matching OPA's

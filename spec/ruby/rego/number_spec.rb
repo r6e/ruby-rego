@@ -96,6 +96,45 @@ RSpec.describe Ruby::Rego::Number do
     end
   end
 
+  describe ".prec64_multiply_truncate (OPA units.parse_bytes big.Float path)" do
+    it "multiplies in a prec-64 big.Float and truncates toward zero" do
+      # Binary-exact operands are unaffected: 3/2 * 1000 = 1500 exactly.
+      expect(described_class.prec64_multiply_truncate(Rational(3, 2), 1000)).to eq(1500)
+      expect(described_class.prec64_multiply_truncate(Rational(0), 1000)).to eq(0)
+      # An identity multiply (integer 1) still rounds the amount to the prec-64 float and truncates.
+      expect(described_class.prec64_multiply_truncate(Rational(107, 10), 1)).to eq(10) # 10.7 -> 10
+    end
+
+    it "rounds via the prec-64 binary float, not exact rational (matching OPA byte-for-byte)" do
+      # 0.001 has no exact binary form; rounded to prec 64 and * 10**6 it lands just under 1000,
+      # so it truncates to 999 — NOT the exact-rational 1000. This is the defining divergence.
+      expect(described_class.prec64_multiply_truncate(Rational(1, 1000), 10**6)).to eq(999)
+      # A >19-significant-digit amount (numerator past 2**64) single-rounds (no double-rounding).
+      expect(described_class.prec64_multiply_truncate(Rational("9999999999.99999999995"), 1)).to eq(10_000_000_000)
+    end
+
+    it "truncates a negative product toward zero (big.Float.Int), not floored" do
+      expect(described_class.prec64_multiply_truncate(Rational(-1, 1000), 10**6)).to eq(-999)
+    end
+
+    it "fails fast when the integer multiplier is outside OPA's uint64 SetUint64 range" do
+      # OPA multiplies by m.SetUint64(unit): the multiplier is an unsigned 64-bit value, and EVERY uint64
+      # is exact at precision 64 (so CONTEXT.Num never rounds it). A value outside [0, 2**64-1] would be
+      # rounded (or is nonsensical as a unit multiplier), so it raises rather than return a silently-wrong
+      # product. All OPA unit multipliers are <= 2**60, so this never fires in practice — it guards a
+      # future/incorrect caller. (uint64 is the right contract, not bit_length: 2**64 has bit_length 65
+      # yet is exactly representable, so a bit_length test would mischaracterize the boundary.)
+      uint64_max = (2**64) - 1
+      expect(described_class.prec64_multiply_truncate(Rational(1, 2), uint64_max)).to be_a(Integer)
+      expect(described_class.prec64_multiply_truncate(Rational(1, 2), 2**60)).to be_a(Integer)
+      expect { described_class.prec64_multiply_truncate(Rational(1, 2), uint64_max + 1) }
+        .to raise_error(ArgumentError, /uint64/)
+      # A negative multiplier is outside the unsigned range — bit_length would have wrongly accepted it.
+      expect { described_class.prec64_multiply_truncate(Rational(1, 2), -1000) }
+        .to raise_error(ArgumentError, /uint64/)
+    end
+  end
+
   describe "equality and ordering by exact value" do
     def num(text) = described_class.literal(text)
 

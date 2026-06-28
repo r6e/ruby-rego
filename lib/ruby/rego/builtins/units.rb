@@ -16,14 +16,12 @@ module Ruby
       # amount, an embedded space, an unrecognised unit, an unparseable amount, or a scientific
       # exponent of more than MAX_EXPONENT_DIGITS digits yields undefined.
       #
-      # `units.parse` uses exact rational arithmetic and matches OPA's big.Rat byte-for-byte.
-      # `units.parse_bytes` also computes with exact Rational here, but OPA's `parse_bytes` uses a
-      # 64-bit big.Float (SetString → Mul → truncate toward zero), so a fractional `parse_bytes`
-      # amount can diverge in BOTH directions and by an unbounded magnitude — not merely "one lower":
-      # `0.001mb` → 999 in OPA, 1000 here; `9999999999.99999999995` → 10000000000 in OPA, 9999999999
-      # here; and a huge `1e100000`-scale value differs in nearly every digit. Reproducing it means
-      # routing `parse_bytes` through the gem's big.Float engine (Flt::BinNum), a tracked follow-up in
-      # the number sweep — not this scope. Integer and binary-exact inputs are identical either way.
+      # Both are byte-for-byte faithful to OPA, but via DIFFERENT arithmetic, matching OPA's two code
+      # paths: `units.parse` uses exact rational arithmetic (OPA's big.Rat), while `units.parse_bytes`
+      # computes in a 64-bit big.Float (OPA's big.Float: SetString → Mul → truncate toward zero, via
+      # Number.prec64_multiply_truncate). The big.Float path rounds, so a fractional byte amount can
+      # differ from the exact-rational value (`0.001mb` → 999; `9999999999.99999999995` → 10000000000), as
+      # OPA does. Both share the same amount grammar (AMOUNT_RE) and ASCII/length DoS guards.
       module Units
         extend RegistryHelpers
 
@@ -141,7 +139,12 @@ module Ruby
         def self.parse_bytes(value)
           amount, unit = split(string_arg(value, "units.parse_bytes").downcase, "units.parse_bytes")
           multiplier = PARSE_BYTES_UNITS[unit] || raise_unrecognized(unit, "units.parse_bytes")
-          (parse_amount(amount, "units.parse_bytes") * multiplier).to_i
+          # OPA computes the byte count in a 64-bit big.Float, not exact rational, so a fractional
+          # amount can round (`0.001mb` -> 999, not 1000) — see Number.prec64_multiply_truncate. The
+          # amount is bounded by MAX_SOURCE and MAX_EXPONENT_DIGITS to a magnitude far below the engine's
+          # emax (2**30), so the product is always finite and `to_i` never raises on an infinity — which
+          # would otherwise escape as a non-BuiltinArgumentError and abort the whole policy (a DoS).
+          Number.prec64_multiply_truncate(parse_amount(amount, "units.parse_bytes"), multiplier)
         end
 
         # Reads the string operand and removes every double-quote, matching OPA's

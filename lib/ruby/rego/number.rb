@@ -28,9 +28,15 @@ module Ruby
     # (conversions, ordering, coercion, the four operators) plus the OPA div/mod helpers and the flt
     # arithmetic backend belong together; splitting them would only scatter the contract.
     class Number < Numeric
-      # Go's math/big.Float number context: 64-bit binary precision, round-half-even, and an exponent
-      # range wide enough for any decimal literal OPA accepts (well beyond 1e±999).
-      CONTEXT = Flt::BinNum::Context(precision: 64, rounding: :half_even, emax: 2**30, emin: -(2**30))
+      # The big.Float engine's binary-exponent ceiling (and, negated, its floor): wide enough for any
+      # decimal literal OPA accepts (well beyond 1e±999). Exposed as a named constant — rather than
+      # buried in CONTEXT — so the units DoS-safety invariant test can assert against it without reaching
+      # into the CONTEXT object, keeping a single source of truth if the range is ever retuned.
+      ENGINE_EMAX = 2**30
+
+      # Go's math/big.Float number context: 64-bit binary precision, round-half-even, and the ENGINE_EMAX
+      # exponent range.
+      CONTEXT = Flt::BinNum::Context(precision: 64, rounding: :half_even, emax: ENGINE_EMAX, emin: -ENGINE_EMAX)
 
       # The largest decimal order of magnitude OPA accepts in a numeric literal: a literal whose
       # magnitude exceeds 10**30102 (or whose reciprocal does) is a parse error in OPA ("number too
@@ -411,6 +417,31 @@ module Ruby
       def self.rational_to_binnum(rational)
         rational = rational.to_r
         CONTEXT.divide(CONTEXT.Num(rational.numerator), CONTEXT.Num(rational.denominator))
+      end
+
+      # Multiply an exact `rational` by an exact `integer` in the precision-64 big.Float context and
+      # truncate the product toward zero — reproducing OPA's units.parse_bytes arithmetic byte-for-byte
+      # (Go math/big: big.Float.SetString → Mul → Int). `rational_to_binnum` rounds the rational to the
+      # float big.Float.SetString would yield, `CONTEXT.multiply` rounds the product again at 64 bits
+      # like Mul, and `to_i` truncates toward zero like Int (so a negative is NOT floored). The integer
+      # multiplier must be a uint64 (0..2**64-1), matching OPA's m.SetUint64: every uint64 is exact at
+      # precision 64, so CONTEXT.Num never rounds it (OPA's unit multipliers are all <= 2**60). Encapsulates
+      # the Flt engine so callers never touch CONTEXT directly. The caller must bound the operands so the
+      # product stays finite (see the units guards).
+      #
+      # @param rational [Rational]
+      # @param integer [Integer]
+      # @return [Integer]
+      def self.prec64_multiply_truncate(rational, integer)
+        # Fail fast on an out-of-contract multiplier rather than let CONTEXT.Num silently round it to a
+        # different value (a wrong result). The contract is uint64 (OPA's SetUint64 domain), not a
+        # bit_length test — every uint64 is exact at prec 64, and this also rejects negatives. OPA's unit
+        # multipliers are all <= 2**60, so this never fires in practice; it protects a future/incorrect caller.
+        unless integer.between?(0, (2**64) - 1)
+          raise ArgumentError, "multiplier #{integer} is outside the uint64 range (OPA multiplies via SetUint64)"
+        end
+
+        CONTEXT.multiply(rational_to_binnum(rational), CONTEXT.Num(integer)).to_i
       end
 
       protected

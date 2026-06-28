@@ -23,6 +23,9 @@ detectors:
       - Ruby::Rego::Unifier
   TooManyConstants:
     exclude:
+      # Number value object: the big.Float engine config (ENGINE_EMAX/CONTEXT), the literal magnitude
+      # cap, and the shared number-grammar regexes (NUMBER_CORE/DECIMAL_STRING/FRACTIONAL) — each distinct.
+      - Ruby::Rego::Number
       - Ruby::Rego::Lexer
       - Ruby::Rego::Builtins::Times::GoLayout
       - Ruby::Rego::Evaluator::OperatorEvaluator
