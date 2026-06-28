@@ -424,18 +424,22 @@ module Ruby
       # (Go math/big: big.Float.SetString → Mul → Int). `rational_to_binnum` rounds the rational to the
       # float big.Float.SetString would yield, `CONTEXT.multiply` rounds the product again at 64 bits
       # like Mul, and `to_i` truncates toward zero like Int (so a negative is NOT floored). The integer
-      # multiplier must be exact at precision 64 — integer.bit_length <= 64 (OPA's unit multipliers are
-      # all <= 2**60, like its m.SetUint64). Encapsulates the Flt engine so callers never touch CONTEXT
-      # directly. The caller must bound the operands so the product stays finite (see the units guards).
+      # multiplier must be a uint64 (0..2**64-1), matching OPA's m.SetUint64: every uint64 is exact at
+      # precision 64, so CONTEXT.Num never rounds it (OPA's unit multipliers are all <= 2**60). Encapsulates
+      # the Flt engine so callers never touch CONTEXT directly. The caller must bound the operands so the
+      # product stays finite (see the units guards).
       #
       # @param rational [Rational]
       # @param integer [Integer]
       # @return [Integer]
       def self.prec64_multiply_truncate(rational, integer)
         # Fail fast on an out-of-contract multiplier rather than let CONTEXT.Num silently round it to a
-        # different value (a wrong result). OPA's unit multipliers are all <= 2**60, so this never fires
-        # in practice; it protects a future or incorrect caller.
-        raise ArgumentError, "multiplier #{integer} is not exact at precision 64" if integer.bit_length > 64
+        # different value (a wrong result). The contract is uint64 (OPA's SetUint64 domain), not a
+        # bit_length test — every uint64 is exact at prec 64, and this also rejects negatives. OPA's unit
+        # multipliers are all <= 2**60, so this never fires in practice; it protects a future/incorrect caller.
+        unless integer.between?(0, (2**64) - 1)
+          raise ArgumentError, "multiplier #{integer} is outside the uint64 range (OPA multiplies via SetUint64)"
+        end
 
         CONTEXT.multiply(rational_to_binnum(rational), CONTEXT.Num(integer)).to_i
       end

@@ -208,7 +208,10 @@ RSpec.describe "units builtins" do
       # producible product far below CONTEXT.emax, so to_i is always finite. This pins that proof: if a
       # future cap change broke the margin, this fails loudly. (Verified ~162x margin vs `opa eval`.)
       units = Ruby::Rego::Builtins::Units
-      worst_decimal_exp = units::MAX_SOURCE + (10**units::MAX_EXPONENT_DIGITS) # mantissa digits + 10**exp
+      # Largest magnitude any accepted amount can reach: up to MAX_SOURCE mantissa digits, times 10 to the
+      # largest value a MAX_EXPONENT_DIGITS-digit exponent expresses (10**6 - 1 for 6 digits, not 10**6).
+      max_exponent_value = (10**units::MAX_EXPONENT_DIGITS) - 1
+      worst_decimal_exp = units::MAX_SOURCE + max_exponent_value
       worst_binary_exp = (worst_decimal_exp * Math.log2(10)) + 60 # +60 binary orders for the 2**60 max unit
       # Compared against the engine's exponent ceiling via its named constant (the same value CONTEXT is
       # built with), so the proof has a single source of truth and stays independent of CONTEXT's visibility.

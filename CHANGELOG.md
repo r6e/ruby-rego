@@ -10,9 +10,9 @@ All notable changes to this project will be documented in this file.
   so a fractional amount whose binary approximation lands just under an integer truncates down:
   `units.parse_bytes("0.001mb")` is now `999` (was `1000`), `units.parse_bytes("9999999999.99999999995")`
   is `10000000000`, and a large-exponent amount differs from the exact integer in nearly every digit.
-  Binary-exact amounts (`1.5kib` → `1536`, `10.7` → `10`) are unchanged. Verified vs `opa eval` 1.17.1
-  across ~12,000 inputs (a fractional-amount golden set, a 5300-input high-significant-digit
-  double-rounding fuzz, and a 5900-input grammar cross-product), zero mismatches.
+  Binary-exact amounts (`1.5kib` → `1536`, `10.7` → `10`) are unchanged. Verified byte-for-byte vs
+  `opa eval` 1.17.1 across a fractional-amount golden set, a high-significant-digit double-rounding fuzz,
+  and a grammar cross-product, with zero mismatches.
 
 - `units.parse` now returns a non-integer result as a precision-preserving arbitrary-precision
   number rendered to exactly 10 decimal places (OPA's `big.Rat.FloatString(10)`), instead of a lossy
