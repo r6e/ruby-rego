@@ -214,7 +214,7 @@ RSpec.describe "aggregate builtins" do
     # pre-fold `sort` for ALL four numeric aggregates (Complex/BigDecimal have no usable ordering against
     # a Number). They must map to undefined, never raise. The fix is a finite-real gate (Number.finite_real?
     # — exactly the Integer/Rational/Number/finite-Float domain Number#rational_of can order and fold) in
-    # the shared numeric_array chokepoint, which runs before both the sort and the fold.
+    # the shared extract_numeric_elements chokepoint, which runs before both the sort and the fold.
     #
     # NOT covered here (deferred): a compact over-cap Number is an amplifier (its #exact expands to a giant
     # Rational) that blows up at canonicalization — when it is put in a set/object, BEFORE any aggregate
