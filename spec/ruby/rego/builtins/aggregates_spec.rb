@@ -103,6 +103,15 @@ RSpec.describe "aggregate builtins" do
       expect(registry.call("product", [[huge, huge]])).to be_a(Ruby::Rego::UndefinedValue)
     end
 
+    it "is undefined for a tiny over-cap result too (symmetric cap, both directions, no amplification)" do
+      # The magnitude cap is on |log10|, not just the upper side. product of two in-cap tiny factors
+      # (1e-30000 each) yields 1e-60000, whose #exact would expand to a ~60000-digit-denominator Rational
+      # on the first comparison/sort/set-insert — an amplification DoS reachable from untrusted input
+      # (each factor clears the per-element decoder cap). It must map to undefined before that materializes.
+      tiny = Ruby::Rego::Number.literal("1e-30000")
+      expect(registry.call("product", [[tiny, tiny]])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
     it "is undefined when an intermediate overflows the engine exponent range (totality, no crash)" do
       # Past ENGINE_EMAX a running product trips the big.Float overflow trap mid-fold (before the final
       # magnitude cap is even reached), mapping to undefined like sum's non-finite overflow instead of

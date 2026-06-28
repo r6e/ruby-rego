@@ -581,12 +581,15 @@ module Ruby
       end
       private_class_method :operand_binnum
 
-      # Whether a finite BinNum's base-10 order of magnitude exceeds MAX_MAGNITUDE_EXPONENT, computed
-      # from its binary exponent and 64-bit coefficient alone — O(1), and crucially WITHOUT building the
-      # full decimal expansion the check exists to prevent. `coefficient.bit_length + exponent` is
-      # log2(value); scaling by log10(2) gives log10(value). bit_length over-estimates log2 by < 1 bit,
-      # so the bound is marginally conservative (rejects a hair early), which is the safe direction. A
-      # zero or tiny/fractional result (non-positive magnitude) never trips it.
+      # Whether a finite BinNum's base-10 order of magnitude exceeds MAX_MAGNITUDE_EXPONENT in EITHER
+      # direction, computed from its binary exponent and 64-bit coefficient alone — O(1), and crucially
+      # WITHOUT building the full decimal expansion the check exists to prevent. `coefficient.bit_length
+      # + exponent` is log2(value); scaling by log10(2) gives log10(value), and `.abs` makes the bound
+      # SYMMETRIC: a tiny over-cap result (e.g. product(1e-30000, 1e-30000) = 1e-60000) is as much an
+      # amplifier as a huge one — its #exact expands to a ~60000-digit-denominator Rational — so it must
+      # trip the cap too. This mirrors the literal cap {magnitude_within_limit?}, which is symmetric on
+      # `(exponent - 1).abs`. bit_length over-estimates log2 by < 1 bit, leaving at most a 1-order-of-
+      # magnitude slop at the boundary (immaterial: the cap is itself a DoS threshold, not an exact value).
       #
       # @param binnum [Flt::BinNum]
       # @return [Boolean]
@@ -597,9 +600,11 @@ module Ruby
         # guard keeps this method self-contained rather than silently depending on that trap config —
         # an infinity is treated as over-cap, mapping to undefined like any other overflow.
         return true if binnum.special?
+        # True zero has magnitude -infinity; its |log10| would spuriously trip the symmetric check below,
+        # so it is short-circuited here (a zero product result is never over-cap).
         return false if binnum.zero?
 
-        (binnum.coefficient.bit_length + binnum.exponent) * LOG10_2 > MAX_MAGNITUDE_EXPONENT
+        ((binnum.coefficient.bit_length + binnum.exponent) * LOG10_2).abs > MAX_MAGNITUDE_EXPONENT
       end
       private_class_method :magnitude_exceeds_cap?
 
@@ -627,7 +632,9 @@ module Ruby
       # or via uncapped integer `*` — would otherwise let {fold} raise an uncaught Flt::Num::Exception
       # and abort the policy. {fold} maps that to a RangeError the builtin layer turns into undefined,
       # mirroring product's intermediate trap (the gem's ENGINE_EMAX is stricter than Go's big.Float
-      # range, the same documented stance product takes; no realistic sum reaches 10**~3e8).
+      # range, the same documented stance product takes; no realistic sum reaches 10**~3e8). Because that
+      # trap fires before {fold} can yield a non-finite BinNum, the {from_binnum} below never sees a special
+      # value and so needs no special?-guard here (unlike {magnitude_exceeds_cap?} on product's path).
       #
       # Large integer-valued results inherit the number model's shortest-form gap (see {from_binnum} /
       # {GoNumberFormat}, unchanged here): flt's and Go strconv's shortest round-tripping decimals can

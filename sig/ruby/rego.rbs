@@ -1328,7 +1328,7 @@ module Ruby
 
         private def self.register_function: (BuiltinRegistry registry, String name, Symbol handler) -> void
         private def self.bounded_fold: ((:sum | :product) name, Array[Numeric] numbers) -> (Number | Integer)
-        private def self.numeric_array: (Value collection, name: String) -> Array[Numeric]
+        private def self.extract_numeric_elements: (Value collection, name: String) -> Array[Numeric]
         private def self.extract_finite_real: (Value element, context: String) -> Numeric
         private def self.ensure_non_empty: (Array[Numeric] numbers, name: String) -> void
       end

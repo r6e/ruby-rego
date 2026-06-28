@@ -51,29 +51,29 @@ module Ruby
 
         # Sum an array or set of numbers. The OPA-faithful arithmetic (integer fast-path vs prec-64
         # big.Float fold, and the int64-overflow handling) lives in {Number.sum}; here an empty collection
-        # sums to 0 and a set is deduplicated and folded in ascending order by {numeric_array}.
+        # sums to 0 and a set is deduplicated and folded in ascending order by {extract_numeric_elements}.
         #
         # @param collection [Ruby::Rego::Value] an array or set of numbers
         # @return [Ruby::Rego::Value]
         def self.sum(collection)
-          numbers = numeric_array(collection, name: "sum")
+          numbers = extract_numeric_elements(collection, name: "sum")
           Value.from_ruby(bounded_fold(:sum, numbers))
         end
 
         # Multiply an array or set of numbers. The OPA-faithful arithmetic (prec-64 big.Float fold with no
         # integer fast-path) and the DoS magnitude cap live in {Number.product}; here an empty collection
-        # is the multiplicative identity 1 and a set is folded in ascending order by {numeric_array}.
+        # is the multiplicative identity 1 and a set is folded in ascending order by {extract_numeric_elements}.
         #
         # @param collection [Ruby::Rego::Value] an array or set of numbers
         # @return [Ruby::Rego::Value]
         def self.product(collection)
-          numbers = numeric_array(collection, name: "product")
+          numbers = extract_numeric_elements(collection, name: "product")
           Value.from_ruby(bounded_fold(:product, numbers))
         end
 
         # Fold `numbers` via the named {Number} aggregate (`:sum` or `:product`), mapping its
         # magnitude-overflow RangeError to undefined. The rescue wraps ONLY the Number call so an
-        # unexpected error from numeric_array/Value.from_ruby fails fast rather than being mislabeled
+        # unexpected error from extract_numeric_elements/Value.from_ruby fails fast rather than being mislabeled
         # "overflow". Number.product raises RangeError to cap its unbounded fold; Number.sum raises only as
         # an engine-overflow totality backstop (it has no magnitude cap) — see those methods.
         #
@@ -95,7 +95,7 @@ module Ruby
         # @param collection [Ruby::Rego::Value] an array or set of numbers
         # @return [Ruby::Rego::Value]
         def self.max(collection)
-          numbers = numeric_array(collection, name: "max")
+          numbers = extract_numeric_elements(collection, name: "max")
           ensure_non_empty(numbers, name: "max")
           # Among value-equal extrema OPA returns the LAST element (so max([1.50, 1.5]) -> 1.5, keeping
           # the later spelling). A single-pass reduce keeping the later element on a tie (the explicit
@@ -108,7 +108,7 @@ module Ruby
         # @param collection [Ruby::Rego::Value] an array or set of numbers
         # @return [Ruby::Rego::Value]
         def self.min(collection)
-          numbers = numeric_array(collection, name: "min")
+          numbers = extract_numeric_elements(collection, name: "min")
           ensure_non_empty(numbers, name: "min")
           # OPA returns the LAST element among value-equal minima too; reduce keeping the later element
           # on a tie (single pass, no reversed-array copy).
@@ -140,7 +140,7 @@ module Ruby
         # @param collection [Ruby::Rego::Value]
         # @param name [String]
         # @return [Array<Numeric>]
-        def self.numeric_array(collection, name:)
+        def self.extract_numeric_elements(collection, name:)
           Base.assert_type(collection, expected: [ArrayValue, SetValue], context: name)
 
           numbers = collection.value.to_a.map.with_index do |element, index|
@@ -148,7 +148,7 @@ module Ruby
           end
           collection.is_a?(SetValue) ? numbers.sort : numbers
         end
-        private_class_method :numeric_array
+        private_class_method :extract_numeric_elements
 
         # Validate one element is a NumberValue wrapping a foldable finite-real number and return its raw
         # numeric value, else raise BuiltinArgumentError (which the registry maps to undefined). Named to

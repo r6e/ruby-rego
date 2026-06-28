@@ -160,6 +160,14 @@ RSpec.describe Ruby::Rego::Number do
       expect { described_class.product([huge, huge]) }.to raise_error(RangeError, /magnitude/)
     end
 
+    it "raises RangeError for a tiny over-cap result too (the cap is on |log10|, both directions)" do
+      # Two in-cap tiny factors multiply to 1e-60000, whose #exact would expand to a ~60000-digit
+      # denominator Rational. The cap must be symmetric (mirroring the literal cap's .abs), else this
+      # over-cap Number escapes the gate and amplifies on first comparison/sort/set-insert.
+      tiny = described_class.literal("1e-30000")
+      expect { described_class.product([tiny, tiny]) }.to raise_error(RangeError, /magnitude/)
+    end
+
     it "raises RangeError when an intermediate overflows the engine exponent range (DoS gate)" do
       huge = described_class.literal("1e1000000")
       expect { described_class.product(Array.new(400) { huge }) }.to raise_error(RangeError, /overflow/)
