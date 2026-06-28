@@ -345,6 +345,27 @@ RSpec.describe Ruby::Rego::Number do
       expect(num("-1.5").negative?).to be(true)
     end
   end
+
+  describe ".finite_real?" do
+    it "accepts the number carriers the fold can convert and order" do
+      expect(described_class.finite_real?(5)).to be(true)
+      expect(described_class.finite_real?(described_class.literal("1.5"))).to be(true)
+      expect(described_class.finite_real?(Rational(1, 2))).to be(true)
+      expect(described_class.finite_real?(1.5)).to be(true)
+      expect(described_class.finite_real?(BigDecimal("1.5"))).to be(true)
+    end
+
+    it "rejects Complex (not real, not order-comparable, not big.Float-convertible)" do
+      expect(described_class.finite_real?(Complex(1, 2))).to be(false)
+    end
+
+    it "rejects non-finite Float and BigDecimal" do
+      expect(described_class.finite_real?(Float::INFINITY)).to be(false)
+      expect(described_class.finite_real?(Float::NAN)).to be(false)
+      expect(described_class.finite_real?(BigDecimal("Infinity"))).to be(false)
+      expect(described_class.finite_real?(BigDecimal("NaN"))).to be(false)
+    end
+  end
 end
 
 # rubocop:enable Metrics/BlockLength

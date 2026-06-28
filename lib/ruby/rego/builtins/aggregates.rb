@@ -54,7 +54,7 @@ module Ruby
         # sums to 0 and a set is deduplicated and folded in ascending order by {numeric_array}.
         #
         # @param collection [Ruby::Rego::Value] an array or set of numbers
-        # @return [Ruby::Rego::NumberValue]
+        # @return [Ruby::Rego::Value]
         def self.sum(collection)
           numbers = numeric_array(collection, name: "sum")
           Value.from_ruby(bounded_fold(:sum, numbers))
@@ -65,7 +65,7 @@ module Ruby
         # is the multiplicative identity 1 and a set is folded in ascending order by {numeric_array}.
         #
         # @param collection [Ruby::Rego::Value] an array or set of numbers
-        # @return [Ruby::Rego::NumberValue]
+        # @return [Ruby::Rego::Value]
         def self.product(collection)
           numbers = numeric_array(collection, name: "product")
           Value.from_ruby(bounded_fold(:product, numbers))
@@ -148,20 +148,44 @@ module Ruby
         end
         private_class_method :numeric_array
 
-        # Validate every element of `elements` is a number and return their raw numeric values, in the
-        # given order. {numeric_array} calls this before sorting a set, so the element-type check (which
-        # maps `{1, "a"}` to undefined) runs ahead of the sort that would otherwise crash on it.
+        # Validate every element of `elements` is a foldable number and return their raw numeric values,
+        # in the given order. {numeric_value} applies both gates ahead of the set sort {numeric_array}
+        # performs, so a bad element maps to undefined rather than crashing the sort or the fold.
         #
         # @param elements [Enumerable<Ruby::Rego::Value>]
         # @param name [String]
         # @return [Array<Numeric>]
         def self.numeric_values(elements, name:)
           elements.to_a.map.with_index do |element, index|
-            Base.assert_type(element, expected: NumberValue, context: "#{name} element #{index}")
-            element.value
+            numeric_value(element, context: "#{name} element #{index}")
           end
         end
         private_class_method :numeric_values
+
+        # Validate one element is a NumberValue wrapping a foldable finite-real number, returning its raw
+        # numeric value. Two gates: the type check maps a non-number element (`{1, "a"}`) to undefined,
+        # and {Number.finite_real?} maps a NumberValue wrapping a non-real / non-finite Ruby Numeric to
+        # undefined. The latter is reachable because {Value.from_ruby} admits any Ruby Numeric (a Complex,
+        # a non-finite Float/BigDecimal passed via the library `input:` API) into a NumberValue; without
+        # this gate the set sort crashes on Complex's missing ordering, or the fold crashes converting it
+        # — aborting the policy instead of returning undefined.
+        #
+        # @param element [Ruby::Rego::Value]
+        # @param context [String]
+        # @return [Numeric]
+        def self.numeric_value(element, context:)
+          Base.assert_type(element, expected: NumberValue, context: context)
+          raw = element.value
+          return raw if Number.finite_real?(raw)
+
+          Base.raise_argument_error(
+            "aggregate element is not a finite real number",
+            expected: "finite real number",
+            actual: raw.class.name,
+            context: context
+          )
+        end
+        private_class_method :numeric_value
 
         # @param numbers [Array<Numeric>]
         # @param name [String]
@@ -169,12 +193,11 @@ module Ruby
         def self.ensure_non_empty(numbers, name:)
           return unless numbers.empty?
 
-          raise Ruby::Rego::BuiltinArgumentError.new(
+          Base.raise_argument_error(
             "Expected a non-empty array",
             expected: "non-empty array",
             actual: numbers.size,
-            context: name,
-            location: nil
+            context: name
           )
         end
         private_class_method :ensure_non_empty

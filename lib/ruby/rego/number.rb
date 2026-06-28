@@ -222,6 +222,27 @@ module Ruby
         new(exact: BigDecimal(value.to_s).to_r) # Float: via its shortest decimal, matching #exact
       end
 
+      # Whether `value` is a finite real number this engine can fold and order: a Ruby Integer or
+      # Rational, a {Number}, or a FINITE Float/BigDecimal. {Value.from_ruby} admits ANY Ruby Numeric
+      # into a NumberValue (its non-finite guard is `::Float`-only), so a host can pass a Complex or a
+      # non-finite Float/BigDecimal through the library `input:` API. Either would crash a consumer:
+      # a Complex has no ordering (`<=>` returns nil, so a sort raises) and no big.Float conversion
+      # (`BigDecimal(Complex.to_s)` raises), and a non-finite value's {#exact}/`to_r` raises
+      # FloatDomainError. A totality-sensitive caller — the numeric aggregates — gates on this before
+      # sorting or folding so such input maps to undefined rather than aborting the policy. Integer,
+      # Rational, and Number are always finite real; only Float/BigDecimal can be NaN/Infinity, hence
+      # the `finite?` check; anything else (a non-Numeric) is rejected.
+      #
+      # @param value [Object]
+      # @return [Boolean]
+      def self.finite_real?(value)
+        case value
+        when Number, Integer, Rational then true
+        when Float, BigDecimal then value.finite?
+        else false
+        end
+      end
+
       # Rego division is always big.Float (OPA `5 / 2` -> 2.5); an integer-valued quotient collapses to
       # an Integer (`4 / 2` -> 2). The caller guards a zero divisor to undefined.
       #
@@ -525,9 +546,11 @@ module Ruby
       end
       private_class_method :multiply_all
 
-      # Round a numeric fold operand to the prec-64 big.Float OPA's NumberToFloat yields: take its exact
-      # value (a raw Float via its shortest decimal, like the literal OPA parsed) and round it to prec 64.
-      # The single per-element conversion shared by both folds ({multiply_all}, {add_all}).
+      # Round a numeric fold operand to the prec-64 big.Float OPA's NumberToFloat yields. Takes the
+      # operand's EXACT value via {from_numeric}/{#exact} — an Integer or Rational as itself, a {Number}
+      # as its exact Rational, a raw Float via its shortest decimal (the value OPA's parser would have
+      # stored) — and rounds that to prec 64. The single per-element conversion shared by both folds
+      # ({multiply_all}, {add_all}).
       #
       # @param value [Numeric]
       # @return [Flt::BinNum]

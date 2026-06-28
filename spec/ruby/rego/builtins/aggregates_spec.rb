@@ -176,6 +176,42 @@ RSpec.describe "aggregate builtins" do
     end
   end
 
+  describe "totality against non-real / non-finite Numeric input (Ruby input: API)" do
+    # Value.from_ruby admits ANY Ruby Numeric into a NumberValue (its non-finite guard is ::Float-only),
+    # so a host can pass a Complex or a non-finite BigDecimal through the library `input:` API. Those reach
+    # the aggregates as NumberValue-wrapped Complex/BigDecimal-NaN and previously aborted the policy: the
+    # array path crashed in BigDecimal(Complex.to_s); the SET path (added with set support) crashed in the
+    # pre-fold `sort` for ALL four numeric aggregates. They must map to undefined, never raise. The fix is
+    # a finite-real gate in the shared numeric_values chokepoint (runs before both the sort and the fold).
+    %w[sum product max min].each do |fn|
+      it "is undefined for a Complex element in an array (#{fn})" do
+        expect { registry.call(fn, [[Complex(1, 2), 1]]) }.not_to raise_error
+        expect(registry.call(fn, [[Complex(1, 2), 1]])).to be_a(Ruby::Rego::UndefinedValue)
+      end
+
+      it "is undefined for a Complex element in a set, before the sort (#{fn})" do
+        expect { registry.call(fn, [Set.new([Complex(1, 2), 1])]) }.not_to raise_error
+        expect(registry.call(fn, [Set.new([Complex(1, 2), 1])])).to be_a(Ruby::Rego::UndefinedValue)
+      end
+
+      it "is undefined for a non-finite BigDecimal element in a set, before the sort (#{fn})" do
+        expect { registry.call(fn, [Set.new([BigDecimal("NaN"), 1])]) }.not_to raise_error
+        expect(registry.call(fn, [Set.new([BigDecimal("NaN"), 1])])).to be_a(Ruby::Rego::UndefinedValue)
+      end
+    end
+
+    it "rejects a non-finite BigDecimal in an array up front (not by accidental FloatDomainError rescue)" do
+      expect(registry.call("sum", [[BigDecimal("Infinity"), 1]])).to be_a(Ruby::Rego::UndefinedValue)
+      expect(registry.call("product", [[BigDecimal("NaN"), 1]])).to be_a(Ruby::Rego::UndefinedValue)
+    end
+
+    it "still folds Rational and finite BigDecimal elements (no regression for exotic-but-valid numbers)" do
+      expect(registry.call("sum", [[Rational(1, 2), 1]]).to_ruby.to_s).to eq("1.5")
+      expect(registry.call("sum", [[BigDecimal("1.5"), 1]]).to_ruby.to_s).to eq("2.5")
+      expect(registry.call("product", [[Rational(3, 2), 2]]).to_ruby.to_s).to eq("3")
+    end
+  end
+
   it "evaluates all and any using Rego truthiness" do
     expect(registry.call("all", [[true, "x"]]).to_ruby).to be(true)
     expect(registry.call("all", [[true, nil]]).to_ruby).to be(false)
