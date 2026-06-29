@@ -42,7 +42,7 @@ GEM
     bundler-audit (0.9.3)
       bundler (>= 1.2.0)
       thor (~> 1.0)
-    cgi (0.5.1)
+    cgi (0.5.2)
     childprocess (5.1.0)
       logger (~> 1.5)
     coercible (1.0.0)
