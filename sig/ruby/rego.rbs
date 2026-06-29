@@ -5,6 +5,13 @@ module Flt
   module BinNum
     def self.Context: (**untyped) -> untyped
   end
+
+  # Base of the flt arithmetic-exception hierarchy (Overflow/InvalidOperation/DivisionByZero); the
+  # Number engine traps Overflow on an out-of-range fold and rescues this base to re-raise a Number::MagnitudeError.
+  module Num
+    class Exception < StandardError
+    end
+  end
 end
 
 # Minimal external declaration for the tzinfo gem. Community RBS exists in gem_rbs_collection, but
@@ -170,9 +177,15 @@ module Ruby
     end
 
     class Number < Numeric
+      class MagnitudeError < RangeError
+      end
+
       ENGINE_EMAX: Integer
       CONTEXT: untyped
       MAX_MAGNITUDE_EXPONENT: Integer
+      LOG10_2: Float
+      INT64_MIN: Integer
+      INT64_MAX: Integer
       NUMBER_CORE: Regexp
       DECIMAL_STRING: Regexp
       FRACTIONAL: Regexp
@@ -188,12 +201,19 @@ module Ruby
       def self.negate_literal: (Numeric value) -> Numeric
       def self.from_binnum: (untyped binnum) -> (Number | Integer)
       def self.from_numeric: (Numeric value) -> Number
+      def self.finite_real?: (untyped value) -> bool
       def self.div: (Numeric left, Numeric right) -> (Number | Integer)
       def self.modulo: (Numeric left, Numeric right) -> Integer?
       def self.integer_value: (Numeric value) -> Integer?
       private def self.float_integer_value: (Float value) -> Integer?
       def self.rational_to_binnum: (Rational | Integer rational) -> untyped
       def self.prec64_multiply_truncate: (Rational rational, Integer integer) -> Integer
+      def self.product: (Array[Numeric] numbers) -> (Number | Integer)
+      private def self.fold: (Array[Numeric] numbers, (:multiply | :add) operation, untyped seed) -> untyped
+      private def self.magnitude_exceeds_cap?: (untyped binnum) -> bool
+      def self.sum: (Array[Numeric] numbers) -> (Number | Integer)
+      private def self.integer_fast_path?: (Array[Numeric] numbers) -> bool
+      private def self.operand_binnum: (Numeric value) -> untyped
 
       def initialize: (?text: String?, ?exact: (Rational | Integer)?) -> void
       def to_s: () -> String
@@ -1302,17 +1322,18 @@ module Ruby
 
         def self.register!: () -> BuiltinRegistry
         def self.count: (Value collection) -> NumberValue
-        def self.sum: (Value array) -> Value
-        def self.max: (Value array) -> Value
-        def self.min: (Value array) -> Value
+        def self.sum: (Value collection) -> Value
+        def self.product: (Value collection) -> Value
+        def self.max: (Value collection) -> Value
+        def self.min: (Value collection) -> Value
         def self.all: (Value array) -> BooleanValue
         def self.any: (Value array) -> BooleanValue
 
-        private
-
-        def self.register_function: (BuiltinRegistry registry, String name, Symbol handler) -> void
-        def self.numeric_array: (Value array, name: String) -> Array[Numeric]
-        def self.ensure_non_empty: (Array[Numeric] numbers, name: String) -> void
+        private def self.register_function: (BuiltinRegistry registry, String name, Symbol handler) -> void
+        private def self.bounded_fold: ((:sum | :product) name, Array[Numeric] numbers) -> (Number | Integer)
+        private def self.extract_numeric_elements: (Value collection, name: String) -> Array[Numeric]
+        private def self.extract_finite_real: (Value element, context: String) -> Numeric
+        private def self.ensure_non_empty: (Array[Numeric] numbers, name: String) -> void
       end
 
       module Numbers

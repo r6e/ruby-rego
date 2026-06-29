@@ -135,6 +135,117 @@ RSpec.describe Ruby::Rego::Number do
     end
   end
 
+  describe ".product (OPA prec-64 big.Float fold)" do
+    it "returns the multiplicative identity 1 for an empty fold" do
+      expect(described_class.product([])).to eql(1)
+    end
+
+    it "folds integers through the prec-64 big.Float (no exact integer fast-path, unlike sum)" do
+      expect(described_class.product([2, 3, 4])).to eq(24)
+      # 2**96 exceeds prec-64, so the all-integer product is the big.Float-rounded value rendered
+      # shortest — NOT the exact 79228162514264337593543950336. This is the defining product property.
+      expect(described_class.product([2**32, 2**32, 2**32]).to_s).to eq("79228162514264337594000000000")
+    end
+
+    it "matches OPA's prec-64 fractional product byte-for-byte" do
+      expect(described_class.product([0.1, 0.2, 0.3]).to_s).to eq("0.006000000000000000001")
+    end
+
+    it "collapses an integer-valued result back to a Ruby Integer" do
+      expect(described_class.product([1.5, 2.0])).to eql(3)
+    end
+
+    it "raises MagnitudeError when the final result magnitude exceeds the cap (DoS gate)" do
+      huge = described_class.literal("1e20000")
+      expect { described_class.product([huge, huge]) }.to raise_error(described_class::MagnitudeError, /magnitude/)
+    end
+
+    it "raises MagnitudeError for a tiny over-cap result too (the cap is on |log10|, both directions)" do
+      # Two in-cap tiny factors multiply to 1e-60000, whose #exact would expand to a ~60000-digit
+      # denominator Rational. The cap must be symmetric (mirroring the literal cap's .abs), else this
+      # over-cap Number escapes the gate and amplifies on first comparison/sort/set-insert.
+      tiny = described_class.literal("1e-30000")
+      expect { described_class.product([tiny, tiny]) }.to raise_error(described_class::MagnitudeError, /magnitude/)
+    end
+
+    it "raises MagnitudeError when an intermediate overflows the engine exponent range (DoS gate)" do
+      huge = described_class.literal("1e1000000")
+      expect { described_class.product(Array.new(400) { huge }) }
+        .to raise_error(described_class::MagnitudeError, /overflow/)
+    end
+  end
+
+  describe ".sum (OPA integer fast-path + prec-64 big.Float fold)" do
+    def num(text) = described_class.literal(text)
+
+    it "returns the additive identity 0 for an empty fold" do
+      expect(described_class.sum([])).to eql(0)
+    end
+
+    it "sums plain integers within int64 exactly (the integer fast-path)" do
+      expect(described_class.sum([100, 1])).to eql(101)
+      expect(described_class.sum([1, 2, 3])).to eql(6)
+      expect(described_class.sum([5])).to eql(5)
+    end
+
+    it "folds an exponent-form (Number) operand through the prec-64 big.Float, not exact integers" do
+      # sum([1e20, 7]): 1e20 is a Number (not a plain int64), so OPA rounds the whole fold to prec-64
+      # -> 100000000000000000010, NOT the exact 100000000000000000007 a naive Integer sum would give.
+      expect(described_class.sum([num("1e20"), 7]).to_s).to eq("100000000000000000010")
+    end
+
+    it "folds a >int64 plain integer through the big.Float too (OPA's ParseInt rejects it)" do
+      expect(described_class.sum([10**20, 7]).to_s).to eq("100000000000000000010")
+    end
+
+    it "matches OPA's catastrophic-cancellation result (the whole fold stays in big.Float)" do
+      # 1e308 + 1 rounds back to 1e308, so the small terms vanish: OPA gives 2, not 3.
+      expect(described_class.sum([num("1e308"), 1, num("-1e308"), 2])).to eql(2)
+    end
+
+    it "matches OPA's prec-64 fractional sum byte-for-byte" do
+      expect(described_class.sum([num("0.1"), num("0.2"), num("0.3")]).to_s).to eq("0.6")
+      expect(described_class.sum([num("2.5"), 1]).to_s).to eq("3.5")
+    end
+
+    it "collapses an integer-valued big.Float result back to a Ruby Integer" do
+      expect(described_class.sum([num("0.5"), num("-0.5")])).to eql(0)
+      expect(described_class.sum([num("1.5"), num("1.5")])).to eql(3)
+    end
+
+    it "renders a huge integer-valued big.Float sum shortest, like OPA's FloatToNumber" do
+      expect(described_class.sum([num("1e308"), num("1e308")])).to eql(2 * (10**308))
+    end
+
+    # The one deliberate divergence from OPA: OPA's integer fast-path accumulates in a Go int64 and
+    # SILENTLY WRAPS on overflow (sum([9e18, 9e18]) -> -446744073709551616). Replicating a silent
+    # integer-overflow wrap in Ruby would turn a sum of positive quotas into a negative number — an
+    # authorization hazard. Per the project's "implement correctly, document the divergence" precedent
+    # for upstream bugs, the fast-path uses arbitrary-precision Ruby Integer and returns the true sum.
+    it "returns the mathematically correct sum on int64 overflow (NOT OPA's silent wrap)" do
+      expect(described_class.sum([9_000_000_000_000_000_000, 9_000_000_000_000_000_000]))
+        .to eql(18_000_000_000_000_000_000)
+      expect(described_class.sum([9_223_372_036_854_775_807, 1])).to eql(9_223_372_036_854_775_808)
+      expect(described_class.sum([-9_223_372_036_854_775_808, -1])).to eql(-9_223_372_036_854_775_809)
+    end
+
+    it "raises MagnitudeError when an element overflows the engine exponent range (totality, no crash)" do
+      # A single element past ENGINE_EMAX (reachable via the library `input:` API or uncapped integer `*`)
+      # trips the big.Float Add overflow trap. Like product's intermediate trap, it must surface as a
+      # RangeError the builtin layer maps to undefined — NOT an uncaught Flt::Num::Exception that aborts
+      # the policy. Built with a bit-shift so the ~128 MiB element allocates without a slow base-10 power.
+      over_emax = 1 << (described_class::ENGINE_EMAX + 1)
+      expect { described_class.sum([over_emax]) }.to raise_error(described_class::MagnitudeError, /overflow/)
+    end
+
+    it "returns valid large sums far above the literal cap (sum has NO magnitude cap, unlike product)" do
+      # Additive growth keeps sum well below ENGINE_EMAX, so a sum whose magnitude exceeds the literal cap
+      # (1e30102) is returned, matching OPA — the engine-overflow rescue must NOT become a product-style cap.
+      big = described_class.literal("1e60000")
+      expect(described_class.sum([big, big]).to_s).to eq("2#{"0" * 60_000}")
+    end
+  end
+
   describe "equality and ordering by exact value" do
     def num(text) = described_class.literal(text)
 
@@ -241,6 +352,38 @@ RSpec.describe Ruby::Rego::Number do
       expect(num("1.5").integer_valued?).to be(false)
       expect(num("0.0").zero?).to be(true)
       expect(num("-1.5").negative?).to be(true)
+    end
+  end
+
+  describe ".finite_real?" do
+    it "accepts every orderable, foldable Numeric: Integer, Rational, ANY Number, and finite Float" do
+      expect(described_class.finite_real?(5)).to be(true)
+      expect(described_class.finite_real?(described_class.literal("1.5"))).to be(true)
+      expect(described_class.finite_real?(Rational(1, 2))).to be(true)
+      expect(described_class.finite_real?(1.5)).to be(true)
+      # Magnitude is NOT this gate's concern — it answers only "can this be ordered and folded without
+      # crashing". An over-cap Number is accepted here; its compact-exponent #exact amplification is a
+      # gem-wide Value/Number boundary gap (untrusted-reachable via the uncapped `*`/`/` operators, NOT the
+      # decoders — a pre-existing, emin-bounded number-model gap), deferred to its own PR rather than
+      # half-closed at this gate. The check is O(1): no materialization, so this assertion stays fast even
+      # on a billion-digit-magnitude Number.
+      expect(described_class.finite_real?(described_class.literal("1e1000000000"))).to be(true)
+    end
+
+    it "rejects Complex (not real, not order-comparable, not big.Float-convertible)" do
+      expect(described_class.finite_real?(Complex(1, 2))).to be(false)
+    end
+
+    it "rejects a non-finite Float" do
+      expect(described_class.finite_real?(Float::INFINITY)).to be(false)
+      expect(described_class.finite_real?(Float::NAN)).to be(false)
+    end
+
+    it "rejects BigDecimal even when finite (rational_of has no BigDecimal branch: unorderable vs Number)" do
+      expect(described_class.finite_real?(BigDecimal("1.5"))).to be(false)
+      expect(described_class.finite_real?(BigDecimal("1e10000000"))).to be(false)
+      expect(described_class.finite_real?(BigDecimal("Infinity"))).to be(false)
+      expect(described_class.finite_real?(BigDecimal("NaN"))).to be(false)
     end
   end
 end

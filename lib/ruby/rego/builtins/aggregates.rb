@@ -2,6 +2,7 @@
 
 require_relative "base"
 require_relative "registry"
+require_relative "../number"
 
 module Ruby
   module Rego
@@ -11,6 +12,7 @@ module Ruby
         AGGREGATE_FUNCTIONS = {
           "count" => :count,
           "sum" => :sum,
+          "product" => :product,
           "max" => :max,
           "min" => :min,
           "all" => :all,
@@ -47,19 +49,61 @@ module Ruby
           NumberValue.new(collection.value.size)
         end
 
-        # @param array [Ruby::Rego::Value]
-        # @return [Ruby::Rego::NumberValue]
-        def self.sum(array)
-          numbers = numeric_array(array, name: "sum")
-          # Sum of raw input Floats can overflow to a non-finite Float (e.g. [1e308, 1e308]); Value.from_ruby
-          # maps that to undefined at the boundary instead of letting it crash serialization.
-          Value.from_ruby(numbers.sum)
+        # Sum an array or set of numbers. The OPA-faithful arithmetic (integer fast-path vs prec-64
+        # big.Float fold, and the int64-overflow handling) lives in {Number.sum}; here an empty collection
+        # sums to 0 and a set is deduplicated and folded in ascending order by {extract_numeric_elements}.
+        #
+        # @param collection [Ruby::Rego::Value] an array or set of numbers
+        # @return [Ruby::Rego::Value]
+        def self.sum(collection)
+          numbers = extract_numeric_elements(collection, name: "sum")
+          Value.from_ruby(bounded_fold(:sum, numbers))
         end
 
-        # @param array [Ruby::Rego::Value]
+        # Multiply an array or set of numbers. The OPA-faithful arithmetic (prec-64 big.Float fold with no
+        # integer fast-path) and the DoS magnitude cap live in {Number.product}; here an empty collection
+        # is the multiplicative identity 1 and a set is folded in ascending order by {extract_numeric_elements}.
+        #
+        # @param collection [Ruby::Rego::Value] an array or set of numbers
         # @return [Ruby::Rego::Value]
-        def self.max(array)
-          numbers = numeric_array(array, name: "max")
+        def self.product(collection)
+          numbers = extract_numeric_elements(collection, name: "product")
+          Value.from_ruby(bounded_fold(:product, numbers))
+        end
+
+        # Fold `numbers` via the named {Number} aggregate (`:sum` or `:product`), mapping its
+        # magnitude-overflow {Number::MagnitudeError} to undefined. The rescue is narrowed to that one
+        # subclass (not bare RangeError) AND wraps ONLY the Number call, so an unexpected error — a plain
+        # RangeError from a future Number internal, or anything from extract_numeric_elements/Value.from_ruby
+        # — fails fast rather than being silently mislabeled "overflow". Number.product raises it to cap its
+        # unbounded fold; Number.sum raises it only as an engine-overflow totality backstop (no magnitude
+        # cap) — see those methods.
+        #
+        # @param name [Symbol] :sum or :product
+        # @param numbers [Array<Numeric>]
+        # @return [Ruby::Rego::Number, Integer]
+        def self.bounded_fold(name, numbers)
+          Number.public_send(name, numbers)
+        rescue Number::MagnitudeError => e
+          Base.raise_argument_error(
+            e.message,
+            expected: "#{name} within the supported magnitude range",
+            actual: "magnitude overflow",
+            context: name.to_s
+          )
+        end
+        private_class_method :bounded_fold
+
+        # Return the largest element of an array or set. DIVERGENCE (pre-existing, tracked): OPA's max/min
+        # are polymorphic over its total value order — `max(["a","b"]) -> "b"`, `max([true,false]) -> true`,
+        # even mixed types `max([1,"a"]) -> "a"` — whereas this gem restricts max/min to numbers (a
+        # non-number element maps to undefined via {extract_finite_real}). Generalizing to OPA's value order
+        # is its own number-model/ordering sweep item, not this (numeric-aggregates) scope.
+        #
+        # @param collection [Ruby::Rego::Value] an array or set of numbers
+        # @return [Ruby::Rego::Value]
+        def self.max(collection)
+          numbers = extract_numeric_elements(collection, name: "max")
           ensure_non_empty(numbers, name: "max")
           # Among value-equal extrema OPA returns the LAST element (so max([1.50, 1.5]) -> 1.5, keeping
           # the later spelling). A single-pass reduce keeping the later element on a tie (the explicit
@@ -69,10 +113,13 @@ module Ruby
           # rubocop:enable Style/MinMaxComparison
         end
 
-        # @param array [Ruby::Rego::Value]
+        # Return the smallest element of an array or set. Number-only, like {max} — see it for the
+        # pre-existing divergence from OPA's polymorphic min.
+        #
+        # @param collection [Ruby::Rego::Value] an array or set of numbers
         # @return [Ruby::Rego::Value]
-        def self.min(array)
-          numbers = numeric_array(array, name: "min")
+        def self.min(collection)
+          numbers = extract_numeric_elements(collection, name: "min")
           ensure_non_empty(numbers, name: "min")
           # OPA returns the LAST element among value-equal minima too; reduce keeping the later element
           # on a tie (single pass, no reversed-array copy).
@@ -95,22 +142,52 @@ module Ruby
           BooleanValue.new(array.value.any?(&:truthy?))
         end
 
-        # @param array [Ruby::Rego::Value]
+        # Extract the numeric values of an array OR set — the two collection types OPA's numeric
+        # aggregates (sum/product/max/min) accept. Every element is validated as a foldable number by
+        # {extract_finite_real} BEFORE the set sort, so a mixed-type set such as `{1, "a"}` raises the
+        # same element-type error (mapped to undefined) OPA does rather than a Comparable crash mid-sort.
+        # A set is then returned in OPA's iteration order (ascending by value); an array keeps its order.
+        #
+        # @param collection [Ruby::Rego::Value]
         # @param name [String]
         # @return [Array<Numeric>]
-        def self.numeric_array(array, name:)
-          Base.assert_type(array, expected: ArrayValue, context: name)
+        def self.extract_numeric_elements(collection, name:)
+          Base.assert_type(collection, expected: [ArrayValue, SetValue], context: name)
 
-          array.value.map.with_index do |element, index|
-            Base.assert_type(
-              element,
-              expected: NumberValue,
-              context: "#{name} element #{index}"
-            )
-            element.value
+          numbers = collection.value.to_a.map.with_index do |element, index|
+            extract_finite_real(element, context: "#{name} element #{index}")
           end
+          collection.is_a?(SetValue) ? numbers.sort : numbers
         end
-        private_class_method :numeric_array
+        private_class_method :extract_numeric_elements
+
+        # Validate one element is a NumberValue wrapping a foldable finite-real number and return its raw
+        # numeric value, else raise BuiltinArgumentError (which the registry maps to undefined). Named to
+        # signal the validate-and-RAISE contract — unlike {Value.numeric_value} (wraps a Numeric) and
+        # {Evaluator::OperatorEvaluator.numeric_value} (unwraps to a Numeric or nil). Two gates: the type
+        # check maps a non-number element (`{1, "a"}`) to undefined, and {Number.finite_real?} maps a
+        # NumberValue wrapping a non-real or non-finite Ruby Numeric (a Complex, a non-finite Float, a
+        # BigDecimal) to undefined. The latter is reachable because {Value.from_ruby} admits any Ruby
+        # Numeric (passed via the library `input:` API) into a NumberValue; without this gate the set sort
+        # crashes on Complex's missing ordering, or the fold crashes converting it — aborting the policy
+        # instead of returning undefined.
+        #
+        # @param element [Ruby::Rego::Value]
+        # @param context [String]
+        # @return [Numeric]
+        def self.extract_finite_real(element, context:)
+          Base.assert_type(element, expected: NumberValue, context: context)
+          raw = element.value
+          return raw if Number.finite_real?(raw)
+
+          Base.raise_argument_error(
+            "aggregate element is not a finite real number",
+            expected: "finite real number",
+            actual: raw.class.name,
+            context: context
+          )
+        end
+        private_class_method :extract_finite_real
 
         # @param numbers [Array<Numeric>]
         # @param name [String]
@@ -118,12 +195,11 @@ module Ruby
         def self.ensure_non_empty(numbers, name:)
           return unless numbers.empty?
 
-          raise Ruby::Rego::BuiltinArgumentError.new(
-            "Expected a non-empty array",
-            expected: "non-empty array",
+          Base.raise_argument_error(
+            "Expected a non-empty collection",
+            expected: "non-empty collection",
             actual: numbers.size,
-            context: name,
-            location: nil
+            context: name
           )
         end
         private_class_method :ensure_non_empty
