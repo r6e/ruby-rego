@@ -241,7 +241,7 @@ GEM
       rbs (>= 3.6.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
-    tzinfo-data (1.2026.2)
+    tzinfo-data (1.2026.3)
       tzinfo (>= 1.0.0)
     unicode-display_width (3.2.0)
       unicode-emoji (~> 4.1)
@@ -251,7 +251,7 @@ GEM
       axiom-types (~> 0.1)
       coercible (~> 1.0)
       descendants_tracker (~> 0.0, >= 0.0.3)
-    yard (0.9.44)
+    yard (0.9.45)
     zeitwerk (2.7.4)
 
 PLATFORMS
