@@ -206,7 +206,7 @@ GEM
       virtus (~> 2.0)
     securerandom (0.4.1)
     sexp_processor (4.17.5)
-    simplecov (1.0.2)
+    simplecov (1.1.1)
     steep (2.0.0)
       concurrent-ruby (>= 1.1.10)
       csv (>= 3.0.9)
@@ -266,7 +266,7 @@ DEPENDENCIES
   ruby-lsp-rspec
   ruby-rego!
   rubycritic (~> 5.0)
-  simplecov (~> 1.0)
+  simplecov (~> 1.1)
   steep (~> 2.0)
   typeprof (~> 0.32)
   yard (~> 0.9)
