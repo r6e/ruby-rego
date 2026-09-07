@@ -19,6 +19,6 @@ group :development, :test do
   gem "ruby-lsp-rspec", require: false
   gem "simplecov", "~> 1.0"
   gem "steep", "~> 2.0"
-  gem "typeprof", "~> 0.32"
+  gem "typeprof", "~> 0.33"
   gem "yard", "~> 0.9"
 end
