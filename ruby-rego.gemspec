@@ -53,7 +53,7 @@ Gem::Specification.new do |spec|
   # (JSON::NestingError < JSON::ParserError so over-deep input maps to undefined; only ParserError is
   # raised on binary/ASCII-8BIT bytes). That behaviour is stable across 2.x; the constraint that matters
   # is `< 3.0` — a 3.0 major could change it and warrants re-validation.
-  spec.add_dependency "json", "~> 2.0"
+  spec.add_dependency "json", ">= 2", "< 4"
   spec.add_dependency "openssl"
   # re2 binds Google's RE2 C++ library — the same regex engine Go's `regexp` (and thus gojsonschema)
   # uses — so json.verify_schema / match_schema can validate a schema `pattern` exactly as OPA does,
