@@ -143,8 +143,8 @@ GEM
       logger
       prism (>= 1.6.0)
       tsort
-    re2 (2.27.0-arm64-darwin)
-    re2 (2.27.0-x86_64-linux-gnu)
+    re2 (2.28.0-arm64-darwin)
+    re2 (2.28.0-x86_64-linux-gnu)
     reek (6.5.0)
       dry-schema (~> 1.13)
       logger (~> 1.6)
